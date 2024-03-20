@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "canopy"
+version = "0.0.1"
+
+[tool.scikit-build]
+cmake.targets = ["libcanopy", "pylibcanopy"]
+cmake.build-type = "Debug"
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint.per-file-ignores]
+# ignore undefined `Template` name in `pylibcanopy` module
+"canopy/pylibcanopy.pyi" = ["F821"]
+"__init__.py" = ["F401"]

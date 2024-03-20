@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+
+name: numbast
+channels:
+  - conda-forge
+dependencies:
+  - cmake>=3.17
+  - clangdev>=17
+  - numba
+  - pybind11
+  - pytest
+  - cffi
+  - mypy
+  - pre-commit

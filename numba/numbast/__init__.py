@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+import numba
+
+from numbast import numba_patch
+
+from numbast.struct import bind_cxx_struct, bind_cxx_structs
+from numbast.function import bind_cxx_function, bind_cxx_functions
+from numbast.class_templates import bind_cxx_class_template
+from numbast.enum import bind_cxx_enum
+from numbast.shim_writer import ShimWriter
+
+major, minor, patch = numba.__version__.split(".")
+if int(minor) < 59:
+    raise RuntimeError("Numba version >= 0.59rc1 is required")
