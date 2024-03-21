@@ -1,5 +1,33 @@
 # Numbast
 
+# Overview
+Numbast = Numba + AST (Abstract Syntax Tree)
+
+Numbast's mission is to establish an automated pipeline that converts CUDA APIs into Numba bindings. On a high level, top-level declarations are read from CUDA C++ header files, serailized as string and passed to python APIs. Numba binding generators then iterate through these bindings and make Numba extensions for each of the APIs.
+
+There are two subcomponents: Canopy and Numba bindings.
+
+- [canopy](canopy/README.md): the package that provides APIs to parse CUDA headers with clangTooling
+- [numba](numba/README.md): Demo project that generates bindings to Numba
+
+# Get Started
+
+First, install conda environment and activate:
+
+```bash
+conda env create -f conda/environment.yaml && \
+  conda activate numbast
+```
+
+Next, install the two subcomponents:
+
+```bash
+cd canopy && pip install . && \
+  cd ../numba && pip install .
+```
+
+## Example
+
 Given a C++ struct (or function) declaration:
 ```c++
 // demo.cuh
@@ -54,32 +82,6 @@ def kernel(arr):
 arr = cuda.device_array(1, dtype=int)
 kernel[1, 1](arr)
 assert arr[0] == 85
-```
-
-# Overview
-Numbast = Numba + AST (Abstract Syntax Tree)
-
-Numbast's mission is to establish an automated pipeline that converts CUDA APIs into Numba bindings. On a high level, top-level declarations are read from CUDA C++ header files, serailized as string and passed to python APIs. Numba binding generators then iterate through these bindings and make Numba extensions for each of the APIs.
-
-There are two subcomponents: Canopy and Numba bindings.
-
-- [canopy](canopy/README.md): the package that provides APIs to parse CUDA headers with clangTooling
-- [numba](numba/README.md): Demo project that generates bindings to Numba
-
-# Get Started
-
-First, install conda environment and activate:
-
-```bash
-conda env create -f conda/environment.yaml && \
-  conda activate numbast
-```
-
-Next, install the two subcomponents:
-
-```bash
-cd canopy && pip install . && \
-  cd ../numba && pip install .
 ```
 
 # Contribution Guidelines
