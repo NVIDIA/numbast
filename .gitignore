@@ -1,0 +1,157 @@
+# Specifics
+bin/
+.vscode/
+*.ast
+ast
+error
+*.so
+__pycache__/
+.pytest_cache/
+build/
+*egg-info
+*.ptx
+*shim.cu
+scratch/
+copyright.sh
+.ruff_cache
+
+## Common
+__pycache__
+*.py[cod]
+*$py.class
+*.a
+*.o
+*.so
+*.dylib
+.cache
+.vscode
+*.swp
+*.pytest_cache
+DartConfiguration.tcl
+.DS_Store
+*.manifest
+*.spec
+.nfs*
+.clangd
+compile_commands.json
+
+## Python build directories & artifacts
+dist/
+cudf.egg-info/
+python/build
+python/*/build
+.Python
+env/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+_skbuild/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+junit-cudf.xml
+*.cover
+.hypothesis/
+test-results
+
+## Patching
+*.orig
+*.rej
+
+## C++ build directories & artifacts
+CMakeFiles/
+Debug
+build/
+cpp/build/
+cpp/include/cudf/ipc_generated/*.h
+cpp/thirdparty/googletest/
+
+## Eclipse IDE
+.project
+.cproject
+.settings
+
+## IntelliJ IDE
+.idea/
+.idea_modules/
+*.iml
+*.ipr
+*.iws
+
+## Doxygen
+cpp/doxygen/html
+
+#Java
+target
+
+# Translations
+*.mo
+*.pot
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# dotenv
+.env
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+
+## VSCode IDE
+.vscode
+
+# Sphinx docs & build artifacts
+_html
+_text
+jupyter_execute
+
+# cibuildwheel
+/wheelhouse
