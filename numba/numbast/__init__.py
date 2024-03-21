@@ -7,7 +7,6 @@ from numbast import numba_patch
 
 from numbast.struct import bind_cxx_struct, bind_cxx_structs
 from numbast.function import bind_cxx_function, bind_cxx_functions
-from numbast.class_templates import bind_cxx_class_template
 from numbast.enum import bind_cxx_enum
 from numbast.shim_writer import ShimWriter
 
