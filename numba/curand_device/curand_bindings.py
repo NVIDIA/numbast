@@ -3,6 +3,7 @@
 
 import os
 from collections import defaultdict
+import logging
 
 from canopy import parse_declarations_from_source
 from numbast import (
@@ -16,6 +17,8 @@ from numba import types, config, cuda
 from numba.core.datamodel.models import StructModel
 
 from curand_device.curand_states import make_curand_states
+
+logger = logging.getLogger("curand")
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
@@ -45,11 +48,31 @@ curand_headers = [
 ]
 
 curand_files = [os.path.join(CUDA_INCLUDE_PATH, f) for f in curand_headers]
-# Mysteriously, clang AST sometimes fails to stick to the original cuda include path
-# for source range and instead uses the one below:
-curand_files += [
-    os.path.join("/usr/local/cuda-12.3/include/", f) for f in curand_headers
-]
+
+# Mysteriously, clang AST sometimes fails to stick to the one cuda include path
+# for source range and instead uses the unwrapped path behind the symlink. E.g.
+# /usr/local/cuda-12.3/include/curand_uniform.h instead of
+# /usr/local/cuda/include/curand_uniform.h
+with open(os.path.join(CUDA_INCLUDE_PATH, "cuda.h"), "r") as f:
+    cuda_header_version_macro = [
+        line for line in f if line.startswith("#define CUDA_VERSION")
+    ]
+    try:
+        cuda_header_version = int(
+            cuda_header_version_macro[0].split()[-1]
+        )  # e.g. 12030
+        major = cuda_header_version // 1000  # e.g. 12
+        minor = (cuda_header_version % 1000) // 10  # e.g. 3
+
+        curand_files += [
+            os.path.join(f"/usr/local/cuda-{major}.{minor}/include/", f)
+            for f in curand_headers
+        ]
+    except Exception as e:
+        logger.warn(
+            f"Failed to parse CUDA version from cuda.h, some functionality in curand may not be properly bound. {e}"
+        )
+
 
 structs, functions, _, _, typedefs, enums = parse_declarations_from_source(
     curand_kernel_h,
