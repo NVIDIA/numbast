@@ -1,4 +1,4 @@
-# canopy package
+# Canopy package
 
 Canopy [ka·nuh·pee]
 
