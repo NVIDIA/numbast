@@ -11,7 +11,7 @@ version = "0.0.1"
 
 [tool.scikit-build]
 cmake.targets = ["libcanopy", "pylibcanopy"]
-cmake.build-type = "Debug"
+cmake.build-type = "Release"
 
 [tool.ruff]
 line-length = 88

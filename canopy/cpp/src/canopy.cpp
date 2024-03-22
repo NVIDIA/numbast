@@ -105,8 +105,8 @@ parse_declarations_from_ast(std::string_view ast_file_path,
   std::cout << "Class templates: " << decls.class_templates.size() << std::endl;
   std::cout << "Typedefs: " << decls.typedefs.size() << std::endl;
   std::cout << "Enums: " << decls.enums.size() << std::endl;
-#endif
   std::cout << "Finished parsing declarations from AST file." << std::endl;
+#endif
 
   return decls;
 }
@@ -181,8 +181,8 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   std::cout << "Class templates: " << decls.class_templates.size() << std::endl;
   std::cout << "Typedefs: " << decls.typedefs.size() << std::endl;
   std::cout << "Enums: " << decls.enums.size() << std::endl;
-#endif
   std::cout << "Finished parsing declarations from AST file." << std::endl;
+#endif
 
   return decls;
 }

@@ -59,7 +59,6 @@ def make_ast_from_source(
     subprocess.run(
         [
             "clang++",
-            "-Wpragma-system-header-outside-header",
             "-xcuda",
             f"--cuda-gpu-arch={compute_capability}",
             f"-std={cxx_standard}",
@@ -165,7 +164,6 @@ def parse_declarations_from_source(
 
     command_line_options = [
         "clang++",
-        "-Wpragma-system-header-outside-header",
         "-xcuda",
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
