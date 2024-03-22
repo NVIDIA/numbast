@@ -8,7 +8,7 @@ Numbast's mission is to establish an automated pipeline that converts CUDA APIs 
 There are two subcomponents: Canopy and Numba bindings.
 
 - [canopy](canopy/README.md): the package that provides APIs to parse CUDA headers with clangTooling
-- [numba](numba/README.md): Demo project that generates bindings to Numba
+- [numbast](numbast/README.md): Demo project that generates bindings to Numba
 
 # Get Started
 
@@ -23,14 +23,14 @@ Next, install the two subcomponents:
 
 ```bash
 cd canopy && pip install . && \
-  cd ../numba && pip install .
+  cd ../numbast && pip install .
 ```
 
 Validate the installation by running the tests:
 
 ```bash
 cd canopy && pytest . && \
-  cd ../numba && pytest .
+  cd ../numbast && pytest .
 ```
 
 ## Example

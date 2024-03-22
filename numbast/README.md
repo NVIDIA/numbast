@@ -1,4 +1,4 @@
-# Demo Project: Auto Generate Numba Bindings with `canopy`
+# Numbast Project
 
 ## Overview
 
