@@ -26,6 +26,13 @@ cd canopy && pip install . && \
   cd ../numba && pip install .
 ```
 
+Validate the installation by running the tests:
+
+```bash
+cd canopy && pytest . && \
+  cd ../numba && pytest .
+```
+
 ## Example
 
 Given a C++ struct (or function) declaration:
