@@ -1,6 +1,6 @@
 # Numbast
 
-# Overview
+## Overview
 Numbast = Numba + AST (Abstract Syntax Tree)
 
 Numbast's mission is to establish an automated pipeline that converts CUDA APIs into Numba bindings. On a high level, top-level declarations are read from CUDA C++ header files, serailized as string and passed to python APIs. Numba binding generators then iterate through these bindings and make Numba extensions for each of the APIs.
@@ -11,7 +11,7 @@ There are several subcomponents: Canopy, Numbast and a set of Numba Extensions
 - [numbast](numbast/README.md): Numba Binding Generator
 - [numba_extensions](numba_extensions/README.md): a set of Numba bindings for several CUDA libraries using Numbast
 
-# Get Started
+## Get Started
 
 First, install conda environment and activate:
 
@@ -37,7 +37,7 @@ Validate the installation by running the tests:
 pytest canopy/ numba_extensions/
 ```
 
-## Example
+### Example
 
 Given a C++ struct (or function) declaration:
 ```c++
@@ -95,19 +95,19 @@ kernel[1, 1](arr)
 assert arr[0] == 85
 ```
 
-# Contribution Guidelines
+## Contribution Guidelines
 See [CONTRIBUTING.md](./CONTRIBUTING.md)
 
-# Community
-Discussions are welcome! If you spotted bugs / have idea for new features, please submit at the issue board. If you have general usage question, or is interested in the future plan of this project, join us at the disucssion board!
+## Community
+Discussions are welcome! If you spotted bugs / have idea for new features, please submit at the issue board.
 
-# References
+## References
 The project depends on [Clang](https://github.com/llvm/llvm-project) and [Numba](https://numba.readthedocs.io/en/stable/)
 
-# License
+## License
 This project is licensed under the Apache 2.0 License - see the LICENSE.md file for details
 
-# Key Visual
+## Key Visual
 
 The numbat (Myrmecobius fasciatus) is a small, endangered marsupial native to Western Australia.
 
