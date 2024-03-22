@@ -21,7 +21,7 @@ find_package(CUDAToolkit REQUIRED)
 
 # Add a library using FindPython's tooling (pybind11 also provides a helper like
 # this)
-python_add_library(curand_host MODULE curand_host/curand_host_api.cpp WITH_SOABI)
+python_add_library(curand_host MODULE curand_host_api.cpp WITH_SOABI)
 
 
 target_link_libraries(curand_host PRIVATE pybind11::headers CUDA::curand)

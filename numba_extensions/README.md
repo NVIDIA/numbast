@@ -1,14 +1,18 @@
-# Demo Project: Auto Generate Numba Bindings with `canopy`
+# Numba Extensions
 
 ## Overview
 
-This project uses `canopy` (the bindings created in parent repo), to auto generate bindings for `nv_bfloat16` and `half`.
+This folder contains several Numba bindings for CUDA libraries created via `Numbast`.
 
 ### Requirements
 
+Numbast is required to run these extensions.
+
 Tested under CUDA 12.3, driver 545.23.08.
 
-What's working:
+## Contents
+
+The following struct / function / operations are tested:
 
 `nv_bfloat16` and `half`:
 - Constructors from `float64` `float32`, `int16`, `int32`, `int64`, `uint16`, `uint32`, `uint64`, `float16`
@@ -43,11 +47,7 @@ Known Limitations:
 
 ## Numba Extension Entrance
 
-The extensions for `nv_bfloat16` type is created via `bf16_bindings.py`. By default it looks for `/usr/local/cuda` for CUDA headers and generate ASTs with `cuda_bf16.h` and `cuda_fp16.h`.
-
-## `utils.py`
-
-Probably a bad naming for this file, but this is where currently most developement effort goes into. This file provides several helper function to read from the parsed data structure from `canopy` and create Numba bindings.
+The extensions for `nv_bfloat16` type is created via `bf16_bindings.py`. By default it looks for `/usr/local/cuda` for CUDA headers and generate ASTs with `cuda_bf16.h`.
 
 ## Running the tests
 
