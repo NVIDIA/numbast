@@ -66,7 +66,7 @@ from numba.core.datamodel.models import StructModel
 source = os.path.join(os.path.dirname(__file__), "demo.cuh")
 # Assume your machine has a GPU that supports "sm_80" compute capability,
 # parse the header with sm_80 compute capability.
-structs, _, _, _, _ = parse_declarations_from_source(ast, [source], "sm_80")
+structs, * = parse_declarations_from_source(ast, [source], "sm_80")
 
 shim_writer = ShimWriter("shim.cu", f'#include "{source}"')
 
