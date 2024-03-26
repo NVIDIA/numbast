@@ -12,12 +12,12 @@
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 using namespace clang;
 using namespace clang::ast_matchers;
 
-namespace canopy {
+namespace ast_canopy {
 
 namespace detail {
 
@@ -85,4 +85,4 @@ private:
 
 } // namespace detail
 
-} // namespace canopy
+} // namespace ast_canopy

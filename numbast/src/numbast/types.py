@@ -74,7 +74,7 @@ def to_numba_type(ty: str):
         base_ty = ty.split(" (")[0]
         return nbtypes.CPointer(to_numba_type(base_ty))
 
-    # Support for array type is still incomplete in canopy,
+    # Support for array type is still incomplete in ast_canopy,
     # doing manual parsing for array type here.
     pat = r"(.*)\[(\d+)\]"
     match = re.match(pat, ty)

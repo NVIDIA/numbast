@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
-namespace canopy {
+namespace ast_canopy {
 
 Field::Field(const clang::FieldDecl *FD)
     : name(FD->getNameAsString()), type(FD->getType(), FD->getASTContext()) {}
-} // namespace canopy
+} // namespace ast_canopy

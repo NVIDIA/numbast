@@ -14,7 +14,7 @@
 #include <clang/AST/DeclTemplate.h>
 #include <clang/AST/Type.h>
 
-namespace canopy {
+namespace ast_canopy {
 
 struct TemplateParam;
 struct ClassTemplate;
@@ -206,4 +206,4 @@ Declarations
 parse_declarations_from_command_line(std::vector<std::string> options,
                                      std::vector<std::string> files_to_retain);
 
-} // namespace canopy
+} // namespace ast_canopy

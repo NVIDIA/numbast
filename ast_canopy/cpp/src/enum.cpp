@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
-namespace canopy {
+namespace ast_canopy {
 
 Enum::Enum(const clang::EnumDecl *ED) : name(ED->getNameAsString()) {
   for (const auto *enumerator : ED->enumerators()) {
@@ -20,4 +20,4 @@ Enum::Enum(const clang::EnumDecl *ED) : name(ED->getNameAsString()) {
   }
 }
 
-} // namespace canopy
+} // namespace ast_canopy

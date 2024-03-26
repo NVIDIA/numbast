@@ -15,13 +15,13 @@
 #include <iostream>
 #endif
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 #include "detail/matchers.hpp"
 
 using namespace clang;
 using namespace clang::ast_matchers;
 
-namespace canopy {
+namespace ast_canopy {
 
 namespace detail {
 
@@ -187,4 +187,4 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   return decls;
 }
 
-} // namespace canopy
+} // namespace ast_canopy

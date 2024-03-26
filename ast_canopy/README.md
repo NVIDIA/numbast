@@ -49,8 +49,8 @@ stubgen -m pylibastcanopy -o ast_canopy
 
 The package is built with [scikit-build-core](https://scikit-build-core.readthedocs.io/en/latest/index.html). In total, 3 libraries (packages) are built:
 
-- libcanopy: the library that traverses the clang AST.
-- pylibastcanopy: the python bindings to the `canopy` library, built with `pybind11`.
+- libastcanopy: the library that traverses the clang AST.
+- pylibastcanopy: the python bindings to the `libastcanopy` library, built with `pybind11`.
 - ast_canopy: the python API using the `pylibastcanopy` bindings.
 
 ## Run the tests

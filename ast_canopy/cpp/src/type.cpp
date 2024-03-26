@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 #include <iostream>
 
-namespace canopy {
+namespace ast_canopy {
 
 Type::Type(std::string name, std::string unqualified_non_ref_type_name,
            bool is_right_reference, bool is_left_reference)
@@ -27,4 +27,4 @@ Type::Type(const clang::QualType &qualtype, const clang::ASTContext &context) {
   _is_left_reference = canonical_type->isLValueReferenceType();
 }
 
-} // namespace canopy
+} // namespace ast_canopy

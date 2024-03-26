@@ -6,11 +6,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 namespace py = pybind11;
 
-using namespace canopy;
+using namespace ast_canopy;
 
 PYBIND11_MODULE(pylibastcanopy, m) {
   m.doc() = "Python bindings for canopy.hpp";

@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
-namespace canopy {
+namespace ast_canopy {
 ParamVar::ParamVar(const clang::ParmVarDecl *PVD)
     : name(PVD->getNameAsString()), type(PVD->getType(), PVD->getASTContext()) {
 }
 
-} // namespace canopy
+} // namespace ast_canopy

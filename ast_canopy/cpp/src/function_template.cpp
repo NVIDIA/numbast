@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 #include <clang/AST/DeclTemplate.h>
 
@@ -13,9 +13,9 @@
 #include <iostream>
 #endif
 
-namespace canopy {
+namespace ast_canopy {
 
 FunctionTemplate::FunctionTemplate(const clang::FunctionTemplateDecl *FTD)
     : Template(FTD->getTemplateParameters()),
       function(FTD->getTemplatedDecl()) {}
-} // namespace canopy
+} // namespace ast_canopy

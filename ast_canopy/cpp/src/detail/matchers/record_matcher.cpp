@@ -9,7 +9,7 @@
 #include <iostream>
 #endif
 
-namespace canopy {
+namespace ast_canopy {
 
 namespace detail {
 
@@ -54,4 +54,4 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
 
 } // namespace detail
 
-} // namespace canopy
+} // namespace ast_canopy

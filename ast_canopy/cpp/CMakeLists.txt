@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_library(libastcanopy SHARED
-            src/canopy.cpp
+            src/ast_canopy.cpp
             src/enum.cpp
             src/class_template.cpp
             src/field.cpp

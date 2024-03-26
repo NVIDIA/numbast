@@ -5,7 +5,7 @@
 
 #include "matchers.hpp"
 
-namespace canopy {
+namespace ast_canopy {
 
 namespace detail {
 
@@ -33,4 +33,4 @@ void FunctionCallback::run(const MatchFinder::MatchResult &Result) {
 
 } // namespace detail
 
-} // namespace canopy
+} // namespace ast_canopy

@@ -6,11 +6,11 @@
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclCXX.h>
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 #include <algorithm>
 
-namespace canopy {
+namespace ast_canopy {
 
 execution_space get_execution_space(const clang::FunctionDecl *FD) {
   using namespace clang;
@@ -35,4 +35,4 @@ Function::Function(const clang::FunctionDecl *FD)
                  [](const clang::ParmVarDecl *PVD) { return ParamVar(PVD); });
   exec_space = get_execution_space(FD);
 }
-} // namespace canopy
+} // namespace ast_canopy

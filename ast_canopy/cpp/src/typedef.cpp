@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 #ifndef NDEBUG
 #include <iostream>
@@ -11,7 +11,7 @@
 
 #include <unordered_map>
 
-namespace canopy {
+namespace ast_canopy {
 
 Typedef::Typedef(const clang::TypedefDecl *TD,
                  std::unordered_map<int64_t, std::string> *record_id_to_name) {
@@ -33,4 +33,4 @@ Typedef::Typedef(const clang::TypedefDecl *TD,
 #endif
 }
 
-} // namespace canopy
+} // namespace ast_canopy

@@ -62,7 +62,7 @@ from numbast import bind_cxx_struct, ShimWriter
 from numba import types
 from numba.core.datamodel.models import StructModel
 
-# Use `Canopy` to parse demo.cuh as AST, read all declarations from it.
+# Use `AST_Canopy` to parse demo.cuh as AST, read all declarations from it.
 source = os.path.join(os.path.dirname(__file__), "demo.cuh")
 # Assume your machine has a GPU that supports "sm_80" compute capability,
 # parse the header with sm_80 compute capability.

@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 #include <clang/AST/DeclTemplate.h>
 
 #include <algorithm>
 
-namespace canopy {
+namespace ast_canopy {
 TemplateParam::TemplateParam(const clang::TemplateTypeParmDecl *TPD) {
   name = TPD->getNameAsString();
   type = Type(TPD->getASTContext().getTypeDeclType(TPD), TPD->getASTContext());
@@ -26,4 +26,4 @@ TemplateParam::TemplateParam(const clang::TemplateTemplateParmDecl *TPD) {
   throw std::runtime_error("TemplateTemplateParmDecl not implemented");
 }
 
-} // namespace canopy
+} // namespace ast_canopy

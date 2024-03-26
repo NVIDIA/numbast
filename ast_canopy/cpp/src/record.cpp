@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "canopy.hpp"
+#include "ast_canopy.hpp"
 
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
@@ -14,7 +14,7 @@
 #include <iostream>
 #endif
 
-namespace canopy {
+namespace ast_canopy {
 
 std::size_t constexpr INVALID_SIZE_OF = std::numeric_limits<std::size_t>::max();
 std::size_t constexpr INVALID_ALIGN_OF =
@@ -121,4 +121,4 @@ void Record::print(int level) const {
 #endif
 }
 
-} // namespace canopy
+} // namespace ast_canopy
