@@ -12,7 +12,7 @@ import pickle
 import pytest
 
 from pylibastcanopy import template_param_kind, execution_space
-from canopy import parse_declarations_from_ast, make_ast_from_source
+from ast_canopy import parse_declarations_from_ast, make_ast_from_source
 
 
 @pytest.fixture(scope="module")

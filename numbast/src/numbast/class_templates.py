@@ -25,7 +25,7 @@ from numba.cuda import declare_device
 from numba.core.typing.npydecl import parse_dtype
 from numba.core.errors import RequireLiteralValue
 
-from canopy.decl import (
+from ast_canopy.decl import (
     bindings,
     StructMethod,
     ClassTemplate,

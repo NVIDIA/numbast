@@ -34,7 +34,7 @@ pip install -e ast_canopy \
 Validate the installation by running the tests:
 
 ```bash
-pytest canopy/ numba_extensions/
+pytest ast_canopy/ numba_extensions/
 ```
 
 ### Example

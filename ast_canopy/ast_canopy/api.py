@@ -7,7 +7,7 @@ import tempfile
 
 import pylibastcanopy as bindings
 
-from canopy.decl import Function, Struct, ClassTemplate
+from ast_canopy.decl import Function, Struct, ClassTemplate
 
 
 def make_ast_from_source(

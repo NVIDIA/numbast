@@ -11,7 +11,7 @@ from numba.cuda.cudadecl import register_global, register
 from numba.cuda.cudaimpl import lower
 
 from pylibastcanopy import execution_space
-from canopy.decl import Function
+from ast_canopy.decl import Function
 
 from numbast.types import to_numba_type
 from numbast.utils import (

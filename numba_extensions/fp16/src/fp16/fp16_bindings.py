@@ -4,7 +4,7 @@
 import os
 from collections import defaultdict
 
-from canopy import parse_declarations_from_source
+from ast_canopy import parse_declarations_from_source
 
 from numbast import bind_cxx_structs, bind_cxx_functions, ShimWriter
 

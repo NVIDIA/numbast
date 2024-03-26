@@ -17,7 +17,7 @@ classifiers = [
 ]
 dependencies= [
     "numba>=0.59.0",
-    "canopy>=0.0.1",
+    "ast_canopy>=0.0.1",
 ]
 
 [project.urls]
