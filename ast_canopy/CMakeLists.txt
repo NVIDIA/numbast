@@ -13,9 +13,9 @@ find_package(pybind11 CONFIG REQUIRED)
 
 add_subdirectory(cpp)
 
-python_add_library(pylibcanopy MODULE canopy/pylibcanopy.cpp WITH_SOABI)
-target_link_libraries(pylibcanopy PRIVATE pybind11::headers)
+python_add_library(pylibastcanopy MODULE canopy/pylibastcanopy.cpp WITH_SOABI)
+target_link_libraries(pylibastcanopy PRIVATE pybind11::headers)
 
-target_link_libraries(pylibcanopy PUBLIC libcanopy)
+target_link_libraries(pylibastcanopy PUBLIC libastcanopy)
 
-install(TARGETS pylibcanopy LIBRARY DESTINATION .)
+install(TARGETS pylibastcanopy LIBRARY DESTINATION .)

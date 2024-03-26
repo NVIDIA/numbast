@@ -5,7 +5,7 @@ import subprocess
 import os
 import tempfile
 
-import pylibcanopy as bindings
+import pylibastcanopy as bindings
 
 from canopy.decl import Function, Struct, ClassTemplate
 

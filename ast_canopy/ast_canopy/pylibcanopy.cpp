@@ -12,7 +12,7 @@ namespace py = pybind11;
 
 using namespace canopy;
 
-PYBIND11_MODULE(pylibcanopy, m) {
+PYBIND11_MODULE(pylibastcanopy, m) {
   m.doc() = "Python bindings for canopy.hpp";
 
   py::enum_<execution_space>(m, "execution_space")

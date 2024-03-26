@@ -4,7 +4,7 @@
 import operator
 import typing
 
-import pylibcanopy as bindings
+import pylibastcanopy as bindings
 
 CXX_OP_TO_PYTHON_OP = {
     "+": [operator.pos, operator.add],

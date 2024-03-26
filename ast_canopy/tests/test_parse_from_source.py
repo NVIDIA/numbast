@@ -6,7 +6,7 @@ import pickle
 
 import pytest
 
-from pylibcanopy import template_param_kind, execution_space
+from pylibastcanopy import template_param_kind, execution_space
 from canopy import parse_declarations_from_source
 
 

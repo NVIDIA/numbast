@@ -7,7 +7,7 @@ import re
 
 from numba.cuda.compiler import ExternFunction
 
-import pylibcanopy
+import pylibastcanopy
 
 OVERLOADS_CNT: dict[str, int] = defaultdict(int)  # overload counter
 
@@ -67,7 +67,7 @@ def deduplicate_overloads(func_name: str) -> str:
 
 
 def make_function_shim(
-    shim_name: str, func_name: str, return_type: str, params: list[pylibcanopy.ParamVar]
+    shim_name: str, func_name: str, return_type: str, params: list[pylibastcanopy.ParamVar]
 ) -> str:
     """Create a function shim layer template.
 
@@ -79,7 +79,7 @@ def make_function_shim(
         The name of the function to build shim for.
     return_type : str
         The return type of the function.
-    params : list[pylibcanopy.ParamVar]
+    params : list[pylibastcanopy.ParamVar]
         The parameters of the function.
 
     Returns
