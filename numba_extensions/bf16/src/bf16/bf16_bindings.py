@@ -3,7 +3,7 @@
 
 import os
 from collections import defaultdict
-from canopy import (
+from ast_canopy import (
     parse_declarations_from_source,
 )
 

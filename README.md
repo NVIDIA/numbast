@@ -5,9 +5,9 @@ Numbast = Numba + AST (Abstract Syntax Tree)
 
 Numbast's mission is to establish an automated pipeline that converts CUDA APIs into Numba bindings. On a high level, top-level declarations are read from CUDA C++ header files, serailized as string and passed to python APIs. Numba binding generators then iterate through these bindings and make Numba extensions for each of the APIs.
 
-There are several subcomponents: Canopy, Numbast and a set of Numba Extensions
+There are several subcomponents: AST_Canopy, Numbast and a set of Numba Extensions
 
-- [canopy](canopy/README.md): CUDA Header Parser that depends on clangTooling
+- [ast_canopy](ast_canopy/README.md): CUDA Header Parser that depends on clangTooling
 - [numbast](numbast/README.md): Numba Binding Generator
 - [numba_extensions](numba_extensions/README.md): a set of Numba bindings for several CUDA libraries using Numbast
 
@@ -23,7 +23,7 @@ conda env create -f conda/environment.yaml && \
 Next, install all subcomponents:
 
 ```bash
-pip install -e canopy \
+pip install -e ast_canopy \
   numbast \
   numba_extensions/bf16 \
   numba_extensions/fp16 \
@@ -34,7 +34,7 @@ pip install -e canopy \
 Validate the installation by running the tests:
 
 ```bash
-pytest canopy/ numba_extensions/
+pytest ast_canopy/ numba_extensions/
 ```
 
 ### Example
@@ -56,13 +56,13 @@ Numbast can convert it into Numba bindings:
 ```python
 # bindings.py
 import os
-from canopy import parse_declarations_from_source
+from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_struct, ShimWriter
 
 from numba import types
 from numba.core.datamodel.models import StructModel
 
-# Use `Canopy` to parse demo.cuh as AST, read all declarations from it.
+# Use `AST_Canopy` to parse demo.cuh as AST, read all declarations from it.
 source = os.path.join(os.path.dirname(__file__), "demo.cuh")
 # Assume your machine has a GPU that supports "sm_80" compute capability,
 # parse the header with sm_80 compute capability.

@@ -18,7 +18,7 @@ from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
-from canopy.decl import Struct
+from ast_canopy.decl import Struct
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
 from numbast.utils import (

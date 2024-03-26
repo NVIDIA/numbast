@@ -1,11 +1,11 @@
 from enum import IntEnum
 
 
-import pylibcanopy
+import pylibastcanopy
 from numbast.types import register_enum_type
 
 
-def bind_cxx_enum(e: pylibcanopy.Enum):
+def bind_cxx_enum(e: pylibastcanopy.Enum):
     vals = [int(v) for v in e.enumerator_values]
     # Numba takes python enum object as-is. Thus we only need to dynamically create
     # the enum object and return it.

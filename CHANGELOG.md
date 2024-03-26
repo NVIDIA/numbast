@@ -4,4 +4,4 @@
 
 - Initial Release
 - Numbast: Launching supoprt for bfloat16, fp16, cuRAND
-- Canopy: Support extracting top-level decls from struct/classes, functions, enums, etc.
+- AST_Canopy: Support extracting top-level decls from struct/classes, functions, enums, etc.

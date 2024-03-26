@@ -15,7 +15,7 @@ from llvmlite import ir
 
 from numbast.types import CTYPE_MAPS
 
-from canopy.decl import Struct
+from ast_canopy.decl import Struct
 
 # C-compatible type mapping, see:
 # https://numpy.org/devdocs/reference/arrays.scalars.html#integer-types
