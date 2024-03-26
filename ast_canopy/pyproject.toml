@@ -19,5 +19,5 @@ indent-width = 4
 
 [tool.ruff.lint.per-file-ignores]
 # ignore undefined `Template` name in `pylibastcanopy` module
-"canopy/pylibastcanopy.pyi" = ["F821"]
+"ast_canopy/pylibastcanopy.pyi" = ["F821"]
 "__init__.py" = ["F401"]
