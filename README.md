@@ -23,8 +23,8 @@ conda env create -f conda/environment.yaml && \
 Next, install all subcomponents:
 
 ```bash
-pip install -e ast_canopy \
-  numbast \
+pip install ast_canopy/ \
+  numbast/ \
   numba_extensions/bf16 \
   numba_extensions/fp16 \
   numba_extensions/curand_device \

@@ -10,6 +10,41 @@ import pylibastcanopy as bindings
 from ast_canopy.decl import Function, Struct, ClassTemplate
 
 
+def get_default_compiler_search_path() -> list[str]:
+    """Compile an empty file with clang++ and print logs verbosely.
+    Extract the default system header search paths from the logs and return them.
+    """
+    clang_compile_empty = (
+        subprocess.check_output(
+            ["clang++", "-E", "-v", "-xc++", "/dev/null"], stderr=subprocess.STDOUT
+        )
+        .decode()
+        .strip()
+        .split("\n")
+    )
+    start = clang_compile_empty.index("#include <...> search starts here:")
+    end = clang_compile_empty.index("End of search list.")
+    clang_system_header_search_paths = clang_compile_empty[start + 1 : end]
+    return clang_system_header_search_paths
+
+
+def get_default_cuda_compiler_includes(default="/usr/local/cuda/include") -> str:
+    """Compile an empty file with"""
+    with tempfile.NamedTemporaryFile(suffix=".cu") as tmp_file:
+        nvcc_compile_empty = (
+            subprocess.run(["nvcc", "-E", "-v", tmp_file.name], capture_output=True)
+            .stderr.decode()
+            .strip()
+            .split("\n")
+        )
+
+    if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
+        include_path = s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
+        return include_path
+    else:
+        return default
+
+
 def make_ast_from_source(
     source_file_path: str,
     compute_capability: str,
@@ -55,6 +90,8 @@ def make_ast_from_source(
     else:
         cccl_libs = []
 
+    clang_search_paths = get_default_compiler_search_path()
+
     tmp_folder = tempfile.gettempdir()
     subprocess.run(
         [
@@ -62,10 +99,7 @@ def make_ast_from_source(
             "-xcuda",
             f"--cuda-gpu-arch={compute_capability}",
             f"-std={cxx_standard}",
-            "-I/usr/include/c++/11/",
-            "-I/usr/include/x86_64-linux-gnu/c++/11/",
-            "-I/usr/lib/gcc/x86_64-linux-gnu/11/include",
-            "-I/usr/include/",  # /usr/include must be last in the include list
+            *[f"-I{path}" for path in clang_search_paths],
             *cccl_libs,
             f"-I{cudatoolkit_include_dir}",
             "-emit-ast",
@@ -162,16 +196,15 @@ def parse_declarations_from_source(
         subprocess.check_output(["clang++", "-print-resource-dir"]).decode().strip()
     )
 
+    clang_search_paths = get_default_compiler_search_path()
+
     command_line_options = [
         "clang++",
         "-xcuda",
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
         f"-isystem{clang_resource_file}/include/",
-        "-I/usr/include/c++/11/",
-        "-I/usr/include/x86_64-linux-gnu/c++/11/",
-        "-I/usr/lib/gcc/x86_64-linux-gnu/11/include",
-        "-I/usr/include/",  # /usr/include must be last in the include list
+        *[f"-I{path}" for path in clang_search_paths],
         *cccl_libs,
         f"-I{cudatoolkit_include_dir}",
         source_file_path,
