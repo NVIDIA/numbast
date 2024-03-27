@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import numba
+from pynvjitlink.patch import patch_numba_linker
+
+patch_numba_linker()
 
 from numbast import numba_patch
 

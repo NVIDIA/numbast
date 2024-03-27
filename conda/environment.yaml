@@ -8,7 +8,7 @@ channels:
   - numba
   - conda-forge
 dependencies:
-  - cmake>=3.17
+  - cmake>=3.28
   - clangdev>=17
   - numba
   - pybind11
