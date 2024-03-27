@@ -25,7 +25,7 @@ def get_default_compiler_search_path() -> list[str]:
     start = clang_compile_empty.index("#include <...> search starts here:")
     end = clang_compile_empty.index("End of search list.")
     clang_system_header_search_paths = clang_compile_empty[start + 1 : end]
-    return clang_system_header_search_paths
+    return [x.strip() for x in clang_system_header_search_paths]
 
 
 def get_default_cuda_compiler_includes(default="/usr/local/cuda/include") -> str:
