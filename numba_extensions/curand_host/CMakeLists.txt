@@ -17,6 +17,8 @@ project(
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 
+# As of CTK 12.4, this is where cuda_runtime.h locates
+set(CUDAToolkit_INCLUDE_DIRECTORIES $ENV{CONDA_PREFIX}/targets/x86_64-linux/include)
 find_package(CUDAToolkit REQUIRED)
 
 # Add a library using FindPython's tooling (pybind11 also provides a helper like

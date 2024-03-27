@@ -21,3 +21,4 @@ dependencies:
   - cuda-toolkit
   - cuda-python=12.4
   - pynvjitlink
+  - scikit-build-core

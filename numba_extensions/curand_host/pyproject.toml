@@ -7,6 +7,7 @@ build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
 cmake.targets = ["curand_host"]
+cmake.build-type = "Release"
 
 [project]
 name = "curand_host"
