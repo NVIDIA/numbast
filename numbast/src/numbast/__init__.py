@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import numba
+
+# Use pynvjitlink by default. This can avoid version mismatch between system driver and
+# installed CTK version.
 from pynvjitlink.patch import patch_numba_linker
 
 patch_numba_linker()

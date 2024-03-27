@@ -8,7 +8,7 @@ channels:
   - numba
   - conda-forge
 dependencies:
-  - cmake>=3.28
+  - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
   - clangdev>=17
   - numba
   - pybind11
