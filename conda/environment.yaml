@@ -9,7 +9,7 @@ channels:
   - conda-forge
 dependencies:
   - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
-  - clangdev>=17
+  - clangdev>=18 # >=18 supports CTK 12.3
   - numba
   - pybind11
   - pytest
