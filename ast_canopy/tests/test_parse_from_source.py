@@ -64,6 +64,12 @@ def sample_execution_space_source():
     return os.path.join(current_directory, "data/", "sample_execution_space.cu")
 
 
+@pytest.fixture(scope="module")
+def sample_load_by_cc_source():
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_directory, "data/", "sample_diff_by_cc.cu")
+
+
 @pytest.fixture(scope="module", params=[False, True], ids=["no_pickle", "pickle"])
 def test_pickle(request):
     return request.param
@@ -464,3 +470,65 @@ def test_load_struct_function_execution_space(
     assert functions[3].exec_space == execution_space.host_device
     assert functions[4].name == "foo"
     assert functions[4].exec_space == execution_space.undefined
+
+
+@pytest.mark.parametrize(
+    "cc, ans",
+    [
+        (
+            "sm_70",
+            {
+                "structs": [
+                    {"name": "Functor", "methods": ["operator()"], "fields": ["k"]}
+                ],
+                "functions": [{"name": "fpi", "return_type": "float"}],
+            },
+        ),
+        (
+            "sm_86",
+            {
+                "structs": [
+                    {
+                        "name": "Functor",
+                        "methods": ["operator()", "operator()"],
+                        "fields": ["k", "dk"],
+                    },
+                    {
+                        "name": "AdvancedFunctor",
+                        "methods": ["operator()"],
+                        "fields": ["k"],
+                    },
+                ],
+                "functions": [
+                    {"name": "fpi", "return_type": "float"},
+                    {"name": "dpi", "return_type": "double"},
+                ],
+            },
+        ),
+    ],
+)
+def test_load_by_cc(cc, ans, sample_load_by_cc_source):
+    decls = parse_declarations_from_source(
+        sample_load_by_cc_source, [sample_load_by_cc_source], cc
+    )
+
+    structs, functions, _, _, _, _ = decls
+
+    assert len(structs) == len(ans["structs"])
+    assert len(functions) == len(ans["functions"])
+
+    # We test it with a zip iterator of ans["struct"] to also make sure that
+    # the AST parsing respects the definition order by user. Similarly for functions
+    # below.
+    for s, ans_s in zip(structs, ans["structs"]):
+        assert s.name == ans_s["name"]
+        assert len(s.methods) == len(ans_s["methods"])
+        assert len(s.fields) == len(ans_s["fields"])
+        for m, ans_s_m_name in zip(s.methods, ans_s["methods"]):
+            assert m.name == ans_s_m_name
+        for f, ans_s_f_name in zip(s.fields, ans_s["fields"]):
+            assert f.name == ans_s_f_name
+
+    for f, ans_f in zip(functions, ans["functions"]):
+        assert f.name == ans_f["name"]
+        assert f.return_type.name == ans_f["return_type"]
