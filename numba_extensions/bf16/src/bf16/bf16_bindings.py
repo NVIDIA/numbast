@@ -16,6 +16,11 @@ from numbast import (
 from numba import types, config, cuda
 from numba.core.datamodel.models import PrimitiveModel, StructModel
 
+if cuda.get_current_device().compute_capability < (8, 0):
+    raise NotImplementedError(
+        "bf16 bindings are only supported on compute capability 8.0 and later"
+    )
+
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 

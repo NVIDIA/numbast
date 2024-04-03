@@ -1,6 +1,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import pytest
+import numba.cuda as cuda
+
+if cuda.get_current_device().compute_capability < (8, 0):
+    pytest.skip(
+        reason="bfloat16 require compute capability 8.0+",
+        allow_module_level=True,
+    )
+
+
 from bf16 import nv_bfloat162, nv_bfloat16
 from bf16 import (
     make_bfloat162,
@@ -21,9 +31,9 @@ from bf16 import (
     h2sqrt,
 )
 
+
 import numpy as np
 from numba import float32
-import numba.cuda as cuda
 
 
 def test_ctor():
