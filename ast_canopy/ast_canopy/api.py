@@ -195,11 +195,17 @@ def parse_declarations_from_source(
         )
 
     werr = cap.snap()
-    if "CUDA version" in werr and "is newer than the latest supported version" in werr:
-        logger.info(
-            "Installed cudaToolkit version is newer than the latest supported version of the clangTooling "
-            "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
-        )
+    if werr:
+        liblogger = logging.getLogger("libastcanopy")
+        liblogger.debug(werr)
+        if (
+            "CUDA version" in werr
+            and "is newer than the latest supported version" in werr
+        ):
+            liblogger.info(
+                "Installed cudaToolkit version is newer than the latest supported version of the clangTooling "
+                "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
+            )
 
     structs = [Struct.from_c_obj(c_obj) for c_obj in decls.records]
     functions = [Function.from_c_obj(c_obj) for c_obj in decls.functions]
