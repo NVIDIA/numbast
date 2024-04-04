@@ -248,9 +248,6 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("typedefs", &Declarations::typedefs)
       .def_readwrite("enums", &Declarations::enums);
 
-  m.def("parse_declarations_from_ast", &parse_declarations_from_ast,
-        "Parse declarations from an AST file.");
-
   m.def("parse_declarations_from_command_line",
         &parse_declarations_from_command_line,
         "Parse declarations from command line options.");

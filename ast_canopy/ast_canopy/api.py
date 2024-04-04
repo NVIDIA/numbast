@@ -12,6 +12,7 @@ from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
 import pylibastcanopy as bindings
 
 from ast_canopy.decl import Function, Struct, ClassTemplate
+from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
 
@@ -111,6 +112,44 @@ def parse_declarations_from_source(
     list[bindings.Typedef],
     list[bindings.Enum],
 ]:
+    """Given a source file, parse all *top-level* declarations from it.
+    Returns a tuple that each contains a list of declaration objects for the source file.
+
+    `files_to_retain` is a required parameter to specify the declarations from which files
+    should be ratained in the result. See `Parameters` section for more details.
+
+    Parameters
+    ----------
+    source_file_path : str
+        The path to the source file to parse.
+
+    files_to_retain : list[str]
+        A list of file paths, from which the parsed declarations that should be retained in
+        the result. A header file usually reference other header files. A semantically intact
+        AST should in theory include all referenced header files. In practice, one may not
+        need to consume all the other referenced files. To only retain the declarations from
+        `source_file_path`, one may pass [source_file_path] to this parameter.
+
+    compute_capability : str
+        The compute capability of the target GPU. e.g. "sm_70".
+
+    cccl_root : str, optional
+        The root directory of the CCCL project. If not provided, CCCL from default CTK headers
+        are used.
+
+    cudatoolkit_include_dir : str, optional
+        The path to the CUDA Toolkit include directory. If not provided, the default CUDA include
+        directory is used.
+
+    cxx_standard : str, optional
+        The C++ standard to use. Default is "c++17".
+
+    Returns
+    -------
+    tuple:
+        A tuple containing lists of declaration objects from the source file.
+        See decl.py and pylibastcanopy.pyi for the declaration object types.
+    """
     if cccl_root:
         cccl_libs = [
             os.path.join(cccl_root, "libcudacxx", "include"),
@@ -148,11 +187,20 @@ def parse_declarations_from_source(
         source_file_path,
     ]
 
-    logger.info(f"{command_line_options=}")
+    logger.debug(f"{command_line_options=}")
 
-    decls = bindings.parse_declarations_from_command_line(
-        command_line_options, files_to_retain
-    )
+    with capture_fd(STREAMFD.STDERR) as cap:
+        decls = bindings.parse_declarations_from_command_line(
+            command_line_options, files_to_retain
+        )
+
+    werr = cap.snap()
+    if "CUDA version" in werr and "is newer than the latest supported version" in werr:
+        logger.info(
+            "Installed cudaToolkit version is newer than the latest supported version of the clangTooling "
+            "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
+        )
+
     structs = [Struct.from_c_obj(c_obj) for c_obj in decls.records]
     functions = [Function.from_c_obj(c_obj) for c_obj in decls.functions]
     class_templates = [
