@@ -3,8 +3,20 @@
 
 import os
 import warnings
+import logging
 
 from numba import cuda, config
+
+from ast_canopy.api import get_default_cuda_compiler_include
+
+logger = logging.getLogger(__name__)
+
+old_cuda_include_path = config.CUDA_INCLUDE_PATH
+new_cuda_include_path = get_default_cuda_compiler_include(config.CUDA_INCLUDE_PATH)
+if old_cuda_include_path != new_cuda_include_path:
+    logger.debug("Updating CUDA include path to %s", new_cuda_include_path)
+os.environ["NUMBA_CUDA_INCLUDE_PATH"] = new_cuda_include_path
+config.reload_config()
 
 # TODO: upstream the changes here to Numba.
 
@@ -77,5 +89,4 @@ def nvrtc_compile(src, name, cc):
 
 
 # Monkey-patch the existing implementation
-print("Patching numba.cuda.cudadrv.nvrtc.compile")
 cuda.cudadrv.nvrtc.compile = nvrtc_compile

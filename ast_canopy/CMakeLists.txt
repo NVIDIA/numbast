@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.15...3.27)
+cmake_minimum_required(VERSION 3.28)
 set(CMAKE_CXX_FLAGS_DEBUG  "-g")
 
 project(${SKBUILD_PROJECT_NAME}

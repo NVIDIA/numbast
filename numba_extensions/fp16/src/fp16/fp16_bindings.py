@@ -11,7 +11,17 @@ from numbast import bind_cxx_structs, bind_cxx_functions, ShimWriter
 from numba import types, config, cuda
 from numba.core.datamodel.models import PrimitiveModel, StructModel
 
-import bf16
+if cuda.get_current_device().compute_capability < (8, 0):
+    import warnings
+
+    # fp16 contains a forward decl ctor from bfloat16 that's defined in cuda_bf16 header
+    # even compute capability doesn't support bfloat16 ops, we still need its decl to
+    # pass typing.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        import bf16
+else:
+    import bf16
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
