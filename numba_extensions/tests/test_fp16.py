@@ -18,6 +18,7 @@ from fp16 import (
     hexp,
     hexp2,
     hexp10,
+    get_shims,
 )
 
 
@@ -30,7 +31,7 @@ import numpy as np
 
 
 def test_ctor():
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel():
         a = half(float64(1.0))
         b = half(float32(2.0))
@@ -45,7 +46,7 @@ def test_ctor():
 
 
 def test_casts():
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(b, c, d, e, f, g, h):
         a = half(3.14)
 
@@ -80,7 +81,7 @@ def test_casts():
     "dtype", [int16, int32, int64, uint16, uint32, uint64, float32]
 )
 def test_ctor_cast_loop(dtype):
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(a):
         a[0] = dtype(half(dtype(3.14)))
 
@@ -94,7 +95,7 @@ def test_ctor_cast_loop(dtype):
 
 
 def test_arithmetic():
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(arith, logic):
         # Binary Arithmetic Operators
         a = half(1.0)
@@ -162,7 +163,7 @@ def test_arithmetic():
 
 
 def test_math_func():
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(a):
         x = half(3.14)
 

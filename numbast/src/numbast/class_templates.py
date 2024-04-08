@@ -42,7 +42,7 @@ from numbast.types import (
 )
 from numbast.utils import make_device_caller_with_nargs, deduplicate_overloads
 from numbast.struct import struct_method_shim_layer_template
-from numbast.shim_writer import ShimWriter
+from numbast.shim_writer import MemoryShimWriter as ShimWriter
 from numbast.functor import Functor
 
 template_class_method_shim = """

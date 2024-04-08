@@ -10,7 +10,7 @@ from numbast import (
     bind_cxx_enum,
     bind_cxx_structs,
     bind_cxx_functions,
-    ShimWriter,
+    MemoryShimWriter,
 )
 
 from numba import types, config, cuda
@@ -132,14 +132,13 @@ functions_to_ignore = {
 numba_struct_types = []
 numba_functions = []
 numba_enums = []
-shims = []
 
 aliases = defaultdict(list)
 for typedef in typedefs:
     aliases[typedef.underlying_name].append(typedef.name)
 
-shim_writer = ShimWriter(
-    "curand_shim.cu", f'#include "{curand_h}"\n' + f'#include "{curand_kernel_h}"\n'
+shim_writer = MemoryShimWriter(
+    f'#include "{curand_h}"\n' + f'#include "{curand_kernel_h}"\n'
 )
 
 # Enum type creation needs to happen before function and struct binding.
@@ -189,12 +188,13 @@ for underlying_name, names in aliases.items():
     for name in names:
         if name not in globals() and underlying_name in globals():
             globals()[name] = globals()[underlying_name]
+globals().update({"get_shims": shim_writer.links})
 
-__all__ = list(
+__all__ = list(  # noqa: F822
     set(s.__name__ for s in numba_struct_types)
     | set(f.__name__ for f in numba_functions)
     | set(typedef.name for typedef in typedefs)
     | set(e.__name__ for e in numba_enums)
     | set(s.__name__ for s in numpy_curand_states)
     | {"states_arg_handlers"}
-)
+) + ["get_shims"]

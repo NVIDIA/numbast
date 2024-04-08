@@ -8,7 +8,7 @@ from ast_canopy import (
 )
 
 from numbast import (
-    ShimWriter,
+    MemoryShimWriter,
     bind_cxx_structs,
     bind_cxx_functions,
 )
@@ -66,7 +66,7 @@ aliases = defaultdict(list)
 for typedef in typedefs:
     aliases[typedef.underlying_name].append(typedef.name)
 
-shim_writer = ShimWriter("bf16_shim.cu", f'#include "{cuda_bf16}"\n')
+shim_writer = MemoryShimWriter(f'#include "{cuda_bf16}"\n')
 
 numba_struct_types += bind_cxx_structs(
     shim_writer, structs, TYPE_SPECIALIZATION, DATA_MODEL_SPECIALIZATION, aliases
@@ -83,9 +83,10 @@ for underlying_name, names in aliases.items():
     for name in names:
         if name not in globals() and underlying_name in globals():
             globals()[name] = globals()[underlying_name]
+globals().update({"get_shims": shim_writer.links})
 
-__all__ = list(
+__all__ = list(  # noqa: F822
     set(s.__name__ for s in numba_struct_types)
     | set(f.__name__ for f in numba_functions)
     | set(typedef.name for typedef in typedefs)
-)
+) + ["get_shims"]

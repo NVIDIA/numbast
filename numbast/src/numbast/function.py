@@ -19,7 +19,7 @@ from numbast.utils import (
     make_device_caller_with_nargs,
     make_function_shim,
 )
-from numbast.shim_writer import ShimWriter
+from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
 function_binding_shim_template = """
 extern "C" __device__ int
