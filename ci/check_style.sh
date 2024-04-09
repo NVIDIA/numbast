@@ -7,6 +7,8 @@ set -euo pipefail
 rapids-logger "Create checks conda environment"
 . /opt/conda/etc/profile.d/conda.sh
 
+yq --version
+
 # Update CUDAToolkit version according to CI environment.
 # TODO: we should use some type of yaml template engine to simplify this.
 yq -i -y '.dependencies |= map(if startswith("cuda-version") then "cuda-version=${RAPIDS_CUDA_VERSION%.*}" else . end)' conda/environment.yaml
