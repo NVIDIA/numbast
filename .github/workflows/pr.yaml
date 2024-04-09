@@ -16,7 +16,8 @@ jobs:
   pr-builder:
     needs:
       - checks
-
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.04
   checks:
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.04
