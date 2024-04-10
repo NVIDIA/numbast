@@ -16,8 +16,8 @@ jobs:
   pr-builder:
     needs:
       - checks
-      - compute_matrix
-      - tests
+      - legacy_tests
+      - frontier_tests
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.04
   checks:
@@ -25,22 +25,23 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.04
     with:
       enable_check_generated_files: false
-  compute_matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      TEST_MATRIX: ${{ steps.compute-matrix.outputs.TEST_MATRIX }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Compute Build Matrix
-        id: compute-matrix
-        uses: ./.github/actions/compute-matrix
-  tests:
+  legacy_tests:
     name: Runs on legacy hardware and older CTK versions (V100, 12.3)
-    needs:
-      - compute_matrix
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.04
+    uses: ./.github/workflows/setup_build_test.yaml
     with:
-      build_type: pull-request
-      script: ci/setup_build_script.sh
-      matrix_filter: ${{ needs.compute_matrix.outputs.TEST_MATRIX }}
+      ubuntu_version: "20.04"
+      cuda_version: "12.3"
+      python_version: "3.10"
+      GPU: "v100"
+      CPU: "amd64"
+  frontier_tests:
+    name: Runs on newer hardware and latest CTK versions (A100, 12.4)
+    secrets: inherit
+    uses: ./.github/workflows/setup_build_test.yaml
+    with:
+      ubuntu_version: "22.04"
+      cuda_version: "12.4"
+      python_version: "3.10"
+      GPU: "a100"
+      CPU: "arm64"
