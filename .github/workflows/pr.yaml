@@ -28,14 +28,14 @@ jobs:
   legacy_tests:
     name: Runs on legacy hardware and older CTK versions (V100, 12.3)
     secrets: inherit
-    uses: .github/actions/setup_build_test.yaml
+    uses: ./.github/workflows/setup_build_test.yaml
     with:
       cuda_version: 12.3
       python_version: 3.10
   frontier_tests:
     name: Runs on newer hardware and latest CTK versions (A100, 12.4)
     secrets: inherit
-    uses: .github/actions/setup_build_test.yaml
+    uses: ./.github/workflows/setup_build_test.yaml
     with:
       cuda_version: 12.4
       python_version: 3.10
