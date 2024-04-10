@@ -3,22 +3,32 @@ name: Build and Test
 on:
   workflow_call:
     inputs:
+      ubuntu_version:
+        description: 'Ubuntu version'
+        required: true
+        type: string
       cuda_version:
         description: 'CUDA version'
         required: true
-        default: '12.4'
         type: string
       python_version:
         description: 'Python version'
         required: true
-        default: '3.10'
+        type: string
+      GPU:
+        description: 'GPU model'
+        required: true
+        type: string
+      CPU:
+        description: 'CPU model'
+        required: true
         type: string
 
 jobs:
   build-and-test:
-    runs-on: linux-amd64-gpu-v100-latest-1
+    runs-on: linux-${{ inputs.CPU }}-gpu-${{ inputs.GPU }}-latest-1
     container: # GPU jobs must run in a container
-        image: ubuntu-20.04 # Numbast depends on conda installed CTK, to avoid interferrence, we use a clean ubuntu image
+        image: nvidia/cuda:12.0.0-base-ubuntu${{ inputs.ubuntu_version }} # Numbast depends on conda installed CTK, thus system CTK should not matter.
         env:
           NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
 
