@@ -32,6 +32,8 @@ jobs:
         image: rapidsai/ci-conda:cuda12.2.2-ubuntu${{ inputs.ubuntu_version }}-py3.10
         env:
           NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
+    env:
+      RAPIDS_TESTS_DIR: ${{ github.workspace }}/test-results
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
