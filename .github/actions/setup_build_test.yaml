@@ -1,0 +1,32 @@
+name: Build and Test
+
+on:
+  workflow_call:
+    inputs:
+      cuda_version:
+        description: 'CUDA version'
+        required: true
+        default: '12.4'
+        type: string
+      python_version:
+        description: 'Python version'
+        required: true
+        default: '3.10'
+        type: string
+
+jobs:
+  build-and-test:
+    runs-on: linux-amd64-gpu-v100-latest-1
+    container: # GPU jobs must run in a container
+        image: ubuntu-20.04 # Numbast depends on conda installed CTK, to avoid interferrence, we use a clean ubuntu image
+        env:
+          NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Environment, Build and Test
+        run: |
+          ci/setup_build_test.sh ${{ inputs.cuda_version }} ${{ inputs.python_version }}
+
+      # Add your build and test steps here
