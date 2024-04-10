@@ -19,7 +19,7 @@ CONDA_RECIPE="conda/environment.yaml"
 
 # Install environments
 python ci/find_cudaversion.py $CONDA_RECIPE_TEMPLATE $CONDA_RECIPE $CUDATOOLKIT_VERSION $PYTHON_VERSION
-rapids-mamba-retry env create --yes -f $CONDA_RECIPE -n tests
+rapids-mamba-retry env create --yes -f $CONDA_RECIPE -n test
 
 # Temporarily allow unbound variables for conda activation.
 set +u
