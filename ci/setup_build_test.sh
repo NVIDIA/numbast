@@ -7,6 +7,8 @@ set -euo pipefail
 CUDATOOLKIT_VERSION=$1
 PYTHON_VERSION=$2
 
+. /opt/conda/etc/profile.d/conda.sh
+
 rapids-logger "Running Numbast Setup, Build and Tests."
 
 echo "CUDATOOLKIT_VERSION=${CUDATOOLKIT_VERSION}"
@@ -18,7 +20,7 @@ CONDA_RECIPE="conda/environment.yaml"
 # Install environments
 python ci/find_cudaversion.py $CONDA_RECIPE_TEMPLATE $CONDA_RECIPE $CUDATOOLKIT_VERSION $PYTHON_VERSION
 rapids-mamba-retry env create --yes -f $CONDA_RECIPE -n tests
-conda init && conda activate tests
+conda activate tests
 
 # Install AST_Canopy, Numbast and extensions
 pip install ast_canopy/
