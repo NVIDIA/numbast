@@ -16,6 +16,8 @@ jobs:
   pr-builder:
     needs:
       - checks
+      - legacy_tests
+      - frontier_tests
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.04
   checks:
@@ -23,3 +25,33 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.04
     with:
       enable_check_generated_files: false
+  legacy_tests:
+    name: Runs on legacy hardware and older CTK versions (V100, 12.3.3)
+    secrets: inherit
+    runs-on: linux-amd64-gpu-v100-latest-1
+    container: # GPU jobs must run in a container
+      image: ubuntu-20.04 # Numbast depends on conda installed CTK, to avoid interferrence, we use a clean ubuntu image
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Setup Environment, Build and Test
+        id: test
+        run: |
+          ci/setup_build_test.sh 12.3 3.10
+  frontier_tests:
+    name: Runs on newer hardware and latest CTK versions (A100, 12.4.0)
+    secrets: inherit
+    runs-on: linux-arm64-gpu-a100-latest-1
+    container: # GPU jobs must run in a container
+      image: ubuntu-latest # Numbast depends on conda installed CTK, to avoid interferrence, we use a clean ubuntu image
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Setup Environment, Build and Test
+        id: test
+        run: |
+          ci/setup_build_test.sh 12.4 3.10
