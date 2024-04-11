@@ -24,6 +24,7 @@ rapids-mamba-retry env create --yes -f $CONDA_RECIPE -n test
 # Temporarily allow unbound variables for conda activation.
 set +u
 conda activate test
+nvidia-smi
 conda list cuda
 set -u
 
