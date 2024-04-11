@@ -19,21 +19,21 @@ CONDA_RECIPE="conda/environment.yaml"
 
 # Install environments
 python ci/find_cudaversion.py $CONDA_RECIPE_TEMPLATE $CONDA_RECIPE $CUDATOOLKIT_VERSION $PYTHON_VERSION
-rapids-print-env
 rapids-mamba-retry env create --yes -f $CONDA_RECIPE -n test
 
 # Temporarily allow unbound variables for conda activation.
 set +u
 conda activate test
+conda list cuda
 set -u
 
 # Install AST_Canopy, Numbast and extensions
-pip install ast_canopy/
-pip install numbast/
-pip install numba_extensions/bf16
-pip install numba_extensions/fp16
-pip install numba_extensions/curand_device
-pip install numba_extensions/curand_host
+python -m pip install ast_canopy/
+python -m pip install numbast/
+python -m pip install numba_extensions/bf16
+python -m pip install numba_extensions/fp16
+python -m pip install numba_extensions/curand_device
+python -m pip install numba_extensions/curand_host
 
 # Run tests
 pytest \
