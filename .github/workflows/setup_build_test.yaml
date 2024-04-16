@@ -40,5 +40,3 @@ jobs:
       - name: Setup Environment, Build and Test
         run: |
           ci/setup_build_test.sh ${{ inputs.cuda_version }} ${{ inputs.python_version }}
-
-      # Add your build and test steps here
