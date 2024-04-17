@@ -49,6 +49,8 @@ curand_headers = [
 
 curand_files = [os.path.join(CUDA_INCLUDE_PATH, f) for f in curand_headers]
 
+curand_files += [os.path.normpath(p) for p in curand_files]
+
 # Mysteriously, clang AST sometimes fails to stick to the one cuda include path
 # for source range and instead uses the unwrapped path behind the symlink. E.g.
 # /usr/local/cuda-12.3/include/curand_uniform.h instead of
@@ -72,6 +74,9 @@ with open(os.path.join(CUDA_INCLUDE_PATH, "cuda.h"), "r") as f:
         logger.warn(
             f"Failed to parse CUDA version from cuda.h, some functionality in curand may not be properly bound. {e}"
         )
+
+
+curand_files = [h for h in curand_files if os.path.exists(h)]
 
 
 structs, functions, _, _, typedefs, enums = parse_declarations_from_source(

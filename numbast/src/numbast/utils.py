@@ -67,7 +67,10 @@ def deduplicate_overloads(func_name: str) -> str:
 
 
 def make_function_shim(
-    shim_name: str, func_name: str, return_type: str, params: list[pylibastcanopy.ParamVar]
+    shim_name: str,
+    func_name: str,
+    return_type: str,
+    params: list[pylibastcanopy.ParamVar],
 ) -> str:
     """Create a function shim layer template.
 

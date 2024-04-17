@@ -66,7 +66,14 @@ aliases = defaultdict(list)
 for typedef in typedefs:
     aliases[typedef.underlying_name].append(typedef.name)
 
-shim_writer = MemoryShimWriter(f'#include "{cuda_bf16}"\n')
+# WAR for NVBug 4549708: ABI mismatching between the calling convention of the
+# bf16 definition against the linked libary, causing a unspecified launch failure.
+pretext = f"""#define __FORCE_INCLUDE_CUDA_FP16_HPP_FROM_FP16_H__
+#define __FORCE_INCLUDE_CUDA_BF16_HPP_FROM_BF16_H__
+#include "{cuda_bf16}"
+"""
+
+shim_writer = MemoryShimWriter(pretext)
 
 numba_struct_types += bind_cxx_structs(
     shim_writer, structs, TYPE_SPECIALIZATION, DATA_MODEL_SPECIALIZATION, aliases

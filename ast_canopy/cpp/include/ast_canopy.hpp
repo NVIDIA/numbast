@@ -199,10 +199,6 @@ struct Declarations {
 };
 
 Declarations
-parse_declarations_from_ast(std::string_view ast_file_path,
-                            std::vector<std::string> files_to_retain);
-
-Declarations
 parse_declarations_from_command_line(std::vector<std::string> options,
                                      std::vector<std::string> files_to_retain);
 

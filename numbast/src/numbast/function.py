@@ -98,8 +98,8 @@ def bind_cxx_operator_overload_function(
     def impl(context, builder, sig, args):
         ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
         for ptr, ty, arg in zip(ptrs, sig.args, args):
-            if hasattr(ty, "decl"):
-                builder.store(arg, ptr, align=ty.decl.alignof_)
+            if hasattr(ty, "alignof_"):
+                builder.store(arg, ptr, align=ty.alignof_)
             else:
                 builder.store(arg, ptr)
 
@@ -202,8 +202,8 @@ def bind_cxx_non_operator_function(
     def impl(context, builder, sig, args):
         ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
         for ptr, ty, arg in zip(ptrs, sig.args, args):
-            if hasattr(ty, "decl"):
-                builder.store(arg, ptr, align=ty.decl.alignof_)
+            if hasattr(ty, "alignof_"):
+                builder.store(arg, ptr, align=ty.alignof_)
             else:
                 builder.store(arg, ptr)
 
