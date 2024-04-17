@@ -18,7 +18,7 @@ CONDA_RECIPE_TEMPLATE="conda/environment_template.yaml"
 CONDA_RECIPE="conda/environment.yaml"
 
 # Install environments
-python ci/find_cudaversion.py $CONDA_RECIPE_TEMPLATE $CONDA_RECIPE $CUDATOOLKIT_VERSION $PYTHON_VERSION
+python ci/instantiate_dep_yaml.py $CONDA_RECIPE_TEMPLATE $CONDA_RECIPE $CUDATOOLKIT_VERSION $PYTHON_VERSION
 rapids-print-env
 rapids-mamba-retry env create --yes -f $CONDA_RECIPE -n test
 
