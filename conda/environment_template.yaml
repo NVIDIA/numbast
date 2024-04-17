@@ -8,7 +8,7 @@ channels:
   - numba
   - conda-forge
 dependencies:
-  - python=3.10
+  - python={{ python_version }}
   - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
   - clangdev>=18 # >=18 supports CTK 12.3
   - numba
@@ -18,8 +18,8 @@ dependencies:
   - mypy
   - pre-commit
   - cxx-compiler
-  - cuda-version=12.4
+  - cuda-version={{ cuda_version }}
   - cuda-toolkit
-  - cuda-python=12.4
+  - cuda-python={{ cuda_version }}
   - pynvjitlink
   - scikit-build-core

@@ -186,8 +186,6 @@ def bind_cxx_struct(
             selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
             argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
             for ptr, ty, arg in zip(argptrs, sig.args, args):
-                # if hasattr(ty, "decl"):
-                # if hasattr(ty, "alignof_"):
                 if ty == s_type:
                     builder.store(arg, ptr, align=ty.alignof_)
                 else:
