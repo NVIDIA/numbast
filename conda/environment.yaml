@@ -4,8 +4,8 @@
 
 name: numbast
 channels:
-  - rapidsai-nightly
   - rapidsai
+  - rapidsai-nightly
   - numba
   - conda-forge
 dependencies:

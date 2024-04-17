@@ -5,6 +5,7 @@
 name: numbast
 channels:
   - rapidsai
+  - rapidsai-nightly
   - numba
   - conda-forge
 dependencies:
