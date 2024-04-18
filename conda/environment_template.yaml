@@ -5,6 +5,7 @@
 name: numbast
 channels:
   - rapidsai
+  - rapidsai-nightly
   - numba
   - conda-forge
 dependencies:
@@ -21,5 +22,5 @@ dependencies:
   - cuda-version={{ cuda_version }}
   - cuda-toolkit
   - cuda-python={{ cuda_version }}
-  - pynvjitlink
+  - pynvjitlink>=0.2.0
   - scikit-build-core
