@@ -64,7 +64,7 @@ Numbast can convert it into Numba bindings:
 ```python
 import os
 from ast_canopy import parse_declarations_from_source
-from numbast import bind_cxx_struct, bind_cxx_function, ShimWriter
+from numbast import bind_cxx_struct, bind_cxx_function, MemoryShimWriter
 
 from numba import types, cuda
 from numba.core.datamodel.models import PrimitiveModel
@@ -77,7 +77,7 @@ source = os.path.join(os.path.dirname(__file__), "demo.cuh")
 # parse the header with sm_80 compute capability.
 structs, functions, *_ = parse_declarations_from_source(source, [source], "sm_80")
 
-shim_writer = ShimWriter("shim.cu", f'#include "{source}"')
+shim_writer = MemoryShimWriter(f'#include "{source}"')
 
 # Make Numba bindings from the declarations.
 # New type "myfloat16" is a Number type, data model is PrimitiveModel.
@@ -89,7 +89,7 @@ hsqrt = bind_cxx_function(shim_writer, functions[1])
 `myfloat16` struct can now be used within Numba:
 
 ```python
-@cuda.jit(link=["shim.cu"])
+@cuda.jit(link=shim_writer.links())
 def kernel(arr):
     one = myfloat16(1.0)
     two = myfloat16(2.0)
