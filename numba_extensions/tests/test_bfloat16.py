@@ -29,6 +29,7 @@ from bf16 import (
     hexp,
     hexp2,
     hexp10,
+    get_shims,
 )
 
 import numpy as np
@@ -38,7 +39,7 @@ from numba.types import float16
 
 
 def test_ctor():
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel():
         a = nv_bfloat16(float64(1.0))
         b = nv_bfloat16(float32(2.0))
@@ -55,7 +56,7 @@ def test_ctor():
 
 
 def test_casts():
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(b, c, d, e, f, g, h):
         a = nv_bfloat16(3.14)
 
@@ -90,7 +91,7 @@ def test_casts():
     "dtype", [int16, int32, int64, uint16, uint32, uint64, float32]
 )
 def test_ctor_cast_loop(dtype):
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(a):
         a[0] = dtype(nv_bfloat16(dtype(3.14)))
 
@@ -104,7 +105,7 @@ def test_ctor_cast_loop(dtype):
 
 
 def test_arithmetic():
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(arith, logic):
         # Binary Arithmetic Operators
         a = nv_bfloat16(1.0)
@@ -172,7 +173,7 @@ def test_arithmetic():
 
 
 def test_math_func():
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(a):
         x = nv_bfloat16(3.14)
 

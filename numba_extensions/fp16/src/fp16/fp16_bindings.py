@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from ast_canopy import parse_declarations_from_source
 
-from numbast import bind_cxx_structs, bind_cxx_functions, ShimWriter
+from numbast import bind_cxx_structs, bind_cxx_functions, MemoryShimWriter
 
 from numba import types, config, cuda
 from numba.core.datamodel.models import PrimitiveModel, StructModel
@@ -73,14 +73,13 @@ functions_to_ignore = {
 
 numba_struct_types = []
 numba_functions = []
-shims = []
 
 aliases = defaultdict(list)
 for typedef in typedefs:
     aliases[typedef.underlying_name].append(typedef.name)
 
-shim_writer = ShimWriter(
-    "fp16_shim.cu", f'#include "{cuda_fp16}"\n' + f'#include "{cuda_bf16}"\n'
+shim_writer = MemoryShimWriter(
+    f'#include "{cuda_fp16}"\n' + f'#include "{cuda_bf16}"\n'
 )
 
 numba_struct_types += bind_cxx_structs(
@@ -98,9 +97,10 @@ for underlying_name, names in aliases.items():
     for name in names:
         if name not in globals() and underlying_name in globals():
             globals()[name] = globals()[underlying_name]
+globals().update({"get_shims": shim_writer.links})
 
-__all__ = list(
+__all__ = list(  # noqa: F822
     set(s.__name__ for s in numba_struct_types)
     | set(f.__name__ for f in numba_functions)
     | set(typedef.name for typedef in typedefs)
-)
+) + ["get_shims"]

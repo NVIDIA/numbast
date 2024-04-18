@@ -48,4 +48,11 @@ pytest \
     --continue-on-collection-errors \
     --cache-clear \
     --junitxml="${RAPIDS_TESTS_DIR}/junit-numbast.xml" \
+    numbast/
+
+pytest \
+    -v \
+    --continue-on-collection-errors \
+    --cache-clear \
+    --junitxml="${RAPIDS_TESTS_DIR}/junit-numbast.xml" \
     numba_extensions/

@@ -29,6 +29,7 @@ from bf16 import (
     h2rcp,
     h2rsqrt,
     h2sqrt,
+    get_shims,
 )
 
 
@@ -37,7 +38,7 @@ from numba import float32
 
 
 def test_ctor():
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel():
         x = nv_bfloat16(1.0)
         a = nv_bfloat162(x, x)
@@ -47,7 +48,7 @@ def test_ctor():
 
 
 def test_arithmetic():
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(arith, logic):
         one = nv_bfloat16(1.0)
         ten = nv_bfloat16(10.0)
@@ -119,7 +120,7 @@ def test_arithmetic():
 
 
 def test_math_functions():
-    @cuda.jit(link=["bf16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(arr):
         x = nv_bfloat16(3.14)
         x2 = nv_bfloat162(x, x)

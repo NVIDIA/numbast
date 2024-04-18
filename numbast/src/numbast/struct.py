@@ -25,7 +25,7 @@ from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
 )
-from numbast.shim_writer import ShimWriter
+from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int

@@ -28,7 +28,6 @@ repository = "https://github.com/NVIDIA/numbast"
 dev = ["ruff"]
 
 [tool.ruff.lint.per-file-ignores]
-# E402: module level import not at top of file
-# This is because pynvjitlink is needed to patch the numba cuda module to introduce the
-# python bindings for nvjitlink.
+# Ignore E402: Module level import not at top of file. This is because pynvjitlink
+# numba patch needs to be imported and patched before the shim writer imports.
 "__init__.py" = ["F401", "E402"]

@@ -25,6 +25,7 @@ from curand_device import (
     curandStatesPhilox4_32_10,
     curandStatesScrambledSobol64,
     states_arg_handlers,
+    get_shims,
 )
 
 from curand_host import (
@@ -49,14 +50,14 @@ repetitions = 50
 )
 def test_curand_int(States):
     # State initialization kernel
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def setup(states):
         i = cuda.grid(1)
         curand_init(1234, i, 0, states[i])
 
     # Random sampling kernel - computes the fraction of numbers with low bits set
     # from a random distribution.
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def generate_kernel(states, sample_count, results):
         i = cuda.grid(1)
         count = 0
@@ -113,12 +114,12 @@ def test_curand_int(States):
 )
 def test_curand_uniform(States):
     # State initialization kernel
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def setup(states):
         i = cuda.grid(1)
         curand_init(1234, i, 0, states[i])
 
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def count_upper_half(states, n, result):
         i = cuda.grid(1)
         count = 0
@@ -160,12 +161,12 @@ def test_curand_uniform(States):
 )
 def test_curand_normal(States):
     # State initialization kernel
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def setup(states):
         i = cuda.grid(1)
         curand_init(1234, i, 0, states[i])
 
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def count_within_1_std(states, n, result):
         i = cuda.grid(1)
         count = 0
@@ -213,7 +214,7 @@ def test_curand_sobol_scramble():
     ffi = cffi.FFI()
     vector_size = 64
 
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def setup(sobolDirectionVectors, sobolScrambleConstants, states):
         id = cuda.grid(1)
         dim = 3 * id
@@ -227,7 +228,7 @@ def test_curand_sobol_scramble():
                 states[dim + z],
             )
 
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def count_within_unit_sphere(states, n, result):
         id = cuda.grid(1)
         baseDim = 3 * id
@@ -280,7 +281,7 @@ def test_curand_poisson_simple():
     HOURS = 16
     cashiers_load = (0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 1, 1, 1, 1)
 
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def setup(states):
         i = cuda.grid(1)
         curand_init(1234, i, 0, states[i])
@@ -298,7 +299,7 @@ def test_curand_poisson_simple():
 
         return queue_length
 
-    @cuda.jit(link=["curand_shim.cu"], extensions=states_arg_handlers)
+    @cuda.jit(link=get_shims(), extensions=states_arg_handlers)
     def simple_device_API_kernel(states, queue):
         id = cuda.grid(1)
 
