@@ -473,7 +473,7 @@ def test_load_struct_function_execution_space(
 
 
 @pytest.mark.parametrize(
-    "cc, ans",
+    "cc, answer",
     [
         (
             "sm_70",
@@ -507,28 +507,28 @@ def test_load_struct_function_execution_space(
         ),
     ],
 )
-def test_load_by_cc(cc, ans, sample_load_by_cc_source):
+def test_load_by_cc(cc, answer, sample_load_by_cc_source):
     decls = parse_declarations_from_source(
         sample_load_by_cc_source, [sample_load_by_cc_source], cc
     )
 
     structs, functions, _, _, _, _ = decls
 
-    assert len(structs) == len(ans["structs"])
-    assert len(functions) == len(ans["functions"])
+    assert len(structs) == len(answer["structs"])
+    assert len(functions) == len(answer["functions"])
 
-    # We test it with a zip iterator of ans["struct"] to also make sure that
+    # We test it with a zip iterator of answer["struct"] to also make sure that
     # the AST parsing respects the definition order by user. Similarly for functions
     # below.
-    for s, ans_s in zip(structs, ans["structs"]):
-        assert s.name == ans_s["name"]
-        assert len(s.methods) == len(ans_s["methods"])
-        assert len(s.fields) == len(ans_s["fields"])
-        for m, ans_s_m_name in zip(s.methods, ans_s["methods"]):
-            assert m.name == ans_s_m_name
-        for f, ans_s_f_name in zip(s.fields, ans_s["fields"]):
-            assert f.name == ans_s_f_name
+    for s, answer_s in zip(structs, answer["structs"]):
+        assert s.name == answer_s["name"]
+        assert len(s.methods) == len(answer_s["methods"])
+        assert len(s.fields) == len(answer_s["fields"])
+        for m, answer_s_m_name in zip(s.methods, answer_s["methods"]):
+            assert m.name == answer_s_m_name
+        for f, answer_s_f_name in zip(s.fields, answer_s["fields"]):
+            assert f.name == answer_s_f_name
 
-    for f, ans_f in zip(functions, ans["functions"]):
-        assert f.name == ans_f["name"]
-        assert f.return_type.name == ans_f["return_type"]
+    for f, answer_f in zip(functions, answer["functions"]):
+        assert f.name == answer_f["name"]
+        assert f.return_type.name == answer_f["return_type"]

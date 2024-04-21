@@ -10,7 +10,7 @@ Canopy [ka·nuh·pee]
 
 AST_Canopy is a tool that seiralizes the top level declarations from the abstract syntax tree using `clangTooling`.
 
-Additionally, this pacakge can maintain translation rules from C++ semantics to python semantics (such as mapping `operator +(const foo &lhs, const foo &rhs)` to `operator.add`, as well as providing functions to separate a arithmetic opertor from a conversion operator). *It is a non-goal for this package to build a python binding for clangTooling.*
+Additionally, this package can maintain translation rules from C++ semantics to python semantics (such as mapping `operator +(const foo &lhs, const foo &rhs)` to `operator.add`, as well as providing functions to separate a arithmetic operator from a conversion operator). *It is a non-goal for this package to build a python binding for clangTooling.*
 
 ## Main APIs:
 

@@ -93,7 +93,7 @@ def make_curand_states(curand_state_decl: Struct):
 
     curandStateDtype = np.dtype(state_fields, align=True)
 
-    # Hold an array of cuRAND states - somewhat analagous to a curandState* in
+    # Hold an array of cuRAND states - somewhat analogous to a curandState* in
     # C/C++.
 
     class CurandStates:

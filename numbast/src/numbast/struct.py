@@ -158,7 +158,7 @@ def bind_cxx_struct(
         # FIXME: temporary solution for mismatching function prototype against definition.
         # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
         # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-        # is to pass all params by pointer and dereference them in shim. See deferencing at the
+        # is to pass all params by pointer and dereference them in shim. See dereferencing at the
         # shim generation below.
         ctor_shim_decl = declare_device(
             func_name,
@@ -318,7 +318,7 @@ def bind_cxx_structs(
     for s in structs:
         # Determine the type specialization and data model specialization
         if s.name.startswith("unnamed"):
-            # Any alias for the unamed object should suffice.
+            # Any alias for the unnamed object should suffice.
             alias = aliases[s.name][0]
             type_spec = parent_types[alias]
             data_model_spec = data_models[alias]

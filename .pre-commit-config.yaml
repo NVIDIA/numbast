@@ -18,3 +18,11 @@ repos:
     rev: 'v17.0.6'
     hooks:
     -   id: clang-format
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.2.4
+  hooks:
+  - id: codespell
+    additional_dependencies:
+      - tomli
+    args: ["--toml", "pyproject.toml"]
