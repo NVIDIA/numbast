@@ -150,6 +150,10 @@ def parse_declarations_from_source(
         A tuple containing lists of declaration objects from the source file.
         See decl.py and pylibastcanopy.pyi for the declaration object types.
     """
+
+    if not os.path.exists(source_file_path):
+        raise FileNotFoundError(f"File not found: {source_file_path}")
+
     if cccl_root:
         cccl_libs = [
             os.path.join(cccl_root, "libcudacxx", "include"),

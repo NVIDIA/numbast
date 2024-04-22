@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import types
 
 from llvmlite import ir
 
@@ -18,6 +17,7 @@ from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
+from pylibastcanopy import access_kind
 from ast_canopy.decl import Struct
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
@@ -76,8 +76,6 @@ def bind_cxx_struct(
     shim: str
         The generated shim layer code for struct methods.
     """
-    # Python API
-    S = types.new_class(struct_decl.name)
 
     # Typing
     class S_type(parent_type):
@@ -87,6 +85,9 @@ def bind_cxx_struct(
             self.bitwidth = struct_decl.sizeof_ * 8
 
     s_type = S_type(struct_decl)
+
+    # Python API
+    S = type(struct_decl.name, (), {"_nbtype": s_type})
 
     # Any type that was parsed from C++ should be added to type record:
     # It also needs to happen before method typings - because copy constructors
@@ -119,18 +120,22 @@ def bind_cxx_struct(
     # ----------------------------------------------------------------------------------
     # Attributes Typing and Lowering:
     if data_model == StructModel:
+        public_fields = {
+            f.name: f for f in struct_decl.fields if f.access == access_kind.public_
+        }
 
         @register_attr
         class S_attr(AttributeTemplate):
             key = s_type
 
             def generic_resolve(self, typ, attr):
-                for f in struct_decl.fields:
-                    if f.name == attr:
-                        return to_numba_type(f.type_.unqualified_non_ref_type_name)
-                raise AttributeError(attr)
+                try:
+                    ty_name = public_fields[attr].type_.unqualified_non_ref_type_name
+                    return to_numba_type(ty_name)
+                except KeyError:
+                    raise AttributeError(attr)
 
-        for f in struct_decl.fields:
+        for f in public_fields.values():
             make_attribute_wrapper(S_type, f.name, f.name)
 
     shim = ""
