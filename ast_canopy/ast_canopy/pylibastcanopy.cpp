@@ -36,6 +36,11 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .value("non_type", template_param_kind::non_type)
       .value("template_", template_param_kind::template_);
 
+  py::enum_<access_kind>(m, "access_kind")
+      .value("public_", access_kind::public_)
+      .value("protected_", access_kind::protected_)
+      .value("private_", access_kind::private_);
+
   py::class_<Enum>(m, "Enum")
       .def(py::init<const clang::EnumDecl *>())
       .def_readwrite("name", &Enum::name)
@@ -47,7 +52,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 3)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error("Invalid enum state during unpickle!");
             return Enum{t[0].cast<std::string>(),
                         t[1].cast<std::vector<std::string>>(),
                         t[2].cast<std::vector<std::string>>()};
@@ -70,7 +75,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 4)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error("Invalid type state during unpickle!");
             return Type{t[0].cast<std::string>(), t[1].cast<std::string>(),
                         t[2].cast<bool>(), t[3].cast<bool>()};
           }));
@@ -78,16 +83,20 @@ PYBIND11_MODULE(pylibastcanopy, m) {
   py::class_<Field>(m, "Field")
       .def_readwrite("name", &Field::name)
       .def_readwrite("type_", &Field::type)
+      .def_readwrite("access", &Field::access)
       .def("__repr__",
            [](const Field &f) {
              return "<Field: " + f.name + " " + f.type.name + ">";
            })
       .def(py::pickle(
-          [](const Field &f) { return py::make_tuple(f.name, f.type); },
+          [](const Field &f) {
+            return py::make_tuple(f.name, f.type, f.access);
+          },
           [](py::tuple t) {
-            if (t.size() != 2)
-              throw std::runtime_error("Invalid state!");
-            return Field{t[0].cast<std::string>(), t[1].cast<Type>()};
+            if (t.size() != 3)
+              throw std::runtime_error("Invalid field state during unpickle!");
+            return Field{t[0].cast<std::string>(), t[1].cast<Type>(),
+                         t[2].cast<access_kind>()};
           }));
 
   py::class_<ParamVar>(m, "ParamVar")
@@ -102,7 +111,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           [](const ParamVar &p) { return py::make_tuple(p.name, p.type); },
           [](py::tuple t) {
             if (t.size() != 2)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error(
+                  "Invalid ParamVar state during unpickle!");
             return ParamVar{t[0].cast<std::string>(), t[1].cast<Type>()};
           }));
 
@@ -120,7 +130,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 3)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error(
+                  "Invalid template param state during unpickle!");
             return TemplateParam{t[0].cast<std::string>(),
                                  t[1].cast<template_param_kind>(),
                                  t[2].cast<Type>()};
@@ -138,7 +149,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 4)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error(
+                  "Invalid function state during unpickle!");
             return Function{t[0].cast<std::string>(), t[1].cast<Type>(),
                             t[2].cast<std::vector<ParamVar>>(),
                             t[3].cast<execution_space>()};
@@ -153,7 +165,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 2)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error(
+                  "Invalid template state during unpickle!");
             return Template{t[0].cast<std::vector<TemplateParam>>(),
                             t[1].cast<std::size_t>()};
           }));
@@ -169,7 +182,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 2)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error(
+                  "Invalid function template state during unpickle!");
             Template tmpl = t[0].cast<Template>();
             return FunctionTemplate{tmpl.template_parameters,
                                     tmpl.num_min_required_args,
@@ -191,7 +205,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 2)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error(
+                  "Invalid class template state during unpickle!");
             Function f = t[0].cast<Function>();
             return Method{f.name, f.return_type, f.params, f.exec_space,
                           t[1].cast<method_kind>()};
@@ -215,7 +230,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 9)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error("Invalid record state during unpickle!");
             return Record{t[0].cast<std::string>(),
                           t[1].cast<std::vector<Field>>(),
                           t[2].cast<std::vector<Method>>(),
@@ -236,7 +251,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           },
           [](py::tuple t) {
             if (t.size() != 2)
-              throw std::runtime_error("Invalid state!");
+              throw std::runtime_error(
+                  "Invalid typedef state during unpickle!");
             return Typedef{t[0].cast<std::string>(), t[1].cast<std::string>()};
           }));
 

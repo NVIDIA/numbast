@@ -17,3 +17,14 @@ private:
 protected:
   void Bar4(); // Protected
 };
+
+struct Baz {
+private:
+  int x;
+
+public:
+  int y;
+
+protected:
+  int z;
+};
