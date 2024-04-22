@@ -85,7 +85,7 @@ def bind_cxx_operator_overload_function(
     # FIXME: temporary solution for mismatching function prototype against definition.
     # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
     # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-    # is to pass all params by pointer and dereference them in shim. See deferencing at the
+    # is to pass all params by pointer and dereference them in shim. See dereferencing at the
     # shim generation below.
     func = declare_device(
         shim_func_name, return_type(*map(nbtypes.CPointer, param_types))

@@ -1,0 +1,5 @@
+[tool.codespell]
+# ignore short words, as they are mostly abbreviations
+ignore-regex = "\\b(.{1,4})\\b"
+builtin = "clear"
+quiet-level = 3

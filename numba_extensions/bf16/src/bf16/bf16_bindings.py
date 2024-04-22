@@ -67,7 +67,7 @@ for typedef in typedefs:
     aliases[typedef.underlying_name].append(typedef.name)
 
 # WAR for NVBug 4549708: ABI mismatching between the calling convention of the
-# bf16 definition against the linked libary, causing a unspecified launch failure.
+# bf16 definition against the linked library, causing a unspecified launch failure.
 pretext = f"""#define __FORCE_INCLUDE_CUDA_FP16_HPP_FROM_FP16_H__
 #define __FORCE_INCLUDE_CUDA_BF16_HPP_FROM_BF16_H__
 #include "{cuda_bf16}"
