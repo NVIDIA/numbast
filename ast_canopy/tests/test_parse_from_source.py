@@ -6,7 +6,7 @@ import pickle
 
 import pytest
 
-from pylibastcanopy import template_param_kind, execution_space
+from pylibastcanopy import template_param_kind, execution_space, access_kind
 from ast_canopy import parse_declarations_from_source
 
 
@@ -383,7 +383,7 @@ def test_load_ast_access_specifiers(sample_access_specifier_source, test_pickle)
         pickled = [pickle.dumps(s) for s in structs]
         structs = [pickle.loads(p) for p in pickled]
 
-    assert len(structs) == 2
+    assert len(structs) == 3
 
     assert len(structs[0].methods) == 1  # Only 1 public method
     assert structs[0].methods[0].name == "Bar2"
@@ -391,6 +391,20 @@ def test_load_ast_access_specifiers(sample_access_specifier_source, test_pickle)
     assert len(structs[1].methods) == 2  # 2 public methods
     assert structs[1].methods[0].name == "Bar1"
     assert structs[1].methods[1].name == "Bar2"
+
+    # All fields are visible, with access specifier information.
+    assert len(structs[2].fields) == 3
+    assert structs[2].fields[0].name == "x"
+    assert structs[2].fields[0].type_.name == "int"
+    assert structs[2].fields[0].access == access_kind.private_
+
+    assert structs[2].fields[1].name == "y"
+    assert structs[2].fields[1].type_.name == "int"
+    assert structs[2].fields[1].access == access_kind.public_
+
+    assert structs[2].fields[2].name == "z"
+    assert structs[2].fields[2].type_.name == "int"
+    assert structs[2].fields[2].access == access_kind.protected_
 
 
 def test_load_enum(sample_enum_source, test_pickle):

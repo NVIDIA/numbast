@@ -30,6 +30,7 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
 
   name = RD->getNameAsString();
 
+  // Class default access specifier is private, struct is public.
   AS access = RD->isClass() ? AS::AS_private : AS::AS_public;
 
   fields.reserve(std::distance(RD->field_begin(), RD->field_end()));
@@ -37,14 +38,21 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   auto DC = static_cast<clang::DeclContext>(*RD);
 
   for (auto const *D : DC.decls()) {
+    // Scan all declarations, if the declaration is a access specifier,
+    // update access for all following declarations.
     if (auto const *ASD = clang::dyn_cast<clang::AccessSpecDecl>(D)) {
       access = ASD->getAccess();
+      continue;
     }
 
+    // Include all fields regardless of access specifier, downstream
+    // tools needs all fields to create type with proper size and alignment.
+    if (auto const *FD = clang::dyn_cast<clang::FieldDecl>(D)) {
+      fields.emplace_back(Field(FD, access));
+    }
+
+    // Skip Non-public function, nested class and template declarations
     if (access == AS::AS_public) {
-      if (auto const *FD = clang::dyn_cast<clang::FieldDecl>(D)) {
-        fields.emplace_back(Field(FD));
-      }
 
       if (auto const *MD = clang::dyn_cast<clang::CXXMethodDecl>(D)) {
         if (MD->isImplicit())
