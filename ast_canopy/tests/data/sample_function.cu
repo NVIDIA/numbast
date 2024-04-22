@@ -1,3 +1,7 @@
+// clang-format off
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+// clang-format on
 int __device__ add(int a, int b) { return a + b; }
 
 int __device__ mul(const int &a, int const *b) { return a * (*b); }
