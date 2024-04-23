@@ -29,7 +29,7 @@ into three categories:
 2. Find an issue to work on. The best way is to look for the [good first issue](https://github.com/nvidia/numbast/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
     or [help wanted](https://github.com/nvidia/numbast/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) labels
 3. Comment on the issue saying you are going to work on it.
-4. Get familar with the developer guide relevant for you:
+4. Get familiar with the developer guide relevant for you:
     * TBA
 5. Code! Make sure to update unit tests!
 6. When done, [create your pull request](https://github.com/nvidia/numbast/compare).

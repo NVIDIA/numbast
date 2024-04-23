@@ -1,5 +1,5 @@
 from _typeshed import Incomplete
-from typing import ClassVar, List, overload
+from typing import ClassVar, overload
 
 class ClassTemplate(Template):
     num_min_required_args: int
@@ -7,21 +7,22 @@ class ClassTemplate(Template):
     def __init__(self, *args, **kwargs) -> None: ...
 
 class Declarations:
-    class_templates: List[ClassTemplate]
-    enums: List[Enum]
-    function_templates: List[FunctionTemplate]
-    functions: List[Function]
-    records: List[Record]
-    typedefs: List[Typedef]
+    class_templates: list[ClassTemplate]
+    enums: list[Enum]
+    function_templates: list[FunctionTemplate]
+    functions: list[Function]
+    records: list[Record]
+    typedefs: list[Typedef]
     def __init__(self, *args, **kwargs) -> None: ...
 
 class Enum:
-    enumerator_values: List[str]
-    enumerators: List[str]
+    enumerator_values: list[str]
+    enumerators: list[str]
     name: str
     def __init__(self, arg0) -> None: ...
 
 class Field:
+    access: access_kind
     name: str
     type_: Type
     def __init__(self, *args, **kwargs) -> None: ...
@@ -29,7 +30,7 @@ class Field:
 class Function:
     exec_space: execution_space
     name: str
-    params: List[ParamVar]
+    params: list[ParamVar]
     return_type: Type
     def __init__(self, *args, **kwargs) -> None: ...
 
@@ -50,17 +51,17 @@ class ParamVar:
 
 class Record:
     alignof_: int
-    fields: List[Field]
-    methods: List[Method]
+    fields: list[Field]
+    methods: list[Method]
     name: str
-    nested_class_templates: List[ClassTemplate]
-    nested_records: List[Record]
+    nested_class_templates: list[ClassTemplate]
+    nested_records: list[Record]
     sizeof_: int
-    templated_methods: List[FunctionTemplate]
+    templated_methods: list[FunctionTemplate]
     def __init__(self, *args, **kwargs) -> None: ...
 
 class Template:
-    template_parameters: List[TemplateParam]
+    template_parameters: list[TemplateParam]
     def __init__(self, *args, **kwargs) -> None: ...
 
 class TemplateParam:
@@ -83,6 +84,23 @@ class Typedef:
     name: str
     underlying_name: str
     def __init__(self, *args, **kwargs) -> None: ...
+
+class access_kind:
+    __members__: ClassVar[dict] = ...  # read-only
+    __entries: ClassVar[dict] = ...
+    private_: ClassVar[access_kind] = ...
+    protected_: ClassVar[access_kind] = ...
+    public_: ClassVar[access_kind] = ...
+    def __init__(self, value: int) -> None: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __hash__(self) -> int: ...
+    def __index__(self) -> int: ...
+    def __int__(self) -> int: ...
+    def __ne__(self, other: object) -> bool: ...
+    @property
+    def name(self) -> str: ...
+    @property
+    def value(self) -> int: ...
 
 class execution_space:
     __members__: ClassVar[dict] = ...  # read-only
@@ -141,7 +159,6 @@ class template_param_kind:
     @property
     def value(self) -> int: ...
 
-def parse_declarations_from_ast(arg0: str, arg1: List[str]) -> Declarations: ...
 def parse_declarations_from_command_line(
-    arg0: List[str], arg1: List[str]
+    arg0: list[str], arg1: list[str]
 ) -> Declarations: ...

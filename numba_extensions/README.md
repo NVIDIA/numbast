@@ -4,6 +4,8 @@
 
 This folder contains several Numba bindings for CUDA libraries created via `Numbast`.
 
+Beware these bindings are built only to demonstrate the usage of Numbast and Canopy.
+
 ### Requirements
 
 Numbast is required to run these extensions.

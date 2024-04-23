@@ -6,7 +6,7 @@ import pickle
 
 import pytest
 
-from pylibastcanopy import template_param_kind, execution_space
+from pylibastcanopy import template_param_kind, execution_space, access_kind
 from ast_canopy import parse_declarations_from_source
 
 
@@ -383,7 +383,7 @@ def test_load_ast_access_specifiers(sample_access_specifier_source, test_pickle)
         pickled = [pickle.dumps(s) for s in structs]
         structs = [pickle.loads(p) for p in pickled]
 
-    assert len(structs) == 2
+    assert len(structs) == 3
 
     assert len(structs[0].methods) == 1  # Only 1 public method
     assert structs[0].methods[0].name == "Bar2"
@@ -391,6 +391,20 @@ def test_load_ast_access_specifiers(sample_access_specifier_source, test_pickle)
     assert len(structs[1].methods) == 2  # 2 public methods
     assert structs[1].methods[0].name == "Bar1"
     assert structs[1].methods[1].name == "Bar2"
+
+    # All fields are visible, with access specifier information.
+    assert len(structs[2].fields) == 3
+    assert structs[2].fields[0].name == "x"
+    assert structs[2].fields[0].type_.name == "int"
+    assert structs[2].fields[0].access == access_kind.private_
+
+    assert structs[2].fields[1].name == "y"
+    assert structs[2].fields[1].type_.name == "int"
+    assert structs[2].fields[1].access == access_kind.public_
+
+    assert structs[2].fields[2].name == "z"
+    assert structs[2].fields[2].type_.name == "int"
+    assert structs[2].fields[2].access == access_kind.protected_
 
 
 def test_load_enum(sample_enum_source, test_pickle):
@@ -473,7 +487,7 @@ def test_load_struct_function_execution_space(
 
 
 @pytest.mark.parametrize(
-    "cc, ans",
+    "cc, answer",
     [
         (
             "sm_70",
@@ -507,28 +521,28 @@ def test_load_struct_function_execution_space(
         ),
     ],
 )
-def test_load_by_cc(cc, ans, sample_load_by_cc_source):
+def test_load_by_cc(cc, answer, sample_load_by_cc_source):
     decls = parse_declarations_from_source(
         sample_load_by_cc_source, [sample_load_by_cc_source], cc
     )
 
     structs, functions, _, _, _, _ = decls
 
-    assert len(structs) == len(ans["structs"])
-    assert len(functions) == len(ans["functions"])
+    assert len(structs) == len(answer["structs"])
+    assert len(functions) == len(answer["functions"])
 
-    # We test it with a zip iterator of ans["struct"] to also make sure that
+    # We test it with a zip iterator of answer["struct"] to also make sure that
     # the AST parsing respects the definition order by user. Similarly for functions
     # below.
-    for s, ans_s in zip(structs, ans["structs"]):
-        assert s.name == ans_s["name"]
-        assert len(s.methods) == len(ans_s["methods"])
-        assert len(s.fields) == len(ans_s["fields"])
-        for m, ans_s_m_name in zip(s.methods, ans_s["methods"]):
-            assert m.name == ans_s_m_name
-        for f, ans_s_f_name in zip(s.fields, ans_s["fields"]):
-            assert f.name == ans_s_f_name
+    for s, answer_s in zip(structs, answer["structs"]):
+        assert s.name == answer_s["name"]
+        assert len(s.methods) == len(answer_s["methods"])
+        assert len(s.fields) == len(answer_s["fields"])
+        for m, answer_s_m_name in zip(s.methods, answer_s["methods"]):
+            assert m.name == answer_s_m_name
+        for f, answer_s_f_name in zip(s.fields, answer_s["fields"]):
+            assert f.name == answer_s_f_name
 
-    for f, ans_f in zip(functions, ans["functions"]):
-        assert f.name == ans_f["name"]
-        assert f.return_type.name == ans_f["return_type"]
+    for f, answer_f in zip(functions, answer["functions"]):
+        assert f.name == answer_f["name"]
+        assert f.return_type.name == answer_f["return_type"]

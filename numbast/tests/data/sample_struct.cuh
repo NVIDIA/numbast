@@ -2,12 +2,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
-typedef struct A {
-} A1;
 
-typedef struct {
-} B;
+struct Foo {
+public:
+  int x;
 
-struct C {};
+private:
+  int y;
 
-typedef C C1;
+protected:
+  int z;
+};

@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import types
 
 from llvmlite import ir
 
@@ -18,6 +17,7 @@ from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
+from pylibastcanopy import access_kind
 from ast_canopy.decl import Struct
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
@@ -25,7 +25,7 @@ from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
 )
-from numbast.shim_writer import ShimWriter
+from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int
@@ -76,8 +76,6 @@ def bind_cxx_struct(
     shim: str
         The generated shim layer code for struct methods.
     """
-    # Python API
-    S = types.new_class(struct_decl.name)
 
     # Typing
     class S_type(parent_type):
@@ -87,6 +85,9 @@ def bind_cxx_struct(
             self.bitwidth = struct_decl.sizeof_ * 8
 
     s_type = S_type(struct_decl)
+
+    # Python API
+    S = type(struct_decl.name, (), {"_nbtype": s_type})
 
     # Any type that was parsed from C++ should be added to type record:
     # It also needs to happen before method typings - because copy constructors
@@ -119,18 +120,22 @@ def bind_cxx_struct(
     # ----------------------------------------------------------------------------------
     # Attributes Typing and Lowering:
     if data_model == StructModel:
+        public_fields = {
+            f.name: f for f in struct_decl.fields if f.access == access_kind.public_
+        }
 
         @register_attr
         class S_attr(AttributeTemplate):
             key = s_type
 
             def generic_resolve(self, typ, attr):
-                for f in struct_decl.fields:
-                    if f.name == attr:
-                        return to_numba_type(f.type_.unqualified_non_ref_type_name)
-                raise AttributeError(attr)
+                try:
+                    ty_name = public_fields[attr].type_.unqualified_non_ref_type_name
+                    return to_numba_type(ty_name)
+                except KeyError:
+                    raise AttributeError(attr)
 
-        for f in struct_decl.fields:
+        for f in public_fields.values():
             make_attribute_wrapper(S_type, f.name, f.name)
 
     shim = ""
@@ -158,7 +163,7 @@ def bind_cxx_struct(
         # FIXME: temporary solution for mismatching function prototype against definition.
         # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
         # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-        # is to pass all params by pointer and dereference them in shim. See deferencing at the
+        # is to pass all params by pointer and dereference them in shim. See dereferencing at the
         # shim generation below.
         ctor_shim_decl = declare_device(
             func_name,
@@ -186,8 +191,6 @@ def bind_cxx_struct(
             selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
             argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
             for ptr, ty, arg in zip(argptrs, sig.args, args):
-                # if hasattr(ty, "decl"):
-                # if hasattr(ty, "alignof_"):
                 if ty == s_type:
                     builder.store(arg, ptr, align=ty.alignof_)
                 else:
@@ -320,7 +323,7 @@ def bind_cxx_structs(
     for s in structs:
         # Determine the type specialization and data model specialization
         if s.name.startswith("unnamed"):
-            # Any alias for the unamed object should suffice.
+            # Any alias for the unnamed object should suffice.
             alias = aliases[s.name][0]
             type_spec = parent_types[alias]
             data_model_spec = data_models[alias]

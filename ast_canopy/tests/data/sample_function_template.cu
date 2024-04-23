@@ -1,3 +1,7 @@
+// clang-format off
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+// clang-format on
 enum class E { A, B, C };
 
 // Type Template, Non-type template

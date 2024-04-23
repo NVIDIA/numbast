@@ -33,6 +33,8 @@ enum class method_kind {
 
 enum class template_param_kind { type, non_type, template_ };
 
+enum class access_kind { public_, protected_, private_ };
+
 struct Enum {
   Enum(const std::string &name, const std::vector<std::string> &enumerators,
        const std::vector<std::string> &enumerator_values)
@@ -63,11 +65,13 @@ private:
 };
 
 struct Field {
-  Field(const clang::FieldDecl *FD);
-  Field(const std::string &name, const Type &type) : name(name), type(type){};
+  Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS);
+  Field(const std::string &name, const Type &type, const access_kind &access)
+      : name(name), type(type), access(access){};
 
   std::string name;
   Type type;
+  access_kind access;
 };
 
 struct ParamVar {
@@ -197,10 +201,6 @@ struct Declarations {
   std::vector<Typedef> typedefs;
   std::vector<Enum> enums;
 };
-
-Declarations
-parse_declarations_from_ast(std::string_view ast_file_path,
-                            std::vector<std::string> files_to_retain);
 
 Declarations
 parse_declarations_from_command_line(std::vector<std::string> options,

@@ -19,6 +19,7 @@ from fp16 import (
     h2rcp,
     h2rsqrt,
     h2sqrt,
+    get_shims,
 )
 
 import numpy as np
@@ -27,7 +28,7 @@ import numba.cuda as cuda
 
 
 def test_ctor():
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel():
         x = half(1.0)
         a = half2(x, x)
@@ -37,7 +38,7 @@ def test_ctor():
 
 
 def test_arithmetic():
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(arith, logic):
         one = half(1.0)
         ten = half(10.0)
@@ -109,7 +110,7 @@ def test_arithmetic():
 
 
 def test_math_functions():
-    @cuda.jit(link=["fp16_shim.cu"])
+    @cuda.jit(link=get_shims())
     def simple_kernel(arr):
         x = half(3.14)
         x2 = half2(x, x)

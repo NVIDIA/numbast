@@ -19,7 +19,7 @@ from numbast.utils import (
     make_device_caller_with_nargs,
     make_function_shim,
 )
-from numbast.shim_writer import ShimWriter
+from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
 function_binding_shim_template = """
 extern "C" __device__ int
@@ -85,7 +85,7 @@ def bind_cxx_operator_overload_function(
     # FIXME: temporary solution for mismatching function prototype against definition.
     # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
     # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-    # is to pass all params by pointer and dereference them in shim. See deferencing at the
+    # is to pass all params by pointer and dereference them in shim. See dereferencing at the
     # shim generation below.
     func = declare_device(
         shim_func_name, return_type(*map(nbtypes.CPointer, param_types))
@@ -98,8 +98,8 @@ def bind_cxx_operator_overload_function(
     def impl(context, builder, sig, args):
         ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
         for ptr, ty, arg in zip(ptrs, sig.args, args):
-            if hasattr(ty, "decl"):
-                builder.store(arg, ptr, align=ty.decl.alignof_)
+            if hasattr(ty, "alignof_"):
+                builder.store(arg, ptr, align=ty.alignof_)
             else:
                 builder.store(arg, ptr)
 
@@ -202,8 +202,8 @@ def bind_cxx_non_operator_function(
     def impl(context, builder, sig, args):
         ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
         for ptr, ty, arg in zip(ptrs, sig.args, args):
-            if hasattr(ty, "decl"):
-                builder.store(arg, ptr, align=ty.decl.alignof_)
+            if hasattr(ty, "alignof_"):
+                builder.store(arg, ptr, align=ty.alignof_)
             else:
                 builder.store(arg, ptr)
 
