@@ -277,7 +277,8 @@ def test_torchbf16():
     out = torch.zeros([2,2], device=torch.device('cuda:0'), dtype=torch.bfloat16)
     out = ProxyTorch(out)
 
-    torch_add[16, 16](aa, bb, out)
-    print(out)
-    print("wait...")
+    threadsperblock = (16, 16)
+    blockspergrid = (1, 1)
+    torch_add[blockspergrid, threadsperblock](aa, bb, out)
+    assert torch.equal(twos, out)
 
