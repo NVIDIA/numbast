@@ -8,6 +8,8 @@ channels:
   - rapidsai-nightly
   - numba
   - conda-forge
+  - pytorch
+  - nvidia
 dependencies:
   - python=3.10
   - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
@@ -24,3 +26,5 @@ dependencies:
   - cuda-python=12.4
   - pynvjitlink>=0.2.0
   - scikit-build-core
+  - pytorch
+  - pytorch-cuda=12.1
