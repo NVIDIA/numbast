@@ -16,8 +16,9 @@ jobs:
   pr-builder:
     needs:
       - checks
-      - legacy_tests
-      - frontier_tests
+      # - legacy_tests
+      # - frontier_tests
+      - pytorch_tests
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.04
   checks:
