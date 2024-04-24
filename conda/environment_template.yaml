@@ -26,5 +26,6 @@ dependencies:
   - cuda-python={{ cuda_version }}
   - pynvjitlink>=0.2.0
   - scikit-build-core
-  - pytorch
-  - pytorch-cuda=12.1
+  - pip
+  - pip:
+    - torch
