@@ -29,8 +29,6 @@ from numba import int16, int32, int64, uint16, uint32, uint64, float32, float64
 
 import numpy as np
 
-pytest.skip(reason="skip until test is fixed", allow_module_level=True)
-
 
 def test_ctor():
     @cuda.jit(link=get_shims())
