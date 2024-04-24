@@ -29,4 +29,5 @@ dependencies:
   - pip
   - pip:
     - torch
+    - torchvision
     - ml_dtypes
