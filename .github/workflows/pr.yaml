@@ -26,13 +26,13 @@ jobs:
     with:
       enable_check_generated_files: false
   legacy_tests:
-    name: Runs on legacy hardware and older CTK versions (V100, 12.3)
+    name: Runs on legacy hardware and older CTK versions (V100, 12.1)
     needs: checks
     secrets: inherit
     uses: ./.github/workflows/setup_build_test.yaml
     with:
       ubuntu_version: "20.04"
-      cuda_version: "12.3"
+      cuda_version: "12.1"
       python_version: "3.10"
       GPU: "v100"
       CPU: "amd64"
