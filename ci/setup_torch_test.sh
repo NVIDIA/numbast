@@ -12,7 +12,7 @@ g++-12 libedit-dev -y
 wget https://apt.llvm.org/llvm.sh
 bash llvm.sh 18
 
-apt-get install libclang-18-dev
+apt-get install libclang-18-dev -y
 
 update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 10
 update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 10
