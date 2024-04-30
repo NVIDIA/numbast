@@ -20,7 +20,7 @@ dependencies:
   - pre-commit
   - cxx-compiler
   - cuda-version={{ cuda_version }}
-  - cuda-toolkit
+  - cuda-toolkit={{ cuda_version }}
   - cuda-python={{ cuda_version }}
   - pynvjitlink>=0.2.0
   - scikit-build-core
