@@ -1,28 +1,9 @@
 name: Test Torch and bfloat16
 
 on:
-  workflow_call:
-    inputs:
-      ubuntu_version:
-        description: 'Ubuntu version'
-        required: true
-        type: string
-      cuda_version:
-        description: 'CUDA version'
-        required: true
-        type: string
-      python_version:
-        description: 'Python version'
-        required: true
-        type: string
-      GPU:
-        description: 'GPU model'
-        required: true
-        type: string
-      CPU:
-        description: 'CPU model'
-        required: true
-        type: string
+ push:
+    branches:
+      - "pull-request/[0-9]+"
 
 jobs:
   torch:
