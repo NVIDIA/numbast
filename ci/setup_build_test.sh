@@ -27,6 +27,10 @@ set +u
 conda activate test
 set -u
 
+# Print nvcc and CTK
+which nvcc
+nvcc --version
+
 # Install AST_Canopy, Numbast and extensions
 pip install ast_canopy/
 pip install numbast/
