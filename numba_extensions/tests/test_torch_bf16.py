@@ -4,7 +4,7 @@
 import pytest
 
 import numba.cuda as cuda
-import torch
+
 
 if cuda.get_current_device().compute_capability < (8, 0):
     pytest.skip(
@@ -24,6 +24,7 @@ from numba.np import numpy_support
 # what is the constructor vs what is the numba type ?
 numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16.nb_type
 
+torch = pytest.importorskip("torch")
 # implement proxy object for bf16
 # proxy should implement CAI which numba will consume directly
 # .__cuda_array_interface__
@@ -56,8 +57,6 @@ class ProxyTorch(torch.Tensor):
 
 
 def test_torchbf16():
-    torch = pytest.importorskip("torch")
-
     @cuda.jit(link=get_shims())
     def torch_add(a, b, out):
         i, j = cuda.grid(2)
