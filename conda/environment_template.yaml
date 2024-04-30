@@ -8,7 +8,6 @@ channels:
   - rapidsai-nightly
   - numba
   - conda-forge
-  - pytorch
   - nvidia
 dependencies:
   - python={{ python_version }}
@@ -27,7 +26,3 @@ dependencies:
   - pynvjitlink>=0.2.0
   - scikit-build-core
   - pip
-  - pip:
-    - --extra-index-url https://download.pytorch.org/whl/nightly/cu121
-    - torch
-    - ml_dtypes
