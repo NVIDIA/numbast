@@ -6,7 +6,7 @@ set -euo pipefail
 
 apt update --yes
 
-apt install lsb-release wget software-properties-common gnupg zstd gcc-12 -y
+apt install lsb-release wget software-properties-common gnupg zstd gcc-12 g++-12 -y
 
 wget https://apt.llvm.org/llvm.sh
 bash llvm.sh 18
