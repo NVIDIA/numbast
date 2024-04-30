@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS_DEBUG  "-g")
 
 project(${SKBUILD_PROJECT_NAME}
         VERSION ${SKBUILD_PROJECT_VERSION}
-        LANGUAGES CXX)
+	LANGUAGES C CXX)
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
