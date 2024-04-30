@@ -1,0 +1,42 @@
+name: Test Torch and bfloat16
+
+on:
+  workflow_call:
+    inputs:
+      ubuntu_version:
+        description: 'Ubuntu version'
+        required: true
+        type: string
+      cuda_version:
+        description: 'CUDA version'
+        required: true
+        type: string
+      python_version:
+        description: 'Python version'
+        required: true
+        type: string
+      GPU:
+        description: 'GPU model'
+        required: true
+        type: string
+      CPU:
+        description: 'CPU model'
+        required: true
+        type: string
+
+jobs:
+  torch:
+    runs-on: linux-arm64-gpu-a100-latest-1
+    container: # GPU jobs must run in a container
+        # Numbast depends on conda installed CTK, thus system CTK should not matter. Similarly for python version.
+        image: nvcr.io/nvidia/pytorch:24.03-py3
+        env:
+          NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
+    env:
+      RAPIDS_TESTS_DIR: ${{ github.workspace }}/test-results
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Environment, Build and Test Torch
+        run: |
+          ci/setup_torch_test.sh
