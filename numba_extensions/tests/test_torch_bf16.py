@@ -17,14 +17,17 @@ from bf16 import nv_bfloat16, get_shims
 import numpy as np
 
 
+# torch container should include ml-dtypes, etc.
+torch = pytest.importorskip("torch")
+
+# ml types should be installed in the torch container
 # ml_dtypes needed to patch np.dtype with bfloat16
-from ml_dtypes import bfloat16  # noqa: F401
-from numba.np import numpy_support
+from ml_dtypes import bfloat16  # noqa: F401 E402
+from numba.np import numpy_support  # noqa: E402
 
 # what is the constructor vs what is the numba type ?
 numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16.nb_type
 
-torch = pytest.importorskip("torch")
 # implement proxy object for bf16
 # proxy should implement CAI which numba will consume directly
 # .__cuda_array_interface__
