@@ -37,13 +37,6 @@ import numpy as np
 from numba import int16, int32, int64, uint16, uint32, uint64, float32, float64
 from numba.types import float16
 
-# ml_dtypes needed to patch np.dtype with bfloat16
-from ml_dtypes import bfloat16  # noqa: F401
-from numba.np import numpy_support
-
-# what is the constructor vs what is the numba type ?
-numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16.nb_type
-
 
 def test_ctor():
     @cuda.jit(link=get_shims())
