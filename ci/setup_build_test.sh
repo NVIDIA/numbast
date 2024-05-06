@@ -27,6 +27,11 @@ set +u
 conda activate test
 set -u
 
+which nvcc
+nvcc --version
+
+rapids-logger "Install Numbast and all submodules"
+
 # Install AST_Canopy, Numbast and extensions
 pip install ast_canopy/
 pip install numbast/
