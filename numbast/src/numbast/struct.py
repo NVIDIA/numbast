@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Optional
 
 from llvmlite import ir
 
@@ -18,7 +19,7 @@ from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
 from pylibastcanopy import access_kind
-from ast_canopy.decl import Struct
+from ast_canopy.decl import Struct, StructMethod
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
 from numbast.utils import (
@@ -42,6 +43,118 @@ extern "C" __device__ int
     return 0;
 }}
 """
+
+
+def bind_cxx_struct_ctor(
+    ctor: StructMethod,
+    struct_name: str,
+    s_type: nbtypes.Type,
+    S: object,
+    shim_writer: ShimWriter,
+) -> Optional[list]:
+    """Make binding for a C++ struct constructor. Returns the list of argument types.
+
+    Parameters
+    ----------
+    ctor : StructMethod
+
+
+    """
+
+    if ctor.is_move_constructor:
+        # move constructor is trivially supported in Numba / Python, skip
+        return
+
+    param_types = [
+        to_numba_type(arg.unqualified_non_ref_type_name) for arg in ctor.param_types
+    ]
+
+    # Lowering
+    # Note that libclang always consider the return type of a constructor
+    # is void. So we need to manually specify the return type here.
+    func_name = deduplicate_overloads(f"__{struct_name}__{ctor.mangled_name}")
+
+    # FIXME: temporary solution for mismatching function prototype against definition.
+    # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
+    # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
+    # is to pass all params by pointer and dereference them in shim. See dereferencing at the
+    # shim generation below.
+    ctor_shim_decl = declare_device(
+        func_name,
+        nbtypes.int32(nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)),
+    )
+
+    ctor_shim_call = make_device_caller_with_nargs(
+        func_name + "_shim",
+        1 + len(param_types),  # the extra argument for placement new pointer
+        ctor_shim_decl,
+    )
+
+    # Dynamically generate the shim layer:
+    # FIXME: All params are passed by pointers, then dereferenced in shim.
+    # temporary solution for mismatching function prototype against definition.
+    # See above lowering for details.
+    arglist = ", ".join(
+        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}" for arg in ctor.params
+    )
+    if arglist:
+        arglist = ", " + arglist
+
+    shim = struct_ctor_shim_layer_template.format(
+        func_name=func_name,
+        name=struct_name,
+        arglist=arglist,
+        args=", ".join("*" + arg.name for arg in ctor.params),
+    )
+
+    @lower(S, *param_types)
+    def ctor_impl(context, builder, sig, args):
+        # Delay writing the shim function at lowering time. This avoids writing
+        # shim functions from the parsed header that's unused in kernels.
+        shim_writer.write_to_shim(shim, func_name)
+
+        selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
+        argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
+        for ptr, ty, arg in zip(argptrs, sig.args, args):
+            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+
+        context.compile_internal(
+            builder,
+            ctor_shim_call,
+            nb_signature(
+                nbtypes.int32,
+                nbtypes.CPointer(s_type),
+                *map(nbtypes.CPointer, param_types),
+            ),
+            (selfptr, *argptrs),
+        )
+        return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+
+    return param_types
+
+
+def bind_cxx_struct_ctors(
+    struct_decl: Struct,
+    S: object,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriter,
+):
+    """Given a list of CXX struct ctor declarations, the numba type and the struct of the model, generate the Numba binding."""
+
+    ctor_params = []
+    for ctor in struct_decl.constructors():
+        if param_types := bind_cxx_struct_ctor(
+            ctor, struct_decl.name, s_type, S, shim_writer
+        ):
+            ctor_params.append(param_types)
+
+    # Constructor typing:
+    @register
+    class CtorTemplate(ConcreteTemplate):
+        key = S
+        cases = [nb_signature(s_type, *arglist) for arglist in ctor_params]
+
+    register_global(S, nbtypes.Function(CtorTemplate))
 
 
 def bind_cxx_struct(
@@ -142,96 +255,7 @@ def bind_cxx_struct(
 
     # ----------------------------------------------------------------------------------
     # Constructors:
-    ctor_params = []
-    for ctor in struct_decl.constructors():
-        if ctor.is_move_constructor:
-            # move constructor, do not support in Numba / Python, skip
-            continue
-
-        param_types = [
-            to_numba_type(arg.unqualified_non_ref_type_name) for arg in ctor.param_types
-        ]
-
-        # Cache parameter types
-        ctor_params.append(param_types)
-
-        # Lowering
-        # Note that libclang always consider the return type of a constructor
-        # is void. So we need to manually specify the return type here.
-        func_name = deduplicate_overloads(f"__{struct_decl.name}__{ctor.mangled_name}")
-
-        # FIXME: temporary solution for mismatching function prototype against definition.
-        # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
-        # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-        # is to pass all params by pointer and dereference them in shim. See dereferencing at the
-        # shim generation below.
-        ctor_shim_decl = declare_device(
-            func_name,
-            nbtypes.int32(
-                nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
-            ),
-        )
-
-        ctor_shim_call = make_device_caller_with_nargs(
-            func_name + "_shim",
-            1 + len(param_types),  # the extra argument for placement new pointer
-            ctor_shim_decl,
-        )
-
-        @lower(S, *param_types)
-        def ctor_impl(
-            context,
-            builder,
-            sig,
-            args,
-            ctor_shim_call=ctor_shim_call,
-            param_types=param_types,
-            s_type=s_type,
-        ):
-            selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-            argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-            for ptr, ty, arg in zip(argptrs, sig.args, args):
-                if ty == s_type:
-                    builder.store(arg, ptr, align=ty.alignof_)
-                else:
-                    builder.store(arg, ptr)
-
-            context.compile_internal(
-                builder,
-                ctor_shim_call,
-                nb_signature(
-                    nbtypes.int32,
-                    nbtypes.CPointer(s_type),
-                    *map(nbtypes.CPointer, param_types),
-                ),
-                (selfptr, *argptrs),
-            )
-            return builder.load(selfptr, align=s_type.alignof_)
-
-        # Dynamically generate the shim layer:
-        # FIXME: All params are passed by pointers, then dereferenced in shim.
-        # temporary solution for mismatching function prototype against definition.
-        # See above lowering for details.
-        arglist = ", ".join(
-            f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-            for arg in ctor.params
-        )
-        if arglist:
-            arglist = ", " + arglist
-        shim += struct_ctor_shim_layer_template.format(
-            func_name=func_name,
-            name=struct_decl.name,
-            arglist=arglist,
-            args=", ".join("*" + arg.name for arg in ctor.params),
-        )
-
-    # Constructor typing:
-    @register
-    class CtorTemplate(ConcreteTemplate):
-        key = S
-        cases = [nb_signature(s_type, *arglist) for arglist in ctor_params]
-
-    register_global(S, nbtypes.Function(CtorTemplate))
+    bind_cxx_struct_ctors(struct_decl, S, s_type, shim_writer)
 
     # ----------------------------------------------------------------------------------
     # Conversion operators:
