@@ -6,6 +6,9 @@ set -euo pipefail
 
 apt update --yes
 
+# ARM PyTorch binaries are not well-supported.  As such, we
+# need to add LLVM/GCC12/etc manually because NGC-ARM-PyTorch image does not
+# ship with these dependencies for building numbast/bf16.
 apt install lsb-release wget software-properties-common gnupg zstd gcc-12 g++-12 libedit-dev -y
 
 wget https://apt.llvm.org/llvm.sh

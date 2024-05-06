@@ -4,6 +4,9 @@
 cmake_minimum_required(VERSION 3.28)
 set(CMAKE_CXX_FLAGS_DEBUG  "-g")
 
+# Oddly, C language is needed here to build in PyTorch image on aarch64
+# machine
+
 project(${SKBUILD_PROJECT_NAME}
         VERSION ${SKBUILD_PROJECT_VERSION}
 	LANGUAGES C CXX)
