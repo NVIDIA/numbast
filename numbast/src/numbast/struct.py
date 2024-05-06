@@ -57,8 +57,20 @@ def bind_cxx_struct_ctor(
     Parameters
     ----------
     ctor : StructMethod
+        Constructor declaration of struct in CXX
+    struct_name : str
+        The name of the struct from which this constructor belongs to
+    s_type : Numba type
+        The Numba type of the struct
+    S : object
+        The Python API of the struct
+    shim_writer : ShimWriter
+        The shim writer to write the shim layer code.
 
-
+    Returns
+    -------
+    list of argument types, optional
+        If the constructor is a move constructor, return None. Otherwise, return the list of argument types.
     """
 
     if ctor.is_move_constructor:
@@ -139,7 +151,20 @@ def bind_cxx_struct_ctors(
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
 ):
-    """Given a list of CXX struct ctor declarations, the numba type and the struct of the model, generate the Numba binding."""
+    """Given a list of CXX struct ctor declarations, the numba type and the struct of the model, generate the Numba binding.
+
+    Parameters
+    ----------
+
+    struct_decl: Struct
+        The declaration of the struct in CXX
+    S: object
+        The Python API of the struct
+    s_type: numba type
+        The Numba type of the struct
+    shim_writer: ShimWriter
+        The shim writer to write the shim layer code.
+    """
 
     ctor_params = []
     for ctor in struct_decl.constructors():
