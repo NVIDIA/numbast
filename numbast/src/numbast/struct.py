@@ -151,7 +151,7 @@ def bind_cxx_struct_ctors(
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
 ):
-    """Given a list of CXX struct ctor declarations, the numba type and the struct of the model, generate the Numba binding.
+    """Given a CXX struct declaration, generate bindings for its constructors.
 
     Parameters
     ----------
@@ -180,6 +180,70 @@ def bind_cxx_struct_ctors(
         cases = [nb_signature(s_type, *arglist) for arglist in ctor_params]
 
     register_global(S, nbtypes.Function(CtorTemplate))
+
+
+def bind_cxx_struct_conversion_opeartor(
+    conv: StructMethod, struct_name: str, s_type: nbtypes.Type, shim_writer: ShimWriter
+):
+    """Binding CXX struct conversion oeperator to Numba.
+
+    Parameters
+    ----------
+
+    conv : StructMethod
+        The conversion operator declaration of the struct in CXX
+    struct_name : str
+        The name of the struct to which this conversion operator belongs
+    s_type : nbtypes.Type
+        The Numba type of the struct
+    shim_writer : ShimWriter
+        The shim writer to write the shim layer code.
+    """
+    casted_type = to_numba_type(conv.return_type.unqualified_non_ref_type_name)
+
+    # Lowering:
+    func_name = deduplicate_overloads(f"__{struct_name}__{conv.mangled_name}")
+
+    shim_decl = declare_device(func_name, casted_type(nbtypes.CPointer(s_type)))
+    # Types cast shims always has 1 parameter: self*.
+    shim_call = make_device_caller_with_nargs(func_name + "_shim", 1, shim_decl)
+
+    # Conversion operators has no arguments
+    shim = struct_method_shim_layer_template.format(
+        func_name=func_name,
+        return_type=conv.return_type.unqualified_non_ref_type_name,
+        name=struct_name,
+        arglist="",
+        method_name=conv.name,
+        args="",
+    )
+
+    @lower_cast(s_type, casted_type)
+    def impl(
+        context,
+        builder,
+        fromty,
+        toty,
+        value,
+    ):
+        shim_writer.write_to_shim(shim, func_name)
+        ptr = builder.alloca(context.get_value_type(s_type))
+        builder.store(value, ptr, align=getattr(s_type, "alignof_", None))
+        result = context.compile_internal(
+            builder,
+            shim_call,
+            nb_signature(casted_type, nbtypes.CPointer(s_type)),
+            (ptr,),
+        )
+        return result
+
+
+def bind_cxx_struct_conversion_opeartors(
+    struct_decl: Struct, s_type: nbtypes.Type, shim_writer: ShimWriter
+):
+    """"""
+    for conv in struct_decl.conversion_operators():
+        bind_cxx_struct_conversion_opeartor(conv, struct_decl.name, s_type, shim_writer)
 
 
 def bind_cxx_struct(
@@ -276,62 +340,13 @@ def bind_cxx_struct(
         for f in public_fields.values():
             make_attribute_wrapper(S_type, f.name, f.name)
 
-    shim = ""
-
     # ----------------------------------------------------------------------------------
     # Constructors:
     bind_cxx_struct_ctors(struct_decl, S, s_type, shim_writer)
 
     # ----------------------------------------------------------------------------------
     # Conversion operators:
-
-    casted_types = []
-    for conv in struct_decl.conversion_operators():
-        casted_type = to_numba_type(conv.return_type.unqualified_non_ref_type_name)
-        casted_types.append(casted_type)
-
-        # Lowering:
-        func_name = deduplicate_overloads(f"__{struct_decl.name}__{conv.mangled_name}")
-
-        shim_decl = declare_device(func_name, casted_type(nbtypes.CPointer(s_type)))
-        # Types cast shims always has 1 parameter: self*.
-        shim_call = make_device_caller_with_nargs(func_name + "_shim", 1, shim_decl)
-
-        @lower_cast(S_type, casted_type)
-        def impl(
-            context,
-            builder,
-            fromty,
-            toty,
-            value,
-            s_type=s_type,
-            casted_type=casted_type,
-            shim_call=shim_call,
-        ):
-            ptr = builder.alloca(context.get_value_type(s_type))
-            if hasattr(s_type, "alignof_"):
-                builder.store(value, ptr, align=s_type.alignof_)
-            else:
-                builder.store(value, ptr)
-            result = context.compile_internal(
-                builder,
-                shim_call,
-                nb_signature(casted_type, nbtypes.CPointer(s_type)),
-                (ptr,),
-            )
-            return result
-
-        # Conversion operators has no arguments
-        shim += struct_method_shim_layer_template.format(
-            func_name=func_name,
-            return_type=conv.return_type.unqualified_non_ref_type_name,
-            name=struct_decl.name,
-            arglist="",
-            method_name=conv.name,
-            args="",
-        )
-
-    shim_writer.write_to_shim(shim, struct_decl.name)
+    bind_cxx_struct_conversion_opeartors(struct_decl, s_type, shim_writer)
 
     # Return the handle to the type in Numba
     return S
