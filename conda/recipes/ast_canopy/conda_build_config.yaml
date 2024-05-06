@@ -1,0 +1,22 @@
+c_compiler_version:
+  - 11
+
+cxx_compiler_version:
+  - 11
+
+cuda_compiler:
+  - cuda-nvcc
+
+cuda_compiler_version:
+  - 12.4
+
+sysroot_linux_64:
+  - "2.17"
+
+cmake:
+  - ">=3.28"
+
+python:
+  - 3.9
+  - 3.10
+  - 3.11
