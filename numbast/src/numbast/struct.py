@@ -88,7 +88,6 @@ def bind_cxx_struct(
 
     # Python API
     S = type(struct_decl.name, (), {"_nbtype": s_type})
-    S.nb_type = s_type
 
     # Any type that was parsed from C++ should be added to type record:
     # It also needs to happen before method typings - because copy constructors
