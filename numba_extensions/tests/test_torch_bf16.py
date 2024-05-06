@@ -26,7 +26,7 @@ from ml_dtypes import bfloat16  # noqa: F401 E402
 from numba.np import numpy_support  # noqa: E402
 
 # what is the constructor vs what is the numba type ?
-numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16.nb_type
+numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16._nbtype
 
 # implement proxy object for bf16
 # proxy should implement CAI which numba will consume directly
