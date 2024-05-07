@@ -15,6 +15,7 @@ dependencies:
   - numba
   - pybind11
   - pytest
+  - pytest-benchmark
   - cffi
   - mypy
   - pre-commit
