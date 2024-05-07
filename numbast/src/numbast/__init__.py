@@ -16,6 +16,6 @@ from numbast.function import bind_cxx_function, bind_cxx_functions
 from numbast.enum import bind_cxx_enum
 from numbast.shim_writer import MemoryShimWriter, FileShimWriter
 
-major, minor, patch = numba.__version__.split(".")
+major, minor, *_ = numba.__version__.split(".")
 if int(minor) < 59:
     raise RuntimeError("Numba version >= 0.59rc1 is required")
