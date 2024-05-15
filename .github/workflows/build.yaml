@@ -10,17 +10,20 @@ on:
       - "pull-request/[0-9]+"
 
 jobs:
-  torch:
-    runs-on: linux-arm64-gpu-a100-latest-1
-    container: # GPU jobs must run in a container
-        # Numbast depends on conda installed CTK, thus system CTK should not matter. Similarly for python version.
-        image: rapidsai/ci-conda:cuda12.2.2-ubuntu22.04-py3.10
-        env:
-          NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
-    env:
-      RAPIDS_TESTS_DIR: ${{ github.workspace }}/test-results
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      BUILD_MATRIX: ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Environment, Build and Test Torch
-        run: "ci/build_conda.sh"
+      - uses: actions/checkout@v4
+      - name: Compute Build Matrix
+        id: compute-matrix
+        uses: ./.github/actions/compute-matrix
+  build-conda:
+    needs:
+      - compute-matrix
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.04
+    with:
+      build_type: branch
+      script: "ci/build_conda.sh"
+      matrix_filter: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
