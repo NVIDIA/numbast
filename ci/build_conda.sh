@@ -15,6 +15,8 @@ rapids-print-env
 
 rapids-logger "Begin py build"
 
+rapids-conda-retry mambabuild conda/recipes/ast_canopy
+rapids-conda-retry mambabuild conda/recipes/numbast
 rapids-conda-retry mambabuild conda/recipes/bf16
 
 #rapids-upload-conda-to-s3 python
