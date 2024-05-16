@@ -22,7 +22,7 @@ jobs:
   build-conda:
     needs:
       - compute-matrix
-    uses: ./.github/workflows/conda-python-build.yaml@main
+    uses: ./.github/workflows/conda-python-build.yaml
     with:
       build_type: branch
       script: "ci/build_conda.sh"
