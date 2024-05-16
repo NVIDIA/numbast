@@ -19,4 +19,7 @@ rapids-conda-retry mambabuild conda/recipes/ast_canopy
 rapids-conda-retry mambabuild conda/recipes/numbast
 rapids-conda-retry mambabuild conda/recipes/bf16
 
+# run tests
+./ci/run_tests.sh
+
 #rapids-upload-conda-to-s3 python
