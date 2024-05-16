@@ -47,5 +47,5 @@ requirements:
 
 about:
   license_family: Apache
-  license_file: LICENSE
+  license_file: ../../../LICENSE
   summary: ast_canopy ast parsing...
