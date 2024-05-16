@@ -20,6 +20,7 @@ rapids-conda-retry mambabuild conda/recipes/numbast
 rapids-conda-retry mambabuild conda/recipes/bf16
 
 # run tests
+pip install pytest
 ./ci/run_tests.sh
 
 #rapids-upload-conda-to-s3 python
