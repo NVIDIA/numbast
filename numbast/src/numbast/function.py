@@ -76,6 +76,21 @@ def bind_cxx_operator_overload_function(
 
     assert py_op is not None
 
+    # Crossing C / C++ boundary, pass argument by pointers.
+    arglist = ", ".join(
+        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
+        for arg in func_decl.params
+    )
+    if arglist:
+        arglist = ", " + arglist
+    shim = function_binding_shim_template.format(
+        shim_name=shim_func_name,
+        return_type=return_type_name,
+        arglist=arglist,
+        method_name=func_decl.name,
+        args=", ".join("*" + arg.name for arg in func_decl.params),
+    )
+
     # Typing
     @register_global(py_op)
     class op_decl(ConcreteTemplate):
@@ -96,12 +111,10 @@ def bind_cxx_operator_overload_function(
 
     @lower(py_op, *param_types)
     def impl(context, builder, sig, args):
+        shim_writer.write_to_shim(shim, shim_func_name)
         ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
         for ptr, ty, arg in zip(ptrs, sig.args, args):
-            if hasattr(ty, "alignof_"):
-                builder.store(arg, ptr, align=ty.alignof_)
-            else:
-                builder.store(arg, ptr)
+            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
         return context.compile_internal(
             builder,
@@ -110,27 +123,6 @@ def bind_cxx_operator_overload_function(
             ptrs,
         )
 
-    # FIXME: All values are passed by pointers
-    # temporary solution for mismatching function prototype against definition.
-    # See above lowering for details.
-    arglist = ", ".join(
-        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-        for arg in func_decl.params
-    )
-    if arglist:
-        arglist = ", " + arglist
-    shim = function_binding_shim_template.format(
-        shim_name=shim_func_name,
-        return_type=return_type_name,
-        arglist=arglist,
-        method_name=func_decl.name,
-        # FIXME: All values are passed by pointers, then dereferenced here.
-        # temporary solution for mismatching function prototype against definition.
-        # See above lowering for details.
-        args=", ".join("*" + arg.name for arg in func_decl.params),
-    )
-
-    shim_writer.write_to_shim(shim, shim_func_name)
     return python_api
 
 
@@ -197,15 +189,17 @@ def bind_cxx_non_operator_function(
         shim_func_name + "_shim", len(param_types), native_func
     )
 
+    shim = make_function_shim(
+        shim_func_name, func_decl.name, return_type_name, func_decl.params
+    )
+
     # Lowering
     @lower(func, *param_types)
     def impl(context, builder, sig, args):
+        shim_writer.write_to_shim(shim, shim_func_name)
         ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
         for ptr, ty, arg in zip(ptrs, sig.args, args):
-            if hasattr(ty, "alignof_"):
-                builder.store(arg, ptr, align=ty.alignof_)
-            else:
-                builder.store(arg, ptr)
+            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
         return context.compile_internal(
             builder,
@@ -214,11 +208,6 @@ def bind_cxx_non_operator_function(
             ptrs,
         )
 
-    shim = make_function_shim(
-        shim_func_name, func_decl.name, return_type_name, func_decl.params
-    )
-
-    shim_writer.write_to_shim(shim, shim_func_name)
     return func
 
 
