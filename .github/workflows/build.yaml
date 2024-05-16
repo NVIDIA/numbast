@@ -15,6 +15,7 @@ jobs:
     outputs:
       BUILD_MATRIX: ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
     steps:
+      - uses: actions/checkout@v4
       - name: Compute Build Matrix
         id: compute-matrix
         uses: ./.github/actions/compute-matrix
