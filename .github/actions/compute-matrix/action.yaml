@@ -14,8 +14,8 @@ runs:
         set -eo pipefail
 
         export BUILD_MATRIX="
-        - { CUDA_VER: '12.2.2', ARCH: 'amd64', PY_VER: '3.9', LINUX_VER: 'centos7' }
-        - { CUDA_VER: '12.2.2', ARCH: 'arm64', PY_VER: '3.9', LINUX_VER: 'rockylinux8' }
+        - { CUDA_VER: '12.2.2', ARCH: 'amd64', PY_VER: '3.9', LINUX_VER: 'ubuntu22.04' }
+        - { CUDA_VER: '12.2.2', ARCH: 'arm64', PY_VER: '3.9', LINUX_VER: 'ubuntu22.04' }
         "
 
         echo "BUILD_MATRIX=$(
