@@ -22,7 +22,7 @@ jobs:
   build-conda:
     needs:
       - compute-matrix
-    uses: quasiben/numbast/.github/workflows/conda-python-build.yaml@conda-pkgs
+    uses: ./.github/workflows/conda-python-build.yaml@main
     with:
       build_type: branch
       script: "ci/build_conda.sh"
