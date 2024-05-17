@@ -12,7 +12,7 @@ if cuda.get_current_device().compute_capability < (8, 0):
     )
 
 
-from bf16 import (
+from numba_extensions.bf16 import (
     nv_bfloat16,
     htrunc,
     hceil,

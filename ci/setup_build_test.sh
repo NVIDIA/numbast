@@ -35,7 +35,8 @@ rapids-logger "Install Numbast and all submodules"
 # Install AST_Canopy, Numbast and extensions
 pip install ast_canopy/
 pip install numbast/
-pip install numba_extensions/bf16
+# bf16 is now in numba_extensions.bf16
+pip install numba_extensions/numba_extensions/
 pip install numba_extensions/fp16
 pip install numba_extensions/curand_device
 pip install numba_extensions/curand_host

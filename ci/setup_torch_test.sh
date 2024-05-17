@@ -30,7 +30,9 @@ ln -s /usr/bin/clang++-18 /usr/bin/clang++
 # Install AST_Canopy, Numbast and extensions
 pip install ast_canopy/
 pip install numbast/
-pip install numba_extensions/bf16
+
+# bf16 is now in numba_extensions.bf16
+pip install numba_extensions/numba_extensions/
 
 # Run tests
 pytest \
