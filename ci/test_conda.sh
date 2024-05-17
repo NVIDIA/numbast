@@ -16,6 +16,7 @@ set -u
 rapids-logger "Add conda build output dir to channel"
 ls $RAPIDS_CONDA_BLD_OUTPUT_DIR
 conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
+ls $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
 
 rapids-print-env
 
