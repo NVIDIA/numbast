@@ -21,6 +21,11 @@ rapids-conda-retry mambabuild conda/recipes/bf16
 
 # run tests
 rapids-conda-retry env create -n test
+
+set +u
+conda activate test
+set -u
+
 rapids-conda-retry install pytest numba-extension-bf16
 ./ci/run_tests.sh
 
