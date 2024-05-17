@@ -20,7 +20,7 @@ rapids-conda-retry mambabuild conda/recipes/numbast
 rapids-conda-retry mambabuild conda/recipes/bf16
 
 # run tests
-rapids-conda-retry env create -n test
+rapids-conda-retry create -n test
 
 set +u
 conda activate test
