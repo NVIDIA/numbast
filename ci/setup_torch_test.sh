@@ -32,7 +32,7 @@ pip install ast_canopy/
 pip install numbast/
 
 # bf16 is now in numba_extensions.bf16
-pip install numba_extensions/numba_extensions/
+pip install numba_extensions/
 
 # Run tests
 pytest \
