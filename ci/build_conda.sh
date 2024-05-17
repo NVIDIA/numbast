@@ -1,5 +1,6 @@
 #!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
 
@@ -20,13 +21,6 @@ rapids-conda-retry mambabuild conda/recipes/numbast
 rapids-conda-retry mambabuild conda/recipes/bf16
 
 # run tests
-rapids-conda-retry create -n test
-
-set +u
-conda activate test
-set -u
-
-rapids-conda-retry install pytest numba-extension-bf16
-./ci/run_tests.sh
+./ci/test_conda.sh
 
 #rapids-upload-conda-to-s3 python

@@ -7,7 +7,7 @@ pytest \
     -v \
     --continue-on-collection-errors \
     --cache-clear \
-    --junitxml="${RAPIDS_TESTS_DIR}/junit-numbast.xml" \
+    --junitxml="${RAPIDS_TESTS_DIR}/junit-ast_canopy.xml" \
     ast_canopy/
 
 pytest \
@@ -21,5 +21,5 @@ pytest \
     -v \
     --continue-on-collection-errors \
     --cache-clear \
-    --junitxml="${RAPIDS_TESTS_DIR}/junit-numbast.xml" \
+    --junitxml="${RAPIDS_TESTS_DIR}/junit-numba_extensions.xml" \
     numba_extensions/
