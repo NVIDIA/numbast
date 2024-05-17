@@ -13,13 +13,17 @@ set +u
 conda activate test
 set -u
 
+rapids-logger "Add conda build output dir to channel"
+ls $RAPIDS_CONDA_BLD_OUTPUT_DIR
+conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
+
 rapids-print-env
 
 rapids-mamba-retry install \
+  pytest \
   ast_canopy \
   numbast \
-  numba-extension-bf16 \
-  --channel $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
+  numba-extension-bf16
 
 rapids-logger "Check GPU usage"
 nvidia-smi
