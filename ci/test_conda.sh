@@ -18,7 +18,7 @@ rapids-print-env
 rapids-mamba-retry install \
   ast_canopy \
   numbast \
-  numba-extensions-bf16 \
+  numba-extension-bf16 \
   --channel $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
 
 rapids-logger "Check GPU usage"
