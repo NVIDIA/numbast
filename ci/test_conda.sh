@@ -15,7 +15,8 @@ set -u
 
 rapids-print-env
 
-rapids-mamba-retry install numba-extensions-bf16
+rapids-mamba-retry install numba-extensions-bf16 \
+  --channel $RAPIDS_CONDA_BLD_OUTPUT_DIR
 
 rapids-logger "Check GPU usage"
 nvidia-smi
