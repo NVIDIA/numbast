@@ -20,7 +20,8 @@ rapids-conda-retry mambabuild conda/recipes/numbast
 rapids-conda-retry mambabuild conda/recipes/bf16
 
 # run tests
-pip install pytest
+rapids-conda-retry env create -n test
+rapids-conda-retry install pytest numba-extension-bf16
 ./ci/run_tests.sh
 
 #rapids-upload-conda-to-s3 python
