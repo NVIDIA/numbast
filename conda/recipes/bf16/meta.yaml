@@ -44,6 +44,8 @@ requirements:
     - python
     - numba >=0.58
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
+    - cuda-toolkit {{ cuda_compiler_version }}
+    - cuda-python {{ cuda_compiler_version }}
 
   test:
     imports:
