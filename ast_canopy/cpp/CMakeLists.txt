@@ -48,4 +48,4 @@ target_link_libraries(libastcanopy PRIVATE clangTooling)
 
 set_property(TARGET libastcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-install(TARGETS libastcanopy LIBRARY DESTINATION $ENV{CONDA_PREFIX}/lib)
+install(TARGETS libastcanopy LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR})
