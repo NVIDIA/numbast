@@ -55,7 +55,7 @@ jobs:
       env:
         RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
       container:
-        image: rapidsai/ci-conda:cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}
+        image: rapidsai/ci-conda:cuda12.2.2-ubuntu22.04-py3.10
         env:
           RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
           PARALLEL_LEVEL: ${{ env.PARALLEL_LEVEL }}
