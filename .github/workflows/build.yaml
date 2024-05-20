@@ -10,20 +10,17 @@ on:
       - "pull-request/[0-9]+"
 
 jobs:
-  compute-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      BUILD_MATRIX: ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Compute Build Matrix
-        id: compute-matrix
-        uses: ./.github/actions/compute-matrix
-  build-conda:
-    needs:
-      - compute-matrix
+  build-conda-x86_64:
     uses: ./.github/workflows/conda-python-build.yaml
     with:
       build_type: branch
       script: "ci/build_conda.sh"
-      matrix_filter: ${{ needs.compute-matrix.outputs.BUILD_MATRIX }}
+      CPU: "amd64"
+      GPU: "v100"
+  build-conda-aarch64:
+    uses: ./.github/workflows/conda-python-build.yaml
+    with:
+      build_type: branch
+      script: "ci/build_conda.sh"
+      CPU: "arm64"
+      GPU: "a100"
