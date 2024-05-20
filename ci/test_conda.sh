@@ -36,6 +36,7 @@ conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR/$CONDA_BUILD_SUBDIR
 rapids-print-env
 
 rapids-mamba-retry install \
+  click \
   pytest \
   ast_canopy \
   numbast \
@@ -52,7 +53,7 @@ trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "Run Tests"
-./ci/run_tests.sh
+python ci/run_tests.py --ast_canopy --numbast --bf16
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
