@@ -5,6 +5,8 @@ set -euo pipefail
 
 . /opt/conda/etc/profile.d/conda.sh
 
+rapids-logger "Starting Conda Package Test"
+
 rapids-logger "Creating Test Environment"
 rapids-mamba-retry create -n test
 
