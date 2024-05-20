@@ -21,7 +21,7 @@ ARCH=$(arch)
 
 if [[ $ARCH == "x86_64" ]]; then
   CONDA_BUILD_SUBDIR="linux-64"
-elif [[ $RUNNER_ARCH == "aarch64" ]]; then
+elif [[ $ARCH == "aarch64" ]]; then
   CONDA_BUILD_SUBDIR="linux-aarch-64"
 else
   echo "Unknown linux runner arch"
