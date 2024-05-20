@@ -15,8 +15,19 @@ set -u
 
 rapids-logger "Add conda build output dir to channel"
 ls $RAPIDS_CONDA_BLD_OUTPUT_DIR
-conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
-ls $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
+
+# Detect the current test architecture to set the proper build channel
+if [[ $RUNNER_ARCH == "ARM64" ]]; then
+  CONDA_BUILD_SUBDIR="linux-64"
+elif [[ $RUNNER_ARCH == "x86_64" ]]; then
+  CONDA_BUILD_SUBDIR="linux-aarch-64"
+else
+  echo "Unknown linux runner arch"
+fi
+
+echo $CONDA_BUILD_SUBDIR
+
+conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR/$CONDA_BUILD_SUBDIR
 
 rapids-print-env
 
