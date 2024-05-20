@@ -19,6 +19,6 @@ add_subdirectory(cpp)
 python_add_library(pylibastcanopy MODULE ast_canopy/pylibastcanopy.cpp WITH_SOABI)
 target_link_libraries(pylibastcanopy PRIVATE pybind11::headers)
 
-target_link_libraries(pylibastcanopy PUBLIC libastcanopy)
+target_link_libraries(pylibastcanopy PUBLIC astcanopy)
 
 install(TARGETS pylibastcanopy LIBRARY DESTINATION .)
