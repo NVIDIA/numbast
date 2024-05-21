@@ -10,7 +10,7 @@ name = "ast_canopy"
 version = "0.0.1"
 
 [tool.scikit-build]
-cmake.targets = ["libastcanopy", "pylibastcanopy"]
+cmake.targets = ["pylibastcanopy"]
 cmake.build-type = "Release"
 
 [tool.ruff]
