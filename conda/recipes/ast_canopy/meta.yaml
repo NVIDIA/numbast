@@ -16,8 +16,6 @@ source:
   path: ../../../ast_canopy
 
 build:
-  script:
-    - {{ PYTHON }} -m pip install . -vv
   ignore_run_exports_from:
     - {{ compiler('cuda') }}
 
