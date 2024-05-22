@@ -17,8 +17,7 @@ def run_pytest(lib, test_dir):
         f"--junitxml={junitxml}",
         *test_dir,
     ]
-    print(command)
-    subprocess.run(command)
+    subprocess.run(command, check=True, capture_output=False)
 
 
 @click.command()
