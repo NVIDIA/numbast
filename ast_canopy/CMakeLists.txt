@@ -19,6 +19,10 @@ project(${SKBUILD_PROJECT_NAME}
         VERSION ${SKBUILD_PROJECT_VERSION}
 	LANGUAGES C CXX)
 
+include(GNUInstallDirs)
+
+set(CMAKE_PREFIX_PATH ${CMAKE_INSTALL_LIBDIR})
+
 message("cmake_prefix: " "${CMAKE_PREFIX_PATH}")
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
@@ -29,6 +33,6 @@ python_add_library(pylibastcanopy MODULE ast_canopy/pylibastcanopy.cpp WITH_SOAB
 target_link_libraries(pylibastcanopy PRIVATE pybind11::headers)
 target_link_libraries(pylibastcanopy PRIVATE conda_env)
 
-target_link_libraries(pylibastcanopy PUBLIC astcanopy)
+target_link_libraries(pylibastcanopy PUBLIC astcanopy::astcanopy)
 
 install(TARGETS pylibastcanopy LIBRARY DESTINATION .)

@@ -44,7 +44,7 @@ include(AddLLVM)
 set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
 
 target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
-                                      PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+                                      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                       PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/detail/)
 
 add_definitions(${CLANG_DEFINITIONS})
