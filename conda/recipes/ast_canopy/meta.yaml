@@ -16,7 +16,7 @@ source:
   path: ../../../ast_canopy
 
 build:
-  script: build.sh
+  script: {{ PYTHON }} -m pip install . -vv && mv {{ SP_DIR }}/libastcanopy.so {{ PREFIX }}/lib
   ignore_run_exports_from:
     - {{ compiler('cuda') }}
 
