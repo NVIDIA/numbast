@@ -57,5 +57,11 @@ set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Install built library into host environment
 install(TARGETS astcanopy
+  EXPORT astcanopy-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+install(EXPORT astcanopy-targets
+  FILE astcanopy-targets.cmake
+  NAMESPACE astcanopy::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
