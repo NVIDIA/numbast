@@ -35,6 +35,9 @@ set(CMAKE_MODULE_PATH
   "${LLVM_CMAKE_DIR}"
 )
 
+# For distro-independent install dirs
+include(GNUInstallDirs)
+
 # import LLVM CMake functions
 include(AddLLVM)
 
@@ -52,16 +55,7 @@ target_link_libraries(astcanopy PRIVATE clangTooling)
 
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-# Install built library into conda host environment
+# Install built library into host environment
 install(TARGETS astcanopy
-  EXPORT astcanopy-targets
-  LIBRARY DESTINATION $ENV{CONDA_PREFIX}/lib
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-
-install(
-  EXPORT astcanopy-targets
-  FILE astcanopy-targets.cmake
-  NAMESPACE astcanopy::
-  DESTINATION $ENV{CONDA_PREFIX}/lib/cmake/ast_canopy
-)
-# target_link_libraries(astcanopy PRIVATE conda_env)
