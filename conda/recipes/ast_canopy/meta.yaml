@@ -42,6 +42,7 @@ requirements:
     - numba >=0.58
     - pynvjitlink >=0.2
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
+    - clangdev >=18
 
 about:
   license_family: Apache
