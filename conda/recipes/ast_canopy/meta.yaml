@@ -42,6 +42,8 @@ requirements:
     - numba >=0.58
     - pynvjitlink >=0.2
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
+    - cuda-toolkit {{ cuda_compiler_version }}
+    - cuda-python {{ cuda_compiler_version }}
     - clangdev >=18
 
 about:
