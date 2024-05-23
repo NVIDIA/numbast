@@ -50,9 +50,12 @@ target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
 add_definitions(${CLANG_DEFINITIONS})
 
 target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
+target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
 
 target_link_libraries(astcanopy PRIVATE clangTooling)
+target_link_libraries(astcanopy PRIVATE clangTooling)
 
+set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Install built library into host environment
