@@ -27,12 +27,14 @@ def run_pytest(lib, test_dir):
 
 
 @click.command()
-@click.option("--ast_canopy", is_flag=True)
-@click.option("--numbast", is_flag=True)
-@click.option("--bf16", is_flag=True)
-@click.option("--fp16", is_flag=True)
-@click.option("--curand_device", is_flag=True)
-@click.option("--all_tests", is_flag=True)
+@click.option("--ast-canopy", is_flag=True, help="Run ast_canopy pytests.")
+@click.option("--numbast", is_flag=True, help="Run numbast pytests.")
+@click.option("--bf16", is_flag=True, help="Run bfloat16 pytests.")
+@click.option("--fp16", is_flag=True, help="Run fp16 pytests.")
+@click.option(
+    "--curand_device", is_flag=True, help="Run curand device binding pytests."
+)
+@click.option("--all-tests", is_flag=True, help="Run all pytests.")
 def run(
     ast_canopy: bool,
     numbast: bool,
@@ -41,6 +43,9 @@ def run(
     curand_device: bool,
     all_tests: bool,
 ):
+    """Selectively run pytests in Numbast repo based on options provided.
+    When `all
+    """
     if all_tests:
         if any([ast_canopy, numbast, bf16, fp16, curand_device]):
             raise ValueError(

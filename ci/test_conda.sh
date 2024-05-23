@@ -1,5 +1,6 @@
 #!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
 
@@ -42,7 +43,7 @@ set +e
 
 rapids-logger "Run Tests"
 # Debug print
-python ci/run_tests.py --ast_canopy --numbast --bf16
+python ci/run_tests.py --ast-canopy --numbast --bf16
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
