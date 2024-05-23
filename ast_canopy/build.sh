@@ -10,6 +10,8 @@ echo "Site package path: $SP_PATH"
 echo "Installing ast_canopy..."
 pip install ast_canopy/
 
+# Temporarily allow unbound variables for conda env detection.
+set +u
 if [[ -n "$CONDA_PREFIX" ]]; then
     echo "In conda environment, moving $SP_PATH/libastcanopy.so to $CONDA_PREFIX/lib"
     mv $SP_PATH/libastcanopy.so $CONDA_PREFIX/lib
@@ -19,3 +21,4 @@ else
     mv $SP_PATH/libastcanopy.so /usr/local/lib/
     ldconfig
 fi
+set -u
