@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-SP_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+SP_PATH=$(python -c "import site; print(site.getsitepackages()[0])")
 echo "Site package path: $SP_PATH"
 
 echo "Installing ast_canopy..."
