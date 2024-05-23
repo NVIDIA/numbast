@@ -10,5 +10,12 @@ echo "Site package path: $SP_PATH"
 echo "Installing ast_canopy..."
 pip install ast_canopy/
 
-echo "Moving $SP_PATH/libastcanopy.so to $CONDA_PREFIX/lib"
-mv $SP_PATH/libastcanopy.so $CONDA_PREFIX/lib
+if [[ -n "$CONDA_PREFIX" ]]; then
+    echo "In conda environment, moving $SP_PATH/libastcanopy.so to $CONDA_PREFIX/lib"
+    mv $SP_PATH/libastcanopy.so $CONDA_PREFIX/lib
+else
+    echo "Cannot detect conda environment, installing $SP_PATH/libastcanopy.so to system lib."
+    echo "Assuming /usr/local/lib as the default system library path"
+    mv $SP_PATH/libastcanopy.so /usr/local/lib/
+    ldconfig
+fi
