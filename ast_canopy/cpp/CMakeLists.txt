@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-add_library(libastcanopy SHARED
+add_library(astcanopy SHARED
             src/ast_canopy.cpp
             src/enum.cpp
             src/class_template.cpp
@@ -22,7 +22,7 @@ add_library(libastcanopy SHARED
             src/detail/matchers/class_template_matcher.cpp
             src/detail/matchers/enum_matcher.cpp)
 
-# libastcanopy shared lib targget
+# astcanopy shared lib targget
 find_package(Clang REQUIRED)
 
 # Add path to LLVM modules
@@ -36,16 +36,16 @@ include(AddLLVM)
 
 set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
 
-target_include_directories(libastcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
+target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
                                       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
                                       PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/detail/)
 
 add_definitions(${CLANG_DEFINITIONS})
 
-target_link_directories(libastcanopy PRIVATE ${CLANG_LIBRARY_DIR})
+target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
 
-target_link_libraries(libastcanopy PRIVATE clangTooling)
+target_link_libraries(astcanopy PRIVATE clangTooling)
 
-set_property(TARGET libastcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-install(TARGETS libastcanopy LIBRARY DESTINATION $ENV{CONDA_PREFIX}/lib)
+install(TARGETS astcanopy LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR})
