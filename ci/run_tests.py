@@ -2,6 +2,8 @@ import click
 import subprocess
 import os
 
+import pytest
+
 
 def run_pytest(lib, test_dir):
     if RAPIDS_TESTS_DIR := os.environ.get("RAPIDS_TESTS_DIR", None):
@@ -17,7 +19,11 @@ def run_pytest(lib, test_dir):
         f"--junitxml={junitxml}",
         *test_dir,
     ]
-    subprocess.run(command, check=True, capture_output=False)
+    try:
+        subprocess.run(command, check=True, capture_output=False)
+    except subprocess.CalledProcessError as e:
+        if e.returncode not in {pytest.ExitCode.OK, pytest.ExitCode.NO_TESTS_COLLECTED}:
+            raise e
 
 
 @click.command()
