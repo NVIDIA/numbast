@@ -33,10 +33,11 @@ ast_canopy.parse_declarations_from_source(
 - cpp: the c++ portion of the project, depends on libclang and clang C-API.
 - ast_canopy: the python package that includes APIs and the bindings to the cpp code.
 
-To build the package:
+To build the package, first create a conda environment according to steps outlined in [Get Started](../README.md#get-started).
+Then run:
 
-```python
-pip install .
+```bash
+build.sh
 ```
 
 To autogenerate python interface file (pyi) for `pylibastcanopy`:
