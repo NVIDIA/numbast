@@ -13,7 +13,7 @@ if cuda.get_current_device().compute_capability < (8, 0):
     )
 
 
-from bf16 import nv_bfloat16, get_shims
+from numba_extensions.bf16 import nv_bfloat16, get_shims
 import numpy as np
 
 
