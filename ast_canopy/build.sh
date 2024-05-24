@@ -12,5 +12,3 @@ cmake install .
 popd
 
 pip install ast_canopy/ -vv
-
-set -u
