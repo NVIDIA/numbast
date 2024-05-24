@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-mkdir -p cpp/build
+mkdir -p ast_canopy/cpp/build
 pushd ast_canopy/cpp/build
 cmake ../
 cmake build .
