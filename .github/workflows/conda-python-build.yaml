@@ -76,7 +76,11 @@ jobs:
             echo "SHA=$(git rev-parse HEAD)" >> "${GITHUB_ENV}"
             echo "REF_NAME=${{ inputs.branch || github.ref_name }}" >> "${GITHUB_ENV}"
             echo "NIGHTLY_DATE=${{ inputs.date }}" >> "${GITHUB_ENV}"
-        - name: Python build
+        - name: Build Conda Package
           run: ${{ inputs.script }}
+          env:
+            GH_TOKEN: ${{ github.token }}
+        - name: Upload Conda Package
+          run: "ci/upload_conda.sh"
           env:
             GH_TOKEN: ${{ github.token }}
