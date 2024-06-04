@@ -45,6 +45,7 @@ requirements:
   run:
     - python
     - numba >=0.59
+    - numbast
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
     - cuda-toolkit {{ cuda_compiler_version }}
     - cuda-python {{ cuda_compiler_version }}
