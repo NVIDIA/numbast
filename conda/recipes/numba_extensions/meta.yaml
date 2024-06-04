@@ -10,7 +10,7 @@
 {% set project_urls = project_data["urls"] %}
 
 package:
-  name: numba-extension-bf16
+  name: numba-extensions
   version: {{ version }}
 
 source:
@@ -44,14 +44,14 @@ requirements:
     - scikit-build-core
   run:
     - python
-    - numba >=0.58
+    - numba >=0.59
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
     - cuda-toolkit {{ cuda_compiler_version }}
     - cuda-python {{ cuda_compiler_version }}
 
   test:
     imports:
-      - bf16
+      - numba_extensions
 
 about:
   license_family: Apache

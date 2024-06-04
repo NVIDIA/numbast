@@ -29,7 +29,7 @@ rapids-mamba-retry install \
   pytest \
   ast_canopy \
   numbast \
-  numba-extension-bf16
+  numba-extensions
 
 rapids-logger "Check GPU usage"
 nvidia-smi
