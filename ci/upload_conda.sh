@@ -13,6 +13,5 @@ echo $PKGS_TO_UPLOAD
 rapids-retry anaconda \
     -t $CONDA_TOKEN \
     upload \
-    # --skip-existing \
     --no-progress \
     ${PKGS_TO_UPLOAD}
