@@ -12,7 +12,7 @@ description = "Numba extensions for exotic data types in Numba"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 dependencies= [
@@ -29,12 +29,9 @@ repository = "https://github.com/NVIDIA/numbast"
 dev = ["ruff"]
 
 [tool.setuptools]
-license-files = ["LICENSE"]
+license-files = ["../LICENSE"]
 include-package-data = true
 zip-safe = false
-
-#[tool.setuptools.packages]
-#find = {namespaces = false}
 
 [tool.setuptools.packages.find]
 exclude = [
