@@ -57,4 +57,4 @@ requirements:
 about:
   license_family: Apache
   license_file: ../../../LICENSE
-  summary: numbast ast parsing...
+  summary: Numba-extensions contains novel dtypes and useful device side bindings for Numba.cuda

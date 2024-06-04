@@ -49,4 +49,4 @@ requirements:
 about:
   license_family: Apache
   license_file: ../../../LICENSE
-  summary: numbast ast parsing...
+  summary: Numbast is a CUDA C++ to Numba.cuda binding generator
