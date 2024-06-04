@@ -44,7 +44,9 @@ def run(
     all_tests: bool,
 ):
     """Selectively run pytests in Numbast repo based on options provided.
-    When `all
+    When `--all-tests` is specified, run all the tests. Otherwise, for
+    each of the specified options, run tests corresponding to the specified
+    package. `--all-tests` option is mutually exclusive to all other options.
     """
     if all_tests:
         if any([ast_canopy, numbast, bf16, fp16, curand_device]):
