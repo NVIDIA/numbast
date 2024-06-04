@@ -22,5 +22,3 @@ rapids-conda-retry mambabuild conda/recipes/numba_extensions
 
 # run tests
 ./ci/test_conda.sh
-
-#rapids-upload-conda-to-s3 python
