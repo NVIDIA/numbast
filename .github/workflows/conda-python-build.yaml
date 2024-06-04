@@ -27,6 +27,9 @@ on:
         GPU:
           type: string
           default: "v100"
+        upload_to_conda:
+          type: boolean
+          required: false
 
 defaults:
     run:
@@ -48,7 +51,7 @@ permissions:
     statuses: none
 
 jobs:
-    build:
+    build-test-upload:
       strategy:
         fail-fast: false
       runs-on: linux-${{ inputs.CPU }}-gpu-${{ inputs.GPU }}-latest-1
@@ -80,7 +83,12 @@ jobs:
           run: ${{ inputs.script }}
           env:
             GH_TOKEN: ${{ github.token }}
+        - name: Test Conda Package
+          run: "./ci/run_tests.sh"
+          env:
+            GH_TOKEN: ${{ github.token }}
         - name: Upload Conda Package
+          if: inputs.upload_to_conda
           run: "ci/upload_conda.sh"
           env:
             GH_TOKEN: ${{ github.token }}
