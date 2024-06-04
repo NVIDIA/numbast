@@ -14,7 +14,7 @@ package:
   version: {{ version }}
 
 source:
-  path: ../../../numba_extensions/bf16
+  path: ../../../numba_extensions
 
 build:
   script:

@@ -19,9 +19,9 @@ if cuda.get_current_device().compute_capability < (8, 0):
     # pass typing.
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        import bf16
+        import numba_extensions.bf16
 else:
-    import bf16
+    import numba_extensions.bf16
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
@@ -29,7 +29,7 @@ COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 cuda_fp16 = os.path.join(CUDA_INCLUDE_PATH, "cuda_fp16.h")
 cuda_fp16_hpp = os.path.join(CUDA_INCLUDE_PATH, "cuda_fp16.hpp")
 
-cuda_bf16 = bf16.bf16_bindings.cuda_bf16
+cuda_bf16 = numba_extensions.bf16.bf16_bindings.cuda_bf16
 
 structs, functions, _, _, typedefs, enums = parse_declarations_from_source(
     cuda_fp16,
