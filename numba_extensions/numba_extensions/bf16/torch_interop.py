@@ -180,8 +180,6 @@ def patch_numba():
                 else arg
                 for arg in args
             ]
-            return super(_BF16TorchWrappedLaunchConfiguration, self).__call__(
-                *torch_filtered
-            )
+            return super().__call__(*torch_filtered)
 
     numba.cuda.dispatcher._LaunchConfiguration = _BF16TorchWrappedLaunchConfiguration
