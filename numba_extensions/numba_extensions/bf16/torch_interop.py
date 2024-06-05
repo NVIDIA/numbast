@@ -25,7 +25,7 @@ except ImportError:
     if _TORCH_IMPORTED:
         warnings.warn(
             "Pytorch installation detected. To use Numba-extensions' bfloat16"
-            "bindings, please also install ml_types via `python -m pip install ml_types`"
+            "bindings, please also install ml_dtypes via `python -m pip install ml_dtypes`"
         )
 
     _ML_DTYPES_IMPORTED = False
