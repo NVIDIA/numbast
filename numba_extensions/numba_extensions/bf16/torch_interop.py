@@ -1,15 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-try:
-    import torch
-
-    from ml_dtypes import bfloat16  # noqa: F401 E402
-
-    _WRAP_TENSOR = True
-except ImportError:
-    _WRAP_TENSOR = False
-
+import warnings
 import numpy as np
 from numba.np import numpy_support  # noqa: E402
 
@@ -17,6 +9,28 @@ import numba.cuda.dispatcher
 from numba.cuda.dispatcher import _LaunchConfiguration
 
 from numba_extensions.bf16 import nv_bfloat16
+
+try:
+    import torch
+
+    _TORCH_IMPORTED = True
+except ImportError:
+    _TORCH_IMPORTED = False
+
+try:
+    from ml_dtypes import bfloat16  # noqa: F401 E402
+
+    _ML_DTYPES_IMPORTED = True
+except ImportError:
+    if _TORCH_IMPORTED:
+        warnings.warn(
+            "Pytorch installation detected. To use Numba-extensions' bfloat16"
+            "bindings, please also install ml_types via `python -m pip install ml_types`"
+        )
+
+    _ML_DTYPES_IMPORTED = False
+
+_WRAP_BF16_TENSOR = _TORCH_IMPORTED and _ML_DTYPES_IMPORTED
 
 
 def patch_numba():
@@ -31,7 +45,7 @@ def patch_numba():
     Returns:
         None
     """
-    if _WRAP_TENSOR:
+    if _WRAP_BF16_TENSOR:
         # Register the NumPy dtype for bfloat16 with the Numba bfloat16 type
         numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16._nbtype
 
