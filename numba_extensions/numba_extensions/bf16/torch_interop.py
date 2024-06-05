@@ -3,12 +3,57 @@
 
 import warnings
 import numpy as np
-from numba.np import numpy_support  # noqa: E402
+import logging
+import sys
 
+import numba
+from numba.np import numpy_support  # noqa: E402
 import numba.cuda.dispatcher
 from numba.cuda.dispatcher import _LaunchConfiguration
 
 from numba_extensions.bf16 import nv_bfloat16
+
+_logger = None
+
+
+# Create a logger that reports messages based on the value of Numba's config
+# variable NUMBA_CUDA_LOG_LEVEL, so we can trace patching when tracing other
+# CUDA operations.
+def get_logger():
+    global _logger
+
+    if _logger:
+        return _logger
+
+    logger = logging.getLogger(__name__)
+
+    # Create a default configuration if none exists already
+    if not logger.hasHandlers():
+        lvl = str(numba.config.CUDA_LOG_LEVEL).upper()
+        lvl = getattr(logging, lvl, None)
+
+        if not isinstance(lvl, int):
+            # Default to critical level
+            lvl = logging.CRITICAL
+        logger.setLevel(lvl)
+
+        # Did user specify a level?
+        if numba.config.CUDA_LOG_LEVEL:
+            # Create a simple handler that prints to stderr
+            handler = logging.StreamHandler(sys.stderr)
+            fmt = (
+                "== CUDA (Numba_extensions) [%(relativeCreated)d] "
+                "%(levelname)5s -- %(message)s"
+            )
+            handler.setFormatter(logging.Formatter(fmt=fmt))
+            logger.addHandler(handler)
+        else:
+            # Otherwise, put a null handler
+            logger.addHandler(logging.NullHandler())
+
+    _logger = logger
+    return logger
+
 
 try:
     import torch
@@ -47,6 +92,13 @@ def patch_numba():
     """
     if not _WRAP_BF16_TENSOR:
         return
+
+    logger = get_logger()
+
+    logger.debug(
+        "Patching Numba's _LaunchConfiguration for torch bfloat16-tensor "
+        "interoperability."
+    )
 
     # Register the NumPy dtype for bfloat16 with the Numba bfloat16 type
     numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16._nbtype
