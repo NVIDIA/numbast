@@ -54,4 +54,4 @@ requirements:
 about:
   license_family: Apache
   license_file: ../../../LICENSE
-  summary: ast_canopy ast parsing...
+  summary: ast_canopy is a CUDA C++ device function header parser
