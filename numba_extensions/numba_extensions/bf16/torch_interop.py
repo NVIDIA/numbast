@@ -15,10 +15,13 @@ except ImportError:
 import numpy as np
 from numba.np import numpy_support  # noqa: E402
 
+import numba.cuda.dispatcher
+from numba.cuda.dispatcher import _LaunchConfiguration
+
 from numba_extensions.bf16 import nv_bfloat16
 
 
-def torch_bfloat16_tensor_wrapper():
+def patch_numba():
     if _WRAP_TENSOR:
         # what is the constructor vs what is the numba type ?
         numpy_support.FROM_DTYPE[np.dtype("bfloat16")] = nv_bfloat16._nbtype
@@ -56,7 +59,21 @@ def torch_bfloat16_tensor_wrapper():
                     typestr=typestr, shape=shape, strides=strides, data=data, version=2
                 )
 
-        return ProxyTorch
+        class _BF16TorchWrappedLaunchConfiguration(_LaunchConfiguration):
+            def __call__(self, *args):
+                torch_filtered = [
+                    ProxyTorch(arg)
+                    if (isinstance(arg, torch.Tensor) and arg.dtype == torch.bfloat16)
+                    else arg
+                    for arg in args
+                ]
+                return super(_BF16TorchWrappedLaunchConfiguration, self).__call__(
+                    *torch_filtered
+                )
+
+        numba.cuda.dispatcher._LaunchConfiguration = (
+            _BF16TorchWrappedLaunchConfiguration
+        )
 
     else:
         return None

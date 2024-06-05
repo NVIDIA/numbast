@@ -3,7 +3,7 @@
 
 import pytest
 import numba.cuda as cuda
-from numba_extensions.bf16 import get_shims, ProxyTorch
+from numba_extensions.bf16 import get_shims
 
 torch = pytest.importorskip("torch")
 
@@ -24,14 +24,11 @@ def test_torchbf16():
 
     a = torch.ones([2, 2], device=torch.device("cuda:0"), dtype=torch.bfloat16)
     b = torch.ones([2, 2], device=torch.device("cuda:0"), dtype=torch.bfloat16)
-    aa = ProxyTorch(a)
-    bb = ProxyTorch(b)
-    twos = aa + bb
+    twos = a + b
 
     out = torch.zeros([2, 2], device=torch.device("cuda:0"), dtype=torch.bfloat16)
-    out = ProxyTorch(out)
 
     threadsperblock = (16, 16)
     blockspergrid = (1, 1)
-    torch_add[blockspergrid, threadsperblock](aa, bb, out)
+    torch_add[blockspergrid, threadsperblock](a, b, out)
     assert torch.equal(twos, out)
