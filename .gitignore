@@ -158,3 +158,5 @@ jupyter_execute
 
 .benchmarks/
 .nvcode/
+
+llvm.sh*
