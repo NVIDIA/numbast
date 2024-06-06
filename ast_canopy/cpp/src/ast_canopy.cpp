@@ -16,8 +16,8 @@
 #include <iostream>
 #endif
 
-#include "ast_canopy.hpp"
 #include "detail/matchers.hpp"
+#include <ast_canopy/ast_canopy.hpp>
 
 using namespace clang;
 using namespace clang::ast_matchers;

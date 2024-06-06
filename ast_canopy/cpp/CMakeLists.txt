@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.28)
 
 project(astcanopy VERSION 0.1.0 LANGUAGES C CXX)
 
+# Define the sources to compile for astcanopy here.
 add_library(astcanopy SHARED
             src/ast_canopy.cpp
             src/enum.cpp
@@ -26,6 +27,14 @@ add_library(astcanopy SHARED
             src/detail/matchers/class_template_matcher.cpp
             src/detail/matchers/enum_matcher.cpp)
 
+# Define the public headers for astcanopy here.
+target_sources(astcanopy
+  PUBLIC
+  FILE_SET public_headers
+  TYPE HEADERS
+  BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+  FILES include/ast_canopy/ast_canopy.hpp)
+
 # astcanopy shared lib target
 find_package(Clang REQUIRED)
 
@@ -35,17 +44,19 @@ set(CMAKE_MODULE_PATH
   "${LLVM_CMAKE_DIR}"
 )
 
-# For distro-independent install dirs
-include(GNUInstallDirs)
-
 # import LLVM CMake functions
 include(AddLLVM)
 
 set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
 
+target_compile_options(astcanopy
+                        PRIVATE
+                        -fvisibility=hidden)
+
 target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
                                       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                      PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/detail/)
+                                      PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/detail/>
+                                      INTERFACE $<INSTALL_INTERFACE:include>)
 
 add_definitions(${CLANG_DEFINITIONS})
 
@@ -58,13 +69,18 @@ target_link_libraries(astcanopy PRIVATE clangTooling)
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# For distro-independent install dirs
+include(GNUInstallDirs)
+
 # Install built library into host environment
 install(TARGETS astcanopy
   EXPORT astcanopy-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILE_SET public_headers
 )
 
 install(EXPORT astcanopy-targets
-  FILE astcanopy-targets.cmake
+  FILE astcanopy-config.cmake
   NAMESPACE astcanopy::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)

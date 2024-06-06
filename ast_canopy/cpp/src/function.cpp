@@ -6,7 +6,7 @@
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclCXX.h>
 
-#include "ast_canopy.hpp"
+#include <ast_canopy/ast_canopy.hpp>
 
 #include <algorithm>
 
