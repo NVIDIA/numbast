@@ -7,7 +7,7 @@ set -euo pipefail
 mkdir -p ast_canopy/cpp/build
 pushd ast_canopy/cpp/build
 cmake ../
-cmake --build -j .
+cmake --build . -j
 cmake --install .
 popd
 
