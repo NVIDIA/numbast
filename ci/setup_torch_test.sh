@@ -31,7 +31,9 @@ ln -s /usr/bin/clang++-18 /usr/bin/clang++
 # FIXME: Current build system cannot auto install libastcanopy.so
 # into system's lib path. While this file is packaged in the wheel,
 # it needs to be moved manually. To be fixed by a new build system.
-ast_canopy/build.sh
+pushd ast_canopy/
+build.sh
+popd
 pip install numbast/
 
 # bf16 is now in numba_extensions.bf16

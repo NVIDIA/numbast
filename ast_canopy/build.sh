@@ -4,11 +4,14 @@
 
 set -euo pipefail
 
-mkdir -p ast_canopy/cpp/build
-pushd ast_canopy/cpp/build
+echo "source directory: " $SRC_DIR
+
+# Relative to ast_canopy/ <-- This is essential for conda build
+mkdir -p cpp/build
+pushd cpp/build
 cmake ../
 cmake --build . -j
 cmake --install .
 popd
 
-# pip install ast_canopy/ -vv
+pip install ast_canopy/ -vv
