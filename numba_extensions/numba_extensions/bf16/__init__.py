@@ -2,3 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from numba_extensions.bf16.bf16_bindings import *  # noqa: F403
+from numba_extensions.bf16.torch_interop import patch_numba
+
+patch_numba()
