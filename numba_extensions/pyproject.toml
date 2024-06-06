@@ -1,5 +1,47 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "numba_extensions"
+version = "0.0.1"
+description = "Numba extensions for exotic data types in Numba"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies= [
+    "numba>=0.59.0",
+    "ast_canopy>=0.0.1",
+    "numbast>=0.0.1"
+]
+
+[project.urls]
+homepage = "https://github.com/NVIDIA/numbast"
+repository = "https://github.com/NVIDIA/numbast"
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[tool.setuptools]
+license-files = ["../LICENSE"]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+exclude = [
+    "docs",
+    "tests",
+    "docs.*",
+    "tests.*",
+]
+
+
 [tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "E402"]
 "tests/*" = ["F841"] # Ignore unused local variables in Numba kernel, the purpose of these tests are to test Numba JIT works with novel types.

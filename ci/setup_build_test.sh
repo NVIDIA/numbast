@@ -38,7 +38,8 @@ rapids-logger "Install Numbast and all submodules"
 # it needs to be moved manually. To be fixed by a new build system.
 ast_canopy/build.sh
 pip install numbast/
-pip install numba_extensions/bf16
+# bf16 is now in numba_extensions.bf16
+pip install numba_extensions/
 pip install numba_extensions/fp16
 pip install numba_extensions/curand_device
 pip install numba_extensions/curand_host

@@ -5,6 +5,7 @@
 This folder contains several Numba bindings for CUDA libraries created via `Numbast`.
 
 Beware these bindings are built only to demonstrate the usage of Numbast and Canopy.
+They are not official bindings and should not be used under production environments.
 
 ### Requirements
 
@@ -46,6 +47,12 @@ Known Limitations:
     - SobolScramble
 - Poisson sampling, supported generators
     - XORWOW
+
+## Packaging
+
+`numba_extensions` package is created to demonstrate the remote deployment of Numbast and Canopy.
+It includes:
+- bfloat16 feature
 
 ## Numba Extension Entrance
 

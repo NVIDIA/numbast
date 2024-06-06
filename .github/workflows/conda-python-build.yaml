@@ -27,6 +27,9 @@ on:
         GPU:
           type: string
           default: "v100"
+        upload_to_conda:
+          type: boolean
+          required: false
 
 defaults:
     run:
@@ -48,7 +51,7 @@ permissions:
     statuses: none
 
 jobs:
-    build:
+    build-test-upload:
       strategy:
         fail-fast: false
       runs-on: linux-${{ inputs.CPU }}-gpu-${{ inputs.GPU }}-latest-1
@@ -76,7 +79,16 @@ jobs:
             echo "SHA=$(git rev-parse HEAD)" >> "${GITHUB_ENV}"
             echo "REF_NAME=${{ inputs.branch || github.ref_name }}" >> "${GITHUB_ENV}"
             echo "NIGHTLY_DATE=${{ inputs.date }}" >> "${GITHUB_ENV}"
-        - name: Python build
+        - name: Build Conda Package
           run: ${{ inputs.script }}
+          env:
+            GH_TOKEN: ${{ github.token }}
+        - name: Test Conda Package
+          run: "./ci/test_conda.sh"
+          env:
+            GH_TOKEN: ${{ github.token }}
+        - name: Upload Conda Package
+          if: inputs.upload_to_conda
+          run: "ci/upload_conda.sh"
           env:
             GH_TOKEN: ${{ github.token }}

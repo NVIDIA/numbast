@@ -155,3 +155,6 @@ jupyter_execute
 
 # cibuildwheel
 /wheelhouse
+
+.benchmarks/
+.nvcode/
