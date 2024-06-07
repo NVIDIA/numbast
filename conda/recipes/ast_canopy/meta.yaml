@@ -16,10 +16,10 @@ package:
 source:
   path: ../../../ast_canopy
 
-build:
-  script: ./build.sh
-  ignore_run_exports_from:
-    - {{ compiler('cuda') }}
+# build:
+#   script: ./build.sh
+#   ignore_run_exports_from:
+#     - {{ compiler('cuda') }}
 
 requirements:
   build:
