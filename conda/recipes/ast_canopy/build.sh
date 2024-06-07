@@ -19,6 +19,7 @@ echo CPP_DIR=$CPP_DIR
 echo BUILD_DIR=$BUILD_DIR
 
 export CMAKE_INSTALL_PREFIX=$PREFIX
+export CMAKE_CXX_STANDARD=11
 
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Making directory..."
