@@ -33,4 +33,4 @@ echo "done!"
 cd $SRC_DIR
 
 echo "pip installing..."
-pip install $SRC_DIR -vv
+$PYTHON -m pip install $SRC_DIR -vv
