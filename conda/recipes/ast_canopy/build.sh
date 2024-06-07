@@ -11,11 +11,10 @@ env
 
 echo ""
 
-MY_SRC_DIR=${SRC_DIR}
-BUILD_DIR=$MY_SRC_DIR/cpp/build
-CPP_DIR=$MY_SRC_DIR/cpp
+BUILD_DIR=$SRC_DIR/cpp/build
+CPP_DIR=$SRC_DIR/cpp
 
-echo SRC_DIR=$MY_SRC_DIR
+echo SRC_DIR=$SRC_DIR
 echo CPP_DIR=$CPP_DIR
 echo BUILD_DIR=$BUILD_DIR
 
@@ -31,7 +30,7 @@ cmake --build $BUILD_DIR -j
 echo "cmake install..."
 cmake --install $BUILD_DIR
 echo "done!"
-cd $MY_SRC_DIR
+cd $SRC_DIR
 
 echo "pip installing..."
-pip install . -vv
+pip install $SRC_DIR -vv
