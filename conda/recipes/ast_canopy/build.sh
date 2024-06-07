@@ -18,6 +18,8 @@ echo SRC_DIR=$SRC_DIR
 echo CPP_DIR=$CPP_DIR
 echo BUILD_DIR=$BUILD_DIR
 
+export CMAKE_INSTALL_PREFIX=$PREFIX
+
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Making directory..."
 mkdir -p cpp/build
