@@ -34,4 +34,4 @@ echo "done!"
 cd $MY_SRC_DIR
 
 echo "pip installing..."
-pip install ast_canopy/ -vv
+pip install . -vv
