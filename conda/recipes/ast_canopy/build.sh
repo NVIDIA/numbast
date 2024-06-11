@@ -18,22 +18,27 @@ echo SRC_DIR=$SRC_DIR
 echo CPP_DIR=$CPP_DIR
 echo BUILD_DIR=$BUILD_DIR
 
-export CMAKE_INSTALL_PREFIX=$PREFIX
-export CMAKE_CXX_STANDARD=11
-
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Making directory..."
 mkdir -p cpp/build
 echo "entering cpp build..."
-cd $BUILD_DIR
+pushd $BUILD_DIR
 echo "starting cmake config..."
-cmake $CPP_DIR
+cmake ${CMAKE_ARGS} \
+    -GNinja \
+    -DCMAKE_BUILD_TYPE:STRING="Release" \
+    -DCMAKE_PREFIX_PATH:PATH="${PREFIX}" \
+    -DCMAKE_INSTALL_PREFIX:PATH="${PREFIX}" \
+    -DBUILD_SHARED_LIBS:BOOL=ON \
+    -DBUILD_STATIC_LIBS:BOOL=OFF \
+    -DCMAKE_CXX_STANDARD:STRING=11 \
+    "${CPP_DIR}"
 echo "cmake build..."
 cmake --build $BUILD_DIR -j
 echo "cmake install..."
 cmake --install $BUILD_DIR
 echo "done!"
-cd $SRC_DIR
+popd
 
 echo "pip installing..."
 $PYTHON -m pip install $SRC_DIR -vv

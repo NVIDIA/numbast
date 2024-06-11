@@ -16,11 +16,6 @@ package:
 source:
   path: ../../../ast_canopy
 
-# build:
-#   script: ./build.sh
-#   ignore_run_exports_from:
-#     - {{ compiler('cuda') }}
-
 requirements:
   build:
     - {{ compiler('c') }}
@@ -40,6 +35,8 @@ requirements:
     - python
     - pip
     - scikit-build-core
+    - llvmdev >=14
+    - llvm >=14
   run:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
