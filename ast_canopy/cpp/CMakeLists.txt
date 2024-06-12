@@ -49,10 +49,6 @@ include(AddLLVM)
 
 set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
 
-target_compile_options(astcanopy
-                        PRIVATE
-                        -fvisibility=hidden)
-
 target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
                                       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                       PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/detail/>
@@ -61,12 +57,9 @@ target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
 add_definitions(${CLANG_DEFINITIONS})
 
 target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
-target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
 
 target_link_libraries(astcanopy PRIVATE clangTooling)
-target_link_libraries(astcanopy PRIVATE clangTooling)
 
-set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # For distro-independent install dirs
