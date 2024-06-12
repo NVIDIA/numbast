@@ -72,6 +72,7 @@ set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 # For distro-independent install dirs
 include(GNUInstallDirs)
 
+
 # Install built library into host environment
 install(TARGETS astcanopy
   EXPORT astcanopy-targets
@@ -83,4 +84,14 @@ install(TARGETS astcanopy
 install(EXPORT astcanopy-targets
   FILE astcanopy-config.cmake
   NAMESPACE astcanopy::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
+  VERSION 0.1.0
+  COMPATIBILITY SameMajorVersion)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
