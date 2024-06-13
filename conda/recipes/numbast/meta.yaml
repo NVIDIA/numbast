@@ -43,6 +43,7 @@ requirements:
   run:
     - python
     - numba >=0.58
+    - pynvjitlink >=0.2
     - ast_canopy
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
 
