@@ -71,7 +71,11 @@ def get_default_compiler_search_paths() -> list[str]:
 
 
 def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
-    """Compile an empty file with NVCC and extract its default include path."""
+    """Compile an empty file with NVCC and extract its default include path.
+
+    ast_canopy depends on a healthy cuda environment to function. If nvcc fails
+    to compile an empty CUDA file, this function will raise an error.
+    """
 
     nvcc_bin = get_default_nvcc_path()
     if not nvcc_bin:
@@ -80,7 +84,9 @@ def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
 
     with tempfile.NamedTemporaryFile(suffix=".cu") as tmp_file:
         nvcc_compile_empty = (
-            subprocess.run([nvcc_bin, "-E", "-v", tmp_file.name], capture_output=True)
+            subprocess.run(
+                [nvcc_bin, "-E", "-v", tmp_file.name], capture_output=True, check=True
+            )
             .stderr.decode()
             .strip()
             .split("\n")
