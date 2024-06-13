@@ -27,3 +27,4 @@ dependencies:
   - pynvjitlink>=0.2.0
   - scikit-build-core
   - pip
+  - ninja

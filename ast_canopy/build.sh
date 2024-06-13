@@ -10,8 +10,6 @@ echo "Beginning astcanopy Build"
 env
 echo ""
 
-apt-get install ninja-build
-
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Making directory..."
 mkdir -p ast_canopy/cpp/build
