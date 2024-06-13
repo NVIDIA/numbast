@@ -19,6 +19,3 @@ rapids-logger "Begin py build"
 conda build conda/recipes/ast_canopy
 conda build conda/recipes/numbast
 conda build conda/recipes/numba_extensions
-
-# run tests
-./ci/test_conda.sh
