@@ -6,7 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "ast_canopy.hpp"
+#include <ast_canopy/ast_canopy.hpp>
 
 namespace py = pybind11;
 

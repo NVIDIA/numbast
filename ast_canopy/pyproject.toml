@@ -7,11 +7,12 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "ast_canopy"
-version = "0.0.1"
+version = "0.1.0"
 
 [tool.scikit-build]
-cmake.targets = ["astcanopy", "pylibastcanopy"]
+cmake.targets = ["pylibastcanopy"]
 cmake.build-type = "Release"
+wheel.license-files = ["../LICENSE"]
 
 [tool.ruff]
 line-length = 88

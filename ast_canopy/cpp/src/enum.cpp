@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "ast_canopy.hpp"
+#include <ast_canopy/ast_canopy.hpp>
 
 namespace ast_canopy {
 

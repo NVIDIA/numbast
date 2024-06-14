@@ -33,9 +33,6 @@ nvcc --version
 rapids-logger "Install Numbast and all submodules"
 
 # Install AST_Canopy, Numbast and extensions
-# FIXME: Current build system cannot auto install libastcanopy.so
-# into system's lib path. While this file is packaged in the wheel,
-# it needs to be moved manually. To be fixed by a new build system.
 ast_canopy/build.sh
 pip install numbast/
 # bf16 is now in numba_extensions.bf16

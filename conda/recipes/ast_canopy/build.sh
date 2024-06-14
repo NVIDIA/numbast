@@ -5,32 +5,40 @@
 set -x -e
 set -o pipefail
 
-echo "Beginning astcanopy Build"
+echo ""
 
 env
+
 echo ""
+
+BUILD_DIR=$SRC_DIR/cpp/build
+CPP_DIR=$SRC_DIR/cpp
+
+echo SRC_DIR=$SRC_DIR
+echo CPP_DIR=$CPP_DIR
+echo BUILD_DIR=$BUILD_DIR
 
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Making directory..."
-mkdir -p ast_canopy/cpp/build
-echo "Entering cpp build..."
-pushd ast_canopy/cpp/build
-echo "Starting cmake config..."
+mkdir -p cpp/build
+echo "entering cpp build..."
+pushd $BUILD_DIR
+echo "starting cmake config..."
 cmake ${CMAKE_ARGS} \
     -GNinja \
     -DCMAKE_BUILD_TYPE:STRING="Release" \
-    -DCMAKE_PREFIX_PATH:PATH="${CONDA_PREFIX}" \
-    -DCMAKE_INSTALL_PREFIX:PATH="${CONDA_PREFIX}" \
+    -DCMAKE_PREFIX_PATH:PATH="${PREFIX}" \
+    -DCMAKE_INSTALL_PREFIX:PATH="${PREFIX}" \
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DBUILD_STATIC_LIBS:BOOL=OFF \
     -DCMAKE_CXX_STANDARD:STRING=17 \
-    ../
+    "${CPP_DIR}"
 echo "cmake build..."
-cmake --build . -j
+cmake --build $BUILD_DIR -j
 echo "cmake install..."
-cmake --install .
+cmake --install $BUILD_DIR
 echo "done!"
 popd
 
 echo "pip installing..."
-python -m pip install ast_canopy/ -vv
+$PYTHON -m pip install $SRC_DIR -vv

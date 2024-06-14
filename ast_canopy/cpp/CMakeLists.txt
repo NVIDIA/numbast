@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+cmake_minimum_required(VERSION 3.28)
+
+project(astcanopy VERSION 0.1.0 LANGUAGES C CXX)
+
+# Define the sources to compile for astcanopy here.
 add_library(astcanopy SHARED
             src/ast_canopy.cpp
             src/enum.cpp
@@ -22,7 +27,15 @@ add_library(astcanopy SHARED
             src/detail/matchers/class_template_matcher.cpp
             src/detail/matchers/enum_matcher.cpp)
 
-# astcanopy shared lib targget
+# Define the public headers for astcanopy here.
+target_sources(astcanopy
+  PUBLIC
+  FILE_SET public_headers
+  TYPE HEADERS
+  BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+  FILES include/ast_canopy/ast_canopy.hpp)
+
+# astcanopy shared lib target
 find_package(Clang REQUIRED)
 
 # Add path to LLVM modules
@@ -37,8 +50,9 @@ include(AddLLVM)
 set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
 
 target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
-                                      PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-                                      PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/detail/)
+                                      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                      PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/detail/>
+                                      INTERFACE $<INSTALL_INTERFACE:include>)
 
 add_definitions(${CLANG_DEFINITIONS})
 
@@ -48,4 +62,29 @@ target_link_libraries(astcanopy PRIVATE clangTooling)
 
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-install(TARGETS astcanopy LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR})
+# For distro-independent install dirs
+include(GNUInstallDirs)
+
+
+# Install built library into host environment
+install(TARGETS astcanopy
+  EXPORT astcanopy-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILE_SET public_headers
+)
+
+install(EXPORT astcanopy-targets
+  FILE astcanopy-config.cmake
+  NAMESPACE astcanopy::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
+  VERSION 0.1.0
+  COMPATIBILITY SameMajorVersion)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)

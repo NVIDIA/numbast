@@ -16,11 +16,6 @@ package:
 source:
   path: ../../../ast_canopy
 
-build:
-  script: {{ PYTHON }} -m pip install . -vv && mv {{ SP_DIR }}/libastcanopy.so {{ PREFIX }}/lib
-  ignore_run_exports_from:
-    - {{ compiler('cuda') }}
-
 requirements:
   build:
     - {{ compiler('c') }}
@@ -28,8 +23,6 @@ requirements:
     - {{ compiler('cuda') }}
     - cmake >=3.28
     - pybind11
-    - cffi
-    - pynvjitlink >=0.2
     - clangdev >=18
     - ninja
     - sysroot_{{ target_platform }} 2.17
@@ -40,15 +33,16 @@ requirements:
     - python
     - pip
     - scikit-build-core
+    - llvmdev >=14
+    - llvm >=14
   run:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - python
     - numba >=0.58
-    - pynvjitlink >=0.2
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
-    - cuda-toolkit {{ cuda_compiler_version }}
-    - cuda-python {{ cuda_compiler_version }}
+    - cuda-nvcc {{ cuda_compiler_version }}
+    - cuda-nvcc-impl {{ cuda_compiler_version }}
     - clangdev >=18
 
 about:

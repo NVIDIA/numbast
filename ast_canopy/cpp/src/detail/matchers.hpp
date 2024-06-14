@@ -12,7 +12,7 @@
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
 
-#include "ast_canopy.hpp"
+#include <ast_canopy/ast_canopy.hpp>
 
 using namespace clang;
 using namespace clang::ast_matchers;
