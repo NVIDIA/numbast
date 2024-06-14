@@ -27,6 +27,8 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} 2.17
   host:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - cuda-version {{ cuda_compiler_version }}
     - python
     - pip
@@ -34,6 +36,8 @@ requirements:
     - llvmdev >=14
     - llvm >=14
   run:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - python
     - numba >=0.58
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
