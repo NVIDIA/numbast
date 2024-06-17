@@ -10,7 +10,7 @@
 {% set project_urls = project_data["urls"] %}
 
 package:
-  name: numba-extensions
+  name: numbast-extensions
   version: {{ version }}
 
 source:
@@ -57,4 +57,4 @@ requirements:
 about:
   license_family: Apache
   license_file: ../../../LICENSE
-  summary: Numba-extensions contains novel dtypes and useful device side bindings for Numba.cuda
+  summary: Numbast-extensions contains novel dtypes and useful device side bindings for Numba.cuda
