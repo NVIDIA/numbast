@@ -14,7 +14,7 @@ package:
   version: {{ version }}
 
 source:
-  path: ../../../numba_extensions
+  path: ../../../numbast_extensions
 
 build:
   script:
@@ -52,7 +52,7 @@ requirements:
 
   test:
     imports:
-      - numba_extensions
+      - numbast_extensions
 
 about:
   license_family: Apache

@@ -21,5 +21,5 @@ pytest \
     -v \
     --continue-on-collection-errors \
     --cache-clear \
-    --junitxml="${RAPIDS_TESTS_DIR}/junit-numba_extensions.xml" \
-    numba_extensions/
+    --junitxml="${RAPIDS_TESTS_DIR}/junit-numbast_extensions.xml" \
+    numbast_extensions/
