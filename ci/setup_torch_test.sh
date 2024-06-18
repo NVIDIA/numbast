@@ -31,8 +31,8 @@ ln -s /usr/bin/clang++-18 /usr/bin/clang++
 ast_canopy/build.sh
 pip install numbast/
 
-# bf16 is now in numba_extensions.bf16
-pip install numba_extensions/
+# bf16 is now in numbast_extensions.bf16
+pip install numbast_extensions/
 
 # Run tests
 pytest \
@@ -40,4 +40,4 @@ pytest \
     --continue-on-collection-errors \
     --cache-clear \
     --junitxml="${RAPIDS_TESTS_DIR}/junit-numbast.xml" \
-    numba_extensions/tests/test_torch_bf16.py
+    numbast_extensions/tests/test_torch_bf16.py

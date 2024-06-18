@@ -1,4 +1,4 @@
-# Numba Extensions
+# Numbast Extensions
 
 ## Overview
 
@@ -50,7 +50,7 @@ Known Limitations:
 
 ## Packaging
 
-`numba_extensions` package is created to demonstrate the remote deployment of Numbast and Canopy.
+`numbast_extensions` package is created to demonstrate the remote deployment of Numbast and Canopy.
 It includes:
 - bfloat16 feature
 

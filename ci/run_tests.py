@@ -62,20 +62,20 @@ def run(
         run_pytest(
             "bf16",
             [
-                "numba_extensions/tests/test_bfloat16.py",
-                "numba_extensions/tests/test_bfloat162.py",
+                "numbast_extensions/tests/test_bfloat16.py",
+                "numbast_extensions/tests/test_bfloat162.py",
             ],
         )
     if all_tests or fp16:
         run_pytest(
             "fp16",
             [
-                "numba_extensions/tests/test_fp16.py",
-                "numba_extensions/tests/test_fp162.py",
+                "numbast_extensions/tests/test_fp16.py",
+                "numbast_extensions/tests/test_fp162.py",
             ],
         )
     if all_tests or curand_device:
-        run_pytest("curand_device", ["numba_extensions/tests/test_curand.py"])
+        run_pytest("curand_device", ["numbast_extensions/tests/test_curand.py"])
 
 
 if __name__ == "__main__":
