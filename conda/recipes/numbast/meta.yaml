@@ -20,7 +20,6 @@ build:
   script:
     - {{ PYTHON }} -m pip install . -vv
   ignore_run_exports_from:
-    - {{ compiler('cuda') }}
     - libnvjitlink-dev
 
 requirements:
@@ -38,6 +37,7 @@ requirements:
     - python
     - numba >=0.58
     - pynvjitlink >=0.2
+    - cuda-nvrtc {{ cuda_compiler_version }}
     - ast_canopy
 
 about:
