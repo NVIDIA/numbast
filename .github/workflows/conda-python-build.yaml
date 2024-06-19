@@ -91,4 +91,4 @@ jobs:
           if: inputs.upload_to_conda
           run: "ci/upload_conda.sh"
           env:
-            GH_TOKEN: ${{ github.token }}
+            CONDA_TOKEN: ${{ secrets.NVIDIA_CONDA_TOKEN }}
