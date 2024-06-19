@@ -19,23 +19,17 @@ source:
 build:
   script:
     - {{ PYTHON }} -m pip install . -vv
-  ignore_run_exports_from:
-    - {{ compiler('cuda') }}
 
 requirements:
   build:
-    - numbast
-  host:
-    - cuda-version {{ cuda_compiler_version }}
-    - cuda-cudart {{ cuda_compiler_version }}
     - python
     - pip
-    - scikit-build-core
   run:
+    - cuda-version {{ cuda_compiler_version }}
+    - cuda-cudart-dev
     - python
     - numba >=0.59
     - numbast
-    - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
 
   test:
     imports:
