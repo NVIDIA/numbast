@@ -96,7 +96,7 @@ def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
             )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
-                f"NVCC failed to compile an empty cuda file. \n {e.stdout.encode('utf-8')} \n {e.stderr.encode('utf-8')}"
+                f"NVCC failed to compile an empty cuda file. \n {e.stdout.decode('utf-8')} \n {e.stderr.decode('utf-8')}"
             ) from e
 
     if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
