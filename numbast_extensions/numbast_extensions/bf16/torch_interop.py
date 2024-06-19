@@ -11,7 +11,7 @@ from numba.np import numpy_support  # noqa: E402
 import numba.cuda.dispatcher
 from numba.cuda.dispatcher import _LaunchConfiguration
 
-from numba_extensions.bf16 import nv_bfloat16
+from numbast_extensions.bf16 import nv_bfloat16
 
 _logger = None
 
@@ -42,7 +42,7 @@ def get_logger():
             # Create a simple handler that prints to stderr
             handler = logging.StreamHandler(sys.stderr)
             fmt = (
-                "== CUDA (Numba_extensions) [%(relativeCreated)d] "
+                "== CUDA (Numbast_extensions) [%(relativeCreated)d] "
                 "%(levelname)5s -- %(message)s"
             )
             handler.setFormatter(logging.Formatter(fmt=fmt))
@@ -69,7 +69,7 @@ try:
 except ImportError:
     if _TORCH_IMPORTED:
         warnings.warn(
-            "Pytorch installation detected. To use Numba-extensions' bfloat16"
+            "Pytorch installation detected. To use numbast-extensions' bfloat16"
             "bindings, please also install ml_dtypes via `python -m pip install ml_dtypes`"
         )
 

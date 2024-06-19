@@ -3,7 +3,7 @@
 
 import pytest
 import numba.cuda as cuda
-from numba_extensions.bf16 import get_shims
+from numbast_extensions.bf16 import get_shims
 
 torch = pytest.importorskip("torch")
 
