@@ -9,6 +9,7 @@ on:
 jobs:
   build-conda-x86_64:
     uses: ./.github/workflows/conda-python-build.yaml
+    secrets: inherit
     with:
       build_type: branch
       script: "ci/build_conda.sh"
@@ -17,6 +18,7 @@ jobs:
       upload_to_conda: true
   build-conda-aarch64:
     uses: ./.github/workflows/conda-python-build.yaml
+    secrets: inherit
     with:
       build_type: branch
       script: "ci/build_conda.sh"
