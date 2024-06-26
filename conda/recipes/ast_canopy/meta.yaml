@@ -20,29 +20,22 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - {{ compiler('cuda') }}
     - cmake >=3.28
-    - pybind11
-    - clangdev >=18
     - ninja
-    - sysroot_{{ target_platform }} 2.17
+    - {{ stdlib("c") }}
   host:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - cuda-version {{ cuda_compiler_version }}
     - python
+    - pybind11
     - pip
     - scikit-build-core
+    - clangdev >=18
     - llvmdev >=14
     - llvm >=14
   run:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
+    - cuda-version >=12.3
+    - cuda-nvcc >=12.3
+    - gcc >=10,<13
     - python
-    - numba >=0.58
-    - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
-    - cuda-nvcc {{ cuda_compiler_version }}
-    - cuda-nvcc-impl {{ cuda_compiler_version }}
     - clangdev >=18
 
 about:
