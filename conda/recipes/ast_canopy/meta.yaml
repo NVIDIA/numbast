@@ -36,7 +36,6 @@ requirements:
     - cuda-nvcc >=12.3
     - gcc >=10,<13
     - python
-    - numba >=0.58
     - clangdev >=18
 
 about:
