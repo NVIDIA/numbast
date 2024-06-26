@@ -26,19 +26,19 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
     - cmake >=3.28
     - ninja
-    - ast_canopy
-    - sysroot_{{ target_platform }} 2.17
   host:
     - python
     - pip
   run:
-    - python
-    - numba >=0.58
-    - pynvjitlink >=0.2
-    - cuda-nvrtc {{ cuda_compiler_version }}
     - ast_canopy
+    - cuda-nvrtc
+    - cuda-version {{ cuda_compiler_version }}
+    - numba >=0.58
+    - python
+    - pynvjitlink >=0.2
 
 about:
   license_family: Apache
