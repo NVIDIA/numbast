@@ -26,7 +26,7 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - {{ stdlib("c") }}
+    - {{ stdlib('c') }}
     - cmake >=3.28
     - ninja
   host:
@@ -35,8 +35,8 @@ requirements:
   run:
     - ast_canopy
     - cuda-nvrtc
-    - cuda-version {{ cuda_compiler_version }}
-    - numba >=0.58
+    - cuda-version >=12.3
+    - numba >=0.59
     - python
     - pynvjitlink >=0.2
 
