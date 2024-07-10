@@ -35,7 +35,7 @@ requirements:
   run:
     - ast_canopy
     - cuda-nvrtc
-    - cuda-version >=12.3
+    - cuda-version >=12.5
     - numba >=0.59
     - python
     - pynvjitlink >=0.2

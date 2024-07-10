@@ -25,7 +25,7 @@ requirements:
     - python
     - pip
   run:
-    - cuda-version >=12.3
+    - cuda-version >=12.5
     - cuda-cudart-dev
     - python
     - numba >=0.59
