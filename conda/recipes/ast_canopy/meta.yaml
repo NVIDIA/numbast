@@ -34,6 +34,7 @@ requirements:
   run:
     - cuda-version >=12.3
     - cuda-nvcc >=12.3
+    - cuda-nvcc_{{ target_platform }} >=12.3
     - gcc >=10,<13
     - python
     - clangdev >=18
