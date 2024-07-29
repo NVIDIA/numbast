@@ -16,60 +16,6 @@ from numbast.types import to_numba_type
 from numbast.utils import deduplicate_overloads
 
 
-typing_template = """
-# Typing for {struct_name}
-class {struct_name}_type_class({parent_type}):
-    def __init__(self):
-        super().__init__(name="{struct_name}")
-        self.alignof_ = {struct_alignof}
-        self.bitwidth = {struct_sizeof} * 8
-
-{struct_name}_type = {struct_name}_type_class()
-"""
-
-python_api_template = """
-# Make Python API for struct
-{struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_name}_type}})
-"""
-
-primitive_data_model_template = """
-@register_model({struct_name}_type_class)
-class {struct_name}_model(PrimitiveModel):
-    def __init__(self, dmm, fe_type):
-        be_type = ir.IntType(fe_type.bitwidth)
-        super({struct_name}_model, self).__init__(dmm, fe_type, be_type)
-"""
-
-struct_data_model_template = """
-@register_model({struct_name}_type_class)
-class {struct_name}_model(StructModel):
-    def __init__(self, dmm, fe_type):
-        members = [{member_types_tuples}]
-        super().__init__(dmm, fe_type, members)
-"""
-
-resolve_methods_template = """
-    def resolve_{attr_name}(self, obj):
-        return {numba_type}
-"""
-
-make_attribute_wrappers_template = """
-make_attribute_wrapper({struct_name}_type_class, "{attr_name}", "{attr_name}")
-"""
-
-struct_attribute_typing_template = """
-@register_attr
-class {struct_name}_attr(AttributeTemplate):
-    key = {struct_name}
-
-    {resolve_methods}
-
-{make_attribute_wrappers}
-"""
-
-# Ctor templates
-
-
 class StaticStructCtorRenderer(BaseRenderer):
     struct_ctor_decl_device_template = """
 {struct_name}_ctor_decl = declare_device(
@@ -334,6 +280,57 @@ register_global({struct_name}, Function({struct_name}_ctor_template))
 
 
 class StaticStructRenderer(BaseRenderer):
+    typing_template = """
+# Typing for {struct_name}
+class {struct_name}_type_class({parent_type}):
+    def __init__(self):
+        super().__init__(name="{struct_name}")
+        self.alignof_ = {struct_alignof}
+        self.bitwidth = {struct_sizeof} * 8
+
+{struct_name}_type = {struct_name}_type_class()
+"""
+
+    python_api_template = """
+# Make Python API for struct
+{struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_name}_type}})
+"""
+
+    primitive_data_model_template = """
+@register_model({struct_name}_type_class)
+class {struct_name}_model(PrimitiveModel):
+    def __init__(self, dmm, fe_type):
+        be_type = ir.IntType(fe_type.bitwidth)
+        super({struct_name}_model, self).__init__(dmm, fe_type, be_type)
+"""
+
+    struct_data_model_template = """
+@register_model({struct_name}_type_class)
+class {struct_name}_model(StructModel):
+    def __init__(self, dmm, fe_type):
+        members = [{member_types_tuples}]
+        super().__init__(dmm, fe_type, members)
+"""
+
+    resolve_methods_template = """
+    def resolve_{attr_name}(self, obj):
+        return {numba_type}
+"""
+
+    make_attribute_wrappers_template = """
+make_attribute_wrapper({struct_name}_type_class, "{attr_name}", "{attr_name}")
+"""
+
+    struct_attribute_typing_template = """
+@register_attr
+class {struct_name}_attr(AttributeTemplate):
+    key = {struct_name}
+
+    {resolve_methods}
+
+{make_attribute_wrappers}
+"""
+
     _parent_type_str: str
     """Qualified name of parent type."""
 
@@ -366,7 +363,7 @@ class StaticStructRenderer(BaseRenderer):
         self._header_path = header_path
 
     def _render_typing(self):
-        self._typing_rendered = typing_template.format(
+        self._typing_rendered = self.typing_template.format(
             struct_type_name=self._struct_name,
             parent_type=self._parent_type_str,
             struct_name=self._struct_name,
@@ -375,7 +372,7 @@ class StaticStructRenderer(BaseRenderer):
         )
 
     def _render_python_api(self):
-        self._python_api_rendered = python_api_template.format(
+        self._python_api_rendered = self.python_api_template.format(
             struct_name=self._struct_name
         )
 
@@ -383,7 +380,7 @@ class StaticStructRenderer(BaseRenderer):
         self.Imports.add("from numba.core.extending import register_model")
 
         if self._data_model == PrimitiveModel:
-            self._data_model_rendered = primitive_data_model_template.format(
+            self._data_model_rendered = self.primitive_data_model_template.format(
                 struct_type_name=self._struct_name,
                 struct_name=self._struct_name,
             )
@@ -402,7 +399,7 @@ class StaticStructRenderer(BaseRenderer):
 
             member_types_str = ", ".join(member_types_tuples_strs)
 
-            self._data_model_rendered = struct_data_model_template.format(
+            self._data_model_rendered = self.struct_data_model_template.format(
                 struct_type_name=self._struct_name,
                 struct_name=self._struct_name,
                 member_types_tuples=member_types_str,
@@ -424,7 +421,7 @@ class StaticStructRenderer(BaseRenderer):
             attribute_wrappers = []
             for field in public_fields:
                 resolve_methods.append(
-                    resolve_methods_template.format(
+                    self.resolve_methods_template.format(
                         attr_name=field.name,
                         numba_type=to_numba_type(
                             field.type_.unqualified_non_ref_type_name
@@ -432,7 +429,7 @@ class StaticStructRenderer(BaseRenderer):
                     )
                 )
                 attribute_wrappers.append(
-                    make_attribute_wrappers_template.format(
+                    self.make_attribute_wrappers_template.format(
                         struct_name=self._struct_name,
                         attr_name=field.name,
                     )
@@ -441,10 +438,12 @@ class StaticStructRenderer(BaseRenderer):
             resolve_methods_str = "\n".join(resolve_methods)
             attribute_wrappers_str = "\n".join(attribute_wrappers)
 
-            self._struct_attr_typing_rendered = struct_attribute_typing_template.format(
-                struct_name=self._struct_name,
-                resolve_methods=resolve_methods_str,
-                make_attribute_wrappers=attribute_wrappers_str,
+            self._struct_attr_typing_rendered = (
+                self.struct_attribute_typing_template.format(
+                    struct_name=self._struct_name,
+                    resolve_methods=resolve_methods_str,
+                    make_attribute_wrappers=attribute_wrappers_str,
+                )
             )
 
     def _render_struct_ctors(self):
