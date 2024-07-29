@@ -21,6 +21,9 @@ dependencies= [
     "click"
 ]
 
+[project.scripts]
+numbast = "numbast.tool:static_binding_generator"
+
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"
 repository = "https://github.com/NVIDIA/numbast"
