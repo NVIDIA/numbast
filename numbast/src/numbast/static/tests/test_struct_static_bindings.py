@@ -41,7 +41,7 @@ def numbast_jit(cuda_struct):
     return partial(cuda.jit, link=[c_ext_shim_source])
 
 
-def test_foo_ctor(cuda_struct, numbast_jit):
+def test_foo_ctor_default_simple(cuda_struct, numbast_jit):
     Foo = cuda_struct["Foo"]
 
     @numbast_jit
@@ -57,14 +57,18 @@ def test_foo_ctor(cuda_struct, numbast_jit):
     assert all(arr.copy_to_host() == [0, 42])
 
 
-def test_bar_ctor(cuda_struct, numbast_jit):
+def test_bar_ctor_overloads(cuda_struct, numbast_jit):
     Bar = cuda_struct["Bar"]
+
+    from numba.types import int32, float32
 
     @numbast_jit
     def kernel(arr):
-        bar = Bar(3.14)
+        bar = Bar(int32(3.14))
+        bar2 = Bar(float32(3.14))
         arr[0] = bar.x
+        arr[1] = bar2.x
 
-    arr = device_array((1,), "float32")
+    arr = device_array((2,), "float32")
     kernel[1, 1](arr)
-    assert arr.copy_to_host()[0] == pytest.approx(3.14)
+    assert arr.copy_to_host() == pytest.approx([3, 3.14])

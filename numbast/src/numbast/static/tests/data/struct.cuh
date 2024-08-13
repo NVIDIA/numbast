@@ -21,5 +21,6 @@ struct Bar {
 public:
   float x;
 
+  __device__ Bar(int x) : x(x) {}
   __device__ Bar(float x) : x(x) {}
 };
