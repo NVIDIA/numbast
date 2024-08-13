@@ -7,7 +7,8 @@ struct Foo {
 public:
   int x;
 
-  __device__ int bar() { return 0; }
+  __device__ Foo() {}
+  __device__ Foo(int x) : x(x) {}
 
 private:
   int y;

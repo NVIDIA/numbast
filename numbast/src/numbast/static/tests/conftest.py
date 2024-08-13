@@ -7,7 +7,7 @@ import os
 
 
 @pytest.fixture
-def sample_struct():
+def sample():
     current_directory = os.path.dirname(os.path.abspath(__file__))
 
-    return os.path.join(current_directory, "data/", "sample_struct_static_bindings.cuh")
+    return lambda file: os.path.join(current_directory, "data/", file)

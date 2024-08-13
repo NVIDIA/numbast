@@ -5,23 +5,21 @@ import pytest
 
 from numba.types import Type
 from numba.core.datamodel import StructModel
+from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
 from numbast.static.struct import StaticStructRenderer
 
 
 @pytest.fixture
-def Foo_static_struct_bindings(sample_struct):
-    structs, *_ = parse_declarations_from_source(
-        sample_struct, [sample_struct], "sm_50"
-    )
+def one_struct(sample):
+    header = sample("one_struct.cuh")
+    structs, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
     assert len(structs) == 1
 
     FooDecl = structs[0]
-    SSR = StaticStructRenderer(
-        FooDecl, "Foo", Type, StructModel, header_path=sample_struct
-    )
+    SSR = StaticStructRenderer(FooDecl, "Foo", Type, StructModel, header_path=header)
 
     bindings = SSR.render_as_str()
     globals = {}
@@ -33,14 +31,20 @@ def Foo_static_struct_bindings(sample_struct):
     return {k: globals[k] for k in public_apis}
 
 
-def test_foo_ctor(Foo_static_struct_bindings):
-    Foo = Foo_static_struct_bindings["Foo"]
-    c_ext_shim_source = Foo_static_struct_bindings["c_ext_shim_source"]
+def test_foo_ctor(one_struct):
+    Foo = one_struct["Foo"]
+    c_ext_shim_source = one_struct["c_ext_shim_source"]
 
     from numba import cuda
 
     @cuda.jit(link=[c_ext_shim_source])
-    def kernel():
+    def kernel(arr):
         foo = Foo()  # noqa: F841
+        foo2 = Foo(42)
 
-    kernel[1, 1]()
+        arr[0] = foo.x
+        arr[1] = foo2.x
+
+    arr = device_array((2,), "int32")
+    kernel[1, 1](arr)
+    assert all(arr.copy_to_host() == [0, 42])
