@@ -29,6 +29,20 @@ logger.addHandler(FileHandler(logger_path))
 
 
 class StaticStructCtorRenderer(BaseRenderer):
+    """Renderer for a single struct constructor.
+
+    Parameters
+    ----------
+    struct_name: str
+        Name of the struct.
+    struct_type_class: str
+        Name of the new numba type class in the binding script.
+    struct_type_name: str
+        Name of the instantiated numba type in the binding script.
+    ctor_decl: ast_canopy.StructMethod
+        Declaration of the constructor.
+    """
+
     struct_ctor_decl_device_template = """
 {struct_name}_ctor_decl = declare_device(
     '{unique_shim_name}',
@@ -147,6 +161,8 @@ _{struct_name}_{param_names}_lower()
         self._device_caller_name = f"{self._struct_name}_device_caller"
 
     def _render_decl_device(self):
+        """Render codes that declares a foreign function for this constructor in Numba."""
+
         self.Imports.add("from numba.cuda import declare_device")
         self.Imports.add("from numba.core.typing import signature")
         # All arguments are passed by pointers in C-CPP shim interop
@@ -174,6 +190,8 @@ _{struct_name}_{param_names}_lower()
         )
 
     def _render_shim_function(self):
+        """Render external C shim functions for this struct constructor."""
+
         self._c_ext_shim_rendered = self.struct_ctor_c_ext_shim_template.format(
             unique_shim_name=self._deduplicated_shim_name,
             struct_name=self._struct_name,
@@ -182,6 +200,8 @@ _{struct_name}_{param_names}_lower()
         )
 
     def _render_lowering(self):
+        """Render lowering codes for this struct constructor."""
+
         self.Imports.add("from numba.cuda.cudaimpl import lower")
 
         self._lowering_rendered = self.struct_ctor_lowering_template.format(
@@ -193,6 +213,11 @@ _{struct_name}_{param_names}_lower()
         )
 
     def _render(self):
+        """Render FFI, lowering and C shim functions of the constructor.
+
+        Note that the typing still needs to be handled on a higher layer.
+        """
+
         self._render_decl_device()
         self._render_shim_function()
         self._render_lowering()
@@ -213,10 +238,12 @@ _{struct_name}_{param_names}_lower()
 
     @property
     def numba_param_types(self):
+        """Parameter types of the constructor in Numba types."""
         return self._nb_param_types
 
     @property
     def signature_str(self):
+        """Numba.signature string of the constructor's signature."""
         return self.struct_ctor_signature_template.format(
             struct_name=self._struct_name,
             arglist=self._nb_param_types_str,
@@ -224,6 +251,21 @@ _{struct_name}_{param_names}_lower()
 
 
 class StaticStructCtorsRenderer(BaseRenderer):
+    """Renderer for all constructors of a struct.
+
+    Parameters
+    ----------
+
+    ctor_decls: list[StructMethod]
+        A list of constructor declarations.
+    struct_name: str
+        Name of the struct.
+    struct_type_class: str
+        Name of the new numba type class in the binding script.
+    struct_type_name: str
+        Name of the instantiated numba type in the binding script.
+    """
+
     struct_ctor_template_typing_template = """
 @register
 class {struct_name}_ctor_template(ConcreteTemplate):
@@ -249,6 +291,15 @@ register_global({struct_name}, Function({struct_name}_ctor_template))
         self._c_rendered = ""
 
     def _render_typing(self, signature_strs: list[str]):
+        """Renders the typing of the constructors.
+
+        Parameter
+        ---------
+        signature_strs: list[str]
+            A list of `numba.signature` strings containing all overloads of
+            the constructors.
+        """
+
         self.Imports.add("from numba.cuda.cudadecl import register")
         self.Imports.add("from numba.cuda.cudadecl import register_global")
         self.Imports.add("from numba.core.typing.templates import ConcreteTemplate")
@@ -263,6 +314,8 @@ register_global({struct_name}, Function({struct_name}_ctor_template))
         )
 
     def _render(self):
+        """Render all struct constructors."""
+
         signatures: list[str] = []
         for ctor_decl in self._ctor_decls:
             renderer = StaticStructCtorRenderer(
@@ -283,15 +336,34 @@ register_global({struct_name}, Function({struct_name}_ctor_template))
         self._python_rendered += self._struct_ctor_typing_rendered
 
     @property
-    def python_rendered(self):
+    def python_rendered(self) -> str:
+        """The python script that contains the bindings to all constructors."""
         return self._python_rendered
 
     @property
-    def c_rendered(self):
+    def c_rendered(self) -> str:
+        """The C program that contains the shim functions to all constructors."""
         return self._c_rendered
 
 
 class StaticStructRenderer(BaseRenderer):
+    """Renderer that renders bindings to a single CUDA C++ struct.
+
+    Parameters
+    ----------
+    decl: Struct
+        Declaration of the struct.
+    parent_type: type
+        The parent Numba type of the new struct type created.
+    data_model: type
+        The data model of the new struct type.
+    header_path: os.PathLike
+        Path to the header that contains the declaration of the struct.
+    aliases: list[str], optional
+        TODO: If the struct has other aliases, specify them here. Numbast creates
+        aliased objects that references the original python API object.
+    """
+
     typing_template = """
 # Typing for {struct_name}
 class {struct_name}_type_class({parent_type}):
@@ -349,14 +421,13 @@ class {struct_name}_attr(AttributeTemplate):
     def __init__(
         self,
         decl: Struct,
-        struct_name: str,
         parent_type: type,
         data_model: type,
         header_path: os.PathLike,
         aliases: list[str] = [],
     ):
         super().__init__(decl)
-        self._struct_name = struct_name
+        self._struct_name = decl.name
         self._aliases = aliases
         self._parent_type = parent_type
         self._data_model = data_model
@@ -375,6 +446,8 @@ class {struct_name}_attr(AttributeTemplate):
         self._header_path = header_path
 
     def _render_typing(self):
+        """Render typing of the struct."""
+
         self._typing_rendered = self.typing_template.format(
             struct_type_name=self._struct_name,
             parent_type=self._parent_type_str,
@@ -384,11 +457,17 @@ class {struct_name}_attr(AttributeTemplate):
         )
 
     def _render_python_api(self):
+        """Render the Python API object of the struct.
+
+        This is the python handle to use it in Numba kernels.
+        """
         self._python_api_rendered = self.python_api_template.format(
             struct_name=self._struct_name
         )
 
     def _render_data_model(self):
+        """Renders the data model of the struct."""
+
         self.Imports.add("from numba.core.extending import register_model")
 
         if self._data_model == PrimitiveModel:
@@ -418,6 +497,8 @@ class {struct_name}_attr(AttributeTemplate):
             )
 
     def _render_struct_attr(self):
+        """Renders the typings of the struct attributes."""
+
         if self._data_model == StructModel:
             self.Imports.add("from numba.cuda.cudadecl import register_attr")
             self.Imports.add(
@@ -459,6 +540,7 @@ class {struct_name}_attr(AttributeTemplate):
             )
 
     def _render_struct_ctors(self):
+        """Render constructors of the struct."""
         static_ctors_renderer = StaticStructCtorsRenderer(
             struct_name=self._struct_name,
             struct_type_class=self._struct_type_class_name,
@@ -470,7 +552,22 @@ class {struct_name}_attr(AttributeTemplate):
         self._struct_ctors_python_rendered = static_ctors_renderer.python_rendered
         self._struct_ctors_c_rendered = static_ctors_renderer.c_rendered
 
-    def render_python(self):
+    def render_python(self) -> tuple[set[str], str]:
+        """Renders the python portion of the bindings.
+
+        At the end of the day, all artifacts are in python scripts. However,
+        there are shim functions that are in C language stored as a plain
+        string in Python. This function only renders the pure-python parts
+        of the bindings. This includes typing, lowering, FFI declarations
+        and python imports.
+
+        Return
+        ------
+        imports_and_bindings: tuple[set[str], str]
+            A tuple. The first element of the tuple is a set of import strings
+            required to run the bindings. The second element of the tuple
+            is the concatenated bindings script.
+        """
         self.Imports.add("from numba.cuda import CUSource")
 
         self._render_typing()
@@ -488,7 +585,20 @@ class {struct_name}_attr(AttributeTemplate):
 """
         return self.Imports, self._python_rendered
 
-    def render_c(self):
+    def render_c(self) -> tuple[set[str], str]:
+        """Renders the C shim functions of the bindings.
+
+        At the end of the day, all artifacts are in python scripts. However,
+        there are shim functions that are in C language stored as a plain
+        string in Python. This function renders these shim function codes.
+
+        Return
+        ------
+        includes_and_shims: tuple[set[str], str]
+            A tuple. The first element of the tuple is a set of include strings
+            required to compile the shim function. The second element of the tuple
+            is the concatenated shim function C program.
+        """
         self.Includes.add(self.includes_template.format(header_path=self._header_path))
 
         self._c_ext_merged_shim = "\n".join([self._struct_ctors_c_rendered])
@@ -510,11 +620,6 @@ class StaticStructsRenderer(BaseRenderer):
     header_path: str
         The path to the header that contains the cuda struct declaration.
     """
-
-    structs_template = """
-{struct_templates}
-{c_ext_shims}
-"""
 
     _python_rendered: list[tuple[set[str], str]]
     """The strings containing rendered python scripts of the struct bindings. Minus the C shim functions. The
@@ -542,6 +647,7 @@ class StaticStructsRenderer(BaseRenderer):
         self._c_rendered = []
 
     def _render(self):
+        """Render all structs in `decls`."""
         for decl in self._decls:
             name = decl.name
             nb_ty, nb_datamodel, header_path = self._specs.get(
@@ -552,7 +658,7 @@ class StaticStructsRenderer(BaseRenderer):
                     f"CUDA struct {name} has does not provide a header path."
                 )
 
-            SSR = StaticStructRenderer(decl, name, nb_ty, nb_datamodel, header_path)
+            SSR = StaticStructRenderer(decl, nb_ty, nb_datamodel, header_path)
 
             self._python_rendered.append(SSR.render_python())
             self._c_rendered.append(SSR.render_c())
@@ -580,6 +686,7 @@ class StaticStructsRenderer(BaseRenderer):
         )
 
     def render_as_str(self) -> str:
+        """Return the final assembled bindings in script. This output should be final."""
         self._render()
         output = self._python_str + "\n" + self._shim_function_pystr
 
