@@ -12,8 +12,8 @@ from numbast.static.struct import StaticStructRenderer
 
 
 @pytest.fixture
-def one_struct(sample):
-    header = sample("one_struct.cuh")
+def cuda_struct(sample):
+    header = sample("struct.cuh")
     structs, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
     assert len(structs) == 1
@@ -31,9 +31,9 @@ def one_struct(sample):
     return {k: globals[k] for k in public_apis}
 
 
-def test_foo_ctor(one_struct):
-    Foo = one_struct["Foo"]
-    c_ext_shim_source = one_struct["c_ext_shim_source"]
+def test_foo_ctor(cuda_struct):
+    Foo = cuda_struct["Foo"]
+    c_ext_shim_source = cuda_struct["c_ext_shim_source"]
 
     from numba import cuda
 
