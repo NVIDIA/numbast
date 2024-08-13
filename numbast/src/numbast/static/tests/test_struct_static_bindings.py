@@ -2,42 +2,49 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
+from functools import partial
 
+from numba import cuda
 from numba.types import Type
 from numba.core.datamodel import StructModel
 from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
-from numbast.static.struct import StaticStructRenderer
+from numbast.static.struct import StaticStructsRenderer
 
 
-@pytest.fixture
-def cuda_struct(sample):
-    header = sample("struct.cuh")
+@pytest.fixture(scope="module")
+def cuda_struct(data_folder):
+    header = data_folder("struct.cuh")
+
+    specs = {"Foo": (Type, StructModel, header), "Bar": (Type, StructModel, header)}
+
     structs, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
-    assert len(structs) == 1
+    assert len(structs) == 2
 
-    FooDecl = structs[0]
-    SSR = StaticStructRenderer(FooDecl, "Foo", Type, StructModel, header_path=header)
+    SSR = StaticStructsRenderer(structs, specs)
 
     bindings = SSR.render_as_str()
     globals = {}
     exec(bindings, globals)
 
-    public_apis = ["Foo", "c_ext_shim_source"]
+    public_apis = [*specs, "c_ext_shim_source"]
     assert all(public_api in globals for public_api in public_apis)
 
     return {k: globals[k] for k in public_apis}
 
 
-def test_foo_ctor(cuda_struct):
-    Foo = cuda_struct["Foo"]
+@pytest.fixture(scope="module")
+def numbast_jit(cuda_struct):
     c_ext_shim_source = cuda_struct["c_ext_shim_source"]
+    return partial(cuda.jit, link=[c_ext_shim_source])
 
-    from numba import cuda
 
-    @cuda.jit(link=[c_ext_shim_source])
+def test_foo_ctor(cuda_struct, numbast_jit):
+    Foo = cuda_struct["Foo"]
+
+    @numbast_jit
     def kernel(arr):
         foo = Foo()  # noqa: F841
         foo2 = Foo(42)
@@ -48,3 +55,16 @@ def test_foo_ctor(cuda_struct):
     arr = device_array((2,), "int32")
     kernel[1, 1](arr)
     assert all(arr.copy_to_host() == [0, 42])
+
+
+def test_bar_ctor(cuda_struct, numbast_jit):
+    Bar = cuda_struct["Bar"]
+
+    @numbast_jit
+    def kernel(arr):
+        bar = Bar(3.14)
+        arr[0] = bar.x
+
+    arr = device_array((1,), "float32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host()[0] == pytest.approx(3.14)

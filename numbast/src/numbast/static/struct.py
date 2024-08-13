@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 from textwrap import indent
+from logging import basicConfig, getLogger, FileHandler
+import tempfile
 
 from numba.types import Type
 from numba.core.datamodel.models import StructModel, PrimitiveModel
@@ -14,6 +17,15 @@ from numbast.static.renderer import (
 )
 from numbast.types import to_numba_type
 from numbast.utils import deduplicate_overloads
+
+FORMAT = "%(asctime)-15s \n ----- \n %(message)s"
+DATEFMT = "%Y-%m-%d %H:%M:%S"
+basicConfig(format=FORMAT, datefmt=DATEFMT)
+
+logger = getLogger("numbast.static")
+logger_path = tempfile.gettempdir() + "/" + "test.py"
+logger.debug(f"Struct debug outputs are written to {logger_path}")
+logger.addHandler(FileHandler(logger_path))
 
 
 class StaticStructCtorRenderer(BaseRenderer):
@@ -340,7 +352,7 @@ class {struct_name}_attr(AttributeTemplate):
         struct_name: str,
         parent_type: type,
         data_model: type,
-        header_path: str,
+        header_path: os.PathLike,
         aliases: list[str] = [],
     ):
         super().__init__(decl)
@@ -458,7 +470,7 @@ class {struct_name}_attr(AttributeTemplate):
         self._struct_ctors_python_rendered = static_ctors_renderer.python_rendered
         self._struct_ctors_c_rendered = static_ctors_renderer.c_rendered
 
-    def render_as_str(self) -> str:
+    def render_python(self):
         self.Imports.add("from numba.cuda import CUSource")
 
         self._render_typing()
@@ -467,29 +479,110 @@ class {struct_name}_attr(AttributeTemplate):
         self._render_struct_attr()
         self._render_struct_ctors()
 
-        self.Includes.append(
-            self.includes_template.format(header_path=self._header_path)
-        )
-
-        c_ext_merged_shim = "\n".join([*self.Includes, self._struct_ctors_c_rendered])
-
-        self._rendered_c_shims = self.MemoryShimWriterTemplate.format(
-            shim_funcs=c_ext_merged_shim
-        )
-
-        imports_str = "\n".join(self.Imports)
-
-        return f"""
-{self.Prefix}
-{imports_str}
+        self._python_rendered = f"""
 {self._typing_rendered}
 {self._python_api_rendered}
 {self._data_model_rendered}
 {self._struct_attr_typing_rendered}
 {self._struct_ctors_python_rendered}
-{self._rendered_c_shims}
+"""
+        return self.Imports, self._python_rendered
+
+    def render_c(self):
+        self.Includes.add(self.includes_template.format(header_path=self._header_path))
+
+        self._c_ext_merged_shim = "\n".join([self._struct_ctors_c_rendered])
+
+        return self.Includes, self._c_ext_merged_shim
+
+
+class StaticStructsRenderer(BaseRenderer):
+    """Render a collection of CUDA struct declcarations.
+
+    Parameters
+    ----------
+    decls: list[Struct]
+        A list of CUDA struct declarations.
+    specs: dict[str, tuple[type, type]]
+        A dictionary mapping the name of the structs to a tuple of
+        Numba parent type, data model and header path. If unspecified,
+        use `numba.types.Type`, `StructModel` and `default_header` by default.
+    header_path: str
+        The path to the header that contains the cuda struct declaration.
+    """
+
+    structs_template = """
+{struct_templates}
+{c_ext_shims}
 """
 
-    def render(self, path):
-        with open(path, "w") as file:
-            file.write(self.render_as_str())
+    _python_rendered: list[tuple[set[str], str]]
+    """The strings containing rendered python scripts of the struct bindings. Minus the C shim functions. The
+    first element of the tuple are the imports necessary to configure the numba typings and lowerings. The second
+    elements are the typing and lowering of the struct.
+    """
+
+    _c_rendered: list[tuple[set[str], str]]
+    """The strings containing rendered C shim functions of the struct bindings. The first element of the tuple
+    are the C includes that contains the declaration of the CUDA C++ struct. The second element are the shim function
+    strings.
+    """
+
+    def __init__(
+        self,
+        decls: list[Struct],
+        specs: dict[str, tuple[type, type, os.PathLike]],
+        default_header: os.PathLike | None = None,
+    ):
+        self._decls = decls
+        self._specs = specs
+        self._default_header = default_header
+
+        self._python_rendered = []
+        self._c_rendered = []
+
+    def _render(self):
+        for decl in self._decls:
+            name = decl.name
+            nb_ty, nb_datamodel, header_path = self._specs.get(
+                name, (Type, StructModel, self._default_header)
+            )
+            if header_path is None:
+                raise ValueError(
+                    f"CUDA struct {name} has does not provide a header path."
+                )
+
+            SSR = StaticStructRenderer(decl, name, nb_ty, nb_datamodel, header_path)
+
+            self._python_rendered.append(SSR.render_python())
+            self._c_rendered.append(SSR.render_c())
+
+        imports = set()
+        python_rendered = []
+        for imp, py in self._python_rendered:
+            imports |= imp
+            python_rendered.append(py)
+
+        self._python_str = (
+            self.Prefix + "\n" + "\n".join(imports) + "\n".join(python_rendered)
+        )
+
+        includes = set()
+        c_rendered = []
+        for inc, c in self._c_rendered:
+            includes |= inc
+            c_rendered.append(c)
+
+        self._c_str = "\n".join(includes) + "\n".join(c_rendered)
+
+        self._shim_function_pystr = self.MemoryShimWriterTemplate.format(
+            shim_funcs=self._c_str
+        )
+
+    def render_as_str(self) -> str:
+        self._render()
+        output = self._python_str + "\n" + self._shim_function_pystr
+
+        logger.debug(output)
+
+        return output

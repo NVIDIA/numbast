@@ -18,7 +18,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     includes_template = "#include <{header_path}>"
     """Template for including a header file."""
 
-    Includes: list[str] = []
+    Includes: set[str] = set()
     """includes to add in c extension shims."""
 
     def __init__(self, decl):

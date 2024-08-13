@@ -16,3 +16,10 @@ private:
 protected:
   int z;
 };
+
+struct Bar {
+public:
+  float x;
+
+  __device__ Bar(float x) : x(x) {}
+};
