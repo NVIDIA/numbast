@@ -15,6 +15,8 @@ from numbast.static.struct import StaticStructsRenderer
 
 
 class NumbaTypeDictType(click.ParamType):
+    """`Click` input type for dictionary mapping struct to Numba type."""
+
     name = "numba_type_dict"
 
     def convert(self, value, param, ctx):
@@ -39,6 +41,8 @@ numba_type_dict = NumbaTypeDictType()
 
 
 class NumbaDataModelDictType(click.ParamType):
+    """`Click` input type for dictionary mapping struct to Numba data model."""
+
     name = "numba_datamodel_type"
 
     def convert(self, value, param, ctx):
@@ -63,6 +67,7 @@ numba_datamodel_dict = NumbaDataModelDictType()
 
 
 def _generate_structs(struct_decls, aliases, header_path, types, data_models):
+    """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
     specs = {}
     for struct_decl in struct_decls:
         struct_name = struct_decl.name
@@ -98,6 +103,7 @@ def static_binding_generator(input_header, output_dir, types, datamodels):
     TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
     DATAMODELS: A dictionary in JSON string that maps name of the struct to their Numba datamodel.
     """
+    # TODO: We should support input of types and data models from an external spec file for better UX.
 
     try:
         basename = os.path.basename(input_header)
@@ -106,6 +112,8 @@ def static_binding_generator(input_header, output_dir, types, datamodels):
         click.echo(f"Unable to extract base name from {input_header}.")
         return
 
+    # TODO: we don't have tests on different compute capabilities for the static binding generator yet.
+    # This will be added in future PRs.
     structs, functions, function_templates, class_templates, typedefs, enums = (
         parse_declarations_from_source(
             input_header, [input_header], compute_capability="sm_50"
