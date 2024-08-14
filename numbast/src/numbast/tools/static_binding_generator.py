@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import click
 import os
 import json
@@ -8,7 +11,7 @@ import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
 
-from numbast.static.struct import StaticStructRenderer
+from numbast.static.struct import StaticStructsRenderer
 
 
 class NumbaTypeDictType(click.ParamType):
@@ -60,36 +63,26 @@ numba_datamodel_dict = NumbaDataModelDictType()
 
 
 def _generate_structs(struct_decls, aliases, header_path, types, data_models):
-    struct_bindings = ""
-
+    specs = {}
     for struct_decl in struct_decls:
         struct_name = struct_decl.name
-        this_aliases = aliases[struct_name]
         this_type = types[struct_name]
         this_data_model = data_models[struct_name]
+        specs[struct_name] = (this_type, this_data_model, header_path)
 
-        SSR = StaticStructRenderer(
-            struct_decl,
-            struct_name,
-            this_type,
-            this_data_model,
-            header_path,
-            this_aliases,
-        )
+    SSR = StaticStructsRenderer(struct_decls, specs)
 
-        struct_bindings += SSR.render_as_str()
-
-    return struct_bindings
+    return SSR.render_as_str()
 
 
 @click.command()
 @click.argument(
-    "input_header", type=click.Path(exists=True, dir_okay=False, readable=True)
+    "input-header", type=click.Path(exists=True, dir_okay=False, readable=True)
 )
 @click.option("--types", type=numba_type_dict)
 @click.option("--datamodels", type=numba_datamodel_dict)
 @click.option(
-    "--output_dir",
+    "--output-dir",
     type=click.Path(
         exists=True,
         file_okay=False,
@@ -102,6 +95,8 @@ def static_binding_generator(input_header, output_dir, types, datamodels):
 
     INPUT_HEADER: Path to the input CUDA header file.
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
+    TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
+    DATAMODELS: A dictionary in JSON string that maps name of the struct to their Numba datamodel.
     """
 
     try:
