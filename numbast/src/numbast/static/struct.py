@@ -3,7 +3,7 @@
 
 import os
 from textwrap import indent
-from logging import basicConfig, getLogger, FileHandler
+from logging import getLogger, FileHandler
 import tempfile
 
 from numba.types import Type
@@ -18,14 +18,10 @@ from numbast.static.renderer import (
 from numbast.types import to_numba_type
 from numbast.utils import deduplicate_overloads
 
-FORMAT = "%(asctime)-15s \n ----- \n %(message)s"
-DATEFMT = "%Y-%m-%d %H:%M:%S"
-basicConfig(format=FORMAT, datefmt=DATEFMT)
-
-logger = getLogger("numbast.static")
-logger_path = tempfile.gettempdir() + "/" + "test.py"
-logger.debug(f"Struct debug outputs are written to {logger_path}")
-logger.addHandler(FileHandler(logger_path))
+file_logger = getLogger(f"{__name__}")
+logger_path = os.path.join(tempfile.gettempdir(), "test.py")
+file_logger.debug(f"Struct debug outputs are written to {logger_path}")
+file_logger.addHandler(FileHandler(logger_path))
 
 
 class StaticStructCtorRenderer(BaseRenderer):
@@ -690,6 +686,6 @@ class StaticStructsRenderer(BaseRenderer):
         self._render()
         output = self._python_str + "\n" + self._shim_function_pystr
 
-        logger.debug(output)
+        file_logger.debug(output)
 
         return output
