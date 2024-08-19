@@ -39,7 +39,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - python
-    - numba >=0.58
+    - numba >=0.60
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
     - cuda-nvcc {{ cuda_compiler_version }}
     - cuda-nvcc-impl {{ cuda_compiler_version }}

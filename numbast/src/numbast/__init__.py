@@ -7,7 +7,7 @@ import numba
 # installed CTK version.
 from pynvjitlink.patch import patch_numba_linker
 
-patch_numba_linker()
+patch_numba_linker(lto=True)
 
 from numbast import numba_patch
 
