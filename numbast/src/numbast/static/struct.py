@@ -650,9 +650,7 @@ class StaticStructsRenderer(BaseRenderer):
                 name, (Type, StructModel, self._default_header)
             )
             if header_path is None:
-                raise ValueError(
-                    f"CUDA struct {name} has does not provide a header path."
-                )
+                raise ValueError(f"CUDA struct {name} does not provide a header path.")
 
             SSR = StaticStructRenderer(decl, nb_ty, nb_datamodel, header_path)
 
