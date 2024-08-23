@@ -1,10 +1,14 @@
 # Numbast Project
 
+# Numbast - auto Numba binding generator
+
 ## Overview
 
-Numbast is the auto binding generator for CUDA C++ headers. It consumes parsed headers from `AST_Canopy` and dynamically create new types, data models and lowering for C++ types. One could see Numbast as a C++-Python syntax translator.
+Numbast is an auto binding generator for CUDA C++ headers. It consumes parsed headers from `AST_Canopy` and dynamically create new types, data models and lowering for C++ types. 
 
 ## Supported CUDA C++ declarations
+
+Currently, the following C++ features are recognized and generated.
 
 - Concrete Struct / Classes (e.g. `struct Foo`)
     - Constructors e.g. `Foo()`
@@ -14,7 +18,7 @@ Numbast is the auto binding generator for CUDA C++ headers. It consumes parsed h
 
 ### Requirement
 
-- `ast_canopy`
+- `ast_canopy>=0.1.0`
 - `numba`>=0.59
 - `pynvjitlink`>=0.22
 
@@ -24,5 +28,5 @@ Numbast organizes its files in [src layout](https://packaging.python.org/en/late
 
 - benchmarks: contain the benchmark for Numbast. Including compilation pipeline overhead measurements.
 - src: contains Numbast module. Each file is organized according to the C++ feature that it's addressing. For example
-`struct.py` handles the declaration of C++ structs.
+`struct.py` handles the C++ structs declarations.
 - tests: contains the tests to each module in Numbast
