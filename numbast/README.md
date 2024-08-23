@@ -4,7 +4,7 @@
 
 ## Overview
 
-Numbast is an auto binding generator for CUDA C++ headers. It consumes parsed headers from `AST_Canopy` and dynamically create new types, data models and lowering for C++ types. 
+Numbast is an auto binding generator for CUDA C++ headers. It consumes parsed headers from `AST_Canopy` and dynamically create new types, data models and lowering for C++ types.
 
 ## Supported CUDA C++ declarations
 
