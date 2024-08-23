@@ -37,7 +37,7 @@ __device__ __myfloat16 hsqrt(const __myfloat16 a);
 |Kind|C++ Declaration|C++ Usage|Numba|Explanation|
 |---	|---	|---	|---	|---	|
 |Concrete functions|`__myfloat16 hsqrt(__myfloat16 a)`|`auto res = hsqrt(f)`|`res = hsqrt(f)`|Function (for all overloads) typing and lowering are generated.|
-|Operator overloads|``__myfloat16 operator+(const __myfloat16&, const __myfloat16&)``|`auto twof = f + f`|`twof = f + f`|Operators (for all overloads) typing and lowering are generated. Operators from C++ are mapped to its corresponding operation in Python, e.g. (`operator +` mapped to `operator.add` or `operator.pos` based on number of arguments.)|
+|Operator overloads|``__myfloat16 operator+(const __myfloat16&, const __myfloat16&)``|`auto twof = f + f`|`twof = f + f`|Operators (for all overloads) typing and lowering are generated. Operators from C++ are mapped to its corresponding operation in Python. e.g. `operator +` is mapped to `operator.add` or `operator.pos` based on number of arguments.|
 
 
 ### Requirement
