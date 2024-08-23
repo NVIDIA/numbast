@@ -32,8 +32,9 @@ nsys stats --report cuda_gpu_kern_sum --format json --output . gold.nsys-rep
 # Analyze py nsys stat report
 nsys stats --report cuda_gpu_kern_sum --format json --output . py.nsys-rep
 
-# Generate Gold PTX
-nvcc --gpu-architecture=$SMCC --ptx $GOLD_SRC_NAME -o $GOLD_PTX
+echo "Benchmark completes!"
+echo "The below compares the performance between gold and Numba."
+echo ""
 
-# Generate Py PTX
-NUMBA_DUMP_ASSEMBLY=1 python $PY_NAME > $PY_PTX
+# Compare stat report
+python analyze.py gold_cuda_gpu_kern_sum.json py_cuda_gpu_kern_sum.json
