@@ -83,14 +83,21 @@ def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
         nvcc_bin = "nvcc"
 
     with tempfile.NamedTemporaryFile(suffix=".cu") as tmp_file:
-        nvcc_compile_empty = (
-            subprocess.run(
-                [nvcc_bin, "-E", "-v", tmp_file.name], capture_output=True, check=True
+        try:
+            nvcc_compile_empty = (
+                subprocess.run(
+                    [nvcc_bin, "-E", "-v", tmp_file.name],
+                    capture_output=True,
+                    check=True,
+                )
+                .stderr.decode()
+                .strip()
+                .split("\n")
             )
-            .stderr.decode()
-            .strip()
-            .split("\n")
-        )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"NVCC failed to compile an empty cuda file. \n {e.stdout.decode('utf-8')} \n {e.stderr.decode('utf-8')}"
+            ) from e
 
     if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
         include_path = s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
