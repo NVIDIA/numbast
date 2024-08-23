@@ -8,8 +8,7 @@ Numbast is an auto binding generator for CUDA C++ headers. It consumes parsed he
 
 Currently, the following C++ features are recognized and generated. We use a `__myfloat16` struct declaration in C++ below to demonstrate Numbast features.
 
-```C++
-// demo.cuh
+```Cuda
 struct __attribute__((aligned(2))) __myfloat16
 {
 public:
