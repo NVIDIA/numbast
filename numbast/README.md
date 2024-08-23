@@ -29,8 +29,8 @@ __device__ __myfloat16 hsqrt(const __myfloat16 a);
 |Kind|C++ Declaration|C++ Usage|Numba Usage|Explanation|
 |---	|---	|---	|---	|---	|
 |Concrete Struct Constructor|`__myfloat16(double val)`|`auto f = __myfloat16(3.14)`|`f = __myfloat16(3.14)`|A new Numba type for `Foo` is created; Struct data model for type `Foo` is created; Typings and lowerings for `Foo` constructors are also generated.|
-|Concrete Struct Conversion Operator|`operator float() {}`|`float x = float(f)`|`x = float(f)`|Conversion operators defined for `Foo` struct are generated.|
-|Concrete Struct Attribute|`half data;`|`auto data = f.data`|`data = f.data`|Public attributes for structs are accessible. Note: only read access is supported.|
+|Concrete Struct Conversion Operator|`operator float()`|`float x = float(f)`|`x = float(f)`|Conversion operators defined for `Foo` struct are generated.|
+|Concrete Struct Attribute|`half data`|`auto data = f.data`|`data = f.data`|Public attributes for structs are accessible. Note: only read access is supported.|
 
 ### Concrete Functions (e.g. `__myfloat16 hsqrt(__myfloat16 a)` or `__myfloat16 operator+(const __myfloat16&, const __myfloat16&)`)
 |Kind|C++ Declaration|C++ Usage|Numba|Explanation|
