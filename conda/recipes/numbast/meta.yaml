@@ -42,7 +42,7 @@ requirements:
     - scikit-build-core
   run:
     - python
-    - numba >=0.58
+    - numba-cuda
     - pynvjitlink >=0.2
     - ast_canopy
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
