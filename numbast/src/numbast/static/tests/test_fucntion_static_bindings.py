@@ -37,13 +37,14 @@ def numbast_jit(cuda_function):
     return partial(cuda.jit, link=[c_ext_shim_source])
 
 
-def test_add(cuda_function, numbast_jit):
+@pytest.mark.parametrize("dtype", ["int32", "float32"])
+def test_add(cuda_function, numbast_jit, dtype):
     add = cuda_function["add"]
 
     @numbast_jit
     def kernel(arr):
         arr[0] = add(1, 2)
 
-    arr = device_array((1,), "int32")
+    arr = device_array((1,), dtype)
     kernel[1, 1](arr)
     assert arr.copy_to_host()[0] == 3

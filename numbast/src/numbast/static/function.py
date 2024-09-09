@@ -5,6 +5,7 @@ import os
 from textwrap import indent
 from logging import getLogger, FileHandler
 import tempfile
+from collections import defaultdict
 
 from numbast.static.renderer import BaseRenderer
 from numbast.types import to_numba_type
@@ -24,11 +25,12 @@ function_apis_registry = set()
 
 
 class StaticFunctionRenderer(BaseRenderer):
+    signature_template = "signature({return_type}, {param_types})"
+
     decl_device_template = """
 {decl_name} = declare_device(
     '{unique_shim_name}',
-    int32(
-        {return_type},
+    {return_type}(
         {pointer_wrapped_param_types}
     )
 )
@@ -42,7 +44,7 @@ def {caller_name}({nargs}):
     c_ext_shim_template = """
 extern "C" __device__ int
 {unique_shim_name}({return_type} &retval {arglist}) {{
-    retval = {method_name}({args});
+    retval = {func_name}({args});
     return 0;
 }}
     """
@@ -57,7 +59,7 @@ def impl(context, builder, sig, args):
     return context.compile_internal(
         builder,
         {caller_name},
-        nb_signature({return_type}, {pointer_wrapped_param_types}),
+        signature({return_type}, {pointer_wrapped_param_types}),
         ptrs,
     )
 """
@@ -90,13 +92,14 @@ def {func_name}():
             to_numba_type(arg.unqualified_non_ref_type_name)
             for arg in self._decl.param_types
         ]
-        self._argument_numba_types_str = ", ".join(
-            ", ".join(map(str, self._argument_numba_types))
-        )
+        for typ in self._argument_numba_types:
+            self._import_numba_type(str(typ))
+        self._argument_numba_types_str = ", ".join(map(str, self._argument_numba_types))
 
         self._return_numba_type = to_numba_type(
             self._decl.return_type.unqualified_non_ref_type_name
         )
+        self._return_numba_type_str = str(self._return_numba_type)
 
         # Cache the list of parameter types wrapped in pointer types.
         def wrap_pointer(typ):
@@ -140,16 +143,17 @@ def {func_name}():
         decl_device_rendered = self.decl_device_template.format(
             decl_name=self._deduplicated_shim_name,
             unique_shim_name=self._deduplicated_shim_name,
+            return_type=self._return_numba_type_str,
             pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
         )
 
-        nargs = [f"arg_{i}" for i in range(len(self._decl.params) + 1)]
+        nargs = [f"arg_{i}" for i in range(len(self._decl.params))]
         nargs_str = ", ".join(nargs)
 
         caller_rendered = self.caller_template.format(
-            device_caller_name=self._caller_name,
+            caller_name=self._caller_name,
+            decl_name=self._deduplicated_shim_name,
             nargs=nargs_str,
-            struct_name=self._deduplicated_shim_name,
         )
 
         self._decl_device_rendered = decl_device_rendered + "\n" + caller_rendered
@@ -159,23 +163,24 @@ def {func_name}():
 
         self._c_ext_shim_rendered = self.c_ext_shim_template.format(
             unique_shim_name=self._deduplicated_shim_name,
+            return_type=self._decl.return_type.name,
             arglist=self._c_ext_argument_pointer_types,
+            func_name=self._decl.name,
             args=self._deref_args_str,
         )
-
-    def _render_typing(self):
-        raise NotImplementedError()
 
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
         self.Imports.add("from numba.cuda.cudaimpl import lower")
+        self.Imports.add("from numba.core.typing import signature")
 
         self._lowering_rendered = self.lowering_template.format(
             func_name=self.func_name_python,
             params=self._argument_numba_types_str,
             caller_name=self._caller_name,
-            pointer_wrapped_args=self._pointer_wrapped_param_types_str,
+            return_type=self._return_numba_type_str,
+            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
         )
 
     def _render_scoped_lower(self):
@@ -233,8 +238,6 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
     ----------
     """
 
-    signature_template = "nb_signature({return_type}, {param_types})"
-
     typing_template = """
 @register_global({py_op_name})
 class (ConcreteTemplate):
@@ -283,15 +286,6 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
     ----------
     """
 
-    signature_template = "nb_signature({return_type}, {param_types})"
-
-    typing_template = """
-@register
-class {func_typing_name}(ConcreteTemplate):
-    key = {func_name}
-    cases = {func_signature_list}
-"""
-
     _py_op_name: str
     """Name of the corresponding python operator converted from C++."""
 
@@ -300,12 +294,14 @@ class {func_typing_name}(ConcreteTemplate):
 
     def _render_python_api(self):
         if self._decl.name in function_apis_registry:
+            self._python_api_rendered = ""
             return
         function_apis_registry.add(self._decl.name)
         self._python_api_rendered = self.function_python_api_template.format(
             func_name=self._decl.name
         )
 
+    @property
     def _signature_cases(self):
         return_type_name = str(self._return_numba_type)
         param_types_str = ", ".join(str(t) for t in self._argument_numba_types)
@@ -314,14 +310,11 @@ class {func_typing_name}(ConcreteTemplate):
         )
 
     def _render_typing(self):
-        self._typing_rendered = self.typing_template.format(
-            func_typing_name=self._py_op_name,
-            signature_list=self._signature_cases(),
-        )
+        # Delay typing rendering to until after iterating all declarations.
+        self._typing_rendered = ""
 
-    @property
-    def func_name_python(self):
-        return self._py_op_name
+    def get_signature(self):
+        return self._signature_cases
 
 
 class StaticFunctionsRenderer(BaseRenderer):
@@ -332,12 +325,43 @@ class StaticFunctionsRenderer(BaseRenderer):
 
     """
 
+    typing_template = """
+@register
+class {func_typing_name}(ConcreteTemplate):
+    key = {func_name}
+    cases = [{signature_list}]
+
+register_global({func_name}, types.Function({func_typing_name}))
+"""
+
     def __init__(self, decls: list[Function], header_path: str):
         self._decls = decls
         self._header_path = header_path
 
+        self._typing_signature_cache: dict[str, list[str]] = defaultdict(list)
+
         self._python_rendered = []
         self._c_rendered = []
+
+    def _render_typings(self):
+        self.Imports.add("from numba.cuda.cudadecl import register")
+        self.Imports.add("from numba.cuda.cudadecl import register_global")
+        self.Imports.add("from numba import types")
+        self.Imports.add("from numba.core.typing.templates import ConcreteTemplate")
+
+        typings_rendered = []
+        for func_name in self._typing_signature_cache:
+            func_typing_name = f"{func_name}_typing"
+            signature_list = self._typing_signature_cache[func_name]
+            signatures_str = ", ".join(signature_list)
+            func_typing_str = self.typing_template.format(
+                func_typing_name=func_typing_name,
+                signature_list=signatures_str,
+                func_name=func_name,
+            )
+            typings_rendered.append(func_typing_str)
+
+        self._typing_rendered = "\n".join(typings_rendered)
 
     def _render(self):
         self.Imports.add("from numba.cuda import CUSource")
@@ -348,16 +372,22 @@ class StaticFunctionsRenderer(BaseRenderer):
                 renderer = StaticOverloadedOperatorRenderer(decl, self._header_path)
             elif not decl.is_operator:
                 renderer = StaticNonOperatorFunctionRenderer(decl, self._header_path)
+                self._typing_signature_cache[decl.name].append(renderer.get_signature())
 
             if renderer:
                 self._python_rendered.append(renderer.render_python())
                 self._c_rendered.append(renderer.render_c())
+
+        # Assemble typings
+        self._render_typings()
 
         # imports = set()
         python_rendered = []
         for imp, py in self._python_rendered:
             # imports |= imp
             python_rendered.append(py)
+
+        python_rendered.append(self._typing_rendered)
 
         self._python_str = (
             self.Prefix + "\n" + "\n".join(self.Imports) + "\n".join(python_rendered)
@@ -380,8 +410,9 @@ class StaticFunctionsRenderer(BaseRenderer):
         self._render()
         output = self._python_str + "\n" + self._shim_function_pystr
 
-        with open("test.py", "w") as f:
+        with open("addlib.py", "w") as f:
             f.write(output)
+
         file_logger.debug(output)
 
         return output

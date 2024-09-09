@@ -24,6 +24,8 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     def __init__(self, decl):
         self._decl = decl
 
+        self._imported_numba_types = set()
+
     def _render_typing(self):
         pass
 
@@ -41,6 +43,13 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 
     def _render_python_api(self):
         pass
+
+    def _import_numba_type(self, typ: str):
+        if typ in self._imported_numba_types:
+            return
+
+        self.Imports.add(f"from numba.types import {typ}")
+        self._imported_numba_types.add(typ)
 
     def render(self, path):
         pass
