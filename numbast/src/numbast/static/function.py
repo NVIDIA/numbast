@@ -49,6 +49,14 @@ extern "C" __device__ int
 }}
     """
 
+    c_ext_shim_template_void_ret = """
+extern "C" __device__ int
+{unique_shim_name}(int &ignored {arglist}) {{
+    {func_name}({args});
+    return 0;
+}}
+    """
+
     lowering_template = """
 @lower({func_name}, {params})
 def impl(context, builder, sig, args):
@@ -100,6 +108,7 @@ def {func_name}():
             self._decl.return_type.unqualified_non_ref_type_name
         )
         self._return_numba_type_str = str(self._return_numba_type)
+        self._import_numba_type(self._return_numba_type_str)
 
         # Cache the list of parameter types wrapped in pointer types.
         def wrap_pointer(typ):
@@ -161,13 +170,21 @@ def {func_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        self._c_ext_shim_rendered = self.c_ext_shim_template.format(
-            unique_shim_name=self._deduplicated_shim_name,
-            return_type=self._decl.return_type.name,
-            arglist=self._c_ext_argument_pointer_types,
-            func_name=self._decl.name,
-            args=self._deref_args_str,
-        )
+        if self._return_numba_type_str == "none":
+            self._c_ext_shim_rendered = self.c_ext_shim_template_void_ret.format(
+                unique_shim_name=self._deduplicated_shim_name,
+                arglist=self._c_ext_argument_pointer_types,
+                func_name=self._decl.name,
+                args=self._deref_args_str,
+            )
+        else:
+            self._c_ext_shim_rendered = self.c_ext_shim_template.format(
+                unique_shim_name=self._deduplicated_shim_name,
+                return_type=self._decl.return_type.name,
+                arglist=self._c_ext_argument_pointer_types,
+                func_name=self._decl.name,
+                args=self._deref_args_str,
+            )
 
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""

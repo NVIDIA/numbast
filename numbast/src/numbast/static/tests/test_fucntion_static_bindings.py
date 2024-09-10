@@ -4,6 +4,7 @@
 import pytest
 from functools import partial
 
+from numba.types import int32, float32
 from numba import cuda
 from numba.cuda import device_array
 
@@ -17,7 +18,7 @@ def cuda_function(data_folder):
 
     _, functions, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
-    assert len(functions) == 2
+    assert len(functions) == 4
 
     SFR = StaticFunctionsRenderer(functions, header)
 
@@ -25,7 +26,7 @@ def cuda_function(data_folder):
     globals = {}
     exec(bindings, globals)
 
-    public_apis = ["add", "c_ext_shim_source"]
+    public_apis = ["add", "minus_i32_f32", "c_ext_shim_source"]
     assert all(public_api in globals for public_api in public_apis)
 
     return {k: globals[k] for k in public_apis}
@@ -38,7 +39,7 @@ def numbast_jit(cuda_function):
 
 
 @pytest.mark.parametrize("dtype", ["int32", "float32"])
-def test_add(cuda_function, numbast_jit, dtype):
+def test_same_argument_types_and_overload(cuda_function, numbast_jit, dtype):
     add = cuda_function["add"]
 
     @numbast_jit
@@ -48,3 +49,15 @@ def test_add(cuda_function, numbast_jit, dtype):
     arr = device_array((1,), dtype)
     kernel[1, 1](arr)
     assert arr.copy_to_host()[0] == 3
+
+
+def test_different_argument_types(cuda_function, numbast_jit):
+    minus_i32_f32 = cuda_function["minus_i32_f32"]
+
+    @numbast_jit
+    def kernel(arr):
+        arr[0] = minus_i32_f32(int32(3), float32(1.4))
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host()[0] == 2
