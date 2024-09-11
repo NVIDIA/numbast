@@ -15,6 +15,8 @@ patch_numba_linker()
 c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 """
 
+    ShimFunctions: list[str] = []
+
     includes_template = "#include <{header_path}>"
     """Template for including a header file."""
 
@@ -51,5 +53,16 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
         self.Imports.add(f"from numba.types import {typ}")
         self._imported_numba_types.add(typ)
 
-    def render(self, path):
-        pass
+    def render_as_str(self, *, with_imports: bool, with_shim_functions: bool) -> str:
+        raise NotImplementedError()
+
+
+def get_rendered_imports() -> str:
+    return "\n".join(BaseRenderer.Imports)
+
+
+def get_rendered_shims() -> str:
+    includes = "\n".join(BaseRenderer.Includes)
+    return BaseRenderer.MemoryShimWriterTemplate.format(
+        shim_funcs=includes + "\n" + "\n".join(BaseRenderer.ShimFunctions)
+    )

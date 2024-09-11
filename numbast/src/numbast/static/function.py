@@ -186,6 +186,8 @@ def {func_name}():
                 args=self._deref_args_str,
             )
 
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
+
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
@@ -380,7 +382,8 @@ register_global({func_name}, types.Function({func_typing_name}))
 
         self._typing_rendered = "\n".join(typings_rendered)
 
-    def _render(self):
+    def _render(self, with_imports: bool):
+        """Render python bindings and shim functions."""
         self.Imports.add("from numba.cuda import CUSource")
 
         for decl in self._decls:
@@ -398,22 +401,24 @@ register_global({func_name}, types.Function({func_typing_name}))
         # Assemble typings
         self._render_typings()
 
-        # imports = set()
         python_rendered = []
         for imp, py in self._python_rendered:
-            # imports |= imp
             python_rendered.append(py)
 
         python_rendered.append(self._typing_rendered)
 
-        self._python_str = (
-            self.Prefix + "\n" + "\n".join(self.Imports) + "\n".join(python_rendered)
-        )
+        if with_imports:
+            self._python_str = (
+                self.Prefix
+                + "\n"
+                + "\n".join(self.Imports)
+                + "\n".join(python_rendered)
+            )
+        else:
+            self._python_str = self.Prefix + "\n" + "\n".join(python_rendered)
 
-        # includes = set()
         c_rendered = []
         for inc, c in self._c_rendered:
-            # includes |= inc
             c_rendered.append(c)
 
         self._c_str = "\n".join(self.Includes) + "\n".join(c_rendered)
@@ -422,13 +427,14 @@ register_global({func_name}, types.Function({func_typing_name}))
             shim_funcs=self._c_str
         )
 
-    def render_as_str(self) -> str:
+    def render_as_str(self, *, with_imports: bool, with_shim_functions: bool) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render()
-        output = self._python_str + "\n" + self._shim_function_pystr
+        self._render(with_imports)
 
-        with open("addlib.py", "w") as f:
-            f.write(output)
+        if with_shim_functions:
+            output = self._python_str + "\n" + self._shim_function_pystr
+        else:
+            output = self._python_str
 
         file_logger.debug(output)
 

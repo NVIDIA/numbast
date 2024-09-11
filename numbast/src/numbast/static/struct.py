@@ -195,6 +195,8 @@ _{struct_name}_{param_names}_lower()
             args=self._deref_args_str,
         )
 
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
+
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
@@ -642,7 +644,7 @@ class StaticStructsRenderer(BaseRenderer):
         self._python_rendered = []
         self._c_rendered = []
 
-    def _render(self):
+    def _render(self, with_imports: bool):
         """Render all structs in `decls`."""
         for decl in self._decls:
             name = decl.name
@@ -663,9 +665,12 @@ class StaticStructsRenderer(BaseRenderer):
             imports |= imp
             python_rendered.append(py)
 
-        self._python_str = (
-            self.Prefix + "\n" + "\n".join(imports) + "\n".join(python_rendered)
-        )
+        if with_imports:
+            self._python_str = (
+                self.Prefix + "\n" + "\n".join(imports) + "\n".join(python_rendered)
+            )
+        else:
+            self._python_str = self.Prefix + "\n" + "\n".join(python_rendered)
 
         includes = set()
         c_rendered = []
@@ -679,10 +684,14 @@ class StaticStructsRenderer(BaseRenderer):
             shim_funcs=self._c_str
         )
 
-    def render_as_str(self) -> str:
+    def render_as_str(self, *, with_imports: bool, with_shim_functions: bool) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render()
-        output = self._python_str + "\n" + self._shim_function_pystr
+        self._render(with_imports)
+
+        if with_shim_functions:
+            output = self._python_str + "\n" + self._shim_function_pystr
+        else:
+            output = self._python_str
 
         file_logger.debug(output)
 

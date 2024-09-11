@@ -8,3 +8,5 @@ public:
   int x;
   __device__ Foo() {}
 };
+
+int __device__ add(int a, int b) { return a + b; }

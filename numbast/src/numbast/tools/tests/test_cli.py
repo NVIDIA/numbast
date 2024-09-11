@@ -46,7 +46,7 @@ def test_invalid_input_header(inputs):
         assert result.exit_code == 0
 
 
-def test_simple_struct(tmpdir):
+def test_simple_cli(tmpdir):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
     runner = CliRunner()
@@ -71,17 +71,21 @@ def test_simple_struct(tmpdir):
     with open(output, "r") as f:
         bindings = f.read()
 
+    breakpoint()
     globals = {}
     exec(bindings, globals)
 
     Foo = globals["Foo"]
+    add = globals["add"]
     c_ext_shim_source = globals["c_ext_shim_source"]
 
     @cuda.jit(link=[c_ext_shim_source])
     def kernel(arr):
         foo = Foo()
         arr[0] = foo.x
+        arr[1] = add(1, 2)
 
-    arr = np.array([42])
+    arr = np.array([42, 0])
     kernel[1, 1](arr)
     assert arr[0] == 0
+    assert arr[1] == 3

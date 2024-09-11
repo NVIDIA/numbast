@@ -10,8 +10,11 @@ import numba.types
 import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
+from ast_canopy.decl import Function
 
+from numbast.static.renderer import get_rendered_shims, get_rendered_imports
 from numbast.static.struct import StaticStructsRenderer
+from numbast.static.function import StaticFunctionsRenderer
 
 
 class NumbaTypeDictType(click.ParamType):
@@ -77,7 +80,15 @@ def _generate_structs(struct_decls, aliases, header_path, types, data_models):
 
     SSR = StaticStructsRenderer(struct_decls, specs)
 
-    return SSR.render_as_str()
+    return SSR.render_as_str(with_imports=False, with_shim_functions=False)
+
+
+def _generate_functions(func_decls: list[Function], header_path: str) -> str:
+    """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
+
+    SFR = StaticFunctionsRenderer(func_decls, header_path)
+
+    return SFR.render_as_str(with_imports=False, with_shim_functions=False)
 
 
 @click.command()
@@ -128,8 +139,19 @@ def static_binding_generator(input_header, output_dir, types, datamodels):
         structs, aliases, input_header, types, datamodels
     )
 
+    function_bindings = _generate_functions(functions, input_header)
+
+    imports_str = get_rendered_imports()
+    shim_function_str = get_rendered_shims()
+
     # Example: Save the processed output to the output directory
     output_file = os.path.join(output_dir, f"{basename}.py")
     with open(output_file, "w") as file:
+        file.write(imports_str)
+        file.write("\n")
         file.write(struct_bindings)
+        file.write("\n")
+        file.write(function_bindings)
+        file.write("\n")
+        file.write(shim_function_str)
         click.echo(f"Bindings for {input_header} generated in {output_file}")

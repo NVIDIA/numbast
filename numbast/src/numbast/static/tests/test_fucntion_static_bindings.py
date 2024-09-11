@@ -22,7 +22,7 @@ def cuda_function(data_folder):
 
     SFR = StaticFunctionsRenderer(functions, header)
 
-    bindings = SFR.render_as_str()
+    bindings = SFR.render_as_str(with_imports=True, with_shim_functions=True)
     globals = {}
     exec(bindings, globals)
 
