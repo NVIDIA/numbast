@@ -9,20 +9,26 @@ from numba import cuda
 from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
+
+from numbast.static.renderer import clear_base_renderer_cache
 from numbast.static.function import StaticFunctionsRenderer
 
 
 @pytest.fixture(scope="module")
 def cuda_function(data_folder):
+    clear_base_renderer_cache()
+
     header = data_folder("function.cuh")
 
     _, functions, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
-    assert len(functions) == 4
+    assert len(functions) == 3
 
     SFR = StaticFunctionsRenderer(functions, header)
 
-    bindings = SFR.render_as_str(with_imports=True, with_shim_functions=True)
+    bindings = SFR.render_as_str(
+        with_prefix=True, with_imports=True, with_shim_functions=True
+    )
     globals = {}
     exec(bindings, globals)
 

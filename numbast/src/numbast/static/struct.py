@@ -15,7 +15,7 @@ from ast_canopy.decl import Struct, StructMethod
 from numbast.static.renderer import (
     BaseRenderer,
 )
-from numbast.types import to_numba_type
+from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
 from numbast.utils import deduplicate_overloads
 
 file_logger = getLogger(f"{__name__}")
@@ -115,7 +115,7 @@ _{struct_name}_{param_names}_lower()
 
         # Cache the list of parameter types represented as Numba types
         self._nb_param_types = [
-            to_numba_type(arg.unqualified_non_ref_type_name)
+            to_numba_type_str(arg.unqualified_non_ref_type_name)
             for arg in ctor_decl.param_types
         ]
         self._nb_param_types_str = ", ".join(map(str, self._nb_param_types))
@@ -443,6 +443,8 @@ class {struct_name}_attr(AttributeTemplate):
 
         self._header_path = header_path
 
+        CTYPE_TO_NBTYPE_STR[decl.name] = self._struct_type_name
+
     def _render_typing(self):
         """Render typing of the struct."""
 
@@ -475,7 +477,7 @@ class {struct_name}_attr(AttributeTemplate):
             )
         elif self._data_model == StructModel:
             member_types_tuples = [
-                (f.name, to_numba_type(f.type_.unqualified_non_ref_type_name))
+                (f.name, to_numba_type_str(f.type_.unqualified_non_ref_type_name))
                 for f in self._decl.fields
             ]
 
@@ -514,7 +516,7 @@ class {struct_name}_attr(AttributeTemplate):
                 resolve_methods.append(
                     self.resolve_methods_template.format(
                         attr_name=field.name,
-                        numba_type=to_numba_type(
+                        numba_type=to_numba_type_str(
                             field.type_.unqualified_non_ref_type_name
                         ),
                     )
@@ -644,7 +646,7 @@ class StaticStructsRenderer(BaseRenderer):
         self._python_rendered = []
         self._c_rendered = []
 
-    def _render(self, with_imports: bool):
+    def _render(self, with_prefix: bool, with_imports: bool):
         """Render all structs in `decls`."""
         for decl in self._decls:
             name = decl.name
@@ -665,12 +667,14 @@ class StaticStructsRenderer(BaseRenderer):
             imports |= imp
             python_rendered.append(py)
 
+        self._python_str = ""
+        if with_prefix:
+            self._python_str += "\n" + self.Prefix
+
         if with_imports:
-            self._python_str = (
-                self.Prefix + "\n" + "\n".join(imports) + "\n".join(python_rendered)
-            )
-        else:
-            self._python_str = self.Prefix + "\n" + "\n".join(python_rendered)
+            self._python_str += "\n" + "\n".join(self.Imports)
+
+        self._python_str += "\n" + "\n".join(python_rendered)
 
         includes = set()
         c_rendered = []
@@ -684,9 +688,11 @@ class StaticStructsRenderer(BaseRenderer):
             shim_funcs=self._c_str
         )
 
-    def render_as_str(self, *, with_imports: bool, with_shim_functions: bool) -> str:
+    def render_as_str(
+        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+    ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render(with_imports)
+        self._render(with_prefix, with_imports)
 
         if with_shim_functions:
             output = self._python_str + "\n" + self._shim_function_pystr

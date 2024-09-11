@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import numba
+
 
 class BaseRenderer:
     Prefix = """
@@ -9,7 +11,10 @@ patch_numba_linker()
 """
 
     Imports: set[str] = set()
-    """Empty set to be filled later. One element stands for one line of import."""
+    """One element stands for one line of python import."""
+
+    _imported_numba_types = set()
+    """Set of imported numba type in strings."""
 
     MemoryShimWriterTemplate = """
 c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
@@ -25,8 +30,6 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 
     def __init__(self, decl):
         self._decl = decl
-
-        self._imported_numba_types = set()
 
     def _render_typing(self):
         pass
@@ -46,15 +49,27 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     def _render_python_api(self):
         pass
 
-    def _import_numba_type(self, typ: str):
+    def _try_import_numba_type(self, typ: str):
         if typ in self._imported_numba_types:
             return
 
-        self.Imports.add(f"from numba.types import {typ}")
-        self._imported_numba_types.add(typ)
+        if typ in numba.types.__dict__:
+            self.Imports.add(f"from numba.types import {typ}")
+            self._imported_numba_types.add(typ)
 
     def render_as_str(self, *, with_imports: bool, with_shim_functions: bool) -> str:
         raise NotImplementedError()
+
+
+def clear_base_renderer_cache():
+    BaseRenderer.Imports = set()
+    BaseRenderer.Includes = set()
+    BaseRenderer.ShimFunctions = []
+    BaseRenderer._imported_numba_types = set()
+
+
+def get_prefix() -> str:
+    return BaseRenderer.Prefix
 
 
 def get_rendered_imports() -> str:
