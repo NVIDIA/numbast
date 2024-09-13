@@ -118,6 +118,9 @@ _{struct_name}_{param_names}_lower()
             to_numba_type(arg.unqualified_non_ref_type_name)
             for arg in ctor_decl.param_types
         ]
+        for typ in self._nb_param_types:
+            self._try_import_numba_type(str(typ))
+
         self._nb_param_types_str = ", ".join(map(str, self._nb_param_types))
 
         # Cache the list of parameter types wrapped in pointer types.

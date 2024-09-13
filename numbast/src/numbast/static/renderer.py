@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import numba
+
 
 class BaseRenderer:
     Prefix = """
@@ -14,6 +16,9 @@ patch_numba_linker()
     MemoryShimWriterTemplate = """
 c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 """
+
+    _imported_numba_types = set()
+    """Set of imported numba type in strings."""
 
     includes_template = "#include <{header_path}>"
     """Template for including a header file."""
@@ -44,3 +49,11 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 
     def render(self, path):
         pass
+
+    def _try_import_numba_type(self, typ: str):
+        if typ in self._imported_numba_types:
+            return
+
+        if typ in numba.types.__dict__:
+            self.Imports.add(f"from numba.types import {typ}")
+            self._imported_numba_types.add(typ)
