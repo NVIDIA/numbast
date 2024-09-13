@@ -5,8 +5,8 @@ import pytest
 from functools import partial
 
 from numba import cuda
-from numba.types import Type, float64
-from numba.core.datamodel import StructModel
+from numba.types import Number, float64
+from numba.core.datamodel import PrimitiveModel
 from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
@@ -17,7 +17,7 @@ from numbast.static.struct import StaticStructsRenderer
 def cuda_struct(data_folder):
     header = data_folder("demo.cuh")
 
-    specs = {"myfloat8": (Type, StructModel, header)}
+    specs = {"myfloat8": (Number, PrimitiveModel, header)}
 
     structs, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
@@ -28,6 +28,10 @@ def cuda_struct(data_folder):
     bindings = SSR.render_as_str()
     globals = {}
     exec(bindings, globals)
+
+    with open("/tmp/data.py", "w") as f:
+        f.write(bindings)
+    print("/tmp/data.py")
 
     public_apis = [*specs, "c_ext_shim_source"]
     assert all(public_api in globals for public_api in public_apis)
