@@ -5,8 +5,8 @@ import pytest
 from functools import partial
 
 from numba import cuda
-from numba.types import Type
-from numba.core.datamodel import StructModel
+from numba.types import Type, Number
+from numba.core.datamodel import StructModel, PrimitiveModel
 from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
@@ -17,16 +17,23 @@ from numbast.static.struct import StaticStructsRenderer
 def cuda_struct(data_folder):
     header = data_folder("struct.cuh")
 
-    specs = {"Foo": (Type, StructModel, header), "Bar": (Type, StructModel, header)}
+    specs = {
+        "Foo": (Type, StructModel, header),
+        "Bar": (Type, StructModel, header),
+        "MyInt": (Number, PrimitiveModel, header),
+    }
 
     structs, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
-    assert len(structs) == 2
+    assert len(structs) == 3
 
     SSR = StaticStructsRenderer(structs, specs)
 
     bindings = SSR.render_as_str()
     globals = {}
+    with open("/tmp/data.py", "w") as f:
+        f.write(bindings)
+
     exec(bindings, globals)
 
     public_apis = [*specs, "c_ext_shim_source"]
@@ -72,3 +79,18 @@ def test_bar_ctor_overloads(cuda_struct, numbast_jit):
     arr = device_array((2,), "float32")
     kernel[1, 1](arr)
     assert arr.copy_to_host() == pytest.approx([3, 3.14])
+
+
+def test_myint_cast(cuda_struct, numbast_jit):
+    MyInt = cuda_struct["MyInt"]
+
+    from numba.types import int32
+
+    @numbast_jit
+    def kernel(arr):
+        i = MyInt(42)
+        arr[0] = int32(i)
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([42])
