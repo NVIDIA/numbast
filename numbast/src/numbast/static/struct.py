@@ -40,10 +40,10 @@ class StaticStructCtorRenderer(BaseRenderer):
     """
 
     struct_ctor_decl_device_template = """
-{struct_name}_ctor_decl = declare_device(
+{struct_ctor_device_decl_str} = declare_device(
     '{unique_shim_name}',
     int32(
-        CPointer({struct_name}_type),
+        CPointer({struct_type_name}),
         {pointer_wrapped_param_types}
     )
 )
@@ -51,7 +51,7 @@ class StaticStructCtorRenderer(BaseRenderer):
 
     struct_ctor_device_caller_template = """
 def {struct_device_caller_name}({nargs}):
-    return {struct_name}_ctor_decl({nargs})
+    return {struct_ctor_device_decl_str}({nargs})
     """
 
     struct_ctor_c_ext_shim_template = """
@@ -84,13 +84,13 @@ def ctor_impl(context, builder, sig, args):
     """
 
     lower_overload_scope_template = """
-def _{struct_name}_{param_names}_lower():
+def {lower_scope_name}():
     {body}
 
-_{struct_name}_{param_names}_lower()
+{lower_scope_name}()
 """
 
-    struct_ctor_signature_template = "signature({struct_name}_type, {arglist})"
+    struct_ctor_signature_template = "signature({struct_type_name}, {arglist})"
 
     _nb_param_types: list[Type]
     """A list of parameter types converted from C++ types to Numba types.
@@ -112,6 +112,8 @@ _{struct_name}_{param_names}_lower()
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
         self._ctor_decl = ctor_decl
+
+        self._struct_ctor_device_decl_str = f"_ctor_decl_{struct_name}"
 
         # Cache the list of parameter types represented as Numba types
         self._nb_param_types = [
@@ -159,6 +161,9 @@ _{struct_name}_{param_names}_lower()
         # device caller name
         self._device_caller_name = f"{self._struct_name}_device_caller"
 
+        # lower scope name
+        self._lower_scope_name = f"_lower_{struct_name}_{self._nb_param_str_concat}"
+
     def _render_decl_device(self):
         """Render codes that declares a foreign function for this constructor in Numba."""
 
@@ -170,7 +175,8 @@ _{struct_name}_{param_names}_lower()
         self.Imports.add("from numba.types import int32")
 
         decl_device_rendered = self.struct_ctor_decl_device_template.format(
-            struct_name=self._struct_name,
+            struct_ctor_device_decl_str=self._struct_ctor_device_decl_str,
+            struct_type_name=self._struct_type_name,
             unique_shim_name=self._deduplicated_shim_name,
             pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
         )
@@ -181,7 +187,7 @@ _{struct_name}_{param_names}_lower()
         device_caller_rendered = self.struct_ctor_device_caller_template.format(
             struct_device_caller_name=self._device_caller_name,
             nargs=nargs_str,
-            struct_name=self._struct_name,
+            struct_ctor_device_decl_str=self._struct_ctor_device_decl_str,
         )
 
         self._decl_device_rendered = (
@@ -228,8 +234,7 @@ _{struct_name}_{param_names}_lower()
         )
 
         self._python_rendered = self.lower_overload_scope_template.format(
-            struct_name=self._struct_name,
-            param_names=self._nb_param_str_concat,
+            lower_scope_name=self._lower_scope_name,
             body=lower_body,
         )
 
@@ -244,7 +249,7 @@ _{struct_name}_{param_names}_lower()
     def signature_str(self):
         """Numba.signature string of the constructor's signature."""
         return self.struct_ctor_signature_template.format(
-            struct_name=self._struct_name,
+            struct_type_name=self._struct_type_name,
             arglist=self._nb_param_types_str,
         )
 
@@ -267,11 +272,11 @@ class StaticStructCtorsRenderer(BaseRenderer):
 
     struct_ctor_template_typing_template = """
 @register
-class {struct_name}_ctor_template(ConcreteTemplate):
-    key = {struct_name}
+class {struct_ctor_template_name}(ConcreteTemplate):
+    key = globals()['{struct_name}']
     cases = [{signatures}]
 
-register_global({struct_name}, Function({struct_name}_ctor_template))
+register_global({struct_name}, Function({struct_ctor_template_name}))
 """
 
     def __init__(
@@ -288,6 +293,8 @@ register_global({struct_name}, Function({struct_name}_ctor_template))
 
         self._python_rendered = ""
         self._c_rendered = ""
+
+        self._struct_ctor_template_name = f"_ctor_template_{struct_name}"
 
     def _render_typing(self, signature_strs: list[str]):
         """Renders the typing of the constructors.
@@ -308,7 +315,9 @@ register_global({struct_name}, Function({struct_name}_ctor_template))
 
         self._struct_ctor_typing_rendered = (
             self.struct_ctor_template_typing_template.format(
-                struct_name=self._struct_name, signatures=signatures_str
+                struct_ctor_template_name=self._struct_ctor_template_name,
+                struct_name=self._struct_name,
+                signatures=signatures_str,
             )
         )
 
@@ -361,7 +370,7 @@ class StaticStructConversionOperatorRenderer(BaseRenderer):
     """
 
     struct_conversion_op_decl_device_template = """
-{struct_name}_op_decl = declare_device(
+{device_decl_name} = declare_device(
     '{unique_shim_name}',
     {cast_to_type}(
         CPointer({struct_type_name}),
@@ -371,7 +380,7 @@ class StaticStructConversionOperatorRenderer(BaseRenderer):
 
     struct_conversion_op_caller_template = """
 def {caller_name}(arg):
-    return {struct_name}_op_decl(arg)
+    return {device_decl_name}(arg)
     """
 
     struct_conversion_op_c_ext_shim_template = """
@@ -400,10 +409,10 @@ def impl(context, builder, fromty, toty, value):
     """
 
     lower_scope_template = """
-def _{struct_name}_convert_to_{cast_to_type}_lower():
+def {lower_scope_name}():
     {body}
 
-_{struct_name}_convert_to_{cast_to_type}_lower()
+{lower_scope_name}()
 """
 
     def __init__(
@@ -418,6 +427,8 @@ _{struct_name}_convert_to_{cast_to_type}_lower()
         self._struct_type_name = struct_type_name
         self._convop_decl = convop_decl
 
+        self._device_decl_name = f"_op_decl_{struct_name}"
+
         # Cache the type that's converted to
         self._nb_cast_to_type = to_numba_type(
             self._convop_decl.return_type.unqualified_non_ref_type_name
@@ -428,7 +439,7 @@ _{struct_name}_convert_to_{cast_to_type}_lower()
         self._cast_to_type = self._convop_decl.return_type
 
         # Cache the caller's name
-        self._caller_name = f"_{struct_name}_conversion_op_caller"
+        self._caller_name = f"_conversion_op_caller_{struct_name}"
 
         # Cache the unique shim name of the c extension shim function
         self._unique_shim_name = (
@@ -436,7 +447,11 @@ _{struct_name}_convert_to_{cast_to_type}_lower()
         )
 
         # device caller name
-        self._device_caller_name = f"{self._struct_name}_device_caller"
+        self._device_caller_name = f"_device_caller_{self._struct_name}"
+
+        self._lower_scope_name = (
+            f"_from_{struct_name}_to_{self._nb_cast_to_type_str}_lower"
+        )
 
     def _render_decl_device(self):
         """Render codes that declares a foreign function for this constructor in Numba."""
@@ -447,15 +462,15 @@ _{struct_name}_convert_to_{cast_to_type}_lower()
         self.Imports.add("from numba.types import CPointer")
 
         decl_device_rendered = self.struct_conversion_op_decl_device_template.format(
-            struct_name=self._struct_name,
+            device_decl_name=self._device_decl_name,
             unique_shim_name=self._unique_shim_name,
             cast_to_type=self._nb_cast_to_type_str,
             struct_type_name=self._struct_type_name,
         )
 
         device_caller_rendered = self.struct_conversion_op_caller_template.format(
+            device_decl_name=self._device_decl_name,
             caller_name=self._caller_name,
-            struct_name=self._struct_name,
         )
 
         self._decl_device_rendered = (
@@ -503,8 +518,7 @@ _{struct_name}_convert_to_{cast_to_type}_lower()
         )
 
         self._python_rendered = self.lower_scope_template.format(
-            struct_name=self._struct_name,
-            cast_to_type=self._nb_cast_to_type_str,
+            lower_scope_name=self._lower_scope_name,
             body=lower_body,
         )
 
@@ -588,31 +602,31 @@ class StaticStructRenderer(BaseRenderer):
 
     typing_template = """
 # Typing for {struct_name}
-class {struct_name}_type_class({parent_type}):
+class {struct_type_class_name}({parent_type}):
     def __init__(self):
         super().__init__(name="{struct_name}")
         self.alignof_ = {struct_alignof}
         self.bitwidth = {struct_sizeof} * 8
 
-{struct_name}_type = {struct_name}_type_class()
+{struct_type_name} = {struct_type_class_name}()
 """
 
     python_api_template = """
 # Make Python API for struct
-{struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_name}_type}})
+{struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_type_name}}})
 """
 
     primitive_data_model_template = """
-@register_model({struct_name}_type_class)
-class {struct_name}_model(PrimitiveModel):
+@register_model({struct_type_class_name})
+class {struct_model_name}(PrimitiveModel):
     def __init__(self, dmm, fe_type):
         be_type = ir.IntType(fe_type.bitwidth)
-        super({struct_name}_model, self).__init__(dmm, fe_type, be_type)
+        super({struct_model_name}, self).__init__(dmm, fe_type, be_type)
 """
 
     struct_data_model_template = """
-@register_model({struct_name}_type_class)
-class {struct_name}_model(StructModel):
+@register_model({struct_type_class_name})
+class {struct_model_name}(StructModel):
     def __init__(self, dmm, fe_type):
         members = [{member_types_tuples}]
         super().__init__(dmm, fe_type, members)
@@ -624,13 +638,13 @@ class {struct_name}_model(StructModel):
 """
 
     make_attribute_wrappers_template = """
-make_attribute_wrapper({struct_name}_type_class, "{attr_name}", "{attr_name}")
+make_attribute_wrapper({struct_type_class_name}, "{attr_name}", "{attr_name}")
 """
 
     struct_attribute_typing_template = """
 @register_attr
-class {struct_name}_attr(AttributeTemplate):
-    key = {struct_name}
+class {struct_attr_typing_name}(AttributeTemplate):
+    key = globals()['{struct_name}']
 
     {resolve_methods}
 
@@ -662,8 +676,12 @@ class {struct_name}_attr(AttributeTemplate):
         )
         self._data_model_str = self._data_model.__qualname__
 
-        self._struct_type_class_name = f"{self._struct_name}_type_class"
-        self._struct_type_name = f"{self._struct_name}_type"
+        # We use a prefix here to identify internal objects so that C object names
+        # does not interfere with python's name mangling mechanism.
+        self._struct_type_class_name = f"_type_class_{self._struct_name}"
+        self._struct_type_name = f"_type_{self._struct_name}"
+        self._struct_model_name = f"_model_{self._struct_name}"
+        self._struct_attr_typing_name = f"_attr_typing_{self._struct_name}"
 
         self._header_path = header_path
 
@@ -671,7 +689,8 @@ class {struct_name}_attr(AttributeTemplate):
         """Render typing of the struct."""
 
         self._typing_rendered = self.typing_template.format(
-            struct_type_name=self._struct_name,
+            struct_type_class_name=self._struct_type_class_name,
+            struct_type_name=self._struct_type_name,
             parent_type=self._parent_type_str,
             struct_name=self._struct_name,
             struct_alignof=self._decl.alignof_,
@@ -684,7 +703,7 @@ class {struct_name}_attr(AttributeTemplate):
         This is the python handle to use it in Numba kernels.
         """
         self._python_api_rendered = self.python_api_template.format(
-            struct_name=self._struct_name
+            struct_type_name=self._struct_type_name, struct_name=self._struct_name
         )
 
     def _render_data_model(self):
@@ -695,7 +714,8 @@ class {struct_name}_attr(AttributeTemplate):
         if self._data_model == PrimitiveModel:
             self.Imports.add("from llvmlite import ir")
             self._data_model_rendered = self.primitive_data_model_template.format(
-                struct_type_name=self._struct_name,
+                struct_type_class_name=self._struct_type_class_name,
+                struct_model_name=self._struct_model_name,
                 struct_name=self._struct_name,
             )
         elif self._data_model == StructModel:
@@ -714,8 +734,8 @@ class {struct_name}_attr(AttributeTemplate):
             member_types_str = ", ".join(member_types_tuples_strs)
 
             self._data_model_rendered = self.struct_data_model_template.format(
-                struct_type_name=self._struct_name,
-                struct_name=self._struct_name,
+                struct_type_class_name=self._struct_type_class_name,
+                struct_model_name=self._struct_model_name,
                 member_types_tuples=member_types_str,
             )
 
@@ -748,7 +768,7 @@ class {struct_name}_attr(AttributeTemplate):
                 )
                 attribute_wrappers.append(
                     self.make_attribute_wrappers_template.format(
-                        struct_name=self._struct_name,
+                        struct_type_class_name=self._struct_type_class_name,
                         attr_name=field.name,
                     )
                 )
@@ -759,6 +779,7 @@ class {struct_name}_attr(AttributeTemplate):
             self._struct_attr_typing_rendered = (
                 self.struct_attribute_typing_template.format(
                     struct_name=self._struct_name,
+                    struct_attr_typing_name=self._struct_attr_typing_name,
                     resolve_methods=resolve_methods_str,
                     make_attribute_wrappers=attribute_wrappers_str,
                 )
