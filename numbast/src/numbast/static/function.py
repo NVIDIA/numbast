@@ -25,6 +25,19 @@ function_apis_registry = set()
 
 
 class StaticFunctionRenderer(BaseRenderer):
+    """Base class for function static bindings renderer.
+
+    Many shared function bindings are implemented in the base class,
+    such as lowering and C shim functions.
+
+    Parameters
+    ----------
+    decl: ast_canopy.decl.Function
+        A single function declaration parsed by `ast_canopy`
+    header_path: str
+        The path to the header file that contains the declaration
+    """
+
     signature_template = "signature({return_type}, {param_types})"
 
     decl_device_template = """
@@ -265,6 +278,10 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
 
     Parameters
     ----------
+    decl: ast_canopy.decl.Function
+        An operator function declaration in CUDA C++ parsed by `ast_canopy`
+    header_path: str
+        The path to the header file that contains the declaration
     """
 
     _py_op_name: str
@@ -302,6 +319,11 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
 
     Parameters
     ----------
+
+    decl: ast_canopy.decl.Function
+        A non-operator function declaration in CUDA C++ parsed by `ast_canopy`
+    header_path: str
+        The path to the header file that contains the declaration
     """
 
     _py_op_name: str
@@ -333,6 +355,10 @@ class StaticFunctionsRenderer(BaseRenderer):
     Parameters
     ----------
 
+    decls: list[ast_canopy.decl.Function]
+        A list of function declarations in CUDA C++, parsed by `ast_canopy`
+    header_path: str
+        The path to the header file that contains the declarations
     """
 
     func_typing_template = """
