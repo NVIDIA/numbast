@@ -17,7 +17,7 @@ from numbast.static.struct import StaticStructsRenderer
 def cuda_struct(data_folder):
     header = data_folder("demo.cuh")
 
-    specs = {"myfloat8": (Number, PrimitiveModel, header)}
+    specs = {"__myfloat16": (Number, PrimitiveModel, header)}
 
     structs, *_ = parse_declarations_from_source(header, [header], "sm_50")
 
@@ -26,12 +26,9 @@ def cuda_struct(data_folder):
     SSR = StaticStructsRenderer(structs, specs)
 
     bindings = SSR.render_as_str()
+
     globals = {}
     exec(bindings, globals)
-
-    with open("/tmp/data.py", "w") as f:
-        f.write(bindings)
-    print("/tmp/data.py")
 
     public_apis = [*specs, "c_ext_shim_source"]
     assert all(public_api in globals for public_api in public_apis)
@@ -46,11 +43,11 @@ def numbast_jit(cuda_struct):
 
 
 def test_demo(cuda_struct, numbast_jit):
-    myfloat8 = cuda_struct["myfloat8"]
+    __myfloat16 = cuda_struct["__myfloat16"]
 
     @numbast_jit
     def kernel(arr):
-        foo = myfloat8(3.14)  # noqa: F841
+        foo = __myfloat16(3.14)  # noqa: F841
 
         arr[0] = float64(foo)
 
