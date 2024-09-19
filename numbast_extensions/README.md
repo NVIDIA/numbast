@@ -11,7 +11,7 @@ They are not official bindings and should not be used under production environme
 
 Numbast is required to run these extensions.
 
-Tested under CUDA 12.3, driver 545.23.08.
+Minimum required CUDAToolkit Version: 12.5
 
 ## Contents
 
