@@ -22,6 +22,9 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 
     ShimFunctions: list[str] = []
 
+    _imported_numba_types = set()
+    """Set of imported numba type in strings."""
+
     includes_template = "#include <{header_path}>"
     """Template for including a header file."""
 
@@ -81,3 +84,11 @@ def get_rendered_shims() -> str:
     return BaseRenderer.MemoryShimWriterTemplate.format(
         shim_funcs=includes + "\n" + "\n".join(BaseRenderer.ShimFunctions)
     )
+
+    def _try_import_numba_type(self, typ: str):
+        if typ in self._imported_numba_types:
+            return
+
+        if typ in numba.types.__dict__:
+            self.Imports.add(f"from numba.types import {typ}")
+            self._imported_numba_types.add(typ)

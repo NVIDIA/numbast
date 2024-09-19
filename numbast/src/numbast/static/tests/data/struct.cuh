@@ -24,3 +24,11 @@ public:
   __device__ Bar(int x) : x(x) {}
   __device__ Bar(float x) : x(x) {}
 };
+
+struct MyInt {
+public:
+  int x;
+
+  __device__ MyInt(int x) : x(x) {}
+  __device__ operator int() { return x; }
+};
