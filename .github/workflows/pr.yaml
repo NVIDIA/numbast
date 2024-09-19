@@ -44,6 +44,6 @@ jobs:
     with:
       ubuntu_version: "22.04"
       cuda_version: "12.6"
-      python_version: "3.12"
+      python_version: "3.10"
       GPU: "a100"
       CPU: "arm64"
