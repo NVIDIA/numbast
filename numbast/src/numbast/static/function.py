@@ -21,7 +21,8 @@ file_logger.debug(f"Function debug outputs are written to {logger_path}")
 file_logger.addHandler(FileHandler(logger_path))
 
 
-function_apis_registry = set()
+function_apis_registry: set[str] = set()
+"""A set of created function API names."""
 
 
 class StaticFunctionRenderer(BaseRenderer):
@@ -493,3 +494,12 @@ class {op_typing_name}(ConcreteTemplate):
         file_logger.debug(output)
 
         return output
+
+
+def clear_function_apis_registry():
+    """Reset function APIs registry.
+
+    This function is often used when the renderer is executed multiple times in
+    the same python session. Such as pytest.
+    """
+    function_apis_registry.clear()

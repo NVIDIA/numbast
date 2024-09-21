@@ -12,9 +12,17 @@ import numba.core.datamodel.models
 from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function
 
-from numbast.static.renderer import get_prefix, get_rendered_shims, get_rendered_imports
+from numbast.static.renderer import (
+    get_prefix,
+    get_rendered_shims,
+    get_rendered_imports,
+    clear_base_renderer_cache,
+)
 from numbast.static.struct import StaticStructsRenderer
-from numbast.static.function import StaticFunctionsRenderer
+from numbast.static.function import (
+    StaticFunctionsRenderer,
+    clear_function_apis_registry,
+)
 
 
 class NumbaTypeDictType(click.ParamType):
@@ -99,6 +107,7 @@ def _generate_functions(func_decls: list[Function], header_path: str) -> str:
 @click.argument(
     "input-header", type=click.Path(exists=True, dir_okay=False, readable=True)
 )
+@click.option("--retain")
 @click.option("--types", type=numba_type_dict)
 @click.option("--datamodels", type=numba_datamodel_dict)
 @click.option(
@@ -109,16 +118,33 @@ def _generate_functions(func_decls: list[Function], header_path: str) -> str:
         writable=True,
     ),
 )
-def static_binding_generator(input_header, output_dir, types, datamodels):
+def static_binding_generator(
+    input_header: str, retain: None | str, output_dir, types, datamodels
+):
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
 
     INPUT_HEADER: Path to the input CUDA header file.
+    RETAIN: Comma separated list of file names to keep parsing, default to INPUT_HEADER.
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
     DATAMODELS: A dictionary in JSON string that maps name of the struct to their Numba datamodel.
     """
     # TODO: We should support input of types and data models from an external spec file for better UX.
+
+    # To handle multiple runs of the CLI tools in the same python session (e.g. pytest)
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
+    if retain is None:
+        retain_list = [input_header]
+    else:
+        retain_list = retain.split(",")
+
+    print(retain_list)
+
+    if len(retain_list) == 0:
+        raise ValueError("At least one file name to retain must be provided.")
 
     try:
         basename = os.path.basename(input_header)
@@ -131,7 +157,7 @@ def static_binding_generator(input_header, output_dir, types, datamodels):
     # This will be added in future PRs.
     structs, functions, function_templates, class_templates, typedefs, enums = (
         parse_declarations_from_source(
-            input_header, [input_header], compute_capability="sm_50"
+            input_header, retain_list, compute_capability="sm_50"
         )
     )
 
