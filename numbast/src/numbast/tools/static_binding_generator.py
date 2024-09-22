@@ -13,6 +13,7 @@ import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function
+from pylibastcanopy import Enum
 
 from numbast.static.renderer import (
     get_prefix,
@@ -25,6 +26,7 @@ from numbast.static.function import (
     StaticFunctionsRenderer,
     clear_function_apis_registry,
 )
+from numbast.static.enum import StaticEnumsRenderer
 
 
 def _str_value_to_numba_type(d: dict):
@@ -123,6 +125,14 @@ def _generate_functions(
     )
 
 
+def _generate_enums(enum_decls: list[Enum]):
+    """Create enum bindings."""
+    SER = StaticEnumsRenderer(enum_decls)
+    return SER.render_as_str(
+        with_prefix=False, with_imports=False, with_shim_functions=False
+    )
+
+
 def _static_binding_generator(
     entry_point: str,
     retain_list: list[str],
@@ -157,6 +167,7 @@ def _static_binding_generator(
     )
 
     function_bindings = _generate_functions(functions, entry_point, exclude_functions)
+    enum_bindings = _generate_enums(enums)
 
     prefix_str = get_prefix()
     imports_str = get_rendered_imports()
@@ -172,6 +183,8 @@ def _static_binding_generator(
         file.write(struct_bindings)
         file.write("\n")
         file.write(function_bindings)
+        file.write("\n")
+        file.write(enum_bindings)
         file.write("\n")
         file.write(shim_function_str)
         click.echo(f"Bindings for {entry_point} generated in {output_file}")
