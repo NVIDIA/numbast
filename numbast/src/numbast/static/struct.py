@@ -591,10 +591,10 @@ class StaticStructRenderer(BaseRenderer):
     ----------
     decl: Struct
         Declaration of the struct.
-    parent_type: type
-        The parent Numba type of the new struct type created.
-    data_model: type
-        The data model of the new struct type.
+    parent_type: type | None
+        The parent Numba type of the new struct type created. If None, default to numba.types.Type.
+    data_model: type | None
+        The data model of the new struct type. If None, default to numba.core.datamodel.StructModel.
     header_path: os.PathLike
         Path to the header that contains the declaration of the struct.
     aliases: list[str], optional
@@ -659,15 +659,23 @@ class {struct_attr_typing_name}(AttributeTemplate):
     def __init__(
         self,
         decl: Struct,
-        parent_type: type,
-        data_model: type,
+        parent_type: type | None,
+        data_model: type | None,
         header_path: os.PathLike,
         aliases: list[str] = [],
     ):
         super().__init__(decl)
         self._struct_name = decl.name
         self._aliases = aliases
+
+        if parent_type is None:
+            parent_type = Type
+
         self._parent_type = parent_type
+
+        if data_model is None:
+            data_model = StructModel
+
         self._data_model = data_model
 
         self.Imports.add(f"from numba.types import {self._parent_type.__qualname__}")
@@ -905,7 +913,7 @@ class StaticStructsRenderer(BaseRenderer):
     def __init__(
         self,
         decls: list[Struct],
-        specs: dict[str, tuple[type, type, os.PathLike]],
+        specs: dict[str, tuple[type | None, type | None, os.PathLike]],
         default_header: os.PathLike | None = None,
     ):
         self._decls = decls
