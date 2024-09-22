@@ -95,7 +95,7 @@ class NumbaDataModelDictType(click.ParamType):
 numba_datamodel_dict = NumbaDataModelDictType()
 
 
-def _generate_structs(struct_decls, aliases, header_path, types, data_models):
+def _generate_structs(struct_decls, aliases, header_path, types, data_models, excludes):
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
     specs = {}
     for struct_decl in struct_decls:
@@ -104,17 +104,19 @@ def _generate_structs(struct_decls, aliases, header_path, types, data_models):
         this_data_model = data_models.get(struct_name, None)
         specs[struct_name] = (this_type, this_data_model, header_path)
 
-    SSR = StaticStructsRenderer(struct_decls, specs)
+    SSR = StaticStructsRenderer(struct_decls, specs, excludes=excludes)
 
     return SSR.render_as_str(
         with_prefix=False, with_imports=False, with_shim_functions=False
     )
 
 
-def _generate_functions(func_decls: list[Function], header_path: str) -> str:
+def _generate_functions(
+    func_decls: list[Function], header_path: str, excludes: list[str]
+) -> str:
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
 
-    SFR = StaticFunctionsRenderer(func_decls, header_path)
+    SFR = StaticFunctionsRenderer(func_decls, header_path, excludes=excludes)
 
     return SFR.render_as_str(
         with_prefix=False, with_imports=False, with_shim_functions=False
@@ -128,6 +130,8 @@ def _static_binding_generator(
     types: dict[str, type],
     datamodels: dict[str, type],
     compute_capability: str,
+    exclude_functions: list[str],
+    exclude_structs: list[str],
 ):
     try:
         basename = os.path.basename(entry_point)
@@ -149,10 +153,10 @@ def _static_binding_generator(
         aliases[typedef.underlying_name].append(typedef.name)
 
     struct_bindings = _generate_structs(
-        structs, aliases, entry_point, types, datamodels
+        structs, aliases, entry_point, types, datamodels, exclude_structs
     )
 
-    function_bindings = _generate_functions(functions, entry_point)
+    function_bindings = _generate_functions(functions, entry_point, exclude_functions)
 
     prefix_str = get_prefix()
     imports_str = get_rendered_imports()
@@ -227,13 +231,19 @@ def static_binding_generator(
             types = _str_value_to_numba_type(config["Types"])
             datamodels = _str_value_to_numba_datamodel(config["Data Models"])
 
+            excludes = config["Exclude"]
+            exclude_functions = excludes.get("Function", [])
+            exclude_structs = excludes.get("Struct", [])
+
             _static_binding_generator(
                 input_header,
                 retain_list,
                 output_dir,
                 types,
                 datamodels,
-                compute_capability="sm_70",  # TODO: Use compute capability from cli input
+                "sm_70",  # TODO: Use compute capability from cli input
+                exclude_functions,
+                exclude_structs,
             )
 
             return
@@ -252,5 +262,7 @@ def static_binding_generator(
         output_dir,
         types,
         datamodels,
-        compute_capability="sm_70",  # TODO: Use compute capability from cli input
+        "sm_70",  # TODO: Use compute capability from cli input
+        [],  # TODO: parse excludes from input
+        [],  # TODO: parse excludes from input
     )

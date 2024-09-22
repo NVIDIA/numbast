@@ -240,7 +240,7 @@ Version: 0.0.1
 Entry Point: {data}
 File List:
     - {data}
-Exclude: []
+Exclude: {{}}
 Types:
     Foo: Type
 Data Models:
@@ -276,7 +276,7 @@ Data Models:
     kernel(globals)
 
 
-def test_cli_deduce_missing_types(tmpdir, kernel):
+def test_yaml_deduce_missing_types(tmpdir, kernel):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -285,7 +285,7 @@ Version: 0.0.1
 Entry Point: {data}
 File List:
     - {data}
-Exclude: []
+Exclude: {{}}
 Types: {{}}
 Data Models:
     Foo: StructModel
@@ -320,7 +320,7 @@ Data Models:
     kernel(globals)
 
 
-def test_cli_deduce_missing_datamodels(tmpdir, kernel):
+def test_yaml_deduce_missing_datamodels(tmpdir, kernel):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -329,7 +329,7 @@ Version: 0.0.1
 Entry Point: {data}
 File List:
     - {data}
-Exclude: []
+Exclude: {{}}
 Types:
     Foo: Type
 Data Models:
@@ -363,3 +363,118 @@ Data Models:
     exec(bindings, globals)
 
     kernel(globals)
+
+
+def test_yaml_exclude_function(tmpdir):
+    subdir = tmpdir.mkdir("sub")
+    data = os.path.join(os.path.dirname(__file__), "data.cuh")
+
+    cfg = f"""Name: Test Data
+Version: 0.0.1
+Entry Point: {data}
+File List:
+    - {data}
+Exclude:
+    Function:
+        - add
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+"""
+
+    cfg_file = subdir / "cfg.yaml"
+    with open(cfg_file, "w") as f:
+        f.write(cfg)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        static_binding_generator,
+        [
+            "--cfg-path",
+            cfg_file,
+            "--output-dir",
+            subdir,
+        ],
+    )
+
+    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+
+    output = subdir / "data.py"
+    assert os.path.exists(output)
+
+    with open(output, "r") as f:
+        bindings = f.read()
+
+    globals = {}
+    exec(bindings, globals)
+
+    assert "add" not in globals
+
+    Foo = globals["Foo"]
+    c_ext_shim_source = globals["c_ext_shim_source"]
+
+    @cuda.jit(link=[c_ext_shim_source])
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.x
+
+    arr = np.array([42])
+    kernel[1, 1](arr)
+    assert arr[0] == 0
+
+
+def test_yaml_exclude_struct(tmpdir):
+    subdir = tmpdir.mkdir("sub")
+    data = os.path.join(os.path.dirname(__file__), "data.cuh")
+
+    cfg = f"""Name: Test Data
+Version: 0.0.1
+Entry Point: {data}
+File List:
+    - {data}
+Exclude:
+    Struct:
+        - Foo
+Types: {{}}
+Data Models: {{}}
+"""
+
+    cfg_file = subdir / "cfg.yaml"
+    with open(cfg_file, "w") as f:
+        f.write(cfg)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        static_binding_generator,
+        [
+            "--cfg-path",
+            cfg_file,
+            "--output-dir",
+            subdir,
+        ],
+    )
+
+    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+
+    output = subdir / "data.py"
+    assert os.path.exists(output)
+
+    with open(output, "r") as f:
+        bindings = f.read()
+
+    globals = {}
+    exec(bindings, globals)
+
+    assert "Foo" not in globals
+
+    add = globals["add"]
+    c_ext_shim_source = globals["c_ext_shim_source"]
+
+    @cuda.jit(link=[c_ext_shim_source])
+    def kernel(arr):
+        arr[0] = add(1, 2)
+
+    arr = np.array([42])
+    kernel[1, 1](arr)
+    assert arr[0] == 3

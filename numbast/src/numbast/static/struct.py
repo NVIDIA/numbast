@@ -896,6 +896,8 @@ class StaticStructsRenderer(BaseRenderer):
         use `numba.types.Type`, `StructModel` and `default_header` by default.
     header_path: str
         The path to the header that contains the cuda struct declaration.
+    excludes: list[str]
+        A list of struct names to exclude from generation.
     """
 
     _python_rendered: list[tuple[set[str], str]]
@@ -915,6 +917,7 @@ class StaticStructsRenderer(BaseRenderer):
         decls: list[Struct],
         specs: dict[str, tuple[type | None, type | None, os.PathLike]],
         default_header: os.PathLike | None = None,
+        excludes: list[str] = [],
     ):
         self._decls = decls
         self._specs = specs
@@ -923,10 +926,15 @@ class StaticStructsRenderer(BaseRenderer):
         self._python_rendered = []
         self._c_rendered = []
 
+        self._excludes = excludes
+
     def _render(self, with_prefix: bool, with_imports: bool):
         """Render all structs in `decls`."""
         for decl in self._decls:
             name = decl.name
+            if name in self._excludes:
+                continue
+
             nb_ty, nb_datamodel, header_path = self._specs.get(
                 name, (Type, StructModel, self._default_header)
             )

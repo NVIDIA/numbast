@@ -360,6 +360,8 @@ class StaticFunctionsRenderer(BaseRenderer):
         A list of function declarations in CUDA C++, parsed by `ast_canopy`
     header_path: str
         The path to the header file that contains the declarations
+    excludes: list[str]
+        A list of function names to exclude from the generation
     """
 
     func_typing_template = """
@@ -377,9 +379,10 @@ class {op_typing_name}(ConcreteTemplate):
     cases = [{signature_list}]
 """
 
-    def __init__(self, decls: list[Function], header_path: str):
+    def __init__(self, decls: list[Function], header_path: str, excludes: list[str]):
         self._decls = decls
         self._header_path = header_path
+        self._excludes = excludes
 
         self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
         self._op_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
@@ -436,6 +439,9 @@ class {op_typing_name}(ConcreteTemplate):
         self.Imports.add("from numba.cuda import CUSource")
 
         for decl in self._decls:
+            if decl.name in self._excludes:
+                continue
+
             renderer = None
             if decl.is_overloaded_operator():
                 renderer = StaticOverloadedOperatorRenderer(decl, self._header_path)
