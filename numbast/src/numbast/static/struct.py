@@ -120,8 +120,6 @@ def {lower_scope_name}():
             to_numba_type_str(arg.unqualified_non_ref_type_name)
             for arg in ctor_decl.param_types
         ]
-        for typ in self._nb_param_types:
-            self._try_import_numba_type(str(typ))
 
         self._nb_param_types_str = ", ".join(map(str, self._nb_param_types))
 
@@ -735,9 +733,6 @@ class {struct_attr_typing_name}(AttributeTemplate):
                 (f.name, to_numba_type_str(f.type_.unqualified_non_ref_type_name))
                 for f in self._decl.fields
             ]
-
-            for _, nbty in member_types_tuples:
-                self.Imports.add(f"from numba.types import {nbty}")
 
             member_types_tuples_strs = [
                 f"('{name}', {ty})" for name, ty in member_types_tuples

@@ -114,17 +114,12 @@ def {func_name}():
             to_numba_type_str(arg.unqualified_non_ref_type_name)
             for arg in self._decl.param_types
         ]
-        for typ in self._argument_numba_types:
-            # We only import types that are enabled in Numba by default.
-            self._try_import_numba_type(typ)
         self._argument_numba_types_str = ", ".join(self._argument_numba_types)
 
         self._return_numba_type = to_numba_type_str(
             self._decl.return_type.unqualified_non_ref_type_name
         )
         self._return_numba_type_str = str(self._return_numba_type)
-
-        self._try_import_numba_type(self._return_numba_type_str)
 
         # Cache the list of parameter types wrapped in pointer types.
         def wrap_pointer(typ):
