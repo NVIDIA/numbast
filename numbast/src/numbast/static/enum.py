@@ -8,7 +8,7 @@ import os
 from pylibastcanopy import Enum
 
 from numbast.static.renderer import BaseRenderer
-from numbast.static.types import register_enum_type
+from numbast.static.types import register_enum_type_str
 
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "test.py")
@@ -29,7 +29,7 @@ class {enum_name}(IntEnum):
     def _render(self):
         self.Imports.add("from enum import IntEnum")
 
-        register_enum_type(self._decl.name, self._decl.name)
+        register_enum_type_str(self._decl.name)
 
         enumerators = []
         for enumerator, value in zip(
@@ -45,6 +45,11 @@ class {enum_name}(IntEnum):
 
 
 class StaticEnumsRenderer(BaseRenderer):
+    """Create bindings for a collection of C++ Enums.
+
+    Since enums creates a new C++ type. It should be invoked before making struct / function bindings.
+    """
+
     def __init__(self, decls: list[Enum]):
         self._decls = decls
 
