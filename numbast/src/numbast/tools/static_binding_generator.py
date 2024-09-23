@@ -8,12 +8,13 @@ from collections import defaultdict
 
 import yaml
 
+from numba import config, cuda
 import numba.types
 import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
-from ast_canopy.decl import Function
-from pylibastcanopy import Enum
+from ast_canopy.decl import Function, Struct
+from pylibastcanopy import Enum, Typedef
 
 from numbast.static.renderer import (
     get_prefix,
@@ -27,6 +28,12 @@ from numbast.static.function import (
     clear_function_apis_registry,
 )
 from numbast.static.enum import StaticEnumsRenderer
+from numbast.static.typedef import render_aliases
+
+config.CUDA_USE_NVIDIA_BINDING = True
+
+CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
+COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
 
 def _str_value_to_numba_type(d: dict):
@@ -97,7 +104,15 @@ class NumbaDataModelDictType(click.ParamType):
 numba_datamodel_dict = NumbaDataModelDictType()
 
 
-def _generate_structs(struct_decls, aliases, header_path, types, data_models, excludes):
+def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
+    aliases = defaultdict(list)
+    for typedef in typedef_decls:
+        aliases[typedef.underlying_name].append(typedef.name)
+
+    return aliases
+
+
+def _generate_structs(struct_decls, header_path, types, data_models, excludes):
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
     specs = {}
     for struct_decl in struct_decls:
@@ -133,6 +148,33 @@ def _generate_enums(enum_decls: list[Enum]):
     )
 
 
+def log_files_to_generate(
+    functions: list[Function],
+    structs: list[Struct],
+    enums: list[Enum],
+    typedefs: list[Typedef],
+):
+    """Console log the list of bindings to generate."""
+
+    click.echo("-" * 80)
+    click.echo(
+        f"Generating bindings for {len(functions)} functions, {len(structs)} structs, {len(typedefs)} typedefs, {len(enums)} enums."
+    )
+
+    click.echo("Enums: ")
+    click.echo("\n".join(f"  - {enum.name}" for enum in enums))
+    click.echo("TypeDefs: ")
+    click.echo(
+        "\n".join(
+            f"  - {typedef.name}: {typedef.underlying_name}" for typedef in typedefs
+        )
+    )
+    click.echo("Functions: ")
+    click.echo("\n".join(f"  - {str(func)}" for func in functions))
+    click.echo("\nStructs: ")
+    click.echo("\n".join(f"  - {struct.name}" for struct in structs))
+
+
 def _static_binding_generator(
     entry_point: str,
     retain_list: list[str],
@@ -142,7 +184,25 @@ def _static_binding_generator(
     compute_capability: str,
     exclude_functions: list[str],
     exclude_structs: list[str],
+    log_generates: bool = False,
 ):
+    """
+    A function to generate CUDA static bindings for CUDA C++ headers.
+
+    Parameters:
+    - entry_point (str): Path to the input CUDA header file.
+    - retain_list (list[str]): List of file names to keep parsing.
+    - output_dir (str): Path to the output directory where the processed files will be saved.
+    - types (dict[str, type]): A dictionary that maps struct names to their Numba types.
+    - datamodels (dict[str, type]): A dictionary that maps struct names to their Numba data models.
+    - compute_capability (str): Compute capability of the CUDA device.
+    - exclude_functions (list[str]): List of function names to exclude from the bindings.
+    - exclude_structs (list[str]): List of struct names to exclude from the bindings.
+    - log_generates (bool, optional): Flag to log the list of bindings to generate. Defaults to False.
+
+    Returns:
+    None
+    """
     try:
         basename = os.path.basename(entry_point)
         basename = basename.split(".")[0]
@@ -154,20 +214,25 @@ def _static_binding_generator(
     # This will be added in future PRs.
     structs, functions, function_templates, class_templates, typedefs, enums = (
         parse_declarations_from_source(
-            entry_point, retain_list, compute_capability=compute_capability
+            entry_point,
+            retain_list,
+            compute_capability=compute_capability,
+            cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
         )
     )
 
-    aliases = defaultdict(list)
-    for typedef in typedefs:
-        aliases[typedef.underlying_name].append(typedef.name)
+    if log_generates:
+        log_files_to_generate(functions, structs, enums, typedefs)
 
+    aliases = _typedef_to_aliases(typedefs)
+    rendered_aliases = render_aliases(aliases)
+
+    enum_bindings = _generate_enums(enums)
     struct_bindings = _generate_structs(
-        structs, aliases, entry_point, types, datamodels, exclude_structs
+        structs, entry_point, types, datamodels, exclude_structs
     )
 
     function_bindings = _generate_functions(functions, entry_point, exclude_functions)
-    enum_bindings = _generate_enums(enums)
 
     prefix_str = get_prefix()
     imports_str = get_rendered_imports()
@@ -175,18 +240,28 @@ def _static_binding_generator(
 
     # Example: Save the processed output to the output directory
     output_file = os.path.join(output_dir, f"{basename}.py")
+
+    assembled = f"""
+# Automatically generated by Numbast Static Binding Generator
+
+# Prefixes:
+{prefix_str}
+# Imports:
+{imports_str}
+# Enums:
+{enum_bindings}
+# Structs:
+{struct_bindings}
+# Functions:
+{function_bindings}
+# Aliases:
+{rendered_aliases}
+# Shim functions:
+{shim_function_str}
+"""
+
     with open(output_file, "w") as file:
-        file.write(prefix_str)
-        file.write("\n")
-        file.write(imports_str)
-        file.write("\n")
-        file.write(struct_bindings)
-        file.write("\n")
-        file.write(function_bindings)
-        file.write("\n")
-        file.write(enum_bindings)
-        file.write("\n")
-        file.write(shim_function_str)
+        file.write(assembled)
         click.echo(f"Bindings for {entry_point} generated in {output_file}")
 
 
@@ -254,7 +329,7 @@ def static_binding_generator(
                 output_dir,
                 types,
                 datamodels,
-                "sm_70",  # TODO: Use compute capability from cli input
+                f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",  # TODO: Use compute capability from cli input
                 exclude_functions,
                 exclude_structs,
             )
@@ -275,7 +350,7 @@ def static_binding_generator(
         output_dir,
         types,
         datamodels,
-        "sm_70",  # TODO: Use compute capability from cli input
+        f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",  # TODO: Use compute capability from cli input
         [],  # TODO: parse excludes from input
         [],  # TODO: parse excludes from input
     )
