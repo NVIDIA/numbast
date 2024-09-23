@@ -14,6 +14,7 @@ from numbast.utils import (
 )
 
 from ast_canopy.decl import Function
+from pylibastcanopy import execution_space
 
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "test.py")
@@ -357,6 +358,8 @@ class StaticFunctionsRenderer(BaseRenderer):
         The path to the header file that contains the declarations
     excludes: list[str]
         A list of function names to exclude from the generation
+    skip_non_device: bool
+        If True, skip generating functions that are not device declared.
     """
 
     func_typing_template = """
@@ -374,10 +377,17 @@ class {op_typing_name}(ConcreteTemplate):
     cases = [{signature_list}]
 """
 
-    def __init__(self, decls: list[Function], header_path: str, excludes: list[str]):
+    def __init__(
+        self,
+        decls: list[Function],
+        header_path: str,
+        excludes: list[str],
+        skip_non_device: bool = True,
+    ):
         self._decls = decls
         self._header_path = header_path
         self._excludes = excludes
+        self._skip_non_device = skip_non_device
 
         self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
         self._op_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
@@ -435,6 +445,12 @@ class {op_typing_name}(ConcreteTemplate):
 
         for decl in self._decls:
             if decl.name in self._excludes:
+                continue
+
+            if self._skip_non_device and decl.exec_space not in {
+                execution_space.device,
+                execution_space.host_device,
+            }:
                 continue
 
             renderer = None
