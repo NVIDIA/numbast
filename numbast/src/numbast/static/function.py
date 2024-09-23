@@ -9,9 +9,7 @@ from collections import defaultdict
 
 from numbast.static.renderer import BaseRenderer
 from numbast.static.types import to_numba_type_str
-from numbast.utils import (
-    deduplicate_overloads,
-)
+from numbast.utils import deduplicate_overloads, make_function_shim
 
 from ast_canopy.decl import Function
 from pylibastcanopy import execution_space
@@ -190,21 +188,12 @@ def {func_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        if self._return_numba_type_str == "none":
-            self._c_ext_shim_rendered = self.c_ext_shim_template_void_ret.format(
-                unique_shim_name=self._deduplicated_shim_name,
-                arglist=self._c_ext_argument_pointer_types,
-                func_name=self._decl.name,
-                args=self._deref_args_str,
-            )
-        else:
-            self._c_ext_shim_rendered = self.c_ext_shim_template.format(
-                unique_shim_name=self._deduplicated_shim_name,
-                return_type=self._decl.return_type.name,
-                arglist=self._c_ext_argument_pointer_types,
-                func_name=self._decl.name,
-                args=self._deref_args_str,
-            )
+        self._c_ext_shim_rendered = make_function_shim(
+            shim_name=self._deduplicated_shim_name,
+            func_name=self._decl.name,
+            return_type=self._decl.return_type.name,
+            params=self._decl.params,
+        )
 
         self.ShimFunctions.append(self._c_ext_shim_rendered)
 
