@@ -354,7 +354,7 @@ class StaticFunctionsRenderer(BaseRenderer):
     func_typing_template = """
 @register
 class {func_typing_name}(ConcreteTemplate):
-    key = {func_name}
+    key = globals()["{func_name}"]
     cases = [{signature_list}]
 
 register_global({func_name}, types.Function({func_typing_name}))
@@ -400,7 +400,7 @@ class {op_typing_name}(ConcreteTemplate):
     def _render_func_typings(self):
         typings_rendered = []
         for func_name in self._func_typing_signature_cache:
-            func_typing_name = f"{func_name}_typing"
+            func_typing_name = f"_typing_{func_name}"
             signature_list = self._func_typing_signature_cache[func_name]
             signatures_str = ", ".join(signature_list)
             func_typing_str = self.func_typing_template.format(
@@ -416,7 +416,7 @@ class {op_typing_name}(ConcreteTemplate):
         typings_rendered = []
         for func_name in self._op_typing_signature_cache:
             func_name_id = func_name.replace(".", "_")
-            func_typing_name = f"{func_name_id}_typing"
+            func_typing_name = f"_typing_{func_name_id}"
             signature_list = self._op_typing_signature_cache[func_name]
             signatures_str = ", ".join(signature_list)
             func_typing_str = self.op_typing_template.format(
