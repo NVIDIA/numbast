@@ -11,7 +11,7 @@ cuda_compiler:
   - cuda-nvcc
 
 cuda_compiler_version:
-  - 12.4
+  - 12.5
 
 sysroot_linux_64:
   - "2.17"
