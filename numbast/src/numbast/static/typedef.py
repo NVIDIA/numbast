@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+from numbast.static.types import CTYPE_TO_NBTYPE_STR  # noqa
+
 
 def _register_alias_numba_type_mappings(type_name: str, alias: str):
     global CTYPE_TO_NBTYPE_STR
