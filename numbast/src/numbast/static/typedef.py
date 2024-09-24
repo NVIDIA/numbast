@@ -7,6 +7,11 @@ from numbast.static.types import CTYPE_TO_NBTYPE_STR  # noqa
 def _register_alias_numba_type_mappings(type_name: str, alias: str):
     global CTYPE_TO_NBTYPE_STR
 
+    # NOTE: Should we check? If we follow the type name generation convention,
+    # we know the name for all aliases before the types are even generated.
+    # Therefore it's not required for the type names to pre-exist in the type
+    # cache.
+
     # if type_name not in CTYPE_TO_NBTYPE_STR:
     #     raise ValueError(f"Type '{type_name}' is not registered.")
 
