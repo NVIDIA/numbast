@@ -44,7 +44,7 @@ requirements:
     - scikit-build-core
   run:
     - python
-    - numba >=0.59
+    - numba >=0.60
     - numbast
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
     - cuda-toolkit {{ cuda_compiler_version }}

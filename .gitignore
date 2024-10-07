@@ -160,3 +160,8 @@ jupyter_execute
 .nvcode/
 
 llvm.sh*
+
+# nsys profiles
+*cuda_gpu_kern_sum.json
+*.sqlite
+*.nsys-rep
