@@ -13,7 +13,7 @@ jobs:
     runs-on: linux-arm64-gpu-a100-latest-1
     container: # GPU jobs must run in a container
         # Numbast depends on conda installed CTK, thus system CTK should not matter. Similarly for python version.
-        image: nvcr.io/nvidia/pytorch:24.03-py3
+        image: nvcr.io/nvidia/pytorch:24.08-py3
         env:
           NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
     env:

@@ -16,34 +16,22 @@ jobs:
   pr-builder:
     needs:
       - checks
-      - legacy_tests
-      - frontier_tests
+      - tests
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.04
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
   checks:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.04
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.10
     with:
       enable_check_generated_files: false
-  legacy_tests:
-    name: Runs on legacy hardware and older CTK versions (V100, 12.3)
-    needs: checks
-    secrets: inherit
-    uses: ./.github/workflows/setup_build_test.yaml
-    with:
-      ubuntu_version: "20.04"
-      cuda_version: "12.3"
-      python_version: "3.10"
-      GPU: "v100"
-      CPU: "amd64"
-  frontier_tests:
-    name: Runs on newer hardware and latest CTK versions (A100, 12.4)
+  tests:
+    name: Run build and tests (A100, 12.5)
     needs: checks
     secrets: inherit
     uses: ./.github/workflows/setup_build_test.yaml
     with:
       ubuntu_version: "22.04"
-      cuda_version: "12.4"
+      cuda_version: "12.5"
       python_version: "3.10"
       GPU: "a100"
       CPU: "arm64"
