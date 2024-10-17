@@ -102,8 +102,6 @@ def {func_name}():
     The API maybe empty because operator reuses `operator.X` handles.
     """
 
-    _typing_rendered: str
-
     def __init__(self, decl: Function, header_path: str):
         super().__init__(decl)
         self._decl = decl
@@ -236,16 +234,9 @@ def {func_name}():
         """Render pure python bindings."""
 
         self._render_python_api()
-        self._render_typing()
         self._render_scoped_lower()
 
-        self._python_rendered = (
-            self._python_api_rendered
-            + "\n"
-            + self._typing_rendered
-            + "\n"
-            + self._lower_rendered
-        )
+        self._python_rendered = self._python_api_rendered + "\n" + self._lower_rendered
 
         return self.Imports, self._python_rendered
 
@@ -287,11 +278,6 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
         """
         self._python_api_rendered = ""
 
-    def _render_typing(self):
-        # Delay typing rendering to until after iterating all declarations.
-        self.Imports.add("import operator")
-        self._typing_rendered = ""
-
     @property
     def func_name_python(self):
         return self._py_op_name
@@ -326,10 +312,6 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
         self._python_api_rendered = self.function_python_api_template.format(
             func_name=self._decl.name
         )
-
-    def _render_typing(self):
-        # Delay typing rendering to until after iterating all declarations.
-        self._typing_rendered = ""
 
     def get_signature(self):
         return self._signature_cases
@@ -415,6 +397,7 @@ class {op_typing_name}(ConcreteTemplate):
     def _render_op_typing(self):
         typings_rendered = []
         for func_name in self._op_typing_signature_cache:
+            self.Imports.add("import operator")
             func_name_id = func_name.replace(".", "_")
             func_typing_name = f"_typing_{func_name_id}"
             signature_list = self._op_typing_signature_cache[func_name]
