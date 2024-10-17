@@ -37,12 +37,7 @@ COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
 def _str_value_to_numba_type(d: dict):
     """Converts string typed value to numba `types` objects"""
-    d_copy = {}
-
-    keys = [*d.keys()]
-    for k in keys:
-        d_copy[k] = getattr(numba.types, d[k])
-    return d_copy
+    return {k: getattr(numba.types, v) for k, v in d.items()}
 
 
 class NumbaTypeDictType(click.ParamType):
@@ -71,12 +66,7 @@ numba_type_dict = NumbaTypeDictType()
 
 def _str_value_to_numba_datamodel(d: dict):
     """Converts string typed value to numba `datamodel` objects"""
-    d_copy = {}
-
-    keys = [*d.keys()]
-    for k in keys:
-        d_copy[k] = getattr(numba.core.datamodel.models, d[k])
-    return d_copy
+    return {k: getattr(numba.core.datamodel.models, v) for k, v in d.items()}
 
 
 class NumbaDataModelDictType(click.ParamType):
