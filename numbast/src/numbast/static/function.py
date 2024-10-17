@@ -213,6 +213,8 @@ def {func_name}():
         """Render FFI, lowering and C shim functions of the constructor.
 
         Note that the typing still needs to be handled on a higher layer.
+        Rendered lowering codes are placed in a function scope isolated from
+        other function lowerings.
         """
 
         self._render_decl_device()
