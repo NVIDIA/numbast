@@ -16,16 +16,15 @@ from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function, Struct
 from pylibastcanopy import Enum, Typedef
 
+from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_prefix,
     get_rendered_shims,
     get_rendered_imports,
-    clear_base_renderer_cache,
 )
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import (
     StaticFunctionsRenderer,
-    clear_function_apis_registry,
 )
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
@@ -300,11 +299,7 @@ def static_binding_generator(
     TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
     DATAMODELS: A dictionary in JSON string that maps name of the struct to their Numba datamodel.
     """
-    # TODO: We should support input of types and data models from an external spec file for better UX.
-
-    # To handle multiple runs of the CLI tools in the same python session (e.g. pytest)
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
+    reset_renderer()
 
     if cfg_path:
         if any(x is not None for x in [input_header, retain, types, datamodels]):
