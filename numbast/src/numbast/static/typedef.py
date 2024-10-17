@@ -19,6 +19,19 @@ def _register_alias_numba_type_mappings(type_name: str, alias: str):
 
 
 def render_aliases(aliases: dict[str, list[str]]):
+    """Generate python strings that creates alias for the given `aliases` dictionary.
+
+    Parameter
+    ---------
+    aliases: dict[str, list[str]]
+        Keys of `aliases` are the underlying name of all alises. The value contains a
+        list of aliases corresponding to that name.
+
+    Return
+    ------
+    rendered: str
+        Generated python string that create those aliases.
+    """
     rendered = ""
     aliases_template = "{alias} = {underlying_name}\n"
 
