@@ -104,6 +104,24 @@ numba_datamodel_dict = NumbaDataModelDictType()
 
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
+    """Convert C++ typedef declarations into aliases.
+
+    `typedef` declarations contains a 1-1 mapping from "name" to "underlying name".
+    There can be multiple typedefs of the same underlying name.
+
+    This function aggregates them so that each "underlying name" maps to all names,
+    aka, its aliases.
+
+    Parameter
+    ---------
+    typedef_decls: list[Typedef]
+        A list of C++ typedef declarations
+
+    Return
+    ------
+    aliases: dict[str, list[str]]
+        Dictionary mapping underlying names to a list of aliases.
+    """
     aliases = defaultdict(list)
     for typedef in typedef_decls:
         aliases[typedef.underlying_name].append(typedef.name)
