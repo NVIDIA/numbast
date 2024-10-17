@@ -17,6 +17,11 @@ file_logger.addHandler(FileHandler(logger_path))
 
 
 class StaticEnumRenderer(BaseRenderer):
+    """Render a single C++ enum type.
+
+    A C++ enum is trivially mapped into a python `IntEnum` class.
+    """
+
     enum_template = """
 class {enum_name}(IntEnum):
 {enumerators}
