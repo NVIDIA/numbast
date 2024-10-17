@@ -387,6 +387,7 @@ class {op_typing_name}(ConcreteTemplate):
         self._c_rendered = []
 
     def _render_typings(self):
+        """Render typing for all functions"""
         self.Imports.add("from numba.cuda.cudadecl import register")
         self.Imports.add("from numba.cuda.cudadecl import register_global")
         self.Imports.add("from numba import types")
@@ -400,6 +401,7 @@ class {op_typing_name}(ConcreteTemplate):
         )
 
     def _render_func_typings(self):
+        """Render non-operator function typings."""
         typings_rendered = []
         for func_name in self._func_typing_signature_cache:
             func_typing_name = f"_typing_{func_name}"
@@ -415,6 +417,7 @@ class {op_typing_name}(ConcreteTemplate):
         self._op_typing_rendered = "\n".join(typings_rendered)
 
     def _render_op_typing(self):
+        """Render operator overload function typings."""
         typings_rendered = []
         for func_name in self._op_typing_signature_cache:
             self.Imports.add("import operator")
