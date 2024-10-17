@@ -302,6 +302,7 @@ def static_binding_generator(
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
 
     INPUT_HEADER: Path to the input CUDA header file.
+    CFG_PATH: Path to the configuration file in YAML format. If specified, only OUTPUT_DIR is allowed as a second parameter.
     RETAIN: Comma separated list of file names to keep parsing, default to INPUT_HEADER.
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
