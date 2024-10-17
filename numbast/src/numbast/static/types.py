@@ -17,6 +17,24 @@ def register_enum_type_str(enum_name: str):
 
 
 def to_numba_type_str(ty: str):
+    """Converts C type string into numba type string.
+
+    This function closely mirrors that in `numbast.types.to_numba_type`.
+    In addition to conversion, this function also adds the corresponding
+    type import lines to Numba for the converted types to the renderer's
+    cache for import statements.
+
+    Parameter
+    ---------
+    ty: str
+        A string representing a C type
+
+    Return
+    ------
+    numba_ty: str
+        The corresponding string representing a Numba type
+    """
+
     if ty.endswith("*"):
         base_ty = ty.rstrip("*").rstrip(" ")
         ptr_ty_str = f"CPointer({to_numba_type_str(base_ty)})"
