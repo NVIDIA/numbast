@@ -14,21 +14,44 @@ from numbast.tools.static_binding_generator import static_binding_generator
 
 @pytest.fixture
 def kernel():
-    def _lazy_kernel(globals):
+    def _lazy_kernel(globals, cc=None):
+        if cc is not None:
+            compute_capability = int(cc[3:])
+        else:
+            cc = cuda.get_current_device().compute_capability
+            compute_capability = cc[0] * 10 + cc[1]
+
         Foo = globals["Foo"]
         add = globals["add"]
+        if compute_capability >= 86:
+            mul = globals["mul"]
+
         c_ext_shim_source = globals["c_ext_shim_source"]
 
-        @cuda.jit(link=[c_ext_shim_source])
-        def kernel(arr):
-            foo = Foo()
-            arr[0] = foo.x
-            arr[1] = add(1, 2)
+        if compute_capability >= 86:
+
+            @cuda.jit(link=[c_ext_shim_source])
+            def kernel(arr):
+                foo = Foo()
+                arr[0] = foo.x
+                arr[1] = add(1, 2) + mul(3, 4)
+
+        else:
+
+            @cuda.jit(link=[c_ext_shim_source])
+            def kernel(arr):
+                foo = Foo()
+                arr[0] = foo.x
+                arr[1] = add(1, 2)
 
         arr = np.array([42, 0])
         kernel[1, 1](arr)
         assert arr[0] == 0
-        assert arr[1] == 3
+
+        if compute_capability >= 86:
+            assert arr[1] == 15
+        else:
+            assert arr[1] == 3
 
     return _lazy_kernel
 
@@ -204,6 +227,44 @@ def test_simple_cli_no_retain(tmpdir):
     assert "add" not in globals
 
 
+@pytest.mark.parametrize(
+    "cc, expected", [("sm_70", False), ("sm_86", True), ("sm_90", True)]
+)
+def test_simple_cli_compute_capability(tmpdir, cc, expected):
+    subdir = tmpdir.mkdir("sub")
+    data = os.path.join(os.path.dirname(__file__), "data.cuh")
+    runner = CliRunner()
+    result = runner.invoke(
+        static_binding_generator,
+        [
+            "--input-header",
+            data,
+            "--output-dir",
+            subdir,
+            "--types",
+            '{"Foo":"Type"}',
+            "--datamodels",
+            '{"Foo": "StructModel"}',
+            "--compute-capability",
+            cc,
+        ],
+    )
+
+    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+
+    output = subdir / "data.py"
+    assert os.path.exists(output)
+
+    with open(output, "r") as f:
+        bindings = f.read()
+
+    globals = {}
+    exec(bindings, globals)
+
+    print(globals.keys())
+    assert ("mul" in globals) is expected
+
+
 @pytest.mark.skip("TODO: A C++ error is thrown.")
 def test_simple_cli_empty_retain(tmpdir):
     subdir = tmpdir.mkdir("sub3")
@@ -231,7 +292,8 @@ def test_simple_cli_empty_retain(tmpdir):
     assert "add" not in globals
 
 
-def test_cli_yml_inputs_full_spec(tmpdir, kernel):
+@pytest.mark.parametrize("cc", ["sm_70", "sm_86", "sm_90"])
+def test_cli_yml_inputs_full_spec(tmpdir, kernel, cc):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -257,6 +319,8 @@ Data Models:
         [
             "--cfg-path",
             cfg_file,
+            "--compute-capability",
+            cc,
             "--output-dir",
             subdir,
         ],
@@ -273,7 +337,7 @@ Data Models:
     globals = {}
     exec(bindings, globals)
 
-    kernel(globals)
+    kernel(globals, cc)
 
 
 def test_yaml_deduce_missing_types(tmpdir, kernel):

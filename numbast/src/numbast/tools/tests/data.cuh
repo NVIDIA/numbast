@@ -10,3 +10,9 @@ public:
 };
 
 int __device__ add(int a, int b) { return a + b; }
+
+#if (defined(__CUDACC__) && (!defined(__CUDA_ARCH__) || (__CUDA_ARCH__ >= 860)))
+
+int __device__ mul(int a, int b) { return a * b; }
+
+#endif

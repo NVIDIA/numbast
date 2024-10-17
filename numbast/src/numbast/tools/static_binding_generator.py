@@ -32,7 +32,7 @@ from numbast.static.typedef import render_aliases
 config.CUDA_USE_NVIDIA_BINDING = True
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
-COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
+MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
 
 def _str_value_to_numba_type(d: dict):
@@ -289,6 +289,11 @@ def _static_binding_generator(
         writable=True,
     ),
 )
+@click.option(
+    "--compute-capability",
+    type=str,
+    default=None,
+)
 def static_binding_generator(
     ctx,
     input_header,
@@ -297,18 +302,28 @@ def static_binding_generator(
     output_dir,
     types,
     datamodels,
+    compute_capability,
 ):
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
 
     INPUT_HEADER: Path to the input CUDA header file.
-    CFG_PATH: Path to the configuration file in YAML format. If specified, only OUTPUT_DIR is allowed as a second parameter.
+    CFG_PATH: Path to the configuration file in YAML format. If specified, only COMPUTE_CAPABILITY and OUTPUT_DIR is allowed as parameter.
     RETAIN: Comma separated list of file names to keep parsing, default to INPUT_HEADER.
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
     DATAMODELS: A dictionary in JSON string that maps name of the struct to their Numba datamodel.
+    COMPUTE_CAPABILITY: Compute capability of the CUDA device, default to the current machine's compute capability.
     """
     reset_renderer()
+
+    if compute_capability is None:
+        compute_capability = (
+            f"sm_{MACHINE_COMPUTE_CAPABILITY[0]}{MACHINE_COMPUTE_CAPABILITY[1]}"
+        )
+
+    if not compute_capability.startswith("sm_"):
+        raise ValueError("Compute capability must start with `sm_`")
 
     if cfg_path:
         if any(x is not None for x in [input_header, retain, types, datamodels]):
@@ -333,7 +348,7 @@ def static_binding_generator(
                 output_dir,
                 types,
                 datamodels,
-                f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",  # TODO: Use compute capability from cli input
+                compute_capability,
                 exclude_functions,
                 exclude_structs,
             )
@@ -354,7 +369,7 @@ def static_binding_generator(
         output_dir,
         types,
         datamodels,
-        f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",  # TODO: Use compute capability from cli input
+        compute_capability,
         [],  # TODO: parse excludes from input
         [],  # TODO: parse excludes from input
     )
