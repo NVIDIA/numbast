@@ -146,6 +146,7 @@ def {func_name}():
 
     @property
     def _signature_cases(self):
+        """The python string that declares the signature of this function."""
         return_type_name = str(self._return_numba_type)
         param_types_str = ", ".join(str(t) for t in self._argument_numba_types)
         return self.signature_template.format(
@@ -233,22 +234,38 @@ def {func_name}():
         )
 
     def render_python(self):
-        """Render pure python bindings."""
+        """Render pure python bindings.
+        A single function renderer determines the python API and the lowering code
+        which are wrapped in function scope.
+
+        Return
+        ------
+        python binding: str
+            The string containing the rendered python function binding strings.
+        """
 
         self._render_python_api()
         self._render_scoped_lower()
 
         self._python_rendered = self._python_api_rendered + "\n" + self._lower_rendered
 
-        return self.Imports, self._python_rendered
+        return self._python_rendered
 
     def render_c(self):
+        """Render the C shim functions from Numba FFI.
+
+        Return
+        ------
+        C shim functions: str
+            The C shim function strings for this function.
+        """
         self.Includes.add(self.includes_template.format(header_path=self._header_path))
         self._c_rendered = self._c_ext_shim_rendered
-        return self.Includes, self._c_rendered
+        return self._c_rendered
 
     @property
     def func_name_python(self):
+        """The name of the function in python."""
         return self._decl.name
 
 
@@ -282,6 +299,7 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
 
     @property
     def func_name_python(self):
+        """The name of the operator in python, in the form of `operator.X`."""
         return self._py_op_name
 
     def get_signature(self):
@@ -447,7 +465,7 @@ class {op_typing_name}(ConcreteTemplate):
         self._render_typings()
 
         python_rendered = []
-        for imp, py in self._python_rendered:
+        for py in self._python_rendered:
             python_rendered.append(py)
 
         python_rendered.append(self._typing_rendered)
@@ -462,7 +480,7 @@ class {op_typing_name}(ConcreteTemplate):
         self._python_str += "\n" + "\n".join(python_rendered)
 
         c_rendered = []
-        for inc, c in self._c_rendered:
+        for c in self._c_rendered:
             c_rendered.append(c)
 
         self._c_str = "\n".join(self.Includes) + "\n".join(c_rendered)
