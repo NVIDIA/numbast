@@ -5,6 +5,7 @@ from enum import IntEnum
 import re
 
 from numba import types as nbtypes
+from numba.cuda.vector_types import vector_types
 from numba.misc.special import typeof
 
 
@@ -30,12 +31,12 @@ CTYPE_MAPS = {
     "float": nbtypes.float32,
     "double": nbtypes.float64,
     "bool": nbtypes.bool_,
-    "uint4": nbtypes.Type("uintx4"),
-    "uint2": nbtypes.Type("uintx2"),
-    "float2": nbtypes.Type("float32x2"),
-    "float4": nbtypes.Type("float32x4"),
-    "double2": nbtypes.Type("float64x2"),
-    "double4": nbtypes.Type("float64x4"),
+    "uint4": vector_types["uint32x4"],
+    "uint2": vector_types["uint32x2"],
+    "float2": vector_types["float32x2"],
+    "float4": vector_types["float32x4"],
+    "double2": vector_types["float64x2"],
+    "double4": vector_types["float64x4"],
 }
 
 
@@ -76,10 +77,10 @@ def to_numba_type(ty: str):
 
     # Support for array type is still incomplete in ast_canopy,
     # doing manual parsing for array type here.
-    pat = r"(.*)\[(\d+)\]"
-    match = re.match(pat, ty)
-    if match:
-        base_ty, size = match.groups()
+    arr_type_pat = r"(.*)\[(\d+)\]"
+    is_array_type = re.match(arr_type_pat, ty)
+    if is_array_type:
+        base_ty, size = is_array_type.groups()
         return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
 
     return CTYPE_MAPS[ty]

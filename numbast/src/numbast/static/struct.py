@@ -15,7 +15,7 @@ from ast_canopy.decl import Struct, StructMethod
 from numbast.static.renderer import (
     BaseRenderer,
 )
-from numbast.types import to_numba_type
+from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
 from numbast.utils import deduplicate_overloads
 
 file_logger = getLogger(f"{__name__}")
@@ -117,11 +117,9 @@ def {lower_scope_name}():
 
         # Cache the list of parameter types represented as Numba types
         self._nb_param_types = [
-            to_numba_type(arg.unqualified_non_ref_type_name)
+            to_numba_type_str(arg.unqualified_non_ref_type_name)
             for arg in ctor_decl.param_types
         ]
-        for typ in self._nb_param_types:
-            self._try_import_numba_type(str(typ))
 
         self._nb_param_types_str = ", ".join(map(str, self._nb_param_types))
 
@@ -203,6 +201,8 @@ def {lower_scope_name}():
             arglist=self._c_ext_argument_pointer_types,
             args=self._deref_args_str,
         )
+
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
 
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
@@ -430,7 +430,7 @@ def {lower_scope_name}():
         self._device_decl_name = f"_op_decl_{struct_name}"
 
         # Cache the type that's converted to
-        self._nb_cast_to_type = to_numba_type(
+        self._nb_cast_to_type = to_numba_type_str(
             self._convop_decl.return_type.unqualified_non_ref_type_name
         )
         self._nb_cast_to_type_str = str(self._nb_cast_to_type)
@@ -589,10 +589,10 @@ class StaticStructRenderer(BaseRenderer):
     ----------
     decl: Struct
         Declaration of the struct.
-    parent_type: type
-        The parent Numba type of the new struct type created.
-    data_model: type
-        The data model of the new struct type.
+    parent_type: type | None
+        The parent Numba type of the new struct type created. If None, default to numba.types.Type.
+    data_model: type | None
+        The data model of the new struct type. If None, default to numba.core.datamodel.StructModel.
     header_path: os.PathLike
         Path to the header that contains the declaration of the struct.
     aliases: list[str], optional
@@ -657,15 +657,23 @@ class {struct_attr_typing_name}(AttributeTemplate):
     def __init__(
         self,
         decl: Struct,
-        parent_type: type,
-        data_model: type,
+        parent_type: type | None,
+        data_model: type | None,
         header_path: os.PathLike,
         aliases: list[str] = [],
     ):
         super().__init__(decl)
         self._struct_name = decl.name
         self._aliases = aliases
+
+        if parent_type is None:
+            parent_type = Type
+
         self._parent_type = parent_type
+
+        if data_model is None:
+            data_model = StructModel
+
         self._data_model = data_model
 
         self.Imports.add(f"from numba.types import {self._parent_type.__qualname__}")
@@ -684,6 +692,8 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self._struct_attr_typing_name = f"_attr_typing_{self._struct_name}"
 
         self._header_path = header_path
+
+        CTYPE_TO_NBTYPE_STR[decl.name] = self._struct_type_name
 
     def _render_typing(self):
         """Render typing of the struct."""
@@ -720,12 +730,9 @@ class {struct_attr_typing_name}(AttributeTemplate):
             )
         elif self._data_model == StructModel:
             member_types_tuples = [
-                (f.name, to_numba_type(f.type_.unqualified_non_ref_type_name))
+                (f.name, to_numba_type_str(f.type_.unqualified_non_ref_type_name))
                 for f in self._decl.fields
             ]
-
-            for _, nbty in member_types_tuples:
-                self.Imports.add(f"from numba.types import {nbty}")
 
             member_types_tuples_strs = [
                 f"('{name}', {ty})" for name, ty in member_types_tuples
@@ -761,7 +768,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
                 resolve_methods.append(
                     self.resolve_methods_template.format(
                         attr_name=field.name,
-                        numba_type=to_numba_type(
+                        numba_type=to_numba_type_str(
                             field.type_.unqualified_non_ref_type_name
                         ),
                     )
@@ -884,6 +891,8 @@ class StaticStructsRenderer(BaseRenderer):
         use `numba.types.Type`, `StructModel` and `default_header` by default.
     header_path: str
         The path to the header that contains the cuda struct declaration.
+    excludes: list[str]
+        A list of struct names to exclude from generation.
     """
 
     _python_rendered: list[tuple[set[str], str]]
@@ -901,8 +910,9 @@ class StaticStructsRenderer(BaseRenderer):
     def __init__(
         self,
         decls: list[Struct],
-        specs: dict[str, tuple[type, type, os.PathLike]],
+        specs: dict[str, tuple[type | None, type | None, os.PathLike]],
         default_header: os.PathLike | None = None,
+        excludes: list[str] = [],
     ):
         self._decls = decls
         self._specs = specs
@@ -911,17 +921,20 @@ class StaticStructsRenderer(BaseRenderer):
         self._python_rendered = []
         self._c_rendered = []
 
-    def _render(self):
+        self._excludes = excludes
+
+    def _render(self, with_prefix: bool, with_imports: bool):
         """Render all structs in `decls`."""
         for decl in self._decls:
             name = decl.name
+            if name in self._excludes:
+                continue
+
             nb_ty, nb_datamodel, header_path = self._specs.get(
                 name, (Type, StructModel, self._default_header)
             )
             if header_path is None:
-                raise ValueError(
-                    f"CUDA struct {name} has does not provide a header path."
-                )
+                raise ValueError(f"CUDA struct {name} does not provide a header path.")
 
             SSR = StaticStructRenderer(decl, nb_ty, nb_datamodel, header_path)
 
@@ -934,9 +947,14 @@ class StaticStructsRenderer(BaseRenderer):
             imports |= imp
             python_rendered.append(py)
 
-        self._python_str = (
-            self.Prefix + "\n" + "\n".join(imports) + "\n".join(python_rendered)
-        )
+        self._python_str = ""
+        if with_prefix:
+            self._python_str += "\n" + self.Prefix
+
+        if with_imports:
+            self._python_str += "\n" + "\n".join(self.Imports)
+
+        self._python_str += "\n" + "\n".join(python_rendered)
 
         includes = set()
         c_rendered = []
@@ -950,10 +968,16 @@ class StaticStructsRenderer(BaseRenderer):
             shim_funcs=self._c_str
         )
 
-    def render_as_str(self) -> str:
+    def render_as_str(
+        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+    ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render()
-        output = self._python_str + "\n" + self._shim_function_pystr
+        self._render(with_prefix, with_imports)
+
+        if with_shim_functions:
+            output = self._python_str + "\n" + self._shim_function_pystr
+        else:
+            output = self._python_str
 
         file_logger.debug(output)
 
