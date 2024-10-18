@@ -29,6 +29,7 @@ requirements:
     - cuda-cudart-dev
     - python
     - numba >=0.59
+    - numba-cuda
     - numbast
 
   test:
