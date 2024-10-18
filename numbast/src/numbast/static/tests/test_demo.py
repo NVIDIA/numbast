@@ -25,7 +25,9 @@ def cuda_struct(data_folder):
 
     SSR = StaticStructsRenderer(structs, specs)
 
-    bindings = SSR.render_as_str()
+    bindings = SSR.render_as_str(
+        with_prefix=True, with_imports=True, with_shim_functions=True
+    )
 
     globals = {}
     exec(bindings, globals)

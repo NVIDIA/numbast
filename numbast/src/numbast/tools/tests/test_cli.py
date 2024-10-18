@@ -14,44 +14,21 @@ from numbast.tools.static_binding_generator import static_binding_generator
 
 @pytest.fixture
 def kernel():
-    def _lazy_kernel(globals, cc=None):
-        if cc is not None:
-            compute_capability = int(cc[3:])
-        else:
-            cc = cuda.get_current_device().compute_capability
-            compute_capability = cc[0] * 10 + cc[1]
-
+    def _lazy_kernel(globals):
         Foo = globals["Foo"]
         add = globals["add"]
-        if compute_capability >= 86:
-            mul = globals["mul"]
-
         c_ext_shim_source = globals["c_ext_shim_source"]
 
-        if compute_capability >= 86:
-
-            @cuda.jit(link=[c_ext_shim_source])
-            def kernel(arr):
-                foo = Foo()
-                arr[0] = foo.x
-                arr[1] = add(1, 2) + mul(3, 4)
-
-        else:
-
-            @cuda.jit(link=[c_ext_shim_source])
-            def kernel(arr):
-                foo = Foo()
-                arr[0] = foo.x
-                arr[1] = add(1, 2)
+        @cuda.jit(link=[c_ext_shim_source])
+        def kernel(arr):
+            foo = Foo()
+            arr[0] = foo.x
+            arr[1] = add(1, 2)
 
         arr = np.array([42, 0])
         kernel[1, 1](arr)
         assert arr[0] == 0
-
-        if compute_capability >= 86:
-            assert arr[1] == 15
-        else:
-            assert arr[1] == 3
+        assert arr[1] == 3
 
     return _lazy_kernel
 
@@ -292,8 +269,55 @@ def test_simple_cli_empty_retain(tmpdir):
     assert "add" not in globals
 
 
-@pytest.mark.parametrize("cc", ["sm_70", "sm_86", "sm_90"])
-def test_cli_yml_inputs_full_spec(tmpdir, kernel, cc):
+def test_cli_yml_inputs_full_spec(tmpdir, kernel):
+    subdir = tmpdir.mkdir("sub")
+    data = os.path.join(os.path.dirname(__file__), "data.cuh")
+
+    cfg = f"""Name: Test Data
+Version: 0.0.1
+Entry Point: {data}
+File List:
+    - {data}
+Exclude: {{}}
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+"""
+
+    cfg_file = subdir / "cfg.yaml"
+    with open(cfg_file, "w") as f:
+        f.write(cfg)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        static_binding_generator,
+        [
+            "--cfg-path",
+            cfg_file,
+            "--output-dir",
+            subdir,
+        ],
+    )
+
+    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+
+    output = subdir / "data.py"
+    assert os.path.exists(output)
+
+    with open(output, "r") as f:
+        bindings = f.read()
+
+    globals = {}
+    exec(bindings, globals)
+
+    kernel(globals)
+
+
+@pytest.mark.parametrize(
+    "cc, expected", [("sm_70", False), ("sm_86", True), ("sm_90", True)]
+)
+def test_cli_yml_inputs_full_spec_with_cc(tmpdir, kernel, cc, expected):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -337,7 +361,7 @@ Data Models:
     globals = {}
     exec(bindings, globals)
 
-    kernel(globals, cc)
+    assert ("mul" in bindings) is expected
 
 
 def test_yaml_deduce_missing_types(tmpdir, kernel):

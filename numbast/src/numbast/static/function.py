@@ -347,9 +347,9 @@ class StaticFunctionsRenderer(BaseRenderer):
         A list of function declarations in CUDA C++, parsed by `ast_canopy`
     header_path: str
         The path to the header file that contains the declarations
-    excludes: list[str]
+    excludes: list[str], Optional
         A list of function names to exclude from the generation
-    skip_non_device: bool
+    skip_non_device: bool, default True
         If True, skip generating functions that are not device declared.
     """
 
@@ -372,7 +372,7 @@ class {op_typing_name}(ConcreteTemplate):
         self,
         decls: list[Function],
         header_path: str,
-        excludes: list[str],
+        excludes: list[str] = [],
         skip_non_device: bool = True,
     ):
         self._decls = decls
