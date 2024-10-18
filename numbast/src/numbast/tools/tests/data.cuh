@@ -6,7 +6,7 @@
 struct Foo {
 public:
   int x;
-  __device__ Foo() {}
+  __device__ Foo() : x(0) {}
 };
 
 int __device__ add(int a, int b) { return a + b; }
