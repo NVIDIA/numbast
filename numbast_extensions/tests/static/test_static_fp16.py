@@ -6,7 +6,7 @@ import os
 from functools import partial
 import math
 
-import cupy as cp
+import numpy as np
 
 from numba import cuda, config, types
 from numba.core.datamodel.models import PrimitiveModel, StructModel
@@ -81,9 +81,6 @@ def float16():
 {shim_function_str}
 """
 
-    with open("/tmp/binding.py", "w") as f:
-        f.write(bindings)
-
     globals = {}
     exec(bindings, globals)
 
@@ -110,8 +107,8 @@ def test_float16(float16, numbast_jit):
         arr[0] = types.float32(three)
         arr[1] = types.float32(sin_three)
 
-    arr = cp.array([0, 0], dtype="f8")
+    arr = np.array([0, 0], dtype="f8")
 
     kernel[1, 1](arr)
 
-    cp.testing.assert_allclose(arr, [3.0, math.sin(3.0)], atol=1e-5)
+    np.testing.assert_allclose(arr, [3.0, math.sin(3.0)], atol=1e-5)
