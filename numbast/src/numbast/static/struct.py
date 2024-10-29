@@ -5,6 +5,7 @@ import os
 from textwrap import indent
 from logging import getLogger, FileHandler
 import tempfile
+import warnings
 
 from numba.types import Type
 from numba.core.datamodel.models import StructModel, PrimitiveModel
@@ -17,6 +18,7 @@ from numbast.static.renderer import (
 )
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
 from numbast.utils import deduplicate_overloads
+from numbast.errors import TypeNotFoundError
 
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "test.py")
@@ -326,12 +328,20 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
 
         signatures: list[str] = []
         for ctor_decl in self._ctor_decls:
-            renderer = StaticStructCtorRenderer(
-                struct_name=self._struct_name,
-                struct_type_class=self._struct_type_class,
-                struct_type_name=self._struct_type_name,
-                ctor_decl=ctor_decl,
-            )
+            try:
+                renderer = StaticStructCtorRenderer(
+                    struct_name=self._struct_name,
+                    struct_type_class=self._struct_type_class,
+                    struct_type_name=self._struct_type_name,
+                    ctor_decl=ctor_decl,
+                )
+            except TypeNotFoundError as e:
+                warnings.warn(
+                    f"{e._type_name} is not known to Numbast. Skipping "
+                    f"binding for {str(ctor_decl)}"
+                )
+                continue
+
             renderer._render()
 
             self._python_rendered += renderer._python_rendered
@@ -442,7 +452,7 @@ def {lower_scope_name}():
         self._caller_name = f"_conversion_op_caller_{struct_name}"
 
         # Cache the unique shim name of the c extension shim function
-        self._unique_shim_name = (
+        self._unique_shim_name = deduplicate_overloads(
             f"__{self._struct_name}_{self._convop_decl.mangled_name}"
         )
 
@@ -488,6 +498,8 @@ def {lower_scope_name}():
                 method_name=self._convop_decl.name,
             )
         )
+
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
 
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
@@ -885,7 +897,7 @@ class StaticStructsRenderer(BaseRenderer):
     ----------
     decls: list[Struct]
         A list of CUDA struct declarations.
-    specs: dict[str, tuple[type, type]]
+    specs: dict[str, tuple[type, type, PathLike]]
         A dictionary mapping the name of the structs to a tuple of
         Numba parent type, data model and header path. If unspecified,
         use `numba.types.Type`, `StructModel` and `default_header` by default.

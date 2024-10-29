@@ -5,6 +5,7 @@ import re
 
 from numbast.types import CTYPE_MAPS
 from numbast.static.renderer import BaseRenderer
+from numbast.errors import TypeNotFoundError
 
 
 CTYPE_TO_NBTYPE_STR = {k: str(v) for k, v in CTYPE_MAPS.items()}
@@ -60,6 +61,10 @@ def to_numba_type_str(ty: str):
         BaseRenderer._try_import_numba_type("UniTuple")
         return arr_type_str
 
-    BaseRenderer._try_import_numba_type(CTYPE_TO_NBTYPE_STR[ty])
+    try:
+        nb_type_str = CTYPE_TO_NBTYPE_STR[ty]
+    except KeyError:
+        raise TypeNotFoundError(ty)
 
-    return CTYPE_TO_NBTYPE_STR[ty]
+    BaseRenderer._try_import_numba_type(nb_type_str)
+    return nb_type_str
