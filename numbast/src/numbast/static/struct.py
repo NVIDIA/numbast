@@ -923,7 +923,7 @@ class StaticStructsRenderer(BaseRenderer):
         self,
         decls: list[Struct],
         specs: dict[str, tuple[type | None, type | None, os.PathLike]],
-        default_header: os.PathLike | None = None,
+        default_header: os.PathLike | str | None = None,
         excludes: list[str] = [],
     ):
         self._decls = decls
