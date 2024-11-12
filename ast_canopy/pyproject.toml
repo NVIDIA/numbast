@@ -7,7 +7,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "ast_canopy"
-version = "0.1.0"
+version = "0.2.0"
 
 [tool.scikit-build]
 cmake.targets = ["pylibastcanopy"]
