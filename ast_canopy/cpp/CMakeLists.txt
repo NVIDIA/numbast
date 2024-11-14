@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(astcanopy VERSION 0.1.0 LANGUAGES C CXX)
+project(astcanopy VERSION 0.2.0 LANGUAGES C CXX)
 
 # Define the sources to compile for astcanopy here.
 add_library(astcanopy SHARED
@@ -83,7 +83,7 @@ include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
-  VERSION 0.1.0
+  VERSION 0.2.0
   COMPATIBILITY SameMajorVersion)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake

@@ -16,6 +16,6 @@ rapids-print-env
 
 rapids-logger "Begin py build"
 
-conda build conda/recipes/ast_canopy
-conda build conda/recipes/numbast
-conda build conda/recipes/numbast_extensions
+rapids-conda-retry mambabuild conda/recipes/ast_canopy
+rapids-conda-retry mambabuild conda/recipes/numbast
+rapids-conda-retry mambabuild conda/recipes/numbast_extensions
