@@ -26,9 +26,9 @@ extra_options = [
 ]
 
 extra_include_paths = [
-    "-I/home/wangm/cccl/cub/",
-    "-I/home/wangm/cccl/libcudacxx/include/",
-    "-I/home/wangm/cccl/thrust/",
+    f"-I{config.CUDA_INCLUDE_PATH}/cub/",
+    f"-I{config.CUDA_INCLUDE_PATH}/cccl/libcudacxx/include/",
+    f"-I{config.CUDA_INCLUDE_PATH}/cccl/thrust/",
 ]
 
 
@@ -36,7 +36,7 @@ extra_include_paths = [
 # added.
 
 
-def nvrtc_compile(src, name, cc):
+def nvrtc_compile(src, name, cc, ltoir=False):
     """
     Compile a CUDA C/C++ source to PTX for a given compute capability.
 
@@ -67,6 +67,8 @@ def nvrtc_compile(src, name, cc):
     numba_include = f"-I{numba_cuda_path}"
     options = [arch, *extra_include_paths, include, numba_include, "-rdc", "true"]
     options += extra_options
+    if ltoir:
+        options.append("-dlto")
 
     # Compile the program
     compile_error = nvrtc.compile_program(program, options)
@@ -84,8 +86,12 @@ def nvrtc_compile(src, name, cc):
         msg = f"NVRTC log messages whilst compiling {name}:\n\n{log}"
         warnings.warn(msg)
 
-    ptx = nvrtc.get_ptx(program)
-    return ptx, log
+    if ltoir:
+        ltoir = nvrtc.get_lto(program)
+        return ltoir, log
+    else:
+        ptx = nvrtc.get_ptx(program)
+        return ptx, log
 
 
 # Monkey-patch the existing implementation

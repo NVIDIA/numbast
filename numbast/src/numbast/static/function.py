@@ -190,7 +190,7 @@ def {func_name}():
         self._c_ext_shim_rendered = make_function_shim(
             shim_name=self._deduplicated_shim_name,
             func_name=self._decl.name,
-            return_type=self._decl.return_type.name,
+            return_type=self._decl.return_type.unqualified_non_ref_type_name,
             params=self._decl.params,
         )
 
@@ -374,11 +374,13 @@ class {op_typing_name}(ConcreteTemplate):
         header_path: str,
         excludes: list[str] = [],
         skip_non_device: bool = True,
+        skip_prefix: str = "__",
     ):
         self._decls = decls
         self._header_path = header_path
         self._excludes = excludes
         self._skip_non_device = skip_non_device
+        self._skip_prefix = skip_prefix
 
         self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
         self._op_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
@@ -442,6 +444,9 @@ class {op_typing_name}(ConcreteTemplate):
             if decl.name in self._excludes:
                 continue
 
+            if decl.name.startswith(self._skip_prefix):
+                continue
+
             if self._skip_non_device and decl.exec_space not in {
                 execution_space.device,
                 execution_space.host_device,
@@ -450,6 +455,9 @@ class {op_typing_name}(ConcreteTemplate):
 
             renderer = None
             if decl.is_overloaded_operator():
+                if decl.is_copy_assignment_operator():
+                    # copy assignment operator, do not support in Numba / Python, skip
+                    continue
                 renderer = StaticOverloadedOperatorRenderer(decl, self._header_path)
                 self._op_typing_signature_cache[renderer.func_name_python].append(
                     renderer.get_signature()
