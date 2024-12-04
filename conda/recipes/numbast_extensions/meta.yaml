@@ -19,36 +19,18 @@ source:
 build:
   script:
     - {{ PYTHON }} -m pip install . -vv
-  ignore_run_exports_from:
-    - {{ compiler('cuda') }}
 
 requirements:
   build:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - {{ compiler('cuda') }}
-    - cmake >=3.28
-    - pybind11
-    - cffi
-    - clangdev >=18
-    - ninja
-    - ast_canopy
-    - numbast
-    - sysroot_{{ target_platform }} 2.17
-  host:
-    - cuda-toolkit {{ cuda_compiler_version }}
-    - cuda-python {{ cuda_compiler_version }}
-    - cuda-version {{ cuda_compiler_version }}
     - python
     - pip
-    - scikit-build-core
   run:
+    - cuda-version >=12.5
+    - cuda-cudart-dev
     - python
-    - numba >=0.60
+    - numba >=0.59
+    - numba-cuda
     - numbast
-    - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x.x') }}
-    - cuda-toolkit {{ cuda_compiler_version }}
-    - cuda-python {{ cuda_compiler_version }}
 
   test:
     imports:
