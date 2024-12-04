@@ -36,7 +36,7 @@ extra_include_paths = [
 # added.
 
 
-def nvrtc_compile(src, name, cc, lto=False):
+def nvrtc_compile(src, name, cc, ltoir=False):
     """
     Compile a CUDA C/C++ source to PTX for a given compute capability.
 
@@ -67,7 +67,7 @@ def nvrtc_compile(src, name, cc, lto=False):
     numba_include = f"-I{numba_cuda_path}"
     options = [arch, *extra_include_paths, include, numba_include, "-rdc", "true"]
     options += extra_options
-    if lto:
+    if ltoir:
         options.append("-dlto")
 
     # Compile the program
@@ -86,7 +86,7 @@ def nvrtc_compile(src, name, cc, lto=False):
         msg = f"NVRTC log messages whilst compiling {name}:\n\n{log}"
         warnings.warn(msg)
 
-    if lto:
+    if ltoir:
         return nvrtc.get_lto(program), log
     else:
         ptx = nvrtc.get_ptx(program)

@@ -3,12 +3,6 @@
 
 import numba
 
-# Use pynvjitlink by default. This can avoid version mismatch between system driver and
-# installed CTK version.
-from pynvjitlink.patch import patch_numba_linker
-
-patch_numba_linker(lto=True)
-
 from numbast import numba_patch
 
 from numbast.struct import bind_cxx_struct, bind_cxx_structs
