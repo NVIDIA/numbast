@@ -38,7 +38,7 @@ requirements:
     - cuda-version >=12.5
     - numba >=0.59
     - python
-    - numba-cuda
+    - numba-cuda >=0.2.0
     - pynvjitlink >=0.2
 
 about:

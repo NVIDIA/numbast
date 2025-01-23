@@ -17,7 +17,7 @@ classifiers = [
 ]
 dependencies= [
     "numba>=0.59.0",
-    "numba-cuda",
+    "numba-cuda>=0.2.0",
     "ast_canopy>=0.2.0",
     "click"
 ]
