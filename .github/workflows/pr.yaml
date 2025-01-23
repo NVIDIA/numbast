@@ -16,7 +16,7 @@ jobs:
   pr-builder:
     needs:
       - checks
-      - tests
+      - test
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
   checks:
@@ -24,14 +24,33 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.10
     with:
       enable_check_generated_files: false
-  tests:
-    name: Run build and tests (A100, 12.5)
-    needs: checks
-    secrets: inherit
-    uses: ./.github/workflows/setup_build_test.yaml
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      BUILD_MATRIX: ${{ steps.compute-matrix.outputs.BUILD_MATRIX }}
+      TEST_MATRIX: ${{ steps.compute-matrix.outputs.TEST_MATRIX }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute Build Matrix
+        id: compute-matrix
+        uses: ./.github/actions/compute-matrix
+  build-conda:
+    name: Build Conda Package
+    needs:
+      - checks
+      - compute-matrix
+    uses: ./.github/workflows/conda-python-build.yaml
     with:
-      ubuntu_version: "22.04"
-      cuda_version: "12.5"
-      python_version: "3.10"
-      GPU: "a100"
-      CPU: "arm64"
+      build_type: pull-request
+      script: "ci/build_conda.sh"
+      matrix_filter: map(select(.ARCH == "amd64" and .CUDA_VER == "12.5.1" and .PY_VER == "3.11"))
+  test-conda:
+    needs:
+      - build-conda
+      - compute-matrix
+    uses: ./.github/workflows/conda-python-tests.yaml
+    with:
+      build_type: pull-request
+      script: "ci/test_conda.sh"
+      run_codecov: false
+      matrix_filter: map(select(.ARCH == "amd64" and .CUDA_VER == "12.5.1" and .PY_VER == "3.11"))
