@@ -152,5 +152,5 @@ jobs:
             -s "${RAPIDS_COVERAGE_DIR}" \
             --handle-no-reports-found
       - name: Upload additional artifacts
-        if: "!cancelled()"
+        if: !cancelled()
         run: rapids-upload-artifacts-dir cuda${RAPIDS_CUDA_VERSION%%.*}_$(arch)_py${RAPIDS_PY_VERSION//.}
