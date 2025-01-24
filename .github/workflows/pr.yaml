@@ -19,6 +19,7 @@ jobs:
       - compute-matrix
       - build-conda
       - test-conda
+      - test-conda-torch
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
   checks:
@@ -57,7 +58,7 @@ jobs:
       script: "ci/test_conda.sh"
       run_codecov: false
       matrix_filter: map(select(.ARCH == "amd64" and .CUDA_VER == "12.5.1" and .PY_VER == "3.11"))
-  test-conda-nvaie:
+  test-conda-torch:
     name: Pytorch Integration Test
     needs:
       - build-conda
