@@ -28,7 +28,7 @@ on:
           default: "."
         container-version:
           type: string
-          default: "latest"
+          default: "25.01-py3"
         container-options:
           required: false
           type: string
