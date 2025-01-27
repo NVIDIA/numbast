@@ -123,15 +123,15 @@ jobs:
             RAPIDS_TESTS_DIR: ${{ github.workspace }}/test-results
             RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
         steps:
-            - uses: actions/checkout@v4
-              with:
-                repository: ${{ inputs.repo }}
-                ref: ${{ inputs.sha }}
-                fetch-depth: 0
-            - name: Setup Environment, Build and Test Torch
-              run: ${{ inputs.script }}
-            - name: Generate test report
-              uses: test-summary/action@v2.3
-              with:
-                paths: "${{ env.RAPIDS_TESTS_DIR }}/*.xml"
+          - uses: actions/checkout@v4
+            with:
+              repository: ${{ inputs.repo }}
+              ref: ${{ inputs.sha }}
+              fetch-depth: 0
+          - name: Setup Environment, Build and Test Torch
+            run: ${{ inputs.script }}
+          - name: Generate test report
+            uses: test-summary/action@v2.3
+            with:
+              paths: "${{ env.RAPIDS_TESTS_DIR }}/*.xml"
             if: always()
