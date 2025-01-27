@@ -63,9 +63,9 @@ jobs:
     needs:
       - build-conda
       - compute-matrix
-    uses: ./.github/workflows/conda-python-torch-tests.yaml
+    uses: ./.github/workflows/torch-test.yaml
     with:
       build_type: pull-request
-      script: "ci/test_conda_torch.sh"
+      script: "ci/setup_torch_test.sh"
       run_codecov: false
       matrix_filter: map(select(.ARCH == "amd64" and .CUDA_VER == "12.5.1" and .PY_VER == "3.11"))

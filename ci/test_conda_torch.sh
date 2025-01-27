@@ -16,11 +16,6 @@ set +u
 conda activate test
 set -u
 
-# rapids-logger "Add conda build output dir to channel"
-
-# conda index  $RAPIDS_CONDA_BLD_OUTPUT_DIR/
-# conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR
-
 rapids-print-env
 
 rapids-mamba-retry install \
