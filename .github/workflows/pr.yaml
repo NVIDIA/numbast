@@ -68,4 +68,4 @@ jobs:
       script: "ci/setup_torch_test.sh"
       run_codecov: false
       container-version: "25.01-py3"
-      matrix_filter: map(select((.ARCH == "amd64" or .ARCH == "arm64") and .CUDA_VER == "12.5.1" and .PY_VER == "3.11"))
+      matrix_filter: map(select(.ARCH == "arm64" and .CUDA_VER == "12.5.1" and .PY_VER == "3.11" and GPU == "a100"))
