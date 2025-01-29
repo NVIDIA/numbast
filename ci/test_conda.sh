@@ -9,7 +9,9 @@ set -euo pipefail
 rapids-logger "Starting Conda Package Test"
 
 rapids-logger "Creating Test Environment"
-rapids-mamba-retry create -n test
+rapids-mamba-retry create -n test \
+  click \
+  pytest
 
 # Temporarily allow unbound variables for conda activation.
 set +u
@@ -20,8 +22,6 @@ rapids-print-env
 
 rapids-mamba-retry install \
   -c `pwd`/conda-repo \
-  click \
-  pytest \
   ast_canopy \
   numbast \
   numbast-extensions
