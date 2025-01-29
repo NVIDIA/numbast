@@ -95,6 +95,7 @@ jobs:
                   - { ARCH: 'arm64', PY_VER: '3.10', CUDA_VER: '12.0.1', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest'   }
                   - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest'   }
                   - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.2.2', LINUX_VER: 'rockylinux8', GPU: 'a100', DRIVER: 'latest'   }
+                  - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.5.1', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest'   }
               "
 
               TEST_MATRIX=$(yq -n 'env(MATRICES) | .[strenv(BUILD_TYPE)]')
