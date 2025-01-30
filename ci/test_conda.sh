@@ -9,9 +9,18 @@ set -euo pipefail
 rapids-logger "Starting Conda Package Test"
 
 rapids-logger "Creating Test Environment"
+# TODO: replace this with rapids-dependency-manager
 rapids-mamba-retry create -n test \
   click \
   pytest \
+  clangdev >=18 \
+  cuda-nvcc >=12.5 \
+  cuda-version >=12.5 \
+  cuda-nvrtc \
+  numba >=0.59 \
+  numba-cuda >=0.2.0 \
+  pynvjitlink >=0.2 \
+  cuda-cudart-dev \
   python=${RAPIDS_PY_VERSION}
 
 # Temporarily allow unbound variables for conda activation.
