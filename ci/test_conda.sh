@@ -11,7 +11,8 @@ rapids-logger "Starting Conda Package Test"
 rapids-logger "Creating Test Environment"
 rapids-mamba-retry create -n test \
   click \
-  pytest
+  pytest \
+  python=${RAPIDS_PY_VERSION}
 
 # Temporarily allow unbound variables for conda activation.
 set +u
