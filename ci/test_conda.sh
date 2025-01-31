@@ -14,8 +14,8 @@ rapids-mamba-retry create -n test \
   click \
   pytest \
   clangdev >=18 \
-  cuda-nvcc >=12.5 \
-  cuda-version >=12.5 \
+  cuda-nvcc >==${RAPIDS_CUDA_VERSION%.*} \
+  cuda-version >==${RAPIDS_CUDA_VERSION%.*} \
   cuda-nvrtc \
   numba >=0.59 \
   numba-cuda >=0.2.0 \
