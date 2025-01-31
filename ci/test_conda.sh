@@ -11,6 +11,7 @@ rapids-logger "Starting Conda Package Test"
 rapids-logger "Creating Test Environment"
 # TODO: replace this with rapids-dependency-manager
 rapids-mamba-retry create -n test \
+  -c `pwd`/conda-repo \
   click \
   pytest \
   clangdev >=18 \
@@ -21,7 +22,11 @@ rapids-mamba-retry create -n test \
   numba-cuda >=0.2.0 \
   pynvjitlink >=0.2 \
   cuda-cudart-dev \
-  python=${RAPIDS_PY_VERSION}
+  python=${RAPIDS_PY_VERSION} \
+  # The below are the package to test
+  ast_canopy \
+  numbast \
+  numbast-extensions
 
 # Temporarily allow unbound variables for conda activation.
 set +u
@@ -29,12 +34,6 @@ conda activate test
 set -u
 
 rapids-print-env
-
-rapids-mamba-retry install \
-  -c `pwd`/conda-repo \
-  ast_canopy \
-  numbast \
-  numbast-extensions
 
 rapids-logger "Check GPU usage"
 nvidia-smi
