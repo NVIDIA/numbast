@@ -27,9 +27,9 @@ requirements:
   run:
     - cuda-version >=12.5
     - cuda-cudart-dev
-    - python
+    - python <3.13
     - numba >=0.59
-    - numba-cuda
+    - numba-cuda >=0.2.0
     - numbast
 
   test:

@@ -4,9 +4,27 @@
 name: Test Torch and bfloat16
 
 on:
- push:
-    branches:
-      - "pull-request/[0-9]+"
+    workflow_call:
+
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  actions: read
+  checks: none
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
 
 jobs:
   torch:

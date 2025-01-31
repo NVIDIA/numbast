@@ -20,7 +20,7 @@ update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 10
 update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 10
 
 
-python -m pip install git+https://github.com/rapidsai/pynvjitlink.git@v0.2.2
+python -m pip install pynvjitlink-cu12
 python -m pip install ml-dtypes
 
 
