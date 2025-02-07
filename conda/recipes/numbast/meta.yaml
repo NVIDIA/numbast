@@ -33,7 +33,7 @@ requirements:
     - python
     - pip
   run:
-    - ast_canopy
+    - ast_canopy >={{ version }}
     - cuda-nvrtc
     - cuda-version >=12.5
     - numba >=0.59
