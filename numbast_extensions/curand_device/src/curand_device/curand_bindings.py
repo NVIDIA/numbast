@@ -79,11 +79,17 @@ with open(os.path.join(CUDA_INCLUDE_PATH, "cuda.h"), "r") as f:
 curand_files = [h for h in curand_files if os.path.exists(h)]
 
 
-structs, functions, _, _, typedefs, enums = parse_declarations_from_source(
+decls = parse_declarations_from_source(
     curand_kernel_h,
     curand_files,
     f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",
     cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
+)
+structs, functions, typedefs, enums = (
+    decls.structs,
+    decls.functions,
+    decls.typedefs,
+    decls.enums,
 )
 
 

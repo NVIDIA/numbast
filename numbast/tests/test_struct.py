@@ -20,7 +20,8 @@ def test_struct_binding_has_correct_LLVM_type():
     # This test checks if the bindings of type Foo correctly lowered into
     # LLVM type { i32, i32, i32 }.
     p = os.path.join(DATA_FOLDER, "sample_struct.cuh")
-    structs, *_ = parse_declarations_from_source(p, [p], "sm_80")
+    decls = parse_declarations_from_source(p, [p], "sm_80")
+    structs = decls.structs
     shim_writer = MemoryShimWriter(f"#include {p}")
     s = bind_cxx_struct(shim_writer, structs[0], types.Type, StructModel)
 
