@@ -25,7 +25,9 @@ def cuda_decls(data_folder):
 
     specs = {"Foo": (Type, StructModel, header)}
 
-    structs, functions, *_ = parse_declarations_from_source(header, [header], "sm_50")
+    decls = parse_declarations_from_source(header, [header], "sm_50")
+    structs = decls.structs
+    functions = decls.functions
 
     assert len(structs) == 1
 

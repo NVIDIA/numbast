@@ -26,7 +26,8 @@ def cuda_struct(data_folder):
         "MyInt": (Number, PrimitiveModel, header),
     }
 
-    structs, *_ = parse_declarations_from_source(header, [header], "sm_50")
+    decls = parse_declarations_from_source(header, [header], "sm_50")
+    structs = decls.structs
 
     assert len(structs) == 3
 

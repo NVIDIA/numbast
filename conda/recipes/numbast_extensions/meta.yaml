@@ -30,7 +30,7 @@ requirements:
     - python
     - numba >=0.59
     - numba-cuda
-    - numbast
+    - numbast =={{ version }}
 
   test:
     imports:

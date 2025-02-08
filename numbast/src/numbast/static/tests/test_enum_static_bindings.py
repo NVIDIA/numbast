@@ -15,7 +15,8 @@ def cuda_enum(data_folder):
 
     header = data_folder("enum.cuh")
 
-    *_, enums = parse_declarations_from_source(header, [header], "sm_50")
+    decls = parse_declarations_from_source(header, [header], "sm_50")
+    enums = decls.enums
 
     assert len(enums) == 2
 
