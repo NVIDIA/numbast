@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import subprocess
+import shutil
 import os
 import tempfile
 import logging
 from typing import Optional
+from dataclasses import dataclass
 
 from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
 
@@ -15,6 +17,16 @@ from ast_canopy.decl import Function, Struct, ClassTemplate
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
+
+
+@dataclass
+class Declarations:
+    structs: list[Struct]
+    functions: list[Function]
+    function_templates: list[bindings.FunctionTemplate]
+    class_templates: list[ClassTemplate]
+    typedefs: list[bindings.Typedef]
+    enums: list[bindings.Enum]
 
 
 def get_default_cuda_path() -> Optional[str]:
@@ -38,7 +50,7 @@ def get_default_nvcc_path() -> Optional[str]:
     nvvm_path = get_nvidia_nvvm_ctk()
 
     if not nvvm_path:
-        return
+        return shutil.which("nvcc")
 
     root = os.path.dirname(os.path.dirname(nvvm_path))
     nvcc_path = os.path.join(root, "bin", "nvcc")
@@ -79,18 +91,28 @@ def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
 
     nvcc_bin = get_default_nvcc_path()
     if not nvcc_bin:
-        logger.warning("Could not find NVCC binary. Using default nvcc bin from env.")
+        logger.warning(
+            "Could not find NVCC binary. AST_Canopy will attempt to "
+            "invoke `nvcc` directly in the subsequent commands."
+        )
         nvcc_bin = "nvcc"
 
     with tempfile.NamedTemporaryFile(suffix=".cu") as tmp_file:
-        nvcc_compile_empty = (
-            subprocess.run(
-                [nvcc_bin, "-E", "-v", tmp_file.name], capture_output=True, check=True
+        try:
+            nvcc_compile_empty = (
+                subprocess.run(
+                    [nvcc_bin, "-E", "-v", tmp_file.name],
+                    capture_output=True,
+                    check=True,
+                )
+                .stderr.decode()
+                .strip()
+                .split("\n")
             )
-            .stderr.decode()
-            .strip()
-            .split("\n")
-        )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"NVCC failed to compile an empty cuda file. \n {e.stdout.decode('utf-8')} \n {e.stderr.decode('utf-8')}"
+            ) from e
 
     if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
         include_path = s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
@@ -223,7 +245,7 @@ def parse_declarations_from_source(
         ClassTemplate.from_c_obj(c_obj) for c_obj in decls.class_templates
     ]
 
-    return (
+    return Declarations(
         structs,
         functions,
         decls.function_templates,

@@ -219,14 +219,16 @@ def _static_binding_generator(
 
     # TODO: we don't have tests on different compute capabilities for the static binding generator yet.
     # This will be added in future PRs.
-    structs, functions, function_templates, class_templates, typedefs, enums = (
-        parse_declarations_from_source(
-            entry_point,
-            retain_list,
-            compute_capability=compute_capability,
-            cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
-        )
+    decls = parse_declarations_from_source(
+        entry_point,
+        retain_list,
+        compute_capability=compute_capability,
+        cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
     )
+    structs = decls.structs
+    functions = decls.functions
+    enums = decls.enums
+    typedefs = decls.typedefs
 
     if log_generates:
         log_files_to_generate(functions, structs, enums, typedefs)

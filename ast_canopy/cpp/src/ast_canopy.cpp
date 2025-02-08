@@ -62,8 +62,8 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   auto Diags =
       CompilerInstance::createDiagnostics(&*DiagOpts, &*DiagConsumer, false);
 
-  std::unique_ptr<ASTUnit> ast = ASTUnit::LoadFromCommandLine(
-      argstart, argend, PCHContainerOps, Diags, "");
+  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
+      argstart, argend, PCHContainerOps, Diags, ""));
 
   Declarations decls;
   std::unordered_map<int64_t, std::string> record_id_to_name;

@@ -30,11 +30,9 @@ def simulate_header(request):
     tmp.flush()
 
     major, minor = cuda.get_current_device().compute_capability
-    _, functions, *_ = parse_declarations_from_source(
-        tmp.name, [tmp.name], f"sm_{major}{minor}"
-    )
+    decls = parse_declarations_from_source(tmp.name, [tmp.name], f"sm_{major}{minor}")
     shim_writer = MemoryShimWriter(f'#include "{tmp.name}"')
-    adds = bind_cxx_functions(shim_writer, functions)
+    adds = bind_cxx_functions(shim_writer, decls.functions)
 
     yield adds, shim_writer
 

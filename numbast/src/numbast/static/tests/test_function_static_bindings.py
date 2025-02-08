@@ -20,7 +20,8 @@ def cuda_function(data_folder):
 
     header = data_folder("function.cuh")
 
-    _, functions, *_ = parse_declarations_from_source(header, [header], "sm_50")
+    decls = parse_declarations_from_source(header, [header], "sm_50")
+    functions = decls.functions
 
     assert len(functions) == 3
 

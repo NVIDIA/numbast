@@ -4,9 +4,7 @@
 name: Build, Install, Test CONDA PKG
 
 on:
-  push:
-    branches:
-      - "pull-request/[0-9]+"
+  workflow_call:
 
 jobs:
   build-conda-x86_64:

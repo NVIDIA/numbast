@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numbast"
-version = "0.1.0"
+version = "0.2.1"
 description = "Numbast - auto Numba binding generation tool for CUDA C++."
 requires-python = ">=3.7"
 classifiers = [
@@ -18,7 +18,7 @@ classifiers = [
 dependencies= [
     "numba>=0.59.0",
     "numba-cuda",
-    "ast_canopy>=0.1.0",
+    "ast_canopy>=0.2.1",
     "click"
 ]
 

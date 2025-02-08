@@ -31,11 +31,17 @@ cuda_fp16_hpp = os.path.join(CUDA_INCLUDE_PATH, "cuda_fp16.hpp")
 
 cuda_bf16 = numbast_extensions.bf16.bf16_bindings.cuda_bf16
 
-structs, functions, _, _, typedefs, enums = parse_declarations_from_source(
+decls = parse_declarations_from_source(
     cuda_fp16,
     [cuda_fp16, cuda_fp16_hpp],
     f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",
     cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
+)
+structs, functions, typedefs, enums = (
+    decls.structs,
+    decls.functions,
+    decls.typedefs,
+    decls.enums,
 )
 
 TYPE_SPECIALIZATION = {
