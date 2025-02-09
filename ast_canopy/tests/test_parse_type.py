@@ -14,7 +14,8 @@ def sample_type_source(data_folder):
 def test_parse_tests(sample_type_source):
     srcstr = str(sample_type_source)
 
-    structs, *_ = parse_declarations_from_source(srcstr, [srcstr], "sm_80")
+    decls = parse_declarations_from_source(srcstr, [srcstr], "sm_80")
+    structs = decls.structs
 
     assert len(structs) == 1
 
