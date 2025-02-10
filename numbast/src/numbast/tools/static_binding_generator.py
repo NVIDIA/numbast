@@ -344,6 +344,11 @@ def static_binding_generator(
             exclude_functions = excludes.get("Function", [])
             exclude_structs = excludes.get("Struct", [])
 
+            if exclude_functions is None:
+                exclude_functions = []
+            if exclude_structs is None:
+                exclude_structs = []
+
             _static_binding_generator(
                 input_header,
                 retain_list,
