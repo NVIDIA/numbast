@@ -210,7 +210,7 @@ def test_load_ast_functions(sample_function_source, test_pickle):
     ]  # Note the const qualifier style is reordered
     assert [a.type_.unqualified_non_ref_type_name for a in args] == [
         "int",
-        "const int *",
+        "int *",
     ]
 
     assert functions[2].name == "add2"

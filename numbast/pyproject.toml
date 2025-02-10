@@ -19,7 +19,8 @@ dependencies= [
     "numba>=0.59.0",
     "numba-cuda",
     "ast_canopy>=0.2.1",
-    "click"
+    "click",
+    "pyyaml"
 ]
 
 [project.scripts]

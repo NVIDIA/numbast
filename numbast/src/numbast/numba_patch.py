@@ -26,9 +26,9 @@ extra_options = [
 ]
 
 extra_include_paths = [
-    "-I/home/wangm/cccl/cub/",
-    "-I/home/wangm/cccl/libcudacxx/include/",
-    "-I/home/wangm/cccl/thrust/",
+    f"-I{config.CUDA_INCLUDE_PATH}/cub/",
+    f"-I{config.CUDA_INCLUDE_PATH}/cccl/libcudacxx/include/",
+    f"-I{config.CUDA_INCLUDE_PATH}/cccl/thrust/",
 ]
 
 
@@ -67,9 +67,8 @@ def nvrtc_compile(src, name, cc, ltoir=False):
     numba_include = f"-I{numba_cuda_path}"
     options = [arch, *extra_include_paths, include, numba_include, "-rdc", "true"]
     options += extra_options
-
     if ltoir:
-        options += ["-dlto"]
+        options.append("-dlto")
 
     # Compile the program
     compile_error = nvrtc.compile_program(program, options)
@@ -88,8 +87,8 @@ def nvrtc_compile(src, name, cc, ltoir=False):
         warnings.warn(msg)
 
     if ltoir:
-        lto = nvrtc.get_lto(program)
-        return lto, log
+        ltoir = nvrtc.get_lto(program)
+        return ltoir, log
     else:
         ptx = nvrtc.get_ptx(program)
         return ptx, log

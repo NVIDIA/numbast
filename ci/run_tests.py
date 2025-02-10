@@ -64,6 +64,7 @@ def run(
             [
                 "numbast_extensions/tests/test_bfloat16.py",
                 "numbast_extensions/tests/test_bfloat162.py",
+                "numbast_extensions/tests/static/test_static_bf16.py",
             ],
         )
     if all_tests or fp16:
@@ -72,6 +73,7 @@ def run(
             [
                 "numbast_extensions/tests/test_fp16.py",
                 "numbast_extensions/tests/test_fp162.py",
+                "numbast_extensions/tests/static/test_static_fp16.py",
             ],
         )
     if all_tests or curand_device:

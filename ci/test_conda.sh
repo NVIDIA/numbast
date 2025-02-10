@@ -24,7 +24,6 @@ conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR
 rapids-print-env
 
 rapids-mamba-retry install \
-  click \
   pytest \
   ast_canopy \
   numbast \

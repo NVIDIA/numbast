@@ -7,8 +7,8 @@ from numba.cuda.vector_types import vector_types
 
 class BaseRenderer:
     Prefix = """
-from pynvjitlink.patch import patch_numba_linker
-patch_numba_linker()
+import numba
+numba.config.CUDA_ENABLE_PYNVJITLINK = True
 """
 
     Imports: set[str] = set()
