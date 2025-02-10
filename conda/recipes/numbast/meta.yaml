@@ -40,6 +40,8 @@ requirements:
     - python
     - numba-cuda
     - pynvjitlink >=0.2
+    - pyyaml
+    - click
 
 about:
   license_family: Apache
