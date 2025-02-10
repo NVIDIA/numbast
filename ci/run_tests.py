@@ -64,6 +64,8 @@ def run(
             [
                 "numbast_extensions/tests/test_bfloat16.py",
                 "numbast_extensions/tests/test_bfloat162.py",
+                "numbast_extensions/tests/static/test_bfloat16.py",
+                "numbast_extensions/tests/static/test_bfloat162.py",
             ],
         )
     if all_tests or fp16:
