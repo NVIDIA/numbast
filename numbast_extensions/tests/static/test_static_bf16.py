@@ -31,12 +31,15 @@ def bfloat16():
     cuda_bf16 = os.path.join(CUDA_INCLUDE_PATH, "cuda_bf16.h")
     cuda_bf16_hpp = os.path.join(CUDA_INCLUDE_PATH, "cuda_bf16.hpp")
 
-    structs, functions, _, _, typedefs, _ = parse_declarations_from_source(
+    decls = parse_declarations_from_source(
         cuda_bf16,
         [cuda_bf16, cuda_bf16_hpp],
         f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",
         cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
     )
+    structs = decls.structs
+    functions = decls.functions
+    typedefs = decls.typedefs
 
     specs = {
         "__nv_bfloat16_raw": (types.Number, PrimitiveModel, cuda_bf16),
