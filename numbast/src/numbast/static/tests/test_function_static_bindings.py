@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 from functools import partial
+
+import pytest
+import numpy as np
+import cffi
 
 from numba.types import int32, float32
 from numba import cuda
@@ -23,7 +26,7 @@ def cuda_function(data_folder):
     decls = parse_declarations_from_source(header, [header], "sm_50")
     functions = decls.functions
 
-    assert len(functions) == 3
+    assert len(functions) == 4
 
     SFR = StaticFunctionsRenderer(functions, header)
 
@@ -33,7 +36,7 @@ def cuda_function(data_folder):
     globals = {}
     exec(bindings, globals)
 
-    public_apis = ["add", "minus_i32_f32", "c_ext_shim_source"]
+    public_apis = ["add", "minus_i32_f32", "set_42", "c_ext_shim_source"]
     assert all(public_api in globals for public_api in public_apis)
 
     return {k: globals[k] for k in public_apis}
@@ -68,3 +71,17 @@ def test_different_argument_types(cuda_function, numbast_jit):
     arr = device_array((1,), "int32")
     kernel[1, 1](arr)
     assert arr.copy_to_host()[0] == 2
+
+
+def test_void_return_type(cuda_function, numbast_jit):
+    ffi = cffi.FFI()
+    set_42 = cuda_function["set_42"]
+
+    @numbast_jit
+    def kernel(arr):
+        ptr = ffi.from_buffer(arr)
+        set_42(ptr)
+
+    arr = np.zeros(1, dtype=np.int32)
+    kernel[1, 1](arr)
+    assert arr[0] == 42
