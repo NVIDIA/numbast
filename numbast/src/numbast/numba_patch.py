@@ -29,7 +29,6 @@ extra_include_paths = [
     f"-I{config.CUDA_INCLUDE_PATH}/cub/",
     f"-I{config.CUDA_INCLUDE_PATH}/cccl/libcudacxx/include/",
     f"-I{config.CUDA_INCLUDE_PATH}/cccl/thrust/",
-    "-I/workspace/nvshmem_src/src/include",
 ]
 
 
@@ -70,8 +69,6 @@ def nvrtc_compile(src, name, cc, ltoir=False):
     options += extra_options
     if ltoir:
         options.append("-dlto")
-
-    print(options)
 
     # Compile the program
     compile_error = nvrtc.compile_program(program, options)
