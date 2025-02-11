@@ -9,3 +9,9 @@ float __device__ add(float a, float b) { return a + b; }
 
 // Different types
 int __device__ minus_i32_f32(int a, float b) { return a - static_cast<int>(b); }
+
+// void return type
+void __device__ set_42(int *val) {
+  *val = 42;
+  return;
+}
