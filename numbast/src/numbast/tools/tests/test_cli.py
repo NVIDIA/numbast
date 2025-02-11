@@ -512,6 +512,52 @@ Data Models:
     assert arr[0] == 0
 
 
+def test_yaml_exclude_function_empty_list(tmpdir, kernel):
+    subdir = tmpdir.mkdir("sub")
+    data = os.path.join(os.path.dirname(__file__), "data.cuh")
+
+    cfg = f"""Name: Test Data
+Version: 0.0.1
+Entry Point: {data}
+File List:
+    - {data}
+Exclude:
+    Function:
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+"""
+
+    cfg_file = subdir / "cfg.yaml"
+    with open(cfg_file, "w") as f:
+        f.write(cfg)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        static_binding_generator,
+        [
+            "--cfg-path",
+            cfg_file,
+            "--output-dir",
+            subdir,
+        ],
+    )
+
+    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+
+    output = subdir / "data.py"
+    assert os.path.exists(output)
+
+    with open(output, "r") as f:
+        bindings = f.read()
+
+    globals = {}
+    exec(bindings, globals)
+
+    kernel(globals)
+
+
 def test_yaml_exclude_struct(tmpdir):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
@@ -566,3 +612,47 @@ Data Models: {{}}
     arr = np.array([42])
     kernel[1, 1](arr)
     assert arr[0] == 3
+
+
+def test_yaml_exclude_struct_empty_list(tmpdir, kernel):
+    subdir = tmpdir.mkdir("sub")
+    data = os.path.join(os.path.dirname(__file__), "data.cuh")
+
+    cfg = f"""Name: Test Data
+Version: 0.0.1
+Entry Point: {data}
+File List:
+    - {data}
+Exclude:
+    Struct:
+Types: {{}}
+Data Models: {{}}
+"""
+
+    cfg_file = subdir / "cfg.yaml"
+    with open(cfg_file, "w") as f:
+        f.write(cfg)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        static_binding_generator,
+        [
+            "--cfg-path",
+            cfg_file,
+            "--output-dir",
+            subdir,
+        ],
+    )
+
+    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+
+    output = subdir / "data.py"
+    assert os.path.exists(output)
+
+    with open(output, "r") as f:
+        bindings = f.read()
+
+    globals = {}
+    exec(bindings, globals)
+
+    kernel(globals)
