@@ -131,7 +131,9 @@ def parse_declarations_from_source(
     compute_capability: str,
     cccl_root: str = "",
     cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
-    cxx_standard="c++17",
+    cxx_standard: str="c++17",
+    additional_includes: list[str] = [],
+    verbose = False
 ) -> tuple[
     list[Struct],
     list[Function],
@@ -171,6 +173,9 @@ def parse_declarations_from_source(
 
     cxx_standard : str, optional
         The C++ standard to use. Default is "c++17".
+    
+    additional_includes : list[str], optional
+        A list of additional include directories to search for headers.
 
     Returns
     -------
@@ -181,6 +186,15 @@ def parse_declarations_from_source(
 
     if not os.path.exists(source_file_path):
         raise FileNotFoundError(f"File not found: {source_file_path}")
+
+    for p in additional_includes:
+        if not isinstance(p, str):
+            raise TypeError(f"Additional include path must be a string: {p}")
+        if p.startswith("-I"):
+            raise ValueError(f"Additional include path must not start with -I: {p}")
+        if not os.path.exists(p):
+            raise FileNotFoundError(f"Additional include path not found: {p}")
+
 
     if cccl_root:
         cccl_libs = [
@@ -216,10 +230,13 @@ def parse_declarations_from_source(
         *[f"-I{path}" for path in clang_search_paths],
         *cccl_libs,
         f"-I{cudatoolkit_include_dir}",
+        *[f"-I{path}" for path in additional_includes],
         source_file_path,
     ]
 
     logger.debug(f"{command_line_options=}")
+    if verbose:
+        print(f"{command_line_options=}")
 
     with capture_fd(STREAMFD.STDERR) as cap:
         decls = bindings.parse_declarations_from_command_line(
@@ -230,6 +247,8 @@ def parse_declarations_from_source(
     if werr:
         liblogger = logging.getLogger("libastcanopy")
         liblogger.debug(werr)
+        if verbose:
+            print(werr)
         if (
             "CUDA version" in werr
             and "is newer than the latest supported version" in werr
