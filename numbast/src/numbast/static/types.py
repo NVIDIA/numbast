@@ -10,6 +10,7 @@ from numbast.errors import TypeNotFoundError
 
 CTYPE_TO_NBTYPE_STR = {k: str(v) for k, v in CTYPE_MAPS.items()}
 CTYPE_TO_NBTYPE_STR["bool"] = "bool_"
+CTYPE_TO_NBTYPE_STR["void"] = "void"
 
 
 def register_enum_type_str(enum_name: str):
