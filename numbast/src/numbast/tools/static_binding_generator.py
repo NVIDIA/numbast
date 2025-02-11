@@ -36,6 +36,7 @@ VERBOSE = True
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
+
 class YamlConfig:
     input_header: str
     retain_list: list[str]
@@ -46,7 +47,6 @@ class YamlConfig:
     clang_includes_paths: list[str]
 
     def __init__(self, cfg_path):
-
         with open(cfg_path, "r") as f:
             config = yaml.load(f, yaml.Loader)
             self.input_header = config["Entry Point"]
@@ -66,7 +66,7 @@ class YamlConfig:
                 self.exclude_structs = []
             if self.clang_includes_paths is None:
                 self.clang_includes_paths = []
-        
+
         self._verify_exists()
 
     def _verify_exists(self):
@@ -78,7 +78,6 @@ class YamlConfig:
         for f in self.clang_includes_paths:
             if not os.path.exists(f):
                 raise ValueError(f"File in include list does not exist: {f}")
-
 
 
 def _str_value_to_numba_type(d: dict):
@@ -273,7 +272,7 @@ def _static_binding_generator(
         compute_capability=compute_capability,
         cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
         additional_includes=clang_include_paths,
-        verbose=VERBOSE
+        verbose=VERBOSE,
     )
     structs = decls.structs
     functions = decls.functions
@@ -393,7 +392,7 @@ def static_binding_generator(
             compute_capability,
             cfg.exclude_functions,
             cfg.exclude_structs,
-            cfg.clang_includes_paths
+            cfg.clang_includes_paths,
         )
 
         return

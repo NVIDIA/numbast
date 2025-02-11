@@ -131,9 +131,9 @@ def parse_declarations_from_source(
     compute_capability: str,
     cccl_root: str = "",
     cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
-    cxx_standard: str="c++17",
+    cxx_standard: str = "c++17",
     additional_includes: list[str] = [],
-    verbose = False
+    verbose=False,
 ) -> tuple[
     list[Struct],
     list[Function],
@@ -173,7 +173,7 @@ def parse_declarations_from_source(
 
     cxx_standard : str, optional
         The C++ standard to use. Default is "c++17".
-    
+
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
 
@@ -194,7 +194,6 @@ def parse_declarations_from_source(
             raise ValueError(f"Additional include path must not start with -I: {p}")
         if not os.path.exists(p):
             raise FileNotFoundError(f"Additional include path not found: {p}")
-
 
     if cccl_root:
         cccl_libs = [

@@ -11,6 +11,7 @@ from click.testing import CliRunner
 from numbast import numba_patch
 from numbast.tools.static_binding_generator import static_binding_generator
 
+
 @pytest.fixture
 def kernel():
     def _lazy_kernel(globals):
@@ -29,15 +30,18 @@ def kernel():
 
     return _lazy_kernel
 
+
 @pytest.fixture
 def patch_extra_include_paths():
     old_extra_include_paths = numba_patch.extra_include_paths
-    numba_patch.extra_include_paths = numba_patch.extra_include_paths + [f"-I{os.path.join(os.path.dirname(__file__), 'include')}"]
+    numba_patch.extra_include_paths = numba_patch.extra_include_paths + [
+        f"-I{os.path.join(os.path.dirname(__file__), 'include')}"
+    ]
     yield
     numba_patch.extra_include_paths = old_extra_include_paths
 
+
 def test_cli_yml_inputs_additional_includes(tmpdir, kernel, patch_extra_include_paths):
-    
     name = "additional_include"
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), f"{name}.cuh")
