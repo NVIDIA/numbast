@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+from warnings import warn
 from collections import defaultdict
 
 from numba import types as nbtypes
@@ -248,6 +249,7 @@ def bind_cxx_function(
         execution_space.host_device,
     }:
         # Skip non device functions
+        warn(f"Skipped non device function {func_decl.name}.")
         return None
 
     if func_decl.is_overloaded_operator():
