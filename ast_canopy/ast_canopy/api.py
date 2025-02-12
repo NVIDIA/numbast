@@ -133,7 +133,7 @@ def parse_declarations_from_source(
     cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
     cxx_standard: str = "c++17",
     additional_includes: list[str] = [],
-    verbose=False,
+    verbose: bool = False,
 ) -> tuple[
     list[Struct],
     list[Function],
@@ -176,6 +176,9 @@ def parse_declarations_from_source(
 
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
+
+    verbose : bool, optional
+        If True, print the stderr from clang++ invocation.
 
     Returns
     -------
