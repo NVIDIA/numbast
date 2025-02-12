@@ -31,8 +31,53 @@ from numbast.static.typedef import render_aliases
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
+VERBOSE = True
+
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
+
+
+class YamlConfig:
+    input_header: str
+    retain_list: list[str]
+    types: dict[str, numba.types.Type]
+    datamodels: dict[str, numba.core.datamodel.models.DataModel]
+    exclude_functions: list[str]
+    exclude_structs: list[str]
+    clang_includes_paths: list[str]
+
+    def __init__(self, cfg_path):
+        with open(cfg_path, "r") as f:
+            config = yaml.load(f, yaml.Loader)
+            self.input_header = config["Entry Point"]
+            self.retain_list = config["File List"]
+            self.types = _str_value_to_numba_type(config["Types"])
+            self.datamodels = _str_value_to_numba_datamodel(config["Data Models"])
+
+            self.excludes = config["Exclude"]
+            self.exclude_functions = self.excludes.get("Function", [])
+            self.exclude_structs = self.excludes.get("Struct", [])
+
+            self.clang_includes_paths = config.get("Clang Include Paths", [])
+
+            if self.exclude_functions is None:
+                self.exclude_functions = []
+            if self.exclude_structs is None:
+                self.exclude_structs = []
+            if self.clang_includes_paths is None:
+                self.clang_includes_paths = []
+
+        self._verify_exists()
+
+    def _verify_exists(self):
+        if not os.path.exists(self.input_header):
+            raise ValueError(f"Input header file does not exist: {self.input_header}")
+        for f in self.retain_list:
+            if not os.path.exists(f):
+                raise ValueError(f"File in retain list does not exist: {f}")
+        for f in self.clang_includes_paths:
+            if not os.path.exists(f):
+                raise ValueError(f"File in include list does not exist: {f}")
 
 
 def _str_value_to_numba_type(d: dict):
@@ -191,6 +236,7 @@ def _static_binding_generator(
     compute_capability: str,
     exclude_functions: list[str],
     exclude_structs: list[str],
+    clang_include_paths: list[str],
     log_generates: bool = False,
 ):
     """
@@ -205,6 +251,7 @@ def _static_binding_generator(
     - compute_capability (str): Compute capability of the CUDA device.
     - exclude_functions (list[str]): List of function names to exclude from the bindings.
     - exclude_structs (list[str]): List of struct names to exclude from the bindings.
+    - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
     - log_generates (bool, optional): Flag to log the list of bindings to generate. Defaults to False.
 
     Returns:
@@ -224,6 +271,8 @@ def _static_binding_generator(
         retain_list,
         compute_capability=compute_capability,
         cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
+        additional_includes=clang_include_paths,
+        verbose=VERBOSE,
     )
     structs = decls.structs
     functions = decls.functions
@@ -333,34 +382,20 @@ def static_binding_generator(
                 "When CFG_PATH specified, none of INPUT_HEADER, RETAIN, TYPES and DATAMODELS should be specified."
             )
 
-        with open(cfg_path, "r") as f:
-            config = yaml.load(f, yaml.Loader)
-            input_header = config["Entry Point"]
-            retain_list = config["File List"]
-            types = _str_value_to_numba_type(config["Types"])
-            datamodels = _str_value_to_numba_datamodel(config["Data Models"])
+        cfg = YamlConfig(cfg_path)
+        _static_binding_generator(
+            cfg.input_header,
+            cfg.retain_list,
+            output_dir,
+            cfg.types,
+            cfg.datamodels,
+            compute_capability,
+            cfg.exclude_functions,
+            cfg.exclude_structs,
+            cfg.clang_includes_paths,
+        )
 
-            excludes = config["Exclude"]
-            exclude_functions = excludes.get("Function", [])
-            exclude_structs = excludes.get("Struct", [])
-
-            if exclude_functions is None:
-                exclude_functions = []
-            if exclude_structs is None:
-                exclude_structs = []
-
-            _static_binding_generator(
-                input_header,
-                retain_list,
-                output_dir,
-                types,
-                datamodels,
-                compute_capability,
-                exclude_functions,
-                exclude_structs,
-            )
-
-            return
+        return
 
     if retain is None:
         retain_list = [input_header]
