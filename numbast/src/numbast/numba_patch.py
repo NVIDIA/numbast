@@ -29,7 +29,6 @@ extra_include_paths = [
     f"-I{config.CUDA_INCLUDE_PATH}/cub/",
     f"-I{config.CUDA_INCLUDE_PATH}/cccl/libcudacxx/include/",
     f"-I{config.CUDA_INCLUDE_PATH}/cccl/thrust/",
-    "-I/workspace/nvshmem_src/src/include",
 ]
 
 
