@@ -26,6 +26,16 @@ CTYPE_MAPS = {
     "unsigned long": nbtypes.uint64,
     "long long": nbtypes.int64,
     "unsigned long long": nbtypes.uint64,
+    # Begin of stdint types
+    "int8_t": nbtypes.int8,
+    "uint8_t": nbtypes.uint8,
+    "int16_t": nbtypes.int16,
+    "uint16_t": nbtypes.uint16,
+    "int32_t": nbtypes.int32,
+    "uint32_t": nbtypes.uint32,
+    "int64_t": nbtypes.int64,
+    "uint64_t": nbtypes.uint64,
+    # End of stdint types
     "void": nbtypes.void,
     "__half": nbtypes.float16,
     "float": nbtypes.float32,
