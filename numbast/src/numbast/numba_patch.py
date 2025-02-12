@@ -70,6 +70,8 @@ def nvrtc_compile(src, name, cc, ltoir=False):
     if ltoir:
         options.append("-dlto")
 
+    print(options)
+
     # Compile the program
     compile_error = nvrtc.compile_program(program, options)
 
