@@ -39,9 +39,9 @@ std::string source_filename_from_decl(const Decl *D) {
 
 } // namespace detail
 
-Declarations
-parse_declarations_from_command_line(std::vector<std::string> options,
-                                     std::vector<std::string> files_to_retain) {
+Declarations parse_declarations_from_command_line(
+    std::vector<std::string> options, std::vector<std::string> files_to_retain,
+    std::vector<std::string> whitelist_prefixes) {
 
   std::vector<const char *> option_ptrs;
   for (auto &opt : options) {
@@ -68,7 +68,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   Declarations decls;
   std::unordered_map<int64_t, std::string> record_id_to_name;
   detail::traverse_ast_payload payload{&decls, &record_id_to_name,
-                                       &files_to_retain};
+                                       &files_to_retain, &whitelist_prefixes};
 
   detail::FunctionCallback func_callback(&payload);
   detail::RecordCallback record_callback(&payload);

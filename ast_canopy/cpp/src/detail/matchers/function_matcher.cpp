@@ -19,6 +19,23 @@ void FunctionCallback::run(const MatchFinder::MatchResult &Result) {
       Result.Nodes.getNodeAs<clang::FunctionDecl>("function");
   std::string file_name = source_filename_from_decl(FD);
 
+  bool should_add = false;
+
+  if (file_name.empty()) {
+    std::string function_name = FD->getNameAsString();
+    std::cout << function_name << std::endl;
+    if (std::any_of(payload->prefixes_to_whitelist->begin(),
+                    payload->prefixes_to_whitelist->end(),
+                    [&function_name,
+                     &should_add](const std::string &prefix_to_whitelist) {
+                      std::cout << "\t" << prefix_to_whitelist << std::endl;
+                      return function_name.starts_with(prefix_to_whitelist);
+                    })) {
+      should_add = true;
+    }
+    std::cout << "Should Add: " << should_add << std::endl;
+  }
+
   if (std::any_of(payload->files_to_retain->begin(),
                   payload->files_to_retain->end(),
                   [&file_name](const std::string &file_to_retain) {
@@ -26,6 +43,10 @@ void FunctionCallback::run(const MatchFinder::MatchResult &Result) {
                   }))
 
   {
+    should_add = true;
+  }
+
+  if (should_add) {
     if (!FD->isImplicit())
       payload->decls->functions.push_back(Function(FD));
   }

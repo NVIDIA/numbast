@@ -5,6 +5,10 @@ cmake_minimum_required(VERSION 3.28)
 
 project(astcanopy VERSION 0.2.0 LANGUAGES C CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Define the sources to compile for astcanopy here.
 add_library(astcanopy SHARED
             src/ast_canopy.cpp
