@@ -31,7 +31,7 @@ from numbast.static.typedef import render_aliases
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
-VERBOSE = True
+VERBOSE = False
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
@@ -51,14 +51,23 @@ class YamlConfig:
             config = yaml.load(f, yaml.Loader)
             self.input_header = config["Entry Point"]
             self.retain_list = config["File List"]
-            self.types = _str_value_to_numba_type(config["Types"])
-            self.datamodels = _str_value_to_numba_datamodel(config["Data Models"])
+            self.types = _str_value_to_numba_type(config.get("Types", {}))
+            self.datamodels = _str_value_to_numba_datamodel(
+                config.get("Data Models", {})
+            )
 
-            self.excludes = config["Exclude"]
+            self.excludes = config.get("Exclude", {})
             self.exclude_functions = self.excludes.get("Function", [])
             self.exclude_structs = self.excludes.get("Struct", [])
 
             self.clang_includes_paths = config.get("Clang Include Paths", [])
+
+            # FIXME: We are pretending that the list of macro-expanded functions is the same
+            # as the list of declarations with anonymous filenames. This is not necessarily
+            # true.
+            self.macro_expanded_function_prefixes = config.get(
+                "Macro-expanded Function Prefixes", []
+            )
 
             if self.exclude_functions is None:
                 self.exclude_functions = []
@@ -80,7 +89,7 @@ class YamlConfig:
                 raise ValueError(f"File in include list does not exist: {f}")
 
 
-def _str_value_to_numba_type(d: dict):
+def _str_value_to_numba_type(d: dict[str, str]) -> dict[str, numba.types.Type]:
     """Converts string typed value to numba `types` objects"""
     return {k: getattr(numba.types, v) for k, v in d.items()}
 
@@ -109,7 +118,9 @@ class NumbaTypeDictType(click.ParamType):
 numba_type_dict = NumbaTypeDictType()
 
 
-def _str_value_to_numba_datamodel(d: dict):
+def _str_value_to_numba_datamodel(
+    d: dict[str, str],
+) -> dict[str, numba.core.datamodel.models.DataModel]:
     """Converts string typed value to numba `datamodel` objects"""
     return {k: getattr(numba.core.datamodel.models, v) for k, v in d.items()}
 
@@ -237,6 +248,7 @@ def _static_binding_generator(
     exclude_functions: list[str],
     exclude_structs: list[str],
     clang_include_paths: list[str],
+    anon_filename_decl_prefix_allowlist: list[str],
     log_generates: bool = False,
 ):
     """
@@ -252,6 +264,7 @@ def _static_binding_generator(
     - exclude_functions (list[str]): List of function names to exclude from the bindings.
     - exclude_structs (list[str]): List of struct names to exclude from the bindings.
     - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
+    - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
     - log_generates (bool, optional): Flag to log the list of bindings to generate. Defaults to False.
 
     Returns:
@@ -272,6 +285,7 @@ def _static_binding_generator(
         compute_capability=compute_capability,
         cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
         additional_includes=clang_include_paths,
+        anon_filename_decl_prefix_allowlist=anon_filename_decl_prefix_allowlist,
         verbose=VERBOSE,
     )
     structs = decls.structs
@@ -393,6 +407,7 @@ def static_binding_generator(
             cfg.exclude_functions,
             cfg.exclude_structs,
             cfg.clang_includes_paths,
+            cfg.macro_expanded_function_prefixes,
         )
 
         return
