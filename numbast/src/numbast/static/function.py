@@ -6,6 +6,7 @@ from textwrap import indent
 from logging import getLogger, FileHandler
 import tempfile
 from collections import defaultdict
+from warnings import warn
 
 from numbast.static.renderer import BaseRenderer
 from numbast.static.types import to_numba_type_str
@@ -451,6 +452,7 @@ class {op_typing_name}(ConcreteTemplate):
                 execution_space.device,
                 execution_space.host_device,
             }:
+                warn(f"Skipping non-device function {decl.name} in {self._header_path}")
                 continue
 
             renderer = None
