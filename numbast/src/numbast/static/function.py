@@ -11,6 +11,7 @@ from warnings import warn
 from numbast.static.renderer import BaseRenderer
 from numbast.static.types import to_numba_type_str
 from numbast.utils import deduplicate_overloads, make_function_shim
+from numbast.errors import TypeNotFoundError
 
 from ast_canopy.decl import Function
 from pylibastcanopy import execution_space
@@ -460,12 +461,26 @@ class {op_typing_name}(ConcreteTemplate):
                 if decl.is_copy_assignment_operator():
                     # copy assignment operator, do not support in Numba / Python, skip
                     continue
-                renderer = StaticOverloadedOperatorRenderer(decl, self._header_path)
+                try:
+                    renderer = StaticOverloadedOperatorRenderer(decl, self._header_path)
+                except TypeNotFoundError as e:
+                    warn(
+                        f"Skipping operator {decl.name} in {self._header_path} due to missing type {e.type_name}"
+                    )
+                    continue
                 self._op_typing_signature_cache[renderer.func_name_python].append(
                     renderer.get_signature()
                 )
             elif not decl.is_operator:
-                renderer = StaticNonOperatorFunctionRenderer(decl, self._header_path)
+                try:
+                    renderer = StaticNonOperatorFunctionRenderer(
+                        decl, self._header_path
+                    )
+                except TypeNotFoundError as e:
+                    warn(
+                        f"Skipping function {decl.name} in {self._header_path} due to missing type {e.type_name}"
+                    )
+                    continue
                 self._func_typing_signature_cache[decl.name].append(
                     renderer.get_signature()
                 )

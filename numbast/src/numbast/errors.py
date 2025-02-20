@@ -19,3 +19,7 @@ class TypeNotFoundError(BaseASTError):
     def __init__(self, type_name):
         self._type_name = type_name
         super().__init__(f"{type_name} is not found in type cache.")
+
+    @property
+    def type_name(self):
+        return self._type_name
