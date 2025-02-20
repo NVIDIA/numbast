@@ -202,8 +202,8 @@ struct Declarations {
   std::vector<Enum> enums;
 };
 
-Declarations
-parse_declarations_from_command_line(std::vector<std::string> options,
-                                     std::vector<std::string> files_to_retain);
+Declarations parse_declarations_from_command_line(
+    std::vector<std::string> options, std::vector<std::string> files_to_retain,
+    std::vector<std::string> whitelist_prefixes);
 
 } // namespace ast_canopy

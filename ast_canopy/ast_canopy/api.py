@@ -133,6 +133,7 @@ def parse_declarations_from_source(
     cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
     cxx_standard: str = "c++17",
     additional_includes: list[str] = [],
+    anon_filename_decl_prefix_allowlist: list[str] = [],
     verbose: bool = False,
 ) -> tuple[
     list[Struct],
@@ -176,6 +177,10 @@ def parse_declarations_from_source(
 
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
+
+    anon_filename_decl_prefix_allowlist : list[str], optional
+        A list of prefixes to allow declarations with anonymous filename from. This is a temporary
+        workaround to allow expaneded macros to be included in the AST.
 
     verbose : bool, optional
         If True, print the stderr from clang++ invocation.
@@ -242,7 +247,7 @@ def parse_declarations_from_source(
 
     with capture_fd(STREAMFD.STDERR) as cap:
         decls = bindings.parse_declarations_from_command_line(
-            command_line_options, files_to_retain
+            command_line_options, files_to_retain, anon_filename_decl_prefix_allowlist
         )
 
     werr = cap.snap()
