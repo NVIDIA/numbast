@@ -65,10 +65,19 @@ def get_default_compiler_search_paths() -> list[str]:
     Extract the default system header search paths from the logs and return them.
     """
 
-    # Alternatively, use `clang++ --print-search-dirs`
+    # clang++ needs to be put in cuda mode so that it can include the proper headers
     clang_compile_empty = (
         subprocess.check_output(
-            ["clang++", "-E", "-v", "-xc++", "/dev/null"], stderr=subprocess.STDOUT
+            [
+                "clang++",
+                "-fsyntax-only",
+                "-v",
+                "--cuda-device-only",
+                "--no-cuda-version-check",
+                "-xcuda",
+                "/dev/null",
+            ],
+            stderr=subprocess.STDOUT,
         )
         .decode()
         .strip()
