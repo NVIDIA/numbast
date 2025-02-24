@@ -65,7 +65,10 @@ def get_default_compiler_search_paths() -> list[str]:
     Extract the default system header search paths from the logs and return them.
     """
 
-    # clang++ needs to be put in cuda mode so that it can include the proper headers
+    # clang++ needs to be put in cuda mode so that it can include the proper headers.
+    # The bare minimum of the cuda mode is with `-nocudainc` and `-no-cuda-version-check`
+    # since we are only interested in the cuda patches that clang will include for
+    # std headers.
     clang_compile_empty = (
         subprocess.check_output(
             [
@@ -73,6 +76,7 @@ def get_default_compiler_search_paths() -> list[str]:
                 "-fsyntax-only",
                 "-v",
                 "--cuda-device-only",
+                "-nocudainc",
                 "--no-cuda-version-check",
                 "-xcuda",
                 "/dev/null",
