@@ -19,7 +19,6 @@ from pylibastcanopy import Enum, Typedef
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_prefix,
-    get_rendered_shims,
     get_rendered_imports,
 )
 from numbast.static.struct import StaticStructsRenderer
@@ -308,7 +307,6 @@ def _static_binding_generator(
 
     prefix_str = get_prefix()
     imports_str = get_rendered_imports()
-    shim_function_str = get_rendered_shims()
 
     # Example: Save the processed output to the output directory
     output_file = os.path.join(output_dir, f"{basename}.py")
@@ -328,8 +326,6 @@ def _static_binding_generator(
 {function_bindings}
 # Aliases:
 {rendered_aliases}
-# Shim functions:
-{shim_function_str}
 """
 
     with open(output_file, "w") as file:

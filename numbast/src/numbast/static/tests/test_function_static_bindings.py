@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from functools import partial
 
 import pytest
 import numpy as np
@@ -36,23 +35,17 @@ def cuda_function(data_folder):
     globals = {}
     exec(bindings, globals)
 
-    public_apis = ["add", "minus_i32_f32", "set_42", "c_ext_shim_source"]
+    public_apis = ["add", "minus_i32_f32", "set_42"]
     assert all(public_api in globals for public_api in public_apis)
 
     return {k: globals[k] for k in public_apis}
 
 
-@pytest.fixture(scope="module")
-def numbast_jit(cuda_function):
-    c_ext_shim_source = cuda_function["c_ext_shim_source"]
-    return partial(cuda.jit, link=[c_ext_shim_source])
-
-
 @pytest.mark.parametrize("dtype", ["int32", "float32"])
-def test_same_argument_types_and_overload(cuda_function, numbast_jit, dtype):
+def test_same_argument_types_and_overload(cuda_function, dtype):
     add = cuda_function["add"]
 
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         arr[0] = add(1, 2)
 
@@ -61,10 +54,10 @@ def test_same_argument_types_and_overload(cuda_function, numbast_jit, dtype):
     assert arr.copy_to_host()[0] == 3
 
 
-def test_different_argument_types(cuda_function, numbast_jit):
+def test_different_argument_types(cuda_function):
     minus_i32_f32 = cuda_function["minus_i32_f32"]
 
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         arr[0] = minus_i32_f32(int32(3), float32(1.4))
 
@@ -73,11 +66,11 @@ def test_different_argument_types(cuda_function, numbast_jit):
     assert arr.copy_to_host()[0] == 2
 
 
-def test_void_return_type(cuda_function, numbast_jit):
+def test_void_return_type(cuda_function):
     ffi = cffi.FFI()
     set_42 = cuda_function["set_42"]
 
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         ptr = ffi.from_buffer(arr)
         set_42(ptr)
