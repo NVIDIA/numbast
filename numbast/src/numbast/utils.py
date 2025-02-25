@@ -71,6 +71,7 @@ def make_function_shim(
     func_name: str,
     return_type: str,
     params: list[pylibastcanopy.ParamVar],
+    includes: list[str] = [],
 ) -> str:
     """Create a function shim layer template.
 
@@ -84,6 +85,8 @@ def make_function_shim(
         The return type of the function.
     params : list[pylibastcanopy.ParamVar]
         The parameters of the function.
+    includes : list[str]
+        The list of header paths to be included to the shim.
 
     Returns
     -------
@@ -141,5 +144,9 @@ extern "C" __device__ int
         retval=retval,
         actual_args=acutal_args_str,
     )
+
+    include_str = "\n".join([f"#include <{include}>" for include in includes])
+
+    shim = include_str + shim
 
     return shim

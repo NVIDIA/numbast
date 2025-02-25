@@ -18,7 +18,6 @@ from numbast.tools.static_binding_generator import _typedef_to_aliases
 from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
     get_prefix,
-    get_rendered_shims,
     get_rendered_imports,
 )
 
@@ -67,7 +66,6 @@ def bfloat16():
 
     prefix_str = get_prefix()
     imports_str = get_rendered_imports()
-    shim_function_str = get_rendered_shims()
 
     bindings = f"""
 {prefix_str}
@@ -75,7 +73,6 @@ def bfloat16():
 {struct_bindings}
 {function_bindings}
 {typedef_bindings}
-{shim_function_str}
 """
 
     globals = {}
