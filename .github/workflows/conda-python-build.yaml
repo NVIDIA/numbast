@@ -14,19 +14,16 @@ on:
           type: string
         node_type:
           type: string
-          default: "cpu8"
+          default: "cpu4"
         script:
           type: string
-          default: "ci/build_conda.sh"
+          default: "ci/build_conda_python.sh"
         matrix_filter:
           type: string
           default: "."
         CPU:
           type: string
           default: "amd64"
-        GPU:
-          type: string
-          default: "v100"
         upload_to_conda:
           type: boolean
           required: false
@@ -51,44 +48,78 @@ permissions:
     statuses: none
 
 jobs:
-    build-test-upload:
-      strategy:
-        fail-fast: false
-      runs-on: linux-${{ inputs.CPU }}-gpu-${{ inputs.GPU }}-latest-1
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+    steps:
+      - name: Compute Build Matrix
+        id: compute-matrix
+        run: |
+          set -eo pipefail
+
+          # Please keep the matrices sorted in ascending order by the following:
+          #
+          #     [ARCH, PY_VER, CUDA_VER, LINUX_VER]
+          #
+          export MATRIX="
+          # amd64
+          - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.2.2', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04' }
+          # arm64
+          - { ARCH: 'arm64', PY_VER: '3.10', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'arm64', PY_VER: '3.10', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.2.2', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04' }
+          "
+
+          MATRIX="$(
+            yq -n -o json 'env(MATRIX)' | \
+            jq -c '${{ inputs.matrix_filter }} | if (. | length) > 0 then {include: .} else "Error: Empty matrix\n" | halt_error(1) end'
+          )"
+
+          echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
+
+  build:
+    needs: compute-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: "linux-${{ matrix.ARCH }}-${{ inputs.node_type }}"
+    env:
+      RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+    container:
+      image: rapidsai/ci-conda:cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}
       env:
-        RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
-      container:
-        image: rapidsai/ci-conda:cuda12.2.2-ubuntu22.04-py3.10
+        RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+      - name: Standardize repository information
+        run: |
+          echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
+          echo "RAPIDS_SHA=$(git rev-parse HEAD)" >> "${GITHUB_ENV}"
+          echo "RAPIDS_REF_NAME=${{ inputs.branch || github.ref_name }}" >> "${GITHUB_ENV}"
+          echo "RAPIDS_NIGHTLY_DATE=${{ inputs.date }}" >> "${GITHUB_ENV}"
+      - name: Build Conda Package
+        run: ${{ inputs.script }}
         env:
-          RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
-          PARALLEL_LEVEL: ${{ env.PARALLEL_LEVEL }}
-          NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
-      steps:
-        - uses: actions/checkout@v4
-          env:
-            GIT_TRACE_PACKET: 1
-            GIT_TRACE: 1
-            GIT_CURL_VERBOSE: 1
-          with:
-            repository: ${{ inputs.repo }}
-            ref: ${{ inputs.sha }}
-            fetch-depth: 0
-        - name: Standardize repository information
-          run: |
-            echo "REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
-            echo "SHA=$(git rev-parse HEAD)" >> "${GITHUB_ENV}"
-            echo "REF_NAME=${{ inputs.branch || github.ref_name }}" >> "${GITHUB_ENV}"
-            echo "NIGHTLY_DATE=${{ inputs.date }}" >> "${GITHUB_ENV}"
-        - name: Build Conda Package
-          run: ${{ inputs.script }}
-          env:
-            GH_TOKEN: ${{ github.token }}
-        - name: Test Conda Package
-          run: "./ci/test_conda.sh"
-          env:
-            GH_TOKEN: ${{ github.token }}
-        - name: Upload Conda Package
-          if: inputs.upload_to_conda
-          run: "ci/upload_conda.sh"
-          env:
-            CONDA_TOKEN: ${{ secrets.NVIDIA_CONDA_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Upload conda repo
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-repo
+          path: "/tmp/conda-bld-output"
+      - name: Publish Conda Package
+        if: inputs.upload_to_conda
+        run: "ci/upload_conda.sh"
+        env:
+          CONDA_TOKEN: ${{ secrets.NVIDIA_CONDA_TOKEN }}

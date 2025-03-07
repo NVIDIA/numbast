@@ -16,7 +16,8 @@ jobs:
   pr-builder:
     needs:
       - checks
-      - tests
+      - build-conda
+      - test-conda
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
   checks:
@@ -24,8 +25,19 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.10
     with:
       enable_check_generated_files: false
-  tests:
-    name: Run build and tests
+  build-conda:
+    name: Build Conda Python
     needs: checks
     secrets: inherit
-    uses: ./.github/workflows/build.yaml
+    uses: ./.github/workflows/conda-python-build.yaml
+    with:
+      build_type: pull-request
+      matrix_filter: map(select(.ARCH == "amd64" and .CUDA_VER == "12.8.0" and .PY_VER == "3.11"))
+  test-conda:
+    name: Test Conda Python
+    needs: build-conda
+    secrets: inherit
+    uses: ./.github/workflows/conda-python-test.yaml
+    with:
+      build_type: pull-request
+      matrix_filter: map(select(.ARCH == "amd64" and .CUDA_VER == "12.8.0" and .PY_VER == "3.11"))
