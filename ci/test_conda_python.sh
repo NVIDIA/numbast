@@ -9,9 +9,15 @@ set -euo pipefail
 rapids-logger "Starting Conda Package Test"
 
 rapids-logger "Creating Test Environment"
+
+# Prepend the local conda-repo to the conda config. This is a workaround to
+# ensure that the local conda-repo is preferred over the default channels.
+# TODO: Add the short sha to the build string and constrain by that.
+conda config --set channel_priority strict
+conda config --prepend channels `pwd`/conda-repo
+
 # TODO: replace this with rapids-dependency-manager
 rapids-mamba-retry create -n test \
-  -c `pwd`/conda-repo \
   click \
   pytest \
   clangdev >=18 \
