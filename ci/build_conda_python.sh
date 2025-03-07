@@ -12,6 +12,9 @@ source rapids-date-string
 
 export CMAKE_GENERATOR=Ninja
 
+# TODO: migrate to rattler-build, install boa for now to get the build working.
+rapids-conda-retry install boa
+
 rapids-print-env
 
 rapids-logger "Begin py build"
