@@ -8,14 +8,18 @@
 )[0] %}
 {% set project_data = data.get("project") %}
 {% set project_urls = project_data["urls"] %}
+{% set py_version = environ['CONDA_PY'] %}
 
 package:
   name: numbast-extensions
   version: {{ version }}
 
+source:
+  path: ../../../numbast_extensions
+
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
-  string: {{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+  string: py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
     - AWS_ACCESS_KEY_ID
     - AWS_SECRET_ACCESS_KEY
@@ -32,11 +36,6 @@ build:
     - SCCACHE_S3_KEY_PREFIX=numbast-linux64 # [linux64]
     - SCCACHE_S3_USE_SSL
     - SCCACHE_S3_NO_CREDENTIALS
-
-source:
-  path: ../../../numbast_extensions
-
-build:
   script:
     - {{ PYTHON }} -m pip install . -vv
 
