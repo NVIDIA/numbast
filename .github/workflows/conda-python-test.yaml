@@ -130,6 +130,9 @@ jobs:
         name: Download conda repo
         with:
           name: conda-repo-${{ matrix.ARCH }}-${{ matrix.PY_VER }}-${{ matrix.CUDA_VER }}
+          path: conda-repo
+      - name: Show downloaded file layout
+        run: ls -R
       - name: Standardize repository information
         run: |
           echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
