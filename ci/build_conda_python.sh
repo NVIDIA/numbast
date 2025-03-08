@@ -18,13 +18,10 @@ export CMAKE_GENERATOR=Ninja
 export GIT_DESCRIBE_NUMBER=$(git rev-list 5f486a60..HEAD --count)
 export GIT_DESCRIBE_HASH=$(git rev-parse --short HEAD)
 
-# TODO: migrate to rattler-build, install boa for now to get the build working.
-rapids-conda-retry install boa
-
 rapids-print-env
 
 rapids-logger "Begin py build"
 
-rapids-conda-retry mambabuild conda/recipes/ast_canopy
-rapids-conda-retry mambabuild conda/recipes/numbast
-rapids-conda-retry mambabuild conda/recipes/numbast_extensions
+rapids-conda-retry build conda/recipes/ast_canopy
+rapids-conda-retry build conda/recipes/numbast
+rapids-conda-retry build conda/recipes/numbast_extensions
