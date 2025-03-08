@@ -20,7 +20,7 @@ on:
           default: "ci/test_conda_python.sh"
         run_codecov:
           type: boolean
-          default: true
+          default: false
         matrix_filter:
           type: string
           default: "."
@@ -128,8 +128,6 @@ jobs:
           fetch-depth: 0
       - uses: actions/download-artifact@v4
         name: conda-repo
-      - name: Display structure of downloaded files
-        run: ls -R
       - name: Standardize repository information
         run: |
           echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
