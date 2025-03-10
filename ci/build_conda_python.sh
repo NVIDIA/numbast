@@ -21,6 +21,10 @@ rapids-print-env
 
 rapids-logger "Begin py build"
 
+sccache --zero-stats
+
 rapids-conda-retry build conda/recipes/ast_canopy
 rapids-conda-retry build conda/recipes/numbast
 rapids-conda-retry build conda/recipes/numbast_extensions
+
+sccache --show-adv-stats
