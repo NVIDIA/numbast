@@ -97,6 +97,11 @@ jobs:
       env:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
     steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 43200 # 12h
       - uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repo }}

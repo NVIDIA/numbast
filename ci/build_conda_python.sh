@@ -6,8 +6,7 @@ set -euo pipefail
 
 rapids-configure-conda-channels
 
-# TODO: Get the AWD credentials added for sccache.
-# source rapids-configure-sccache
+source rapids-configure-sccache
 
 source rapids-date-string
 
