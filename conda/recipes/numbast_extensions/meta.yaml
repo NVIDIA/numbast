@@ -43,6 +43,7 @@ requirements:
   build:
     - python
     - pip
+    - setuptools
   run:
     - cuda-version >=12.5
     - cuda-cudart-dev

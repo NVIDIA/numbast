@@ -51,6 +51,7 @@ requirements:
   host:
     - python
     - pip
+    - setuptools
   run:
     - ast_canopy >={{ version }}
     - cuda-nvrtc
