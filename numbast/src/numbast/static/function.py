@@ -72,6 +72,7 @@ shim_raw_str = \"\"\"{shim_rendered}\"\"\"
     lowering_template = """
 @lower({func_name}, {params})
 def impl(context, builder, sig, args):
+    context._external_linkage.add({shim_name_local})
     ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(ptrs, sig.args, args):
         builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
@@ -217,11 +218,12 @@ def _{unique_function_name}_lower():
         self.Imports.add("from numba.core.typing import signature")
 
         self._lowering_rendered = self.lowering_template.format(
-            func_name=self.func_name_python,
+            func_name=self.get_python_api_name(),
             params=self._argument_numba_types_str,
             caller_name=self._caller_name,
             return_type=self._return_numba_type_str,
             pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
+            shim_name_local=self.shim_name_local,
         )
 
     def _render_scoped_lower(self):
@@ -379,9 +381,6 @@ class StaticFunctionsRenderer(BaseRenderer):
 class LinkableAbstractTemplate(AbstractTemplate):
     def generic(self, args, kws):
         selected = self._select(self._cases, args, kws)
-        link = self.sig_link_map.get(selected, None)
-        if link is not None:
-            self.key.link += link
         return selected
 """
 
@@ -489,7 +488,7 @@ def {op_typing_name_overload}({arg_list}):
             for meta in typing_metas:
                 typing_guards = []
                 for argname, ty in zip(meta.nargs_list, meta.argtypes):
-                    typing_guards.append(f"isinstance({argname}, {ty})")
+                    typing_guards.append(f"{argname} == {ty}")
                 typing_guard_strict = " and ".join(typing_guards)
 
                 if previous_nargs is None:
