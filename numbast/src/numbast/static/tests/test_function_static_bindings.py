@@ -10,30 +10,28 @@ from numba.types import int32, float32
 from numba import cuda
 from numba.cuda import device_array
 
-
+from ast_canopy import parse_declarations_from_source
 from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import StaticFunctionsRenderer
 
 
 @pytest.fixture(scope="module")
 def decl(data_folder):
     clear_base_renderer_cache()
 
-    # header = data_folder("function.cuh")
+    header = data_folder("function.cuh")
 
-    # decls = parse_declarations_from_source(header, [header], "sm_50")
-    # functions = decls.functions
+    decls = parse_declarations_from_source(header, [header], "sm_50")
+    functions = decls.functions
 
-    # assert len(functions) == 5
+    assert len(functions) == 5
 
-    # SFR = StaticFunctionsRenderer(functions, header)
+    SFR = StaticFunctionsRenderer(functions, header)
 
-    # bindings = SFR.render_as_str(
-    #     with_prefix=True, with_imports=True, with_shim_functions=True
-    # )
+    bindings = SFR.render_as_str(
+        with_prefix=True, with_imports=True, with_shim_functions=True
+    )
     globals = {}
-
-    with open("bindings.py", "r") as f:
-        bindings = f.read()
 
     exec(bindings, globals)
 
