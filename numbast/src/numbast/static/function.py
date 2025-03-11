@@ -236,12 +236,6 @@ def _{unique_function_name}_lower():
         self._render_shim_function()
         self._render_lowering()
 
-        # lower_body = indent(
-        #     self._decl_device_rendered + "\n" + self._lowering_rendered,
-        #     prefix="    ",
-        #     predicate=lambda x: True,
-        # )
-
         lower_body = self.lowering_body_template.format(
             shim_var=self._c_ext_shim_var_rendered,
             decl_device=self._decl_device_rendered,
@@ -640,15 +634,6 @@ def {op_typing_name_overload}({arg_list}):
 
         self._python_str += "\n" + "\n".join(python_rendered)
 
-        # c_rendered = []
-        # for c in self._c_rendered:
-        #     c_rendered.append(c)
-
-        # self._c_str = "\n".join(self.Includes) + "\n".join(c_rendered)
-
-        # self._shim_function_pystr = self.MemoryShimWriterTemplate.format(
-        #     shim_funcs=self._c_str
-        # )
         self._shim_function_pystr = self._c_str = ""
 
     def render_as_str(
