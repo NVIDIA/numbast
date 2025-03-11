@@ -71,13 +71,13 @@ jobs:
           export MATRICES="
             pull-request:
               # amd64
-              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.8.0', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'oldest' }
+              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.8.0', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'earliest' }
               - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu24.04', GPU: 'l4',   DRIVER: 'latest' }
               # arm64
               - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest' }
             nightly:
               # amd64
-              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '11.4.3', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'oldest' }
+              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '11.4.3', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'earliest' }
               - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '11.4.3', LINUX_VER: 'ubuntu22.04', GPU: 'l4',   DRIVER: 'latest' }
               - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu24.04', GPU: 'l4',   DRIVER: 'latest' }
               - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.0.1', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'latest' }
