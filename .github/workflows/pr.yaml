@@ -32,7 +32,6 @@ jobs:
     uses: ./.github/workflows/conda-python-build.yaml
     with:
       build_type: pull-request
-      matrix_filter: map(select(.CUDA_VER == "12.8.0" and .PY_VER == "3.11"))
   test-conda:
     name: Test Conda Python
     needs: build-conda
@@ -40,4 +39,3 @@ jobs:
     uses: ./.github/workflows/conda-python-test.yaml
     with:
       build_type: pull-request
-      matrix_filter: map(select(.CUDA_VER == "12.8.0" and .PY_VER == "3.11"))

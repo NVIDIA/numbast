@@ -9,14 +9,14 @@ set -euo pipefail
 rapids-logger "Starting Conda Package Test"
 
 rapids-logger "Creating Test Environment"
-# TODO: replace this with rapids-dependency-manager
+# TODO: replace this with rapids-dependency-file-generator
 rapids-mamba-retry create -n test \
   -c `pwd`/conda-repo \
   click \
   pytest \
   clangdev >=18 \
-  cuda-nvcc >==${RAPIDS_CUDA_VERSION%.*} \
-  cuda-version >==${RAPIDS_CUDA_VERSION%.*} \
+  cuda-nvcc \
+  cuda-version =${RAPIDS_CUDA_VERSION%.*} \
   cuda-nvrtc \
   numba >=0.59 \
   numba-cuda >=0.2.0 \

@@ -55,8 +55,8 @@ jobs:
     steps:
       - name: Validate Test Type
         run: |
-          if [[ "$BUILD_TYPE" != "pull-request" ]] && [[ "$BUILD_TYPE" != "nightly" ]]; then
-              echo "Invalid build type! Must be 'nightly' or 'pull-request'."
+          if [[ "$BUILD_TYPE" != "pull-request" ]] && [[ "$BUILD_TYPE" != "nightly" ]] && [[ "$BUILD_TYPE" != "branch" ]]; then
+              echo "Invalid build type! Must be one of 'nightly', 'pull-request', or 'branch'."
               exit 1
           fi
       - name: Compute Python Test Matrix
@@ -71,27 +71,30 @@ jobs:
           export MATRICES="
             pull-request:
               # amd64
-              - { ARCH: 'amd64', PY_VER: '3.9',  CUDA_VER: '11.8.0', LINUX_VER: 'rockylinux8', GPU: 'v100', DRIVER: 'earliest' }
-              - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'v100', DRIVER: 'latest'   }
+              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.8.0', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'oldest' }
+              - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu24.04', GPU: 'l4',   DRIVER: 'latest' }
               # arm64
-              - { ARCH: 'arm64', PY_VER: '3.10', CUDA_VER: '12.0.1', LINUX_VER: 'ubuntu20.04', GPU: 'a100', DRIVER: 'latest'   }
-              - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest'   }
+              - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest' }
             nightly:
               # amd64
-              - { ARCH: 'amd64', PY_VER: '3.9',  CUDA_VER: '11.4.3', LINUX_VER: 'rockylinux8', GPU: 'v100', DRIVER: 'earliest' }
-              - { ARCH: 'amd64', PY_VER: '3.9',  CUDA_VER: '11.4.3', LINUX_VER: 'ubuntu20.04', GPU: 'v100', DRIVER: 'latest'   }
-              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'v100', DRIVER: 'latest'   }
-              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.0.1', LINUX_VER: 'rockylinux8', GPU: 'v100', DRIVER: 'latest'   }
-              - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'v100', DRIVER: 'latest'   }
+              - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '11.4.3', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'oldest' }
+              - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '11.4.3', LINUX_VER: 'ubuntu22.04', GPU: 'l4',   DRIVER: 'latest' }
+              - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu24.04', GPU: 'l4',   DRIVER: 'latest' }
+              - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.0.1', LINUX_VER: 'rockylinux8', GPU: 'l4',   DRIVER: 'latest' }
               # arm64
-              - { ARCH: 'arm64', PY_VER: '3.9',  CUDA_VER: '11.4.3', LINUX_VER: 'ubuntu20.04', GPU: 'a100', DRIVER: 'latest'   }
-              - { ARCH: 'arm64', PY_VER: '3.10', CUDA_VER: '12.0.1', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest'   }
-              - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '11.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest'   }
-              - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.2.2', LINUX_VER: 'rockylinux8', GPU: 'a100', DRIVER: 'latest'   }
-              - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.8.0', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest'   }
+              - { ARCH: 'arm64', PY_VER: '3.10', CUDA_VER: '11.4.3', LINUX_VER: 'ubuntu22.04', GPU: 'a100', DRIVER: 'latest' }
+              - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.0.1', LINUX_VER: 'ubuntu24.04', GPU: 'a100', DRIVER: 'latest' }
+              - { ARCH: 'arm64', PY_VER: '3.12', CUDA_VER: '11.8.0', LINUX_VER: 'rockylinux8', GPU: 'a100', DRIVER: 'latest' }
+              - { ARCH: 'arm64', PY_VER: '3.13', CUDA_VER: '12.2.2', LINUX_VER: 'ubuntu24.04', GPU: 'a100', DRIVER: 'latest' }
           "
 
-          TEST_MATRIX=$(yq -n 'env(MATRICES) | .[strenv(BUILD_TYPE)]')
+          # Use the nightly matrix for branch tests
+          MATRIX_TYPE="${BUILD_TYPE}"
+          if [[ "${MATRIX_TYPE}" == "branch" ]]; then
+            MATRIX_TYPE="nightly"
+          fi
+          export MATRIX_TYPE
+          TEST_MATRIX=$(yq -n 'env(MATRICES) | .[strenv(MATRIX_TYPE)]')
           export TEST_MATRIX
 
           MATRIX="$(
@@ -134,6 +137,9 @@ jobs:
           echo "RAPIDS_SHA=$(git rev-parse HEAD)" >> "${GITHUB_ENV}"
           echo "RAPIDS_REF_NAME=${{ inputs.branch || github.ref_name }}" >> "${GITHUB_ENV}"
           echo "RAPIDS_NIGHTLY_DATE=${{ inputs.date }}" >> "${GITHUB_ENV}"
+      - name: Setup proxy cache
+        uses: nv-gha-runners/setup-proxy-cache@main
+        continue-on-error: true
       - name: Python tests
         run: ${{ inputs.script }}
         env:
