@@ -44,7 +44,6 @@ def decl(data_folder):
 @pytest.fixture(scope="module")
 def impl(data_folder):
     impl = data_folder("src", "function.cu")
-    print(impl)
     return impl
 
 
