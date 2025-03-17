@@ -13,9 +13,7 @@ from numba.core.datamodel.models import StructModel, PrimitiveModel
 from pylibastcanopy import access_kind
 from ast_canopy.decl import Struct, StructMethod
 
-from numbast.static.renderer import (
-    BaseRenderer,
-)
+from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
 from numbast.utils import deduplicate_overloads
 from numbast.errors import TypeNotFoundError
@@ -26,7 +24,20 @@ file_logger.debug(f"Struct debug outputs are written to {logger_path}")
 file_logger.addHandler(FileHandler(logger_path))
 
 
-class StaticStructCtorRenderer(BaseRenderer):
+class StaticStructMethodRenderer(BaseRenderer):
+    """Base class for all struct methods
+    TODO: merge all common code paths
+    """
+
+    shim_name_local = "shim"
+
+    c_ext_shim_var_template = """
+shim_raw_str = \"\"\"{shim_rendered}\"\"\"
+{shim_name_local} = CUSource(shim_raw_str)
+"""
+
+
+class StaticStructCtorRenderer(StaticStructMethodRenderer):
     """Renderer for a single struct constructor.
 
     Parameters
@@ -67,6 +78,7 @@ extern "C" __device__ int
     struct_ctor_lowering_template = """
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
+    context._external_linkage.add({shim_name_local})
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(argptrs, sig.args, args):
@@ -85,9 +97,15 @@ def ctor_impl(context, builder, sig, args):
     return builder.load(selfptr, align=getattr({struct_type_name}, "alignof_", None))
     """
 
+    lowering_body_template = """
+{shim_var}
+{decl_device}
+{lowering}
+"""
+
     lower_overload_scope_template = """
 def {lower_scope_name}():
-    {body}
+{body}
 
 {lower_scope_name}()
 """
@@ -204,6 +222,11 @@ def {lower_scope_name}():
             args=self._deref_args_str,
         )
 
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_name_local=self.shim_name_local,
+            shim_rendered=self._c_ext_shim_rendered,
+        )
+
         self.ShimFunctions.append(self._c_ext_shim_rendered)
 
     def _render_lowering(self):
@@ -217,6 +240,7 @@ def {lower_scope_name}():
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._device_caller_name,
             pointer_wrapped_args=self._pointer_wrapped_param_types_str,
+            shim_name_local=self.shim_name_local,
         )
 
     def _render(self):
@@ -229,11 +253,13 @@ def {lower_scope_name}():
         self._render_shim_function()
         self._render_lowering()
 
-        lower_body = indent(
-            self._decl_device_rendered + "\n" + self._lowering_rendered,
-            prefix="    ",
-            predicate=lambda x: True,
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
+            shim_name_local=self.shim_name_local,
         )
+        lower_body = indent(lower_body, " " * 4)
 
         self._python_rendered = self.lower_overload_scope_template.format(
             lower_scope_name=self._lower_scope_name,
@@ -364,7 +390,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         return self._c_rendered
 
 
-class StaticStructConversionOperatorRenderer(BaseRenderer):
+class StaticStructConversionOperatorRenderer(StaticStructMethodRenderer):
     """Renderer for a single struct conversion operator.
 
     Parameters
@@ -404,6 +430,7 @@ extern "C" __device__ int
     struct_conversion_op_lowering_template = """
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
+    context._external_linkage.add({shim_name_local})
     ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
 
@@ -418,9 +445,15 @@ def impl(context, builder, fromty, toty, value):
     )
     """
 
+    lowering_body_template = """
+{shim_var}
+{decl_device}
+{lowering}
+"""
+
     lower_scope_template = """
 def {lower_scope_name}():
-    {body}
+{body}
 
 {lower_scope_name}()
 """
@@ -499,6 +532,11 @@ def {lower_scope_name}():
             )
         )
 
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_name_local=self.shim_name_local,
+            shim_rendered=self._c_ext_shim_rendered,
+        )
+
         self.ShimFunctions.append(self._c_ext_shim_rendered)
 
     def _render_lowering(self):
@@ -523,11 +561,13 @@ def {lower_scope_name}():
         self._render_shim_function()
         self._render_lowering()
 
-        lower_body = indent(
-            self._decl_device_rendered + "\n" + self._lowering_rendered,
-            prefix="    ",
-            predicate=lambda x: True,
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
+            shim_name_local=self.shim_name_local,
         )
+        lower_body = indent(lower_body, " " * 4)
 
         self._python_rendered = self.lower_scope_template.format(
             lower_scope_name=self._lower_scope_name,
@@ -964,7 +1004,7 @@ class StaticStructsRenderer(BaseRenderer):
             self._python_str += "\n" + self.Prefix
 
         if with_imports:
-            self._python_str += "\n" + "\n".join(self.Imports)
+            self._python_str += "\n" + get_rendered_imports()
 
         self._python_str += "\n" + "\n".join(python_rendered)
 
