@@ -50,7 +50,6 @@ def cuda_decls(data_folder):
     )
 
     globals = {}
-    breakpoint()
     exec(bindings, globals)
 
     public_apis = [*specs]
@@ -61,8 +60,13 @@ def cuda_decls(data_folder):
 
 @pytest.fixture(scope="module")
 def impl(data_folder):
-    impl = data_folder("src", "function.cu")
-    return impl
+    header = data_folder("operator.cuh")
+    src = data_folder("src", "operator.cu")
+
+    with open(src, "r") as f:
+        impl = f.read()
+
+    return cuda.CUSource(f"#include <{header}>" + "\n" + impl)
 
 
 def test_custom_type_operators(cuda_decls, impl):

@@ -15,7 +15,7 @@ from ast_canopy.decl import Struct, StructMethod
 
 from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
-from numbast.utils import deduplicate_overloads
+from numbast.utils import deduplicate_overloads, make_struct_ctor_shim
 from numbast.errors import TypeNotFoundError
 
 file_logger = getLogger(f"{__name__}")
@@ -126,11 +126,13 @@ def {lower_scope_name}():
         struct_name: str,
         struct_type_class: str,
         struct_type_name: str,
+        header_path: str,
         ctor_decl: StructMethod,
     ):
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
         self._ctor_decl = ctor_decl
 
         self._struct_ctor_device_decl_str = f"_ctor_decl_{struct_name}"
@@ -215,11 +217,17 @@ def {lower_scope_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        self._c_ext_shim_rendered = self.struct_ctor_c_ext_shim_template.format(
-            unique_shim_name=self._deduplicated_shim_name,
+        # self._c_ext_shim_rendered = self.struct_ctor_c_ext_shim_template.format(
+        #     unique_shim_name=self._deduplicated_shim_name,
+        #     struct_name=self._struct_name,
+        #     arglist=self._c_ext_argument_pointer_types,
+        #     args=self._deref_args_str,
+        # )
+        self._c_ext_shim_rendered = make_struct_ctor_shim(
+            shim_name=self._deduplicated_shim_name,
             struct_name=self._struct_name,
-            arglist=self._c_ext_argument_pointer_types,
-            args=self._deref_args_str,
+            params=self._ctor_decl.params,
+            includes=[self._header_path],
         )
 
         self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
@@ -313,11 +321,13 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         struct_name,
         struct_type_class,
         struct_type_name,
+        header_path,
     ):
         self._ctor_decls = ctor_decls
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
 
         self._python_rendered = ""
         self._c_rendered = ""
@@ -359,6 +369,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
                     struct_name=self._struct_name,
                     struct_type_class=self._struct_type_class,
                     struct_type_name=self._struct_type_name,
+                    header_path=self._header_path,
                     ctor_decl=ctor_decl,
                 )
             except TypeNotFoundError as e:
@@ -850,6 +861,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_name=self._struct_name,
             struct_type_class=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
+            header_path=self._header_path,
             ctor_decls=self._decl.constructors(),
         )
         static_ctors_renderer._render()
