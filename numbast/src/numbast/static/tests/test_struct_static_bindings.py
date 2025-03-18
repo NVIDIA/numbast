@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from functools import partial
 
 from numba import cuda
 from numba.types import Type, Number
@@ -15,10 +14,13 @@ from numbast.static.struct import StaticStructsRenderer
 
 
 @pytest.fixture(scope="module")
-def cuda_struct(data_folder):
-    clear_base_renderer_cache()
+def header(data_folder):
+    return data_folder("struct.cuh")
 
-    header = data_folder("struct.cuh")
+
+@pytest.fixture(scope="module")
+def decl(data_folder, header):
+    clear_base_renderer_cache()
 
     specs = {
         "Foo": (Type, StructModel, header),
@@ -38,27 +40,27 @@ def cuda_struct(data_folder):
     )
 
     globals = {}
-    with open("/tmp/data.py", "w") as f:
-        f.write(bindings)
-
     exec(bindings, globals)
 
-    public_apis = [*specs, "c_ext_shim_source"]
+    public_apis = [*specs]
     assert all(public_api in globals for public_api in public_apis)
 
     return {k: globals[k] for k in public_apis}
 
 
 @pytest.fixture(scope="module")
-def numbast_jit(cuda_struct):
-    c_ext_shim_source = cuda_struct["c_ext_shim_source"]
-    return partial(cuda.jit, link=[c_ext_shim_source])
+def impl(data_folder, header):
+    src = data_folder("src", "struct.cu")
+    with open(src, "r") as f:
+        impl = f.read()
+
+    return header + "\n" + impl
 
 
-def test_foo_ctor_default_simple(cuda_struct, numbast_jit):
-    Foo = cuda_struct["Foo"]
+def test_foo_ctor_default_simple(decl):
+    Foo = decl["Foo"]
 
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         foo = Foo()  # noqa: F841
         foo2 = Foo(42)
@@ -71,12 +73,12 @@ def test_foo_ctor_default_simple(cuda_struct, numbast_jit):
     assert all(arr.copy_to_host() == [0, 42])
 
 
-def test_bar_ctor_overloads(cuda_struct, numbast_jit):
-    Bar = cuda_struct["Bar"]
+def test_bar_ctor_overloads(decl):
+    Bar = decl["Bar"]
 
     from numba.types import int32, float32
 
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         bar = Bar(int32(3.14))
         bar2 = Bar(float32(3.14))
@@ -88,12 +90,12 @@ def test_bar_ctor_overloads(cuda_struct, numbast_jit):
     assert arr.copy_to_host() == pytest.approx([3, 3.14])
 
 
-def test_myint_cast(cuda_struct, numbast_jit):
-    MyInt = cuda_struct["MyInt"]
+def test_myint_cast(decl):
+    MyInt = decl["MyInt"]
 
     from numba.types import int32
 
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         i = MyInt(42)
         arr[0] = int32(i)

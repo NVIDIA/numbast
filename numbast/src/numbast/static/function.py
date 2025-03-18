@@ -535,8 +535,6 @@ class {op_typing_name}(ConcreteTemplate):
         for c in self._c_rendered:
             c_rendered.append(c)
 
-        self._c_str = "\n".join(self.Includes) + "\n".join(c_rendered)
-
         self._shim_function_pystr = self._c_str = ""
 
     def render_as_str(

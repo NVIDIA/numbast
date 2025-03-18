@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
+#pragma once
+
 struct Foo {
 public:
   int x;

@@ -170,10 +170,8 @@ def make_struct_ctor_shim(
     ----------
     shim_name : str
         The name of the shim function.
-    func_name : str
-        The name of the function to build shim for.
-    return_type : str
-        The return type of the function.
+    struct_name : str
+        The name of the struct to construct.
     params : list[pylibastcanopy.ParamVar]
         The parameters of the function.
     includes : list[str]
@@ -211,6 +209,55 @@ extern "C" __device__ int
         struct_name=struct_name,
         formal_args=formal_args_str,
         actual_args=acutal_args_str,
+    )
+
+    return shim
+
+
+def make_struct_conversion_operator_shim(
+    shim_name: str,
+    struct_name: str,
+    method_name: str,
+    return_type: str,
+    includes: list[str] = [],
+) -> str:
+    """Create a function shim layer template.
+
+    Parameters
+    ----------
+    shim_name : str
+        The name of the shim function.
+    struct_name : str
+        The name of the struct to construct.
+    method_name : str
+        The name of the operator to call.
+    return_type : str
+        The return type of the conversion operator.
+    includes : list[str]
+        The list of header paths to be included to the shim.
+
+    Returns
+    -------
+    shim : str
+        The function shim layer shim.
+    """
+
+    conv_op_shim = """{includes}
+extern "C" __device__ int
+{shim_name}({return_type} &retval, {struct_name} *self) {{
+    retval = self->{method_name}();
+    return 0;
+}}
+    """
+
+    include_str = "\n".join([f"#include <{include}>" for include in includes])
+
+    shim = conv_op_shim.format(
+        includes=include_str,
+        shim_name=shim_name,
+        struct_name=struct_name,
+        method_name=method_name,
+        return_type=return_type,
     )
 
     return shim
