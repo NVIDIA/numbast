@@ -9,25 +9,30 @@ set -euo pipefail
 rapids-logger "Starting Conda Package Test"
 
 rapids-logger "Creating Test Environment"
-rapids-mamba-retry create -n test
+# TODO: replace this with rapids-dependency-file-generator
+rapids-mamba-retry create -n test \
+  -c `pwd`/conda-repo \
+  click \
+  pytest \
+  clangdev >=18 \
+  cuda-nvcc \
+  cuda-version=${RAPIDS_CUDA_VERSION%.*} \
+  cuda-nvrtc \
+  numba >=0.59 \
+  numba-cuda >=0.2.0 \
+  pynvjitlink >=0.2 \
+  cuda-cudart-dev \
+  python=${RAPIDS_PY_VERSION} \
+  ast_canopy \
+  numbast \
+  numbast-extensions
 
 # Temporarily allow unbound variables for conda activation.
 set +u
 conda activate test
 set -u
 
-rapids-logger "Add conda build output dir to channel"
-
-conda index  $RAPIDS_CONDA_BLD_OUTPUT_DIR/
-conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR
-
 rapids-print-env
-
-rapids-mamba-retry install \
-  pytest \
-  ast_canopy \
-  numbast \
-  numbast-extensions
 
 rapids-logger "Check GPU usage"
 nvidia-smi
