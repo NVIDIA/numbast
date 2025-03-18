@@ -221,12 +221,6 @@ def {lower_scope_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        # self._c_ext_shim_rendered = self.struct_ctor_c_ext_shim_template.format(
-        #     unique_shim_name=self._deduplicated_shim_name,
-        #     struct_name=self._struct_name,
-        #     arglist=self._c_ext_argument_pointer_types,
-        #     args=self._deref_args_str,
-        # )
         self._c_ext_shim_rendered = make_struct_ctor_shim(
             shim_name=self._deduplicated_shim_name,
             struct_name=self._struct_name,
