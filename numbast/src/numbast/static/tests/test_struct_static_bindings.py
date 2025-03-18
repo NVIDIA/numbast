@@ -54,13 +54,14 @@ def impl(data_folder, header):
     with open(src, "r") as f:
         impl = f.read()
 
-    return header + "\n" + impl
+    header_str = f"#include <{header}>"
+    return cuda.CUSource(header_str + "\n" + impl)
 
 
-def test_foo_ctor_default_simple(decl):
+def test_foo_ctor_default_simple(decl, impl):
     Foo = decl["Foo"]
 
-    @cuda.jit
+    @cuda.jit(link=[impl])
     def kernel(arr):
         foo = Foo()  # noqa: F841
         foo2 = Foo(42)
@@ -73,12 +74,12 @@ def test_foo_ctor_default_simple(decl):
     assert all(arr.copy_to_host() == [0, 42])
 
 
-def test_bar_ctor_overloads(decl):
+def test_bar_ctor_overloads(decl, impl):
     Bar = decl["Bar"]
 
     from numba.types import int32, float32
 
-    @cuda.jit
+    @cuda.jit(link=[impl])
     def kernel(arr):
         bar = Bar(int32(3.14))
         bar2 = Bar(float32(3.14))
@@ -90,12 +91,12 @@ def test_bar_ctor_overloads(decl):
     assert arr.copy_to_host() == pytest.approx([3, 3.14])
 
 
-def test_myint_cast(decl):
+def test_myint_cast(decl, impl):
     MyInt = decl["MyInt"]
 
     from numba.types import int32
 
-    @cuda.jit
+    @cuda.jit(link=[impl])
     def kernel(arr):
         i = MyInt(42)
         arr[0] = int32(i)
