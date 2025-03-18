@@ -98,7 +98,7 @@ def make_function_shim(
     params: list[pylibastcanopy.ParamVar],
     includes: list[str] = [],
 ) -> str:
-    """Create a function shim layer template.
+    """Create shim function for C++ standalone function.
 
     Parameters
     ----------
@@ -164,7 +164,7 @@ def make_struct_ctor_shim(
     params: list[pylibastcanopy.ParamVar],
     includes: list[str] = [],
 ) -> str:
-    """Create a function shim layer template.
+    """Create a struct ctor shim function.
 
     Parameters
     ----------
@@ -221,7 +221,7 @@ def make_struct_conversion_operator_shim(
     return_type: str,
     includes: list[str] = [],
 ) -> str:
-    """Create a function shim layer template.
+    """Create a shim function for C++ struct conversion operator.
 
     Parameters
     ----------
