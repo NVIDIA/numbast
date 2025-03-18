@@ -13,11 +13,13 @@ from numba.core.datamodel.models import StructModel, PrimitiveModel
 from pylibastcanopy import access_kind
 from ast_canopy.decl import Struct, StructMethod
 
-from numbast.static.renderer import (
-    BaseRenderer,
-)
+from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
-from numbast.utils import deduplicate_overloads
+from numbast.utils import (
+    deduplicate_overloads,
+    make_struct_ctor_shim,
+    make_struct_conversion_operator_shim,
+)
 from numbast.errors import TypeNotFoundError
 
 file_logger = getLogger(f"{__name__}")
@@ -26,7 +28,20 @@ file_logger.debug(f"Struct debug outputs are written to {logger_path}")
 file_logger.addHandler(FileHandler(logger_path))
 
 
-class StaticStructCtorRenderer(BaseRenderer):
+class StaticStructMethodRenderer(BaseRenderer):
+    """Base class for all struct methods
+    TODO: merge all common code paths
+    """
+
+    shim_name_local = "shim"
+
+    c_ext_shim_var_template = """
+shim_raw_str = \"\"\"{shim_rendered}\"\"\"
+{shim_name_local} = CUSource(shim_raw_str)
+"""
+
+
+class StaticStructCtorRenderer(StaticStructMethodRenderer):
     """Renderer for a single struct constructor.
 
     Parameters
@@ -67,6 +82,7 @@ extern "C" __device__ int
     struct_ctor_lowering_template = """
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
+    context._external_linkage.add({shim_name_local})
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(argptrs, sig.args, args):
@@ -85,9 +101,15 @@ def ctor_impl(context, builder, sig, args):
     return builder.load(selfptr, align=getattr({struct_type_name}, "alignof_", None))
     """
 
+    lowering_body_template = """
+{shim_var}
+{decl_device}
+{lowering}
+"""
+
     lower_overload_scope_template = """
 def {lower_scope_name}():
-    {body}
+{body}
 
 {lower_scope_name}()
 """
@@ -108,11 +130,13 @@ def {lower_scope_name}():
         struct_name: str,
         struct_type_class: str,
         struct_type_name: str,
+        header_path: str,
         ctor_decl: StructMethod,
     ):
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
         self._ctor_decl = ctor_decl
 
         self._struct_ctor_device_decl_str = f"_ctor_decl_{struct_name}"
@@ -197,11 +221,16 @@ def {lower_scope_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        self._c_ext_shim_rendered = self.struct_ctor_c_ext_shim_template.format(
-            unique_shim_name=self._deduplicated_shim_name,
+        self._c_ext_shim_rendered = make_struct_ctor_shim(
+            shim_name=self._deduplicated_shim_name,
             struct_name=self._struct_name,
-            arglist=self._c_ext_argument_pointer_types,
-            args=self._deref_args_str,
+            params=self._ctor_decl.params,
+            includes=[self._header_path],
+        )
+
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_name_local=self.shim_name_local,
+            shim_rendered=self._c_ext_shim_rendered,
         )
 
         self.ShimFunctions.append(self._c_ext_shim_rendered)
@@ -217,6 +246,7 @@ def {lower_scope_name}():
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._device_caller_name,
             pointer_wrapped_args=self._pointer_wrapped_param_types_str,
+            shim_name_local=self.shim_name_local,
         )
 
     def _render(self):
@@ -229,11 +259,13 @@ def {lower_scope_name}():
         self._render_shim_function()
         self._render_lowering()
 
-        lower_body = indent(
-            self._decl_device_rendered + "\n" + self._lowering_rendered,
-            prefix="    ",
-            predicate=lambda x: True,
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
+            shim_name_local=self.shim_name_local,
         )
+        lower_body = indent(lower_body, " " * 4)
 
         self._python_rendered = self.lower_overload_scope_template.format(
             lower_scope_name=self._lower_scope_name,
@@ -287,11 +319,13 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         struct_name,
         struct_type_class,
         struct_type_name,
+        header_path,
     ):
         self._ctor_decls = ctor_decls
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
 
         self._python_rendered = ""
         self._c_rendered = ""
@@ -333,6 +367,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
                     struct_name=self._struct_name,
                     struct_type_class=self._struct_type_class,
                     struct_type_name=self._struct_type_name,
+                    header_path=self._header_path,
                     ctor_decl=ctor_decl,
                 )
             except TypeNotFoundError as e:
@@ -364,7 +399,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         return self._c_rendered
 
 
-class StaticStructConversionOperatorRenderer(BaseRenderer):
+class StaticStructConversionOperatorRenderer(StaticStructMethodRenderer):
     """Renderer for a single struct conversion operator.
 
     Parameters
@@ -393,17 +428,10 @@ def {caller_name}(arg):
     return {device_decl_name}(arg)
     """
 
-    struct_conversion_op_c_ext_shim_template = """
-extern "C" __device__ int
-{unique_shim_name}({return_type} &retval, {struct_name} *self) {{
-    retval = self->{method_name}();
-    return 0;
-}}
-    """
-
     struct_conversion_op_lowering_template = """
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
+    context._external_linkage.add({shim_name_local})
     ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
 
@@ -418,9 +446,15 @@ def impl(context, builder, fromty, toty, value):
     )
     """
 
+    lowering_body_template = """
+{shim_var}
+{decl_device}
+{lowering}
+"""
+
     lower_scope_template = """
 def {lower_scope_name}():
-    {body}
+{body}
 
 {lower_scope_name}()
 """
@@ -430,11 +464,13 @@ def {lower_scope_name}():
         struct_name: str,
         struct_type_class: str,
         struct_type_name: str,
+        header_path: str,
         convop_decl: StructMethod,
     ):
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
         self._convop_decl = convop_decl
 
         self._device_decl_name = f"_op_decl_{struct_name}"
@@ -490,13 +526,17 @@ def {lower_scope_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        self._c_ext_shim_rendered = (
-            self.struct_conversion_op_c_ext_shim_template.format(
-                unique_shim_name=self._unique_shim_name,
-                return_type=self._cast_to_type.name,
-                struct_name=self._struct_name,
-                method_name=self._convop_decl.name,
-            )
+        self._c_ext_shim_rendered = make_struct_conversion_operator_shim(
+            shim_name=self._unique_shim_name,
+            struct_name=self._struct_name,
+            method_name=self._convop_decl.name,
+            return_type=self._cast_to_type.name,
+            includes=[self._header_path],
+        )
+
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_name_local=self.shim_name_local,
+            shim_rendered=self._c_ext_shim_rendered,
         )
 
         self.ShimFunctions.append(self._c_ext_shim_rendered)
@@ -511,6 +551,7 @@ def {lower_scope_name}():
             cast_to_type=self._nb_cast_to_type_str,
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._caller_name,
+            shim_name_local=self.shim_name_local,
         )
 
     def _render(self):
@@ -523,11 +564,13 @@ def {lower_scope_name}():
         self._render_shim_function()
         self._render_lowering()
 
-        lower_body = indent(
-            self._decl_device_rendered + "\n" + self._lowering_rendered,
-            prefix="    ",
-            predicate=lambda x: True,
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
+            shim_name_local=self.shim_name_local,
         )
+        lower_body = indent(lower_body, " " * 4)
 
         self._python_rendered = self.lower_scope_template.format(
             lower_scope_name=self._lower_scope_name,
@@ -559,11 +602,13 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
         struct_name,
         struct_type_class,
         struct_type_name,
+        header_path,
     ):
         self._convop_decls = convop_decls
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
 
         self._python_rendered = ""
         self._c_rendered = ""
@@ -576,6 +621,7 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
                 struct_name=self._struct_name,
                 struct_type_class=self._struct_type_class,
                 struct_type_name=self._struct_type_name,
+                header_path=self._header_path,
                 convop_decl=convop_decl,
             )
             renderer._render()
@@ -810,6 +856,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_name=self._struct_name,
             struct_type_class=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
+            header_path=self._header_path,
             ctor_decls=self._decl.constructors(),
         )
         static_ctors_renderer._render()
@@ -824,6 +871,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_type_class=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
             convop_decls=self._decl.conversion_operators(),
+            header_path=self._header_path,
         )
         static_convops_renderer._render()
 
@@ -964,21 +1012,11 @@ class StaticStructsRenderer(BaseRenderer):
             self._python_str += "\n" + self.Prefix
 
         if with_imports:
-            self._python_str += "\n" + "\n".join(self.Imports)
+            self._python_str += "\n" + get_rendered_imports()
 
         self._python_str += "\n" + "\n".join(python_rendered)
 
-        includes = set()
-        c_rendered = []
-        for inc, c in self._c_rendered:
-            includes |= inc
-            c_rendered.append(c)
-
-        self._c_str = "\n".join(includes) + "\n".join(c_rendered)
-
-        self._shim_function_pystr = self.MemoryShimWriterTemplate.format(
-            shim_funcs=self._c_str
-        )
+        self._shim_function_pystr = self._c_str = ""
 
     def render_as_str(
         self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
