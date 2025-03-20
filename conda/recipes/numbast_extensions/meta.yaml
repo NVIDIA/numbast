@@ -51,6 +51,7 @@ requirements:
     - numba >=0.59
     - numba-cuda
     - numbast =={{ version }}
+    - ruff
 
   test:
     imports:
