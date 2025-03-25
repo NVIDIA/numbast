@@ -625,7 +625,7 @@ class {struct_type_class_name}({parent_type}):
 
     python_api_template = """
 # Make Python API for struct
-{struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_type_name}}})
+{struct_name} = {struct_type_name}
 """
 
     primitive_data_model_template = """
