@@ -101,3 +101,21 @@ def test_myint_cast(cuda_struct, numbast_jit):
     arr = device_array((1,), "int32")
     kernel[1, 1](arr)
     assert arr.copy_to_host() == pytest.approx([42])
+
+
+def test_static_type_check(decl, impl):
+    MyInt = decl["MyInt"]
+
+    from numba.types import int32
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        i = MyInt(42)
+        if isinstance(i, MyInt):
+            arr[0] = int32(i)
+        else:
+            arr[0] = 0
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([42])
