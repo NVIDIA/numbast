@@ -626,8 +626,6 @@ class {struct_type_class_name}({parent_type}):
     python_api_template = """
 # Make Python API for struct
 {struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_type_name}}})
-
-as_numba_type.register({struct_name}, {struct_type_name})
 """
 
     primitive_data_model_template = """
@@ -726,8 +724,6 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         This is the python handle to use it in Numba kernels.
         """
-        self.Imports.add("from numba.extending import as_numba_type")
-
         self._python_api_rendered = self.python_api_template.format(
             struct_type_name=self._struct_type_name, struct_name=self._struct_name
         )
