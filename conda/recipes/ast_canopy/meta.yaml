@@ -56,7 +56,7 @@ requirements:
     - cuda-version >=12.5
     - cuda-nvcc >=12.5
     - python
-    - clangdev >=18
+    - clangdev ==18
 
 about:
   license_family: Apache
