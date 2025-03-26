@@ -10,7 +10,11 @@ from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
 
-from numbast.static.renderer import get_rendered_imports, get_prefix
+from numbast.static.renderer import (
+    get_rendered_imports,
+    get_prefix,
+    get_shim_stream_obj,
+)
 from numbast.static.renderer import clear_base_renderer_cache
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import StaticFunctionsRenderer
@@ -42,8 +46,9 @@ def cuda_decls(data_folder):
 
     bindings = "\n".join(
         [
-            get_prefix(),
             get_rendered_imports(),
+            get_prefix(),
+            get_shim_stream_obj(header),
             struct_bindings,
             function_bindings,
         ]

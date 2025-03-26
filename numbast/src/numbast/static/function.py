@@ -8,7 +8,11 @@ import tempfile
 from collections import defaultdict
 from warnings import warn
 
-from numbast.static.renderer import BaseRenderer, get_rendered_imports
+from numbast.static.renderer import (
+    BaseRenderer,
+    get_rendered_imports,
+    get_shim_stream_obj,
+)
 from numbast.static.types import to_numba_type_str
 from numbast.utils import deduplicate_overloads, make_function_shim
 from numbast.errors import TypeNotFoundError
@@ -42,8 +46,6 @@ class StaticFunctionRenderer(BaseRenderer):
 
     signature_template = "signature({return_type}, {param_types})"
 
-    shim_name_local = "shim"
-
     decl_device_template = """
 {decl_name} = declare_device(
     '{unique_shim_name}',
@@ -76,13 +78,13 @@ extern "C" __device__ int
 
     c_ext_shim_var_template = """
 shim_raw_str = \"\"\"{shim_rendered}\"\"\"
-{shim_name_local} = CUSource(shim_raw_str)
+shim_stream.write(shim_raw_str)
 """
 
     lowering_template = """
 @lower({func_name}, {params})
 def impl(context, builder, sig, args):
-    context._external_linkage.add({shim_name_local})
+    context._external_linkage.add(shim_obj)
     ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(ptrs, sig.args, args):
         builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
@@ -102,10 +104,10 @@ def impl(context, builder, sig, args):
 """
 
     scoped_lowering_template = """
-def _{unique_function_name}_lower():
+def _{unique_function_name}_lower(shim_stream, shim_obj):
 {body}
 
-_{unique_function_name}_lower()
+_{unique_function_name}_lower(shim_stream, shim_obj)
 """
 
     function_python_api_template = """
@@ -209,11 +211,9 @@ def {func_name}():
             func_name=self._decl.name,
             return_type=self._decl.return_type.unqualified_non_ref_type_name,
             params=self._decl.params,
-            includes=[self._header_path],
         )
 
         self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
-            shim_name_local=self.shim_name_local,
             shim_rendered=self._c_ext_shim_rendered,
         )
 
@@ -227,7 +227,6 @@ def {func_name}():
 
         self._lowering_rendered = self.lowering_template.format(
             func_name=self.func_name_python,
-            shim_name_local=self.shim_name_local,
             params=self._argument_numba_types_str,
             caller_name=self._caller_name,
             return_type=self._return_numba_type_str,
@@ -250,7 +249,6 @@ def {func_name}():
             shim_var=self._c_ext_shim_var_rendered,
             decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
-            shim_name_local=self.shim_name_local,
         )
         lower_body = indent(lower_body, " " * 4)
 
@@ -523,11 +521,13 @@ class {op_typing_name}(ConcreteTemplate):
         python_rendered.append(self._typing_rendered)
 
         self._python_str = ""
-        if with_prefix:
-            self._python_str += "\n" + self.Prefix
 
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
+
+        if with_prefix:
+            self._python_str += "\n" + self.Prefix
+            self._python_str += "\n" + get_shim_stream_obj(self._header_path)
 
         self._python_str += "\n" + "\n".join(python_rendered)
 

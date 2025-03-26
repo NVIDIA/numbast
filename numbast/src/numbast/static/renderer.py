@@ -9,8 +9,14 @@ from numba.cuda.vector_types import vector_types
 
 class BaseRenderer:
     Prefix = """
-import numba
 numba.config.CUDA_ENABLE_PYNVJITLINK = True
+"""
+
+    Shim = """
+entry_point = \"{includes}\"
+shim_stream = io.StringIO()
+shim_stream.write(entry_point)
+shim_obj = CUSource(shim_stream)
 """
 
     Imports: set[str] = set()
@@ -38,6 +44,8 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     """includes to add in c extension shims."""
 
     def __init__(self, decl):
+        self.Imports.add("import numba")
+        self.Imports.add("import io")
         self._decl = decl
 
     @classmethod
@@ -74,6 +82,13 @@ def clear_base_renderer_cache():
 
 def get_prefix() -> str:
     return BaseRenderer.Prefix
+
+
+def get_shim_stream_obj(header: str) -> str:
+    if not header.startswith("#"):
+        header = f"#include <{header}>"
+
+    return BaseRenderer.Shim.format(includes=header)
 
 
 def get_rendered_imports() -> str:

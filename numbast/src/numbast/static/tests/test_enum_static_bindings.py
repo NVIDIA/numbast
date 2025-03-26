@@ -27,8 +27,6 @@ def cuda_enum(data_folder):
     )
 
     globals = {}
-    with open("/tmp/data.py", "w") as f:
-        f.write(bindings)
 
     exec(bindings, globals)
 

@@ -18,6 +18,7 @@ from numbast.tools.static_binding_generator import _typedef_to_aliases
 from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
     get_prefix,
+    get_shim_stream_obj,
     get_rendered_imports,
 )
 
@@ -71,11 +72,13 @@ def float16():
     )
 
     prefix_str = get_prefix()
+    shim_stream_str = get_shim_stream_obj(cuda_fp16)
     imports_str = get_rendered_imports()
 
     bindings = f"""
 {prefix_str}
 {imports_str}
+{shim_stream_str}
 {struct_bindings}
 {function_bindings}
 {typedef_bindings}
