@@ -49,14 +49,14 @@ requirements:
     - pybind11
     - pip
     - scikit-build-core
-    - clangdev ==18
+    - clangdev >=18,<19
     - llvmdev >=14
     - llvm >=14
   run:
     - cuda-version >=12.5
     - cuda-nvcc >=12.5
     - python
-    - clangdev ==18
+    - clangdev >=18,<19
 
 about:
   license_family: Apache
