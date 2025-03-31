@@ -93,8 +93,9 @@ def make_function_shim(
 
     function_binding_shim_template = """
 extern "C" __device__ int
-{shim_name}({return_type} &retval {formal_args}) {{
+{shim_name}({return_type} *retval {formal_args}) {{
     {retval}{func_name}({actual_args});
+    {assign_retval_statements}
     return 0;
 }}
     """
@@ -102,8 +103,12 @@ extern "C" __device__ int
     if return_type == "void":
         retval = ""
         return_type = "int"
+        assign_retval_statements = ""
     else:
-        retval = "retval = "
+        retval = f"{return_type} local_retval = "
+        assign_retval_statements = (
+            f"memcpy(retval, &local_retval, sizeof({return_type}));"
+        )
 
     formal_args = []
     array_pattern = r"(.*)(\[\d+\]+)"
@@ -140,6 +145,7 @@ extern "C" __device__ int
         formal_args=formal_args_str,
         retval=retval,
         actual_args=acutal_args_str,
+        assign_retval_statements=assign_retval_statements,
     )
 
     return shim
