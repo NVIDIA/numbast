@@ -6,6 +6,8 @@ import typing
 
 import pylibastcanopy as bindings
 
+from ast_canopy.instantiations import FunctionInstantiation, ClassInstantiation
+
 CXX_OP_TO_PYTHON_OP = {
     "+": [operator.pos, operator.add],
     "-": [operator.neg, operator.sub],
@@ -141,24 +143,27 @@ class Function:
         return cls(c_obj.name, c_obj.return_type, c_obj.params, c_obj.exec_space)
 
 
-class FunctionTemplate:
+class FunctionTemplate(bindings.Template):
     def __init__(
         self,
         template_parameters: list[bindings.TemplateParam],
-        function: Function,
         num_min_required_args: int,
+        function: Function,
     ):
-        self.template_parameters = template_parameters
+        super().__init__(template_parameters, num_min_required_args)
         self.function = function
-        self.num_min_required_args = num_min_required_args
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.FunctionTemplate):
         return cls(
             c_obj.template_parameters,
-            Function.from_c_obj(c_obj.function),
             c_obj.num_min_required_args,
+            Function.from_c_obj(c_obj.function),
         )
+
+    def instantiate(self, **kwargs):
+        tfunc = FunctionInstantiation(self)
+        return tfunc.instantiate(**kwargs)
 
 
 class StructMethod(Function):
@@ -271,28 +276,7 @@ class Struct:
 
 
 class TemplatedStruct(Struct):
-    def __init__(
-        self,
-        name: str,
-        fields: list[bindings.Field],
-        methods: list[TemplatedStructMethod],
-        templated_methods: list[FunctionTemplate],
-        nested_records: list[bindings.Record],
-        nested_class_templates: list[bindings.ClassTemplate],
-        sizeof_: int,
-        alignof_: int,
-    ):
-        super().__init__(
-            name,
-            fields,
-            [],
-            templated_methods,
-            nested_records,
-            nested_class_templates,
-            sizeof_,
-            alignof_,
-        )
-        self.methods = methods
+    templated_methods: list[TemplatedStructMethod]
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.Record):
@@ -310,17 +294,20 @@ class TemplatedStruct(Struct):
         )
 
 
-class ClassTemplate:
+class ClassTemplate(bindings.Template):
     def __init__(
         self,
         record: bindings.Record,
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
     ):
+        super().__init__(template_parameters, num_min_required_args)
         self.record = TemplatedStruct.from_c_obj(record)
-        self.template_parameters = template_parameters
-        self.num_min_required_args = num_min_required_args
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.ClassTemplate):
         return cls(c_obj.record, c_obj.template_parameters, c_obj.num_min_required_args)
+
+    def instantiate(self, **kwargs):
+        tstruct = ClassInstantiation(self)
+        return tstruct.instantiate(**kwargs)
