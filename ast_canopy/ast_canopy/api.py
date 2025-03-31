@@ -13,7 +13,7 @@ from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
 
 import pylibastcanopy as bindings
 
-from ast_canopy.decl import Function, Struct, ClassTemplate
+from ast_canopy.decl import Function, Struct, FunctionTemplate, ClassTemplate
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
@@ -23,7 +23,7 @@ logger = logging.getLogger(f"AST_Canopy.{__name__}")
 class Declarations:
     structs: list[Struct]
     functions: list[Function]
-    function_templates: list[bindings.FunctionTemplate]
+    function_templates: list[FunctionTemplate]
     class_templates: list[ClassTemplate]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
@@ -148,14 +148,7 @@ def parse_declarations_from_source(
     additional_includes: list[str] = [],
     anon_filename_decl_prefix_allowlist: list[str] = [],
     verbose: bool = False,
-) -> tuple[
-    list[Struct],
-    list[Function],
-    list[bindings.FunctionTemplate],
-    list[ClassTemplate],
-    list[bindings.Typedef],
-    list[bindings.Enum],
-]:
+) -> Declarations:
     """Given a source file, parse all *top-level* declarations from it.
     Returns a tuple that each contains a list of declaration objects for the source file.
 
@@ -200,9 +193,7 @@ def parse_declarations_from_source(
 
     Returns
     -------
-    tuple:
-        A tuple containing lists of declaration objects from the source file.
-        See decl.py and pylibastcanopy.pyi for the declaration object types.
+    Declarations: See `Declarations` struct definition for detail.
     """
 
     if not os.path.exists(source_file_path):
@@ -280,6 +271,9 @@ def parse_declarations_from_source(
 
     structs = [Struct.from_c_obj(c_obj) for c_obj in decls.records]
     functions = [Function.from_c_obj(c_obj) for c_obj in decls.functions]
+    function_templates = [
+        FunctionTemplate.from_c_obj(c_obj) for c_obj in decls.function_templates
+    ]
     class_templates = [
         ClassTemplate.from_c_obj(c_obj) for c_obj in decls.class_templates
     ]
@@ -287,7 +281,7 @@ def parse_declarations_from_source(
     return Declarations(
         structs,
         functions,
-        decls.function_templates,
+        function_templates,
         class_templates,
         decls.typedefs,
         decls.enums,

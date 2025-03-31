@@ -157,7 +157,9 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           }));
 
   py::class_<Template>(m, "Template")
+      .def(py::init<std::vector<TemplateParam>, std::size_t>())
       .def_readwrite("template_parameters", &Template::template_parameters)
+      .def_readwrite("num_min_required_args", &Template::num_min_required_args)
       .def(py::pickle(
           [](const Template &t) {
             return py::make_tuple(t.template_parameters,
