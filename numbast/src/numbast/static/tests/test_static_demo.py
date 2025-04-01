@@ -23,7 +23,7 @@ def decl(data_folder):
 
     assert len(structs) == 1
 
-    SSR = StaticStructsRenderer(structs, specs)
+    SSR = StaticStructsRenderer(structs, specs, header)
 
     bindings = SSR.render_as_str(
         with_prefix=True, with_imports=True, with_shim_functions=True

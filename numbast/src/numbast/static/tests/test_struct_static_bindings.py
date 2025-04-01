@@ -33,7 +33,7 @@ def decl(data_folder, header):
 
     assert len(structs) == 3
 
-    SSR = StaticStructsRenderer(structs, specs)
+    SSR = StaticStructsRenderer(structs, specs, header)
 
     bindings = SSR.render_as_str(
         with_prefix=True, with_imports=True, with_shim_functions=True
@@ -100,6 +100,24 @@ def test_myint_cast(decl, impl):
     def kernel(arr):
         i = MyInt(42)
         arr[0] = int32(i)
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([42])
+
+
+def test_static_type_check(decl, impl):
+    MyInt = decl["MyInt"]
+
+    from numba.types import int32
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        i = MyInt(42)
+        if isinstance(i, MyInt):
+            arr[0] = int32(i)
+        else:
+            arr[0] = 0
 
     arr = device_array((1,), "int32")
     kernel[1, 1](arr)

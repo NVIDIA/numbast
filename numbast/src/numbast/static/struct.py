@@ -13,7 +13,11 @@ from numba.core.datamodel.models import StructModel, PrimitiveModel
 from pylibastcanopy import access_kind
 from ast_canopy.decl import Struct, StructMethod
 
-from numbast.static.renderer import BaseRenderer, get_rendered_imports
+from numbast.static.renderer import (
+    BaseRenderer,
+    get_rendered_imports,
+    get_shim_stream_obj,
+)
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
 from numbast.utils import (
     deduplicate_overloads,
@@ -33,11 +37,9 @@ class StaticStructMethodRenderer(BaseRenderer):
     TODO: merge all common code paths
     """
 
-    shim_name_local = "shim"
-
     c_ext_shim_var_template = """
 shim_raw_str = \"\"\"{shim_rendered}\"\"\"
-{shim_name_local} = CUSource(shim_raw_str)
+shim_stream.write(shim_raw_str)
 """
 
 
@@ -82,7 +84,7 @@ extern "C" __device__ int
     struct_ctor_lowering_template = """
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
-    context._external_linkage.add({shim_name_local})
+    context._external_linkage.add(shim_obj)
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(argptrs, sig.args, args):
@@ -108,10 +110,10 @@ def ctor_impl(context, builder, sig, args):
 """
 
     lower_overload_scope_template = """
-def {lower_scope_name}():
+def {lower_scope_name}(shim_stream, shim_obj):
 {body}
 
-{lower_scope_name}()
+{lower_scope_name}(shim_stream, shim_obj)
 """
 
     struct_ctor_signature_template = "signature({struct_type_name}, {arglist})"
@@ -225,11 +227,9 @@ def {lower_scope_name}():
             shim_name=self._deduplicated_shim_name,
             struct_name=self._struct_name,
             params=self._ctor_decl.params,
-            includes=[self._header_path],
         )
 
         self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
-            shim_name_local=self.shim_name_local,
             shim_rendered=self._c_ext_shim_rendered,
         )
 
@@ -246,7 +246,6 @@ def {lower_scope_name}():
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._device_caller_name,
             pointer_wrapped_args=self._pointer_wrapped_param_types_str,
-            shim_name_local=self.shim_name_local,
         )
 
     def _render(self):
@@ -263,7 +262,6 @@ def {lower_scope_name}():
             shim_var=self._c_ext_shim_var_rendered,
             decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
-            shim_name_local=self.shim_name_local,
         )
         lower_body = indent(lower_body, " " * 4)
 
@@ -431,7 +429,7 @@ def {caller_name}(arg):
     struct_conversion_op_lowering_template = """
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
-    context._external_linkage.add({shim_name_local})
+    context._external_linkage.add(shim_obj)
     ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
 
@@ -453,10 +451,10 @@ def impl(context, builder, fromty, toty, value):
 """
 
     lower_scope_template = """
-def {lower_scope_name}():
+def {lower_scope_name}(shim_stream, shim_obj):
 {body}
 
-{lower_scope_name}()
+{lower_scope_name}(shim_stream, shim_obj)
 """
 
     def __init__(
@@ -531,11 +529,9 @@ def {lower_scope_name}():
             struct_name=self._struct_name,
             method_name=self._convop_decl.name,
             return_type=self._cast_to_type.name,
-            includes=[self._header_path],
         )
 
         self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
-            shim_name_local=self.shim_name_local,
             shim_rendered=self._c_ext_shim_rendered,
         )
 
@@ -551,7 +547,6 @@ def {lower_scope_name}():
             cast_to_type=self._nb_cast_to_type_str,
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._caller_name,
-            shim_name_local=self.shim_name_local,
         )
 
     def _render(self):
@@ -568,7 +563,6 @@ def {lower_scope_name}():
             shim_var=self._c_ext_shim_var_rendered,
             decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
-            shim_name_local=self.shim_name_local,
         )
         lower_body = indent(lower_body, " " * 4)
 
@@ -672,6 +666,8 @@ class {struct_type_class_name}({parent_type}):
     python_api_template = """
 # Make Python API for struct
 {struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_type_name}}})
+
+as_numba_type.register({struct_name}, {struct_type_name})
 """
 
     primitive_data_model_template = """
@@ -770,6 +766,8 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         This is the python handle to use it in Numba kernels.
         """
+        self.Imports.add("from numba.extending import as_numba_type")
+
         self._python_api_rendered = self.python_api_template.format(
             struct_type_name=self._struct_type_name, struct_name=self._struct_name
         )
@@ -1008,11 +1006,13 @@ class StaticStructsRenderer(BaseRenderer):
             python_rendered.append(py)
 
         self._python_str = ""
-        if with_prefix:
-            self._python_str += "\n" + self.Prefix
 
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
+
+        if with_prefix:
+            self._python_str += "\n" + self.Prefix
+            self._python_str += "\n" + get_shim_stream_obj(self._default_header)
 
         self._python_str += "\n" + "\n".join(python_rendered)
 

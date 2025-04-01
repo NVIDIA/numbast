@@ -20,6 +20,7 @@ from pylibastcanopy import Enum, Typedef
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_prefix,
+    get_shim_stream_obj,
     get_rendered_imports,
 )
 from numbast.static.struct import StaticStructsRenderer
@@ -277,6 +278,8 @@ def _static_binding_generator(
         click.echo(f"Unable to extract base name from {entry_point}.")
         return
 
+    entry_point = os.path.abspath(entry_point)
+
     # TODO: we don't have tests on different compute capabilities for the static binding generator yet.
     # This will be added in future PRs.
     decls = parse_declarations_from_source(
@@ -307,6 +310,7 @@ def _static_binding_generator(
     function_bindings = _generate_functions(functions, entry_point, exclude_functions)
 
     prefix_str = get_prefix()
+    shim_stream_str = get_shim_stream_obj(header=entry_point)
     imports_str = get_rendered_imports()
 
     # Example: Save the processed output to the output directory
@@ -319,6 +323,8 @@ def _static_binding_generator(
 {imports_str}
 # Prefixes:
 {prefix_str}
+# Shim Stream:
+{shim_stream_str}
 # Enums:
 {enum_bindings}
 # Structs:
