@@ -286,3 +286,55 @@ def parse_declarations_from_source(
         decls.typedefs,
         decls.enums,
     )
+
+
+def value_from_constexpr_vardecl(
+    source: str,
+    vardecl_name: str,
+    compute_capability: str,
+    cxx_standard: str = "c++17",
+    verbose: bool = False,
+) -> bindings.ConstExprVar | None:
+    """Extract the values from constexpr VarDecl of given name."""
+
+    with tempfile.NamedTemporaryFile(mode="w") as f:
+        f.write(source)
+        f.flush()
+
+        clang_resource_file = (
+            subprocess.check_output(["clang++", "-print-resource-dir"]).decode().strip()
+        )
+
+        clang_search_paths = get_default_compiler_search_paths()
+
+        def custom_cuda_home() -> list[str]:
+            cuda_path = get_default_cuda_path()
+            if cuda_path:
+                return [f"--cuda-path={cuda_path}"]
+            else:
+                return []
+
+        cudatoolkit_include_dir: str = get_default_cuda_compiler_include()
+        command_line_options = [
+            "clang++",
+            "--cuda-device-only",
+            "-xcuda",
+            f"--cuda-gpu-arch={compute_capability}",
+            *custom_cuda_home(),
+            f"-std={cxx_standard}",
+            f"-isystem{clang_resource_file}/include/",
+            *[f"-I{path}" for path in clang_search_paths],
+            f"-I{cudatoolkit_include_dir}",
+            f.name,
+        ]
+
+        with capture_fd(STREAMFD.STDERR) as cap:
+            result = bindings.value_from_constexpr_vardecl(
+                command_line_options, vardecl_name
+            )
+
+        werr = cap.snap()
+        if werr and verbose:
+            print(werr)
+
+        return result

@@ -6,6 +6,12 @@ class ClassTemplate(Template):
     record: Incomplete
     def __init__(self, *args, **kwargs) -> None: ...
 
+class ConstExprVar:
+    name: str
+    type_: Type
+    value: str
+    def __init__(self) -> None: ...
+
 class Declarations:
     class_templates: list[ClassTemplate]
     enums: list[Enum]
@@ -61,8 +67,9 @@ class Record:
     def __init__(self, *args, **kwargs) -> None: ...
 
 class Template:
+    num_min_required_args: int
     template_parameters: list[TemplateParam]
-    def __init__(self, *args, **kwargs) -> None: ...
+    def __init__(self, arg0: list[TemplateParam], arg1: int) -> None: ...
 
 class TemplateParam:
     kind: template_param_kind
@@ -160,5 +167,6 @@ class template_param_kind:
     def value(self) -> int: ...
 
 def parse_declarations_from_command_line(
-    arg0: list[str], arg1: list[str]
+    arg0: list[str], arg1: list[str], arg2: list[str]
 ) -> Declarations: ...
+def value_from_constexpr_vardecl(arg0: list[str], arg1: str) -> ConstExprVar | None: ...

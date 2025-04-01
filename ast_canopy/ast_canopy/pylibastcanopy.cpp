@@ -80,6 +80,12 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[2].cast<bool>(), t[3].cast<bool>()};
           }));
 
+  py::class_<ConstExprVar>(m, "ConstExprVar")
+      .def(py::init<>())
+      .def_readwrite("type_", &ConstExprVar::type_)
+      .def_readwrite("name", &ConstExprVar::name)
+      .def_readwrite("value", &ConstExprVar::value);
+
   py::class_<Field>(m, "Field")
       .def_readwrite("name", &Field::name)
       .def_readwrite("type_", &Field::type)
@@ -269,4 +275,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
   m.def("parse_declarations_from_command_line",
         &parse_declarations_from_command_line,
         "Parse declarations from command line options.");
+
+  m.def("value_from_constexpr_vardecl", &value_from_constexpr_vardecl,
+        "Get the value of a constexpr variable declaration.");
 }

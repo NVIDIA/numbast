@@ -14,7 +14,7 @@ import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function, Struct
-from pylibastcanopy import Enum, Typedef
+from ast_canopy.pylibastcanopy import Enum, Typedef
 
 from numbast.static import reset_renderer
 from numbast.static.renderer import (

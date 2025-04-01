@@ -28,6 +28,11 @@ struct traverse_ast_payload {
   std::vector<std::string> *prefixes_to_whitelist;
 };
 
+struct vardecl_matcher_payload {
+  std::string_view name_to_match;
+  std::optional<ConstExprVar> var;
+};
+
 std::string source_filename_from_decl(const Decl *);
 
 class FunctionCallback : public MatchFinder::MatchCallback {
@@ -82,6 +87,15 @@ public:
 
 private:
   traverse_ast_payload *payload;
+};
+
+class ConstexprVarDeclCallback : public MatchFinder::MatchCallback {
+public:
+  ConstexprVarDeclCallback(vardecl_matcher_payload *);
+  void run(const MatchFinder::MatchResult &) override;
+
+private:
+  vardecl_matcher_payload *payload;
 };
 
 } // namespace detail
