@@ -3,7 +3,9 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(astcanopy VERSION 0.2.0 LANGUAGES C CXX)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION" _version)
+
+project(astcanopy VERSION ${_version} LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -87,7 +89,7 @@ include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
-  VERSION 0.2.0
+  VERSION ${_version}
   COMPATIBILITY SameMajorVersion)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake

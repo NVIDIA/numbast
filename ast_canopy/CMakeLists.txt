@@ -13,7 +13,7 @@ project(${SKBUILD_PROJECT_NAME}
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
-find_package(astcanopy 0.2.0 REQUIRED)
+find_package(astcanopy ${SKBUILD_PROJECT_VERSION} REQUIRED)
 
 python_add_library(pylibastcanopy MODULE ast_canopy/pylibastcanopy.cpp WITH_SOABI)
 
@@ -23,3 +23,7 @@ target_link_libraries(pylibastcanopy PRIVATE pybind11::headers)
 target_link_libraries(pylibastcanopy PUBLIC astcanopy::astcanopy)
 
 install(TARGETS pylibastcanopy LIBRARY DESTINATION .)
+
+# Make a copy of the VERSION file into the python package so that its
+# available via .__version__ call.
+install(FILE VERSION DESTINATION ${SKBUILD_PROJECT_NAME})

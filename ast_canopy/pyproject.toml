@@ -7,11 +7,15 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "ast_canopy"
-version = "0.2.1"
 
 [tool.scikit-build]
 cmake.targets = ["pylibastcanopy"]
 wheel.license-files = ["../LICENSE"]
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "ast_canopy/VERSION"
+regex = "(?Pvalue.*)"
 
 [tool.ruff]
 line-length = 88
