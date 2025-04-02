@@ -23,7 +23,3 @@ target_link_libraries(pylibastcanopy PRIVATE pybind11::headers)
 target_link_libraries(pylibastcanopy PUBLIC astcanopy::astcanopy)
 
 install(TARGETS pylibastcanopy LIBRARY DESTINATION .)
-
-# Make a copy of the VERSION file into the python package so that its
-# available via .__version__ call.
-install(FILES VERSION DESTINATION ${SKBUILD_PROJECT_NAME})
