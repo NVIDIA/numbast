@@ -26,4 +26,4 @@ install(TARGETS pylibastcanopy LIBRARY DESTINATION .)
 
 # Make a copy of the VERSION file into the python package so that its
 # available via .__version__ call.
-install(FILE VERSION DESTINATION ${SKBUILD_PROJECT_NAME})
+install(FILES VERSION DESTINATION ${SKBUILD_PROJECT_NAME})
