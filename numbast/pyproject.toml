@@ -24,7 +24,7 @@ dependencies= [
 ]
 
 [tool.setuptools.dynamic]
-version = {file = "VERSION"}
+version = {file = "src/numbast/VERSION"}
 
 [project.scripts]
 numbast = "numbast.tool:static_binding_generator"
