@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {% set version = load_file_regex(
-    load_file="ast_canopy/VERSION",
+    load_file="VERSION",
     regex_pattern="(?P<value>.*)"
 )[0] %}
 {% set data = load_file_data("pyproject.toml") %}
