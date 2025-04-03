@@ -3,7 +3,7 @@ import os
 import pytest
 
 from ast_canopy import parse_declarations_from_source
-from ast_canopy.pylibastcanopy import template_param_kind
+from pylibastcanopy import template_param_kind
 
 
 @pytest.fixture(scope="module")
@@ -33,6 +33,7 @@ def test_parse_constexpr_function_template(sample_constexpr_function_template):
     assert func_temp[0].template_parameters[0].kind == template_param_kind.type_
     assert func_temp[0].template_parameters[1].name == "TB"
     assert func_temp[0].template_parameters[1].kind == template_param_kind.type_
+    assert func_temp[0].function.is_constexpr
 
     assert class_temp[0].record.name == "foo_t"
     assert len(class_temp[0].template_parameters) == 1

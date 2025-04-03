@@ -34,7 +34,7 @@ def smem(decls):
     return decls.function_templates[0]
 
 
-def test_instantiation(sample_constexpr_function_template, foo_t, smem):
+def test_value_from_vardecl(sample_constexpr_function_template, foo_t, smem):
     foo_t_one = foo_t.instantiate(N=1)
     foo_t_two = foo_t.instantiate(N=2)
 
@@ -71,3 +71,11 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
     assert res.value == "3"
     assert res.type_.name == "const unsigned int"
     assert res.name == "ast_canopy_var_value__"
+
+    # res = smem_three.evaluate_constexpr_value(
+    #     foo_t_one, foo_t_two, header=sample_constexpr_function_template)
+
+    # assert res is not None
+    # assert res.value == "3"
+    # assert res.type_.name == "const unsigned int"
+    # assert res.name == "ast_canopy_var_value__"

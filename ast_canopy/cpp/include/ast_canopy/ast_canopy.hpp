@@ -128,6 +128,7 @@ struct Function {
   Type return_type;
   std::vector<ParamVar> params;
   execution_space exec_space;
+  bool is_constexpr;
 };
 
 struct FunctionTemplate : public Template {

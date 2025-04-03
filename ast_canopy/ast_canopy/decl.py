@@ -55,6 +55,7 @@ class Function:
         return_type: bindings.Type,
         params: list[bindings.ParamVar],
         exec_space: bindings.execution_space,
+        is_constexpr: bool,
     ):
         self.name = name
         self.return_type = return_type
@@ -62,6 +63,7 @@ class Function:
         self.is_operator = self.name.startswith("operator")
         self._op_str = self.name[8:] if self.is_operator else None
         self.exec_space = exec_space
+        self.is_constexpr = is_constexpr
 
     def __str__(self):
         return f"{self.name}({', '.join(str(p) for p in self.params)}) -> {self.return_type}"
@@ -140,7 +142,13 @@ class Function:
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.Function):
-        return cls(c_obj.name, c_obj.return_type, c_obj.params, c_obj.exec_space)
+        return cls(
+            c_obj.name,
+            c_obj.return_type,
+            c_obj.params,
+            c_obj.exec_space,
+            c_obj.is_constexpr,
+        )
 
 
 class FunctionTemplate(bindings.Template):
@@ -174,9 +182,10 @@ class StructMethod(Function):
         params: list[bindings.ParamVar],
         kind: bindings.method_kind,
         exec_space: bindings.execution_space,
+        is_constexpr: bool,
         is_move_constructor: bool = False,
     ):
-        super().__init__(name, return_type, params, exec_space)
+        super().__init__(name, return_type, params, exec_space, is_constexpr)
         self.kind = kind
         self.is_move_constructor = is_move_constructor
 
@@ -202,6 +211,7 @@ class StructMethod(Function):
             c_obj.params,
             c_obj.kind,
             c_obj.exec_space,
+            c_obj.is_constexpr,
             c_obj.is_move_constructor(),
         )
 
@@ -262,11 +272,10 @@ class Struct:
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.Record):
-        methods = [StructMethod.from_c_obj(m) for m in c_obj.methods]
         return cls(
             c_obj.name,
             c_obj.fields,
-            methods,
+            [StructMethod.from_c_obj(m) for m in c_obj.methods],
             [FunctionTemplate.from_c_obj(tm) for tm in c_obj.templated_methods],
             c_obj.nested_records,
             c_obj.nested_class_templates,

@@ -193,7 +193,7 @@ def test_load_ast_functions(sample_function_source, test_pickle):
         pickled = [pickle.dumps(f) for f in functions]
         functions = [pickle.loads(p) for p in pickled]
 
-    assert len(functions) == 4
+    assert len(functions) == 5
     assert functions[0].name == "add"
     assert functions[0].return_type.name == "int"
     args = functions[0].params
@@ -224,6 +224,13 @@ def test_load_ast_functions(sample_function_source, test_pickle):
     assert functions[3].name == "add_hostdevice"
     assert functions[3].return_type.name == "int"
     args = functions[3].params
+    assert [a.name for a in args] == ["a", "b"]
+    assert [a.type_.name for a in args] == ["int", "int"]
+
+    assert functions[4].name == "add_constexpr"
+    assert functions[4].return_type.name == "int"
+    assert functions[4].is_constexpr
+    args = functions[4].params
     assert [a.name for a in args] == ["a", "b"]
     assert [a.type_.name for a in args] == ["int", "int"]
 

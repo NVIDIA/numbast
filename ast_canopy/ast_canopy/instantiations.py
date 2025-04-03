@@ -24,7 +24,6 @@ class BaseInstantiation:
             raise ValueError(
                 f"Invalid template parameter names: {self.instantiated_args.keys()}, allowed template parameter names: {self._template_param_names}"
             )
-        pass
 
     @property
     def param_list(self):
@@ -57,6 +56,39 @@ class FunctionInstantiation(BaseInstantiation):
     @property
     def name(self):
         return self.function.name
+
+    def evaluate_constexpr_value(self, *args, header=None):
+        if not self.function.is_constexpr:
+            raise ValueError("Function is not constexpr")
+
+        assembled_code_template = """
+#include <{header}>
+{argument_decls}
+__device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
+"""
+
+        # Construct default-initialized arguments.
+        argument_decls = ""
+        for i, arg in enumerate(args):
+            argument_decls += f"__device__ {arg.get_instantiated_c_stmt()} arg_{i};\n"
+
+        fml_arglist = ",".join([f"arg_{i}" for i in range(len(args))])
+        tfunc_instantiation = self.get_instantiated_c_stmt() + f"({fml_arglist})"
+
+        assembled_code = assembled_code_template.format(
+            header=header,
+            argument_decls=argument_decls,
+            tfunc_instantiation=tfunc_instantiation,
+        )
+
+        res = ast_canopy.value_from_constexpr_vardecl(
+            assembled_code,
+            "ast_canopy_var_value__ ",
+            "sm_80",
+            verbose=True,
+        )
+
+        return res
 
 
 class ClassInstantiation(BaseInstantiation):

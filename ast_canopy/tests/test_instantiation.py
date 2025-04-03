@@ -39,6 +39,8 @@ def test_instantiation(foo_t, smem):
     foo_t_two = foo_t.instantiate(N=2)
 
     smem_three = smem.instantiate(TA=foo_t_one, TB=foo_t_two)
+    # just demoing that ast_canopy knows the intention that TA and TB are named
+    # tparams and the instantiation will order them accordingly.
     smem_three_2 = smem.instantiate(TB=foo_t_two, TA=foo_t_one)
 
     assert foo_t_one.get_instantiated_c_stmt() == "foo_t<1>"
