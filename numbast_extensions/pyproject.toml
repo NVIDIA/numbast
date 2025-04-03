@@ -41,7 +41,7 @@ exclude = [
 ]
 
 [tool.setuptools.dynamic]
-version = {file = "numbast_extensions/VERSION"}
+version = {file = "VERSION"}
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E402"]
