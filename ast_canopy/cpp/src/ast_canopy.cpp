@@ -37,11 +37,8 @@ std::string source_filename_from_decl(const Decl *D) {
   return file_name;
 }
 
-} // namespace detail
-
-Declarations parse_declarations_from_command_line(
-    std::vector<std::string> options, std::vector<std::string> files_to_retain,
-    std::vector<std::string> whitelist_prefixes) {
+std::unique_ptr<ASTUnit>
+default_ast_unit_from_command_line(const std::vector<std::string> &options) {
 
   std::vector<const char *> option_ptrs;
   for (auto &opt : options) {
@@ -64,6 +61,17 @@ Declarations parse_declarations_from_command_line(
 
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, Diags, ""));
+
+  return ast;
+}
+
+} // namespace detail
+
+Declarations parse_declarations_from_command_line(
+    std::vector<std::string> options, std::vector<std::string> files_to_retain,
+    std::vector<std::string> whitelist_prefixes) {
+
+  auto ast = detail::default_ast_unit_from_command_line(options);
 
   Declarations decls;
   std::unordered_map<int64_t, std::string> record_id_to_name;
@@ -122,6 +130,27 @@ Declarations parse_declarations_from_command_line(
 #endif
 
   return decls;
+}
+
+std::optional<ConstExprVar>
+value_from_constexpr_vardecl(std::vector<std::string> options,
+                             std::string vardecl_name) {
+
+  auto ast = detail::default_ast_unit_from_command_line(options);
+
+  detail::vardecl_matcher_payload payload{vardecl_name, std::nullopt};
+
+  MatchFinder finder;
+
+  detail::ConstexprVarDeclCallback constexpr_vardecl_callback(&payload);
+
+  // Match all VarDecl declared with constexpr.
+  finder.addMatcher(varDecl(isConstexpr()).bind("constexpr_vardecl"),
+                    &constexpr_vardecl_callback);
+
+  finder.matchAST(ast->getASTContext());
+
+  return std::move(payload.var);
 }
 
 } // namespace ast_canopy

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -64,6 +65,15 @@ private:
   bool _is_left_reference;
 };
 
+struct ConstExprVar {
+  ConstExprVar() = default;
+  ConstExprVar(const clang::VarDecl *VD);
+
+  Type type_;
+  std::string name;
+  std::string value;
+};
+
 struct Field {
   Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS);
   Field(const std::string &name, const Type &type, const access_kind &access)
@@ -118,6 +128,7 @@ struct Function {
   Type return_type;
   std::vector<ParamVar> params;
   execution_space exec_space;
+  bool is_constexpr;
 };
 
 struct FunctionTemplate : public Template {
@@ -205,5 +216,9 @@ struct Declarations {
 Declarations parse_declarations_from_command_line(
     std::vector<std::string> options, std::vector<std::string> files_to_retain,
     std::vector<std::string> whitelist_prefixes);
+
+std::optional<ConstExprVar>
+value_from_constexpr_vardecl(std::vector<std::string> clang_options,
+                             std::string vardecl_name);
 
 } // namespace ast_canopy

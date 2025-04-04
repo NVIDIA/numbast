@@ -17,6 +17,8 @@ int __device__ add2(int &&a, int &&b) { return a + b; }
 
 int __CUDA_HOSTDEVICE__ add_hostdevice(int a, int b) { return a + b; }
 
+int __device__ constexpr add_constexpr(int a, int b) { return a + b; }
+
 // Template functions are not parsed in the "function" list,
 // rather it is parsed in the "function template" list
 template <typename T> __CUDA_HOSTDEVICE__ T add_template(T a, T b) {

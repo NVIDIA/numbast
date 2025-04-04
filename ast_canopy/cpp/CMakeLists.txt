@@ -24,12 +24,14 @@ add_library(astcanopy SHARED
             src/template_param.cpp
             src/type.cpp
             src/typedef.cpp
+            src/constexpr_vardecl.cpp
             src/detail/matchers/function_matcher.cpp
             src/detail/matchers/record_matcher.cpp
             src/detail/matchers/typedef_matcher.cpp
             src/detail/matchers/function_template_matcher.cpp
             src/detail/matchers/class_template_matcher.cpp
-            src/detail/matchers/enum_matcher.cpp)
+            src/detail/matchers/enum_matcher.cpp
+            src/detail/matchers/constexpr_vardecl_matcher.cpp)
 
 # Define the public headers for astcanopy here.
 target_sources(astcanopy

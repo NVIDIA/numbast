@@ -80,6 +80,12 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[2].cast<bool>(), t[3].cast<bool>()};
           }));
 
+  py::class_<ConstExprVar>(m, "ConstExprVar")
+      .def(py::init<>())
+      .def_readwrite("type_", &ConstExprVar::type_)
+      .def_readwrite("name", &ConstExprVar::name)
+      .def_readwrite("value", &ConstExprVar::value);
+
   py::class_<Field>(m, "Field")
       .def_readwrite("name", &Field::name)
       .def_readwrite("type_", &Field::type)
@@ -142,6 +148,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("return_type", &Function::return_type)
       .def_readwrite("params", &Function::params)
       .def_readwrite("exec_space", &Function::exec_space)
+      .def_readwrite("is_constexpr", &Function::is_constexpr)
       .def(py::pickle(
           [](const Function &f) {
             return py::make_tuple(f.name, f.return_type, f.params,
@@ -157,7 +164,9 @@ PYBIND11_MODULE(pylibastcanopy, m) {
           }));
 
   py::class_<Template>(m, "Template")
+      .def(py::init<std::vector<TemplateParam>, std::size_t>())
       .def_readwrite("template_parameters", &Template::template_parameters)
+      .def_readwrite("num_min_required_args", &Template::num_min_required_args)
       .def(py::pickle(
           [](const Template &t) {
             return py::make_tuple(t.template_parameters,
@@ -267,4 +276,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
   m.def("parse_declarations_from_command_line",
         &parse_declarations_from_command_line,
         "Parse declarations from command line options.");
+
+  m.def("value_from_constexpr_vardecl", &value_from_constexpr_vardecl,
+        "Get the value of a constexpr variable declaration.");
 }
