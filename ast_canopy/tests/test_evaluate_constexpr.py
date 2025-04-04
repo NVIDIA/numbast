@@ -34,7 +34,7 @@ def smem(decls):
     return decls.function_templates[0]
 
 
-def test_value_from_vardecl(sample_constexpr_function_template, foo_t, smem):
+def test_evaluate_constexpr(sample_constexpr_function_template, foo_t, smem):
     # Python API to allow tracking instantiation
     foo_t_one = foo_t.instantiate(N=1)
     foo_t_two = foo_t.instantiate(N=2)
