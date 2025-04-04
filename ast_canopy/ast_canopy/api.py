@@ -269,13 +269,17 @@ def parse_declarations_from_source(
                 "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
             )
 
-    structs = [Struct.from_c_obj(c_obj) for c_obj in decls.records]
-    functions = [Function.from_c_obj(c_obj) for c_obj in decls.functions]
+    structs = [Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records]
+    functions = [
+        Function.from_c_obj(c_obj, source_file_path) for c_obj in decls.functions
+    ]
     function_templates = [
-        FunctionTemplate.from_c_obj(c_obj) for c_obj in decls.function_templates
+        FunctionTemplate.from_c_obj(c_obj, source_file_path)
+        for c_obj in decls.function_templates
     ]
     class_templates = [
-        ClassTemplate.from_c_obj(c_obj) for c_obj in decls.class_templates
+        ClassTemplate.from_c_obj(c_obj, source_file_path)
+        for c_obj in decls.class_templates
     ]
 
     return Declarations(
