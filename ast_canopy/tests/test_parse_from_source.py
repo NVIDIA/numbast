@@ -181,6 +181,11 @@ def test_load_ast_structs(sample_struct_source, test_pickle):
         s.templated_methods[0].template_parameters[0].type_.name == "type-parameter-0-0"
     )
 
+    assert s.parse_entry_point == sample_struct_source
+    for func in s.methods:
+        assert func.parse_entry_point == sample_struct_source
+    s.templated_methods[0].parse_entry_point == sample_struct_source
+
 
 def test_load_ast_functions(sample_function_source, test_pickle):
     decls = parse_declarations_from_source(
@@ -233,6 +238,9 @@ def test_load_ast_functions(sample_function_source, test_pickle):
     args = functions[4].params
     assert [a.name for a in args] == ["a", "b"]
     assert [a.type_.name for a in args] == ["int", "int"]
+
+    for func in functions:
+        assert func.parse_entry_point == sample_function_source
 
 
 def test_load_ast_typedefs(sample_typedef_source, test_pickle):
@@ -302,6 +310,9 @@ def test_load_ast_function_templates(sample_function_template_source, test_pickl
     # ft[1]
     assert ft[1].num_min_required_args == 0
 
+    for f in ft:
+        assert f.parse_entry_point == sample_function_template_source
+
 
 def test_load_ast_class_templates(sample_class_template_source, test_pickle):
     decls = parse_declarations_from_source(
@@ -358,6 +369,8 @@ def test_load_ast_class_templates(sample_class_template_source, test_pickle):
         ct[0].record.templated_methods[0].template_parameters[0].type_.name
         == "type-parameter-1-0"
     )
+
+    assert ct[0].parse_entry_point == sample_class_template_source
 
 
 def test_load_ast_nested_structs(sample_nested_structs_source, test_pickle):

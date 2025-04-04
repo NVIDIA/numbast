@@ -61,6 +61,9 @@ class FunctionInstantiation(BaseInstantiation):
         if not self.function.is_constexpr:
             raise ValueError("Function is not constexpr")
 
+        if header is None:
+            header = self.function.parse_entry_point
+
         assembled_code_template = """
 #include <{header}>
 {argument_decls}
@@ -85,7 +88,6 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
             assembled_code,
             "ast_canopy_var_value__",
             "sm_80",
-            verbose=True,
         )
 
         return res
