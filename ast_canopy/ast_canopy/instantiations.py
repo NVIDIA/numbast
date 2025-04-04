@@ -73,7 +73,7 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
             argument_decls += f"__device__ {arg.get_instantiated_c_stmt()} arg_{i};\n"
 
         fml_arglist = ",".join([f"arg_{i}" for i in range(len(args))])
-        tfunc_instantiation = self.get_instantiated_c_stmt() + f"({fml_arglist})"
+        tfunc_instantiation = self.get_instantiated_c_stmt() + f"({fml_arglist});"
 
         assembled_code = assembled_code_template.format(
             header=header,
@@ -83,7 +83,7 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
 
         res = ast_canopy.value_from_constexpr_vardecl(
             assembled_code,
-            "ast_canopy_var_value__ ",
+            "ast_canopy_var_value__",
             "sm_80",
             verbose=True,
         )

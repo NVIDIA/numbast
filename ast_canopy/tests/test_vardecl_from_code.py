@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from ast_canopy import parse_declarations_from_source, value_from_constexpr_vardecl
+from ast_canopy import parse_declarations_from_source
 
 
 @pytest.fixture(scope="module")
@@ -40,42 +40,16 @@ def test_value_from_vardecl(sample_constexpr_function_template, foo_t, smem):
 
     smem_three = smem.instantiate(TA=foo_t_one, TB=foo_t_two)
 
+    # Python API to allow instantiation
     assert foo_t_one.get_instantiated_c_stmt() == "foo_t<1>"
     assert foo_t_two.get_instantiated_c_stmt() == "foo_t<2>"
     assert smem_three.get_instantiated_c_stmt() == "smem<foo_t<1>, foo_t<2>>"
 
-    assembled_code_template = """
-#include <{header}>
-{argument_decls}
-__device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
-    """
-
-    argument_decls = ""
-    for i, foo_t_it in enumerate([foo_t_one, foo_t_two]):
-        argument_decls += f"__device__ {foo_t_it.get_instantiated_c_stmt()} arg_{i};\n"
-
-    fml_arglist = ",".join([f"arg_{i}" for i in range(2)])
-    tfunc_instantiation = smem_three.get_instantiated_c_stmt() + f"({fml_arglist})"
-
-    assembled_code = assembled_code_template.format(
-        header=sample_constexpr_function_template,
-        argument_decls=argument_decls,
-        tfunc_instantiation=tfunc_instantiation,
-    )
-
-    res = value_from_constexpr_vardecl(
-        assembled_code, "ast_canopy_var_value__", "sm_80", verbose=True
+    # Constexpr evaluation of arguments that are compile time evaluable.
+    res = smem_three.evaluate_constexpr_value(
+        foo_t_one, foo_t_two, header=sample_constexpr_function_template
     )
 
     assert res is not None
     assert res.value == "3"
     assert res.type_.name == "const unsigned int"
-    assert res.name == "ast_canopy_var_value__"
-
-    # res = smem_three.evaluate_constexpr_value(
-    #     foo_t_one, foo_t_two, header=sample_constexpr_function_template)
-
-    # assert res is not None
-    # assert res.value == "3"
-    # assert res.type_.name == "const unsigned int"
-    # assert res.name == "ast_canopy_var_value__"

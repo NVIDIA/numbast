@@ -23,14 +23,13 @@ void ConstexprVarDeclCallback::run(const MatchFinder::MatchResult &Result) {
   const VarDecl *VD =
       Result.Nodes.getNodeAs<clang::VarDecl>("constexpr_vardecl");
 
-#ifndef NDEBUG
-  std::cout << "ConstexprVarDeclCallback::run: " << VD->getNameAsString()
-            << std::endl;
-#endif
-
   std::string name = VD->getNameAsString();
-  if (name == payload->name_to_match)
+  if (name == payload->name_to_match) {
+#ifndef NDEBUG
+    std::cout << "Matched constexpr vardecl: " << name << std::endl;
+#endif
     payload->var = std::move(ConstExprVar(VD));
+  }
 }
 
 } // namespace detail
