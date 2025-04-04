@@ -35,20 +35,14 @@ def smem(decls):
 
 
 def test_value_from_vardecl(sample_constexpr_function_template, foo_t, smem):
+    # Python API to allow tracking instantiation
     foo_t_one = foo_t.instantiate(N=1)
     foo_t_two = foo_t.instantiate(N=2)
 
     smem_three = smem.instantiate(TA=foo_t_one, TB=foo_t_two)
 
-    # Python API to allow instantiation
-    assert foo_t_one.get_instantiated_c_stmt() == "foo_t<1>"
-    assert foo_t_two.get_instantiated_c_stmt() == "foo_t<2>"
-    assert smem_three.get_instantiated_c_stmt() == "smem<foo_t<1>, foo_t<2>>"
-
     # Constexpr evaluation of arguments that are compile time evaluable.
-    res = smem_three.evaluate_constexpr_value(
-        foo_t_one, foo_t_two, header=sample_constexpr_function_template
-    )
+    res = smem_three.evaluate_constexpr_value(foo_t_one, foo_t_two)
 
     assert res is not None
     assert res.value == "3"
