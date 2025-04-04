@@ -43,6 +43,16 @@ CXX_OP_TO_PYTHON_OP = {
 CXX_TYPE_TO_PYTHON_TYPE = {
     "int": int,
     "unsigned int": int,
+    "long": int,
+    "unsigned long": int,
+    "long long": int,
+    "unsigned long long": int,
+    "int16_t": int,
+    "int32_t": int,
+    "int64_t": int,
+    "uint16_t": int,
+    "uint32_t": int,
+    "uint64_t": int,
     "float": float,
     "double": float,
 }
