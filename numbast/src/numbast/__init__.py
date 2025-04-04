@@ -6,12 +6,15 @@ import numba
 numba.config.CUDA_ENABLE_PYNVJITLINK = True
 
 from numbast import numba_patch
-from numbast._version import __version__
 
 from numbast.struct import bind_cxx_struct, bind_cxx_structs
 from numbast.function import bind_cxx_function, bind_cxx_functions
 from numbast.enum import bind_cxx_enum
 from numbast.shim_writer import MemoryShimWriter, FileShimWriter
+
+import importlib.metadata
+
+__version__ = importlib.metadata.version("numbast")
 
 major, minor, *_ = numba.__version__.split(".")
 if int(minor) < 59:
