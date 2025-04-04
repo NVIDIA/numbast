@@ -44,6 +44,4 @@ def test_value_from_vardecl(sample_constexpr_function_template, foo_t, smem):
     # Constexpr evaluation of arguments that are compile time evaluable.
     res = smem_three.evaluate_constexpr_value(foo_t_one, foo_t_two)
 
-    assert res is not None
-    assert res.value == "3"
-    assert res.type_.name == "const unsigned int"
+    assert res == 3

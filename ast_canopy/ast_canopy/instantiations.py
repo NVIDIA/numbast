@@ -90,7 +90,7 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
             "sm_80",
         )
 
-        return res
+        return res.value
 
 
 class ClassInstantiation(BaseInstantiation):

@@ -13,7 +13,13 @@ from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
 
 import pylibastcanopy as bindings
 
-from ast_canopy.decl import Function, Struct, FunctionTemplate, ClassTemplate
+from ast_canopy.decl import (
+    Function,
+    Struct,
+    FunctionTemplate,
+    ClassTemplate,
+    ConstExprVar,
+)
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
@@ -333,7 +339,7 @@ def value_from_constexpr_vardecl(
         ]
 
         with capture_fd(STREAMFD.STDERR) as cap:
-            result = bindings.value_from_constexpr_vardecl(
+            c_result = bindings.value_from_constexpr_vardecl(
                 command_line_options, vardecl_name
             )
 
@@ -341,4 +347,5 @@ def value_from_constexpr_vardecl(
         if werr and verbose:
             print(werr)
 
+        result = ConstExprVar.from_c_obj(c_result) if c_result is not None else None
         return result

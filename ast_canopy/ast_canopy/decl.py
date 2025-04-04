@@ -40,6 +40,13 @@ CXX_OP_TO_PYTHON_OP = {
     "=": None,  # assignment in python can be indexed assignment or sliced assignment, but copy assignment doesn't exist.
 }
 
+CXX_TYPE_TO_PYTHON_TYPE = {
+    "int": int,
+    "unsigned int": int,
+    "float": float,
+    "double": float,
+}
+
 
 class Function:
     """
@@ -358,3 +365,19 @@ class ClassTemplate(Template):
     def instantiate(self, **kwargs):
         tstruct = ClassInstantiation(self)
         return tstruct.instantiate(**kwargs)
+
+
+class ConstExprVar:
+    def __init__(self, name: str, type_: bindings.Type, value_serialized: str):
+        self.name = name
+        self.type_ = type_
+        self.value_serialized = value_serialized
+
+    @classmethod
+    def from_c_obj(cls, c_obj: bindings.ConstExprVar):
+        return cls(c_obj.name, c_obj.type_, c_obj.value)
+
+    @property
+    def value(self):
+        cxx_type_name = self.type_.unqualified_non_ref_type_name
+        return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)
