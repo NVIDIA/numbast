@@ -7,7 +7,7 @@ import os
 
 from pylibastcanopy import Enum
 
-from numbast.static.renderer import BaseRenderer
+from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import register_enum_type_str
 
 file_logger = getLogger(f"{__name__}")
@@ -56,6 +56,7 @@ class StaticEnumsRenderer(BaseRenderer):
     """
 
     def __init__(self, decls: list[Enum]):
+        super().__init__(decls)
         self._decls = decls
 
         self._python_rendered = []
@@ -69,11 +70,11 @@ class StaticEnumsRenderer(BaseRenderer):
             SER._render()
             self._python_rendered.append(SER._python_rendered)
 
+        if with_imports:
+            self._python_str += "\n" + get_rendered_imports()
+
         if with_prefix:
             self._python_str += "\n" + self.Prefix
-
-        if with_imports:
-            self._python_str += "\n" + "\n".join(self.Imports)
 
         self._python_str += "\n" + "\n".join(self._python_rendered)
 
