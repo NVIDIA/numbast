@@ -2,20 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {% set data = load_file_data("pyproject.toml") %}
-{% set version = load_file_regex(
-    load_file="VERSION",
-    regex_pattern="(?P<value>.*)"
-)[0] %}
 {% set project_data = data.get("project") %}
 {% set project_urls = project_data["urls"] %}
 {% set py_version = environ['CONDA_PY'] %}
 
 package:
   name: numbast-extensions
-  version: {{ version }}
+  version: {{ PROJECT_VERSION }}
 
 source:
-  path: ../../../numbast_extensions
+  path: ../../..
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
@@ -36,8 +32,6 @@ build:
     - SCCACHE_S3_KEY_PREFIX=numbast-linux64 # [linux64]
     - SCCACHE_S3_USE_SSL
     - SCCACHE_S3_NO_CREDENTIALS
-  script:
-    - {{ PYTHON }} -m pip install . -vv
 
 requirements:
   build:
@@ -50,7 +44,7 @@ requirements:
     - python
     - numba >=0.59
     - numba-cuda
-    - numbast =={{ version }}
+    - numbast >=0.2.0
 
   test:
     imports:
