@@ -41,7 +41,9 @@ class {enum_name}(IntEnum):
             self._decl.enumerators, self._decl.enumerator_values
         ):
             enumerators.append(
-                self.enumerator_template.format(enumerator=enumerator, value=value)
+                self.enumerator_template.format(
+                    enumerator=enumerator, value=value
+                )
             )
 
         self._python_rendered = self.enum_template.format(
@@ -78,7 +80,11 @@ class StaticEnumsRenderer(BaseRenderer):
         self._python_str += "\n" + "\n".join(self._python_rendered)
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        with_prefix: bool,
+        with_imports: bool,
+        with_shim_functions: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 

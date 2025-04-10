@@ -22,7 +22,10 @@ def run_pytest(lib, test_dir):
     try:
         subprocess.run(command, check=True, capture_output=False)
     except subprocess.CalledProcessError as e:
-        if e.returncode not in {pytest.ExitCode.OK, pytest.ExitCode.NO_TESTS_COLLECTED}:
+        if e.returncode not in {
+            pytest.ExitCode.OK,
+            pytest.ExitCode.NO_TESTS_COLLECTED,
+        }:
             raise e
 
 

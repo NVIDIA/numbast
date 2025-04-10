@@ -159,7 +159,9 @@ def test_arithmetic():
         ],
         atol=1e-2,
     )
-    np.testing.assert_equal(logic, [a == b, a != b, a > b, a < b, a >= b, a <= b])
+    np.testing.assert_equal(
+        logic, [a == b, a != b, a > b, a < b, a >= b, a <= b]
+    )
 
 
 def test_math_func():

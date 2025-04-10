@@ -64,7 +64,9 @@ def bind_cxx_operator_overload_function(
         # copy assignment operator, do not support in Numba / Python, skip
         return None
 
-    return_type = to_numba_type(func_decl.return_type.unqualified_non_ref_type_name)
+    return_type = to_numba_type(
+        func_decl.return_type.unqualified_non_ref_type_name
+    )
     param_types = [
         to_numba_type(arg.unqualified_non_ref_type_name)
         for arg in func_decl.param_types
@@ -128,7 +130,10 @@ def bind_cxx_operator_overload_function(
 
 
 def bind_cxx_non_operator_function(
-    shim_writer: ShimWriter, func_decl: Function, skip_prefix: str, exclude: set[str]
+    shim_writer: ShimWriter,
+    func_decl: Function,
+    skip_prefix: str,
+    exclude: set[str],
 ) -> object:
     """Make bindings for a C++ non operator function.
 
@@ -158,7 +163,9 @@ def bind_cxx_non_operator_function(
         # Non public API
         return None
 
-    return_type = to_numba_type(func_decl.return_type.unqualified_non_ref_type_name)
+    return_type = to_numba_type(
+        func_decl.return_type.unqualified_non_ref_type_name
+    )
     param_types = [
         to_numba_type(arg.unqualified_non_ref_type_name)
         for arg in func_decl.param_types

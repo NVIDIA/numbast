@@ -18,7 +18,9 @@ shim_writer = MemoryShimWriter(f'#include "{source}"')
 
 # Make Numba bindings from the declarations.
 # New type "myfloat16" is a Number type, data model is PrimitiveModel.
-myfloat16 = bind_cxx_struct(shim_writer, structs[0], types.Number, PrimitiveModel)
+myfloat16 = bind_cxx_struct(
+    shim_writer, structs[0], types.Number, PrimitiveModel
+)
 bind_cxx_function(shim_writer, functions[0])
 hsqrt = bind_cxx_function(shim_writer, functions[1])
 

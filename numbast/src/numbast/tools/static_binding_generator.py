@@ -47,7 +47,7 @@ class YamlConfig:
     clang_includes_paths: list[str]
 
     def __init__(self, cfg_path):
-        with open(cfg_path, "r") as f:
+        with open(cfg_path) as f:
             config = yaml.load(f, yaml.Loader)
             self.input_header = config["Entry Point"]
             self.retain_list = config["File List"]
@@ -80,7 +80,9 @@ class YamlConfig:
 
     def _verify_exists(self):
         if not os.path.exists(self.input_header):
-            raise ValueError(f"Input header file does not exist: {self.input_header}")
+            raise ValueError(
+                f"Input header file does not exist: {self.input_header}"
+            )
         for f in self.retain_list:
             if not os.path.exists(f):
                 raise ValueError(f"File in retain list does not exist: {f}")
@@ -103,7 +105,9 @@ class NumbaTypeDictType(click.ParamType):
         try:
             d = json.loads(value)
         except Exception:
-            self.fail(f"{self.name} parameter must be valid JSON string. Got {value}")
+            self.fail(
+                f"{self.name} parameter must be valid JSON string. Got {value}"
+            )
 
         try:
             d = _str_value_to_numba_type(d)
@@ -134,7 +138,9 @@ class NumbaDataModelDictType(click.ParamType):
         try:
             d = json.loads(value)
         except Exception:
-            self.fail(f"{self.name} parameter must be valid JSON string. Got {value}")
+            self.fail(
+                f"{self.name} parameter must be valid JSON string. Got {value}"
+            )
 
         try:
             d = _str_value_to_numba_datamodel(d)
@@ -229,7 +235,8 @@ def log_files_to_generate(
     click.echo("TypeDefs: ")
     click.echo(
         "\n".join(
-            f"  - {typedef.name}: {typedef.underlying_name}" for typedef in typedefs
+            f"  - {typedef.name}: {typedef.underlying_name}"
+            for typedef in typedefs
         )
     )
     click.echo("Functions: ")
@@ -304,7 +311,9 @@ def _static_binding_generator(
         structs, entry_point, types, datamodels, exclude_structs
     )
 
-    function_bindings = _generate_functions(functions, entry_point, exclude_functions)
+    function_bindings = _generate_functions(
+        functions, entry_point, exclude_functions
+    )
 
     prefix_str = get_prefix()
     imports_str = get_rendered_imports()
@@ -340,12 +349,15 @@ def _static_binding_generator(
 @click.command()
 @click.pass_context
 @click.option(
-    "--input-header", type=click.Path(exists=True, dir_okay=False, readable=True)
+    "--input-header",
+    type=click.Path(exists=True, dir_okay=False, readable=True),
 )
 @click.option("--retain")
 @click.option("--types", type=numba_type_dict)
 @click.option("--datamodels", type=numba_datamodel_dict)
-@click.option("--cfg-path", type=click.Path(exists=True, dir_okay=False, readable=True))
+@click.option(
+    "--cfg-path", type=click.Path(exists=True, dir_okay=False, readable=True)
+)
 @click.option(
     "--output-dir",
     type=click.Path(
@@ -391,7 +403,9 @@ def static_binding_generator(
         raise ValueError("Compute capability must start with `sm_`")
 
     if cfg_path:
-        if any(x is not None for x in [input_header, retain, types, datamodels]):
+        if any(
+            x is not None for x in [input_header, retain, types, datamodels]
+        ):
             raise ValueError(
                 "When CFG_PATH specified, none of INPUT_HEADER, RETAIN, TYPES and DATAMODELS should be specified."
             )

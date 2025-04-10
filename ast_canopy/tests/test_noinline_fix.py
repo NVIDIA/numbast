@@ -21,4 +21,6 @@ def test_noinline_macro(sample_noinline_macro):
     with redirect_stdout(buf):
         parse_declarations_from_source(srcstr, [srcstr], "sm_80", verbose=True)
 
-    assert "error: use of undeclared identifier 'noinline'" not in buf.getvalue()
+    assert (
+        "error: use of undeclared identifier 'noinline'" not in buf.getvalue()
+    )
