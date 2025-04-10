@@ -280,7 +280,7 @@ def bind_cxx_struct(
     data_model : DataModel, optional
         Data model for the struct, by default StructModel
     aliases : dict[str, list[str]], optional
-        Mappings from the name of the struct to a list of alises.
+        Mappings from the name of the struct to a list of aliases.
         For example in C++: typedef A B; typedef A C; then
         aliases = {"A": ["B", "C"]}
 
@@ -393,7 +393,7 @@ def bind_cxx_structs(
     data_model : DataModel, optional
         Data model for the struct, by default StructModel
     aliases : dict[str, list[str]], optional
-        Mappings from the name of the struct to a list of alises.
+        Mappings from the name of the struct to a list of aliases.
         For example in C++: typedef A B; typedef A C; then
         aliases = {"A": ["B", "C"]}
 

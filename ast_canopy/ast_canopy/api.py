@@ -195,7 +195,7 @@ def parse_declarations_from_source(
 
     anon_filename_decl_prefix_allowlist : list[str], optional
         A list of prefixes to allow declarations with anonymous filename from. This is a temporary
-        workaround to allow expaneded macros to be included in the AST.
+        workaround to allow expanded macros to be included in the AST.
 
     verbose : bool, optional
         If True, print the stderr from clang++ invocation.
