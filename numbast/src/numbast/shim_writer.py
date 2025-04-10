@@ -148,8 +148,7 @@ class MemoryShimWriter(ShimWriterBase):
                 cuda.PTXSource(ptx.encode()) for ptx in self.shim_ptxes
             ]
 
-            for src in [shim_source, *shim_ptxes]:
-                yield src
+            yield from [shim_source, *shim_ptxes]
 
         return iter_shim_files
 

@@ -319,7 +319,7 @@ def bind_cxx_struct(
         class S_model(data_model):
             def __init__(self, dmm, fe_type):
                 be_type = ir.IntType(fe_type.bitwidth)
-                super(S_model, self).__init__(dmm, fe_type, be_type)
+                super().__init__(dmm, fe_type, be_type)
 
     elif data_model == StructModel:
 

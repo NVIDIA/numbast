@@ -131,7 +131,7 @@ def patch_numba():
             if attr == "__cuda_array_interface__":
                 return self.__cuda_array_interface__
 
-            return super(ProxyTorch, self).__getattr__(attr)
+            return super().__getattr__(attr)
 
         @property
         def __cuda_array_interface__(self):
