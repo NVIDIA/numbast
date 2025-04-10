@@ -78,7 +78,8 @@ def bind_cxx_struct_ctor(
         return
 
     param_types = [
-        to_numba_type(arg.unqualified_non_ref_type_name) for arg in ctor.param_types
+        to_numba_type(arg.unqualified_non_ref_type_name)
+        for arg in ctor.param_types
     ]
 
     # Lowering
@@ -93,7 +94,9 @@ def bind_cxx_struct_ctor(
     # shim generation below.
     ctor_shim_decl = declare_device(
         func_name,
-        nbtypes.int32(nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)),
+        nbtypes.int32(
+            nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
+        ),
     )
 
     ctor_shim_call = make_device_caller_with_nargs(
@@ -107,7 +110,8 @@ def bind_cxx_struct_ctor(
     # temporary solution for mismatching function prototype against definition.
     # See above lowering for details.
     arglist = ", ".join(
-        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}" for arg in ctor.params
+        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
+        for arg in ctor.params
     )
     if arglist:
         arglist = ", " + arglist
@@ -126,7 +130,9 @@ def bind_cxx_struct_ctor(
         shim_writer.write_to_shim(shim, func_name)
 
         selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-        argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
+        argptrs = [
+            builder.alloca(context.get_value_type(arg)) for arg in sig.args
+        ]
         for ptr, ty, arg in zip(argptrs, sig.args, args):
             builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
@@ -183,7 +189,10 @@ def bind_cxx_struct_ctors(
 
 
 def bind_cxx_struct_conversion_opeartor(
-    conv: StructMethod, struct_name: str, s_type: nbtypes.Type, shim_writer: ShimWriter
+    conv: StructMethod,
+    struct_name: str,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriter,
 ):
     """Binding CXX struct conversion oeperator to Numba.
 
@@ -243,7 +252,9 @@ def bind_cxx_struct_conversion_opeartors(
 ):
     """"""
     for conv in struct_decl.conversion_operators():
-        bind_cxx_struct_conversion_opeartor(conv, struct_decl.name, s_type, shim_writer)
+        bind_cxx_struct_conversion_opeartor(
+            conv, struct_decl.name, s_type, shim_writer
+        )
 
 
 def bind_cxx_struct(
@@ -251,7 +262,9 @@ def bind_cxx_struct(
     struct_decl: Struct,
     parent_type: type = nbtypes.Type,
     data_model: type = StructModel,
-    aliases: dict[str, list[str]] = {},  # XXX: this should be just a list of aliases
+    aliases: dict[
+        str, list[str]
+    ] = {},  # XXX: this should be just a list of aliases
 ) -> object:
     """
     Make bindings for a C++ struct.
@@ -314,7 +327,10 @@ def bind_cxx_struct(
         class S_model(data_model):
             def __init__(self, dmm, fe_type, struct_decl=struct_decl):
                 members = [
-                    (f.name, to_numba_type(f.type_.unqualified_non_ref_type_name))
+                    (
+                        f.name,
+                        to_numba_type(f.type_.unqualified_non_ref_type_name),
+                    )
                     for f in struct_decl.fields
                 ]
                 super().__init__(dmm, fe_type, members)
@@ -323,7 +339,9 @@ def bind_cxx_struct(
     # Attributes Typing and Lowering:
     if data_model == StructModel:
         public_fields = {
-            f.name: f for f in struct_decl.fields if f.access == access_kind.public_
+            f.name: f
+            for f in struct_decl.fields
+            if f.access == access_kind.public_
         }
 
         @register_attr
@@ -332,7 +350,9 @@ def bind_cxx_struct(
 
             def generic_resolve(self, typ, attr):
                 try:
-                    ty_name = public_fields[attr].type_.unqualified_non_ref_type_name
+                    ty_name = public_fields[
+                        attr
+                    ].type_.unqualified_non_ref_type_name
                     return to_numba_type(ty_name)
                 except KeyError:
                     raise AttributeError(attr)

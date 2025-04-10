@@ -61,14 +61,14 @@ Macro-expanded Function Prefixes:
         ],
     )
 
-    assert (
-        result.exit_code == 0
-    ), f"Exception raised: {result.exception}, Stdout: {result.stdout}"
+    assert result.exit_code == 0, (
+        f"Exception raised: {result.exception}, Stdout: {result.stdout}"
+    )
 
     output = subdir / f"{name}.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}

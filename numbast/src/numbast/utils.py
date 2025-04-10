@@ -117,7 +117,10 @@ extern "C" __device__ int
                 # Pointer to array type: int (*arr)[10]
                 loc = base_ty.rfind("*")
                 fml_arg = (
-                    base_ty[: loc + 1] + f"*{arg.name}" + base_ty[loc + 1 :] + sizes
+                    base_ty[: loc + 1]
+                    + f"*{arg.name}"
+                    + base_ty[loc + 1 :]
+                    + sizes
                 )
             else:
                 # Regular array type: int arr[10]

@@ -89,7 +89,11 @@ shim_writer = MemoryShimWriter(
 )
 
 numba_struct_types += bind_cxx_structs(
-    shim_writer, structs, TYPE_SPECIALIZATION, DATA_MODEL_SPECIALIZATION, aliases
+    shim_writer,
+    structs,
+    TYPE_SPECIALIZATION,
+    DATA_MODEL_SPECIALIZATION,
+    aliases,
 )
 
 numba_functions += bind_cxx_functions(

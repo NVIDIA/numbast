@@ -132,7 +132,9 @@ class MemoryShimWriter(ShimWriterBase):
             self.shim_ptxes.append(ptx)
 
     @property
-    def links(self) -> Callable[[], Iterator[Union[cuda.CUSource, cuda.PTXSource]]]:
+    def links(
+        self,
+    ) -> Callable[[], Iterator[Union[cuda.CUSource, cuda.PTXSource]]]:
         """Return an iterator to the memory reference containing shim functions and PTXes.
 
         Usage: @cuda.jit(link=shim_writer.links())
@@ -142,7 +144,9 @@ class MemoryShimWriter(ShimWriterBase):
             shim_source = cuda.CUSource(
                 "\n".join([self.preceding_text] + self.shim_funcs)
             )
-            shim_ptxes = [cuda.PTXSource(ptx.encode()) for ptx in self.shim_ptxes]
+            shim_ptxes = [
+                cuda.PTXSource(ptx.encode()) for ptx in self.shim_ptxes
+            ]
 
             for src in [shim_source, *shim_ptxes]:
                 yield src

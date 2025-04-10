@@ -88,7 +88,8 @@ def make_curand_states(curand_state_decl: Struct):
     # held by CurandStates.
 
     state_fields = [
-        (f.name, *to_numpy_dtype(f.type_.name)) for f in curand_state_decl.fields
+        (f.name, *to_numpy_dtype(f.type_.name))
+        for f in curand_state_decl.fields
     ]
 
     curandStateDtype = np.dtype(state_fields, align=True)

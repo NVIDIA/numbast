@@ -82,7 +82,11 @@ pretext = f"""#define __FORCE_INCLUDE_CUDA_FP16_HPP_FROM_FP16_H__
 shim_writer = MemoryShimWriter(pretext)
 
 numba_struct_types += bind_cxx_structs(
-    shim_writer, structs, TYPE_SPECIALIZATION, DATA_MODEL_SPECIALIZATION, aliases
+    shim_writer,
+    structs,
+    TYPE_SPECIALIZATION,
+    DATA_MODEL_SPECIALIZATION,
+    aliases,
 )
 
 numba_functions += bind_cxx_functions(

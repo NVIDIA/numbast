@@ -128,7 +128,9 @@ def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
             ) from e
 
     if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
-        include_path = s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
+        include_path = (
+            s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
+        )
         logger.info(f"Found NVCC default include path, {include_path=}")
         return include_path
     else:
@@ -212,7 +214,9 @@ def parse_declarations_from_source(
         if not isinstance(p, str):
             raise TypeError(f"Additional include path must be a string: {p}")
         if p.startswith("-I"):
-            raise ValueError(f"Additional include path must not start with -I: {p}")
+            raise ValueError(
+                f"Additional include path must not start with -I: {p}"
+            )
         if not os.path.exists(p):
             raise FileNotFoundError(f"Additional include path not found: {p}")
 
@@ -227,7 +231,9 @@ def parse_declarations_from_source(
         cccl_libs = []
 
     clang_resource_file = (
-        subprocess.check_output(["clang++", "-print-resource-dir"]).decode().strip()
+        subprocess.check_output(["clang++", "-print-resource-dir"])
+        .decode()
+        .strip()
     )
 
     clang_search_paths = get_default_compiler_search_paths()
@@ -260,7 +266,9 @@ def parse_declarations_from_source(
 
     with capture_fd(STREAMFD.STDERR) as cap:
         decls = bindings.parse_declarations_from_command_line(
-            command_line_options, files_to_retain, anon_filename_decl_prefix_allowlist
+            command_line_options,
+            files_to_retain,
+            anon_filename_decl_prefix_allowlist,
         )
 
     werr = cap.snap()

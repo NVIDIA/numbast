@@ -72,7 +72,11 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             cls._imported_numba_types.add(typ)
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        with_prefix: bool,
+        with_imports: bool,
+        with_shim_functions: bool,
     ) -> str:
         raise NotImplementedError()
 

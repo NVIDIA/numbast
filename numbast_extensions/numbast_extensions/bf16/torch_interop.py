@@ -152,10 +152,16 @@ def patch_numba():
                     s * torch.bfloat16.itemsize for s in self._tensor.stride()
                 )
             shape = tuple(self.shape)
-            data_ptr = self._tensor.data_ptr() if self._tensor.numel() > 0 else 0
+            data_ptr = (
+                self._tensor.data_ptr() if self._tensor.numel() > 0 else 0
+            )
             data = (data_ptr, False)  # read-only is false
             return dict(
-                typestr=typestr, shape=shape, strides=strides, data=data, version=2
+                typestr=typestr,
+                shape=shape,
+                strides=strides,
+                data=data,
+                version=2,
             )
 
     class _BF16TorchWrappedLaunchConfiguration(_LaunchConfiguration):
@@ -176,10 +182,15 @@ def patch_numba():
             """
             torch_filtered = [
                 ProxyTorch(arg)
-                if (isinstance(arg, torch.Tensor) and arg.dtype == torch.bfloat16)
+                if (
+                    isinstance(arg, torch.Tensor)
+                    and arg.dtype == torch.bfloat16
+                )
                 else arg
                 for arg in args
             ]
             return super().__call__(*torch_filtered)
 
-    numba.cuda.dispatcher._LaunchConfiguration = _BF16TorchWrappedLaunchConfiguration
+    numba.cuda.dispatcher._LaunchConfiguration = (
+        _BF16TorchWrappedLaunchConfiguration
+    )
