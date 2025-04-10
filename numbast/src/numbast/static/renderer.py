@@ -3,6 +3,8 @@
 
 import numba
 from numba.cuda.vector_types import vector_types
+from numbast import __version__ as numbast_ver
+from ast_canopy import __version__ as ast_canopy_ver
 
 
 class BaseRenderer:
@@ -82,6 +84,22 @@ def clear_base_renderer_cache():
     BaseRenderer.Includes = set()
     BaseRenderer.ShimFunctions = []
     BaseRenderer._imported_numba_types = set()
+
+
+def get_reproducible_info(
+    config_rel_path: str, cmd: str, sbg_params: dict[str, str]
+) -> str:
+    info = [
+        f"Ast_canopy version: {ast_canopy_ver}",
+        f"Numbast version: {numbast_ver}",
+        f"Generation command: {cmd}",
+        f"Static binding generator parameters: {sbg_params}",
+        f"Config file path (relative to the path of the generated binding): {config_rel_path}",
+    ]
+
+    commented = [f"# {x}" for x in info]
+
+    return "\n".join(commented) + "\n"
 
 
 def get_prefix() -> str:
