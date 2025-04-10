@@ -1,5 +1,25 @@
 repos:
-
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0 # Use the latest version or a specific tag
+  hooks:
+    - id: check-added-large-files
+    - id: check-ast
+    - id: check-json
+    - id: check-merge-conflict
+    - id: check-toml
+    - id: check-yaml
+      exclude: |
+        (?x)^(
+            conda/recipes/ast_canopy/meta.yaml|
+            conda/recipes/numbast/meta.yaml|
+            conda/recipes/numbast_extensions/meta.yaml
+        )$
+    - id: debug-statements
+    - id: end-of-file-fixer
+    - id: requirements-txt-fixer
+    - id: trailing-whitespace
+    - id: mixed-line-ending
+      args: ['--fix=lf']
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
@@ -7,21 +27,44 @@ repos:
     -   id: trailing-whitespace
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.3.1
+  rev: v0.11.4
   hooks:
     - id: ruff
-      args: [ --fix ]
+      args: [ --fix , --config, pyproject.toml ]
     - id: ruff-format
+      args: [ --config, pyproject.toml ]
 
 -   repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 'v17.0.6'
+    rev: 'v20.1.0'
     hooks:
     -   id: clang-format
 
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.2.4
+  rev: v2.4.1
   hooks:
   - id: codespell
     additional_dependencies:
       - tomli
     args: ["--toml", "pyproject.toml"]
+
+- repo: https://github.com/google/yamlfmt
+  rev: v0.16.0
+  hooks:
+    - id: yamlfmt
+      exclude: |
+        (?x)^(
+            conda/recipes/ast_canopy/meta.yaml|
+            conda/recipes/numbast/meta.yaml|
+            conda/recipes/numbast_extensions/meta.yaml
+        )$
+
+- repo: https://github.com/ComPWA/taplo-pre-commit
+  rev: v0.9.3
+  hooks:
+    - id: taplo-format
+
+- repo: https://github.com/abravalheri/validate-pyproject
+  rev: v0.24
+  hooks:
+    - id: validate-pyproject
+      additional_dependencies: ["validate-pyproject-schema-store[all]"]

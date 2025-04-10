@@ -19,10 +19,4 @@ input = "VERSION"
 regex = "(?P<value>.*)"
 
 [tool.ruff]
-line-length = 88
-indent-width = 4
-
-[tool.ruff.lint.per-file-ignores]
-# ignore undefined `Template` name in `pylibastcanopy` module
-"ast_canopy/pylibastcanopy.pyi" = ["F821"]
-"__init__.py" = ["F401"]
+# Please use pyproject.toml from the project root

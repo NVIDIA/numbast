@@ -43,6 +43,5 @@ exclude = [
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}
 
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401", "E402"]
-"tests/*" = ["F841"] # Ignore unused local variables in Numba kernel, the purpose of these tests are to test Numba JIT works with novel types.
+[tool.ruff]
+# Please use pyproject.toml from the project root
