@@ -55,7 +55,7 @@ curand_files += [os.path.normpath(p) for p in curand_files]
 # for source range and instead uses the unwrapped path behind the symlink. E.g.
 # /usr/local/cuda-12.3/include/curand_uniform.h instead of
 # /usr/local/cuda/include/curand_uniform.h
-with open(os.path.join(CUDA_INCLUDE_PATH, "cuda.h"), "r") as f:
+with open(os.path.join(CUDA_INCLUDE_PATH, "cuda.h")) as f:
     cuda_header_version_macro = [
         line for line in f if line.startswith("#define CUDA_VERSION")
     ]
@@ -159,7 +159,11 @@ for e in enums:
 
 
 numba_struct_types += bind_cxx_structs(
-    shim_writer, structs, TYPE_SPECIALIZATION, DATA_MODEL_SPECIALIZATION, aliases
+    shim_writer,
+    structs,
+    TYPE_SPECIALIZATION,
+    DATA_MODEL_SPECIALIZATION,
+    aliases,
 )
 
 numba_functions += bind_cxx_functions(

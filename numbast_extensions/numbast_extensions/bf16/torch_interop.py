@@ -155,7 +155,11 @@ def patch_numba():
             data_ptr = self._tensor.data_ptr() if self._tensor.numel() > 0 else 0
             data = (data_ptr, False)  # read-only is false
             return dict(
-                typestr=typestr, shape=shape, strides=strides, data=data, version=2
+                typestr=typestr,
+                shape=shape,
+                strides=strides,
+                data=data,
+                version=2,
             )
 
     class _BF16TorchWrappedLaunchConfiguration(_LaunchConfiguration):

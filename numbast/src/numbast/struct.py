@@ -183,7 +183,10 @@ def bind_cxx_struct_ctors(
 
 
 def bind_cxx_struct_conversion_opeartor(
-    conv: StructMethod, struct_name: str, s_type: nbtypes.Type, shim_writer: ShimWriter
+    conv: StructMethod,
+    struct_name: str,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriter,
 ):
     """Binding CXX struct conversion oeperator to Numba.
 
@@ -267,7 +270,7 @@ def bind_cxx_struct(
     data_model : DataModel, optional
         Data model for the struct, by default StructModel
     aliases : dict[str, list[str]], optional
-        Mappings from the name of the struct to a list of alises.
+        Mappings from the name of the struct to a list of aliases.
         For example in C++: typedef A B; typedef A C; then
         aliases = {"A": ["B", "C"]}
 
@@ -314,7 +317,10 @@ def bind_cxx_struct(
         class S_model(data_model):
             def __init__(self, dmm, fe_type, struct_decl=struct_decl):
                 members = [
-                    (f.name, to_numba_type(f.type_.unqualified_non_ref_type_name))
+                    (
+                        f.name,
+                        to_numba_type(f.type_.unqualified_non_ref_type_name),
+                    )
                     for f in struct_decl.fields
                 ]
                 super().__init__(dmm, fe_type, members)
@@ -373,7 +379,7 @@ def bind_cxx_structs(
     data_model : DataModel, optional
         Data model for the struct, by default StructModel
     aliases : dict[str, list[str]], optional
-        Mappings from the name of the struct to a list of alises.
+        Mappings from the name of the struct to a list of aliases.
         For example in C++: typedef A B; typedef A C; then
         aliases = {"A": ["B", "C"]}
 

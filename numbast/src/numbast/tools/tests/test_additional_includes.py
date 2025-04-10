@@ -82,7 +82,7 @@ Clang Include Paths:
     output = subdir / f"{name}.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}

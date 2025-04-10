@@ -1,11 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-
 name: Build, Install, Test CONDA PKG
-
 on:
   workflow_call:
-
 jobs:
   build-conda-x86_64:
     uses: ./.github/workflows/conda-python-build.yaml

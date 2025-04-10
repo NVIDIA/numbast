@@ -73,7 +73,11 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             warnings.warn(f"{typ} is not added to imports.")
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        with_prefix: bool,
+        with_imports: bool,
+        with_shim_functions: bool,
     ) -> str:
         raise NotImplementedError()
 

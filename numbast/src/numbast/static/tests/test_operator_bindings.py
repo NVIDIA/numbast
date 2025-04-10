@@ -12,8 +12,8 @@ from ast_canopy import parse_declarations_from_source
 
 from numbast.static.renderer import (
     get_rendered_imports,
-    get_prefix,
     get_shim_stream_obj,
+    get_prefix,
 )
 from numbast.static.renderer import clear_base_renderer_cache
 from numbast.static.struct import StaticStructsRenderer

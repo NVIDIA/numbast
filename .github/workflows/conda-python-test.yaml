@@ -1,50 +1,47 @@
 on:
-    workflow_call:
-      inputs:
-        build_type:
-          required: true
-          type: string
-        branch:
-          type: string
-        date:
-          type: string
-        sha:
-          type: string
-        repo:
-          type: string
-        script:
-          type: string
-          default: "ci/test_conda_python.sh"
-        run_codecov:
-          type: boolean
-          default: false
-        matrix_filter:
-          type: string
-          default: "."
-        container-options:
-          required: false
-          type: string
-          default: "-e _NOOP"
-
+  workflow_call:
+    inputs:
+      build_type:
+        required: true
+        type: string
+      branch:
+        type: string
+      date:
+        type: string
+      sha:
+        type: string
+      repo:
+        type: string
+      script:
+        type: string
+        default: "ci/test_conda_python.sh"
+      run_codecov:
+        type: boolean
+        default: false
+      matrix_filter:
+        type: string
+        default: "."
+      container-options:
+        required: false
+        type: string
+        default: "-e _NOOP"
 defaults:
-    run:
-      shell: bash
-
+  run:
+    shell: bash
 permissions:
-    actions: read
-    checks: none
-    contents: read
-    deployments: none
-    discussions: none
-    id-token: write
-    issues: none
-    packages: read
-    pages: none
-    pull-requests: read
-    repository-projects: none
-    security-events: none
-    statuses: none
-
+  actions: read
+  checks: none
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
 jobs:
   compute-matrix:
     runs-on: ubuntu-latest
@@ -103,7 +100,6 @@ jobs:
           )"
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
-
   test:
     needs: compute-matrix
     strategy:
@@ -118,8 +114,8 @@ jobs:
       image: rapidsai/ci-conda:cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}
       options: ${{ inputs.container-options }}
       env:
-          RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
-          NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
+        RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
     steps:
       - uses: actions/checkout@v4
         with:

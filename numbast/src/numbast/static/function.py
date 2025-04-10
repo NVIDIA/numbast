@@ -538,7 +538,11 @@ class {op_typing_name}(ConcreteTemplate):
         self._shim_function_pystr = self._c_str = ""
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        with_prefix: bool,
+        with_imports: bool,
+        with_shim_functions: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
         self._render(with_prefix, with_imports)

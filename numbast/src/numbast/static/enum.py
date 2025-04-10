@@ -79,7 +79,11 @@ class StaticEnumsRenderer(BaseRenderer):
         self._python_str += "\n" + "\n".join(self._python_rendered)
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        with_prefix: bool,
+        with_imports: bool,
+        with_shim_functions: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 

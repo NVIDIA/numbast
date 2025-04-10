@@ -50,7 +50,7 @@ class YamlConfig:
     clang_includes_paths: list[str]
 
     def __init__(self, cfg_path):
-        with open(cfg_path, "r") as f:
+        with open(cfg_path) as f:
             config = yaml.load(f, yaml.Loader)
             self.input_header = config["Entry Point"]
             self.retain_list = config["File List"]
@@ -371,7 +371,8 @@ def ruff_format_binding_file(binding_file_path: str):
 @click.command()
 @click.pass_context
 @click.option(
-    "--input-header", type=click.Path(exists=True, dir_okay=False, readable=True)
+    "--input-header",
+    type=click.Path(exists=True, dir_okay=False, readable=True),
 )
 @click.option("--retain")
 @click.option("--types", type=numba_type_dict)

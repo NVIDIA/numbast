@@ -65,7 +65,14 @@ def nvrtc_compile(src, name, cc, ltoir=False):
     cudadrv_path = os.path.dirname(os.path.abspath(cudadrv))
     numba_cuda_path = os.path.dirname(cudadrv_path)
     numba_include = f"-I{numba_cuda_path}"
-    options = [arch, *extra_include_paths, include, numba_include, "-rdc", "true"]
+    options = [
+        arch,
+        *extra_include_paths,
+        include,
+        numba_include,
+        "-rdc",
+        "true",
+    ]
     options += extra_options
     if ltoir:
         options.append("-dlto")

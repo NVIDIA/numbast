@@ -1,52 +1,49 @@
 on:
-    workflow_call:
-      inputs:
-        build_type:
-          required: true
-          type: string
-        branch:
-          type: string
-        date:
-          type: string
-        sha:
-          type: string
-        repo:
-          type: string
-        node_type:
-          type: string
-          default: "cpu4"
-        script:
-          type: string
-          default: "ci/build_conda_python.sh"
-        matrix_filter:
-          type: string
-          default: "."
-        CPU:
-          type: string
-          default: "amd64"
-        upload_to_conda:
-          type: boolean
-          required: false
-
+  workflow_call:
+    inputs:
+      build_type:
+        required: true
+        type: string
+      branch:
+        type: string
+      date:
+        type: string
+      sha:
+        type: string
+      repo:
+        type: string
+      node_type:
+        type: string
+        default: "cpu4"
+      script:
+        type: string
+        default: "ci/build_conda_python.sh"
+      matrix_filter:
+        type: string
+        default: "."
+      CPU:
+        type: string
+        default: "amd64"
+      upload_to_conda:
+        type: boolean
+        required: false
 defaults:
-    run:
-      shell: bash
-
+  run:
+    shell: bash
 permissions:
-    actions: read
-    checks: none
-    contents: read
-    deployments: none
-    discussions: none
-    id-token: write
-    issues: none
-    packages: read
-    pages: none
-    pull-requests: read
-    repository-projects: none
-    security-events: none
-    statuses: none
-
+  actions: read
+  checks: none
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
 jobs:
   compute-matrix:
     runs-on: ubuntu-latest
@@ -81,7 +78,6 @@ jobs:
           )"
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
-
   build:
     needs: compute-matrix
     strategy:

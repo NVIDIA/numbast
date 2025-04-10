@@ -128,7 +128,10 @@ def bind_cxx_operator_overload_function(
 
 
 def bind_cxx_non_operator_function(
-    shim_writer: ShimWriter, func_decl: Function, skip_prefix: str, exclude: set[str]
+    shim_writer: ShimWriter,
+    func_decl: Function,
+    skip_prefix: str,
+    exclude: set[str],
 ) -> object:
     """Make bindings for a C++ non operator function.
 

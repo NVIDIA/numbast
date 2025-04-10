@@ -769,7 +769,8 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self.Imports.add("from numba.extending import as_numba_type")
 
         self._python_api_rendered = self.python_api_template.format(
-            struct_type_name=self._struct_type_name, struct_name=self._struct_name
+            struct_type_name=self._struct_type_name,
+            struct_name=self._struct_name,
         )
 
     def _render_data_model(self):
@@ -786,7 +787,10 @@ class {struct_attr_typing_name}(AttributeTemplate):
             )
         elif self._data_model == StructModel:
             member_types_tuples = [
-                (f.name, to_numba_type_str(f.type_.unqualified_non_ref_type_name))
+                (
+                    f.name,
+                    to_numba_type_str(f.type_.unqualified_non_ref_type_name),
+                )
                 for f in self._decl.fields
             ]
 
@@ -930,7 +934,10 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self.Includes.add(self.includes_template.format(header_path=self._header_path))
 
         self._c_ext_merged_shim = "\n".join(
-            [self._struct_ctors_c_rendered, self._struct_conversion_ops_c_rendered]
+            [
+                self._struct_ctors_c_rendered,
+                self._struct_conversion_ops_c_rendered,
+            ]
         )
 
         return self.Includes, self._c_ext_merged_shim
@@ -1019,7 +1026,11 @@ class StaticStructsRenderer(BaseRenderer):
         self._shim_function_pystr = self._c_str = ""
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        with_prefix: bool,
+        with_imports: bool,
+        with_shim_functions: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
         self._render(with_prefix, with_imports)

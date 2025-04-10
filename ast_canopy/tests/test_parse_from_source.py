@@ -219,7 +219,10 @@ def test_load_ast_functions(sample_function_source, test_pickle):
     assert [a.name for a in args] == ["a", "b"]
     assert [a.type_.name for a in args] == ["int &&", "int &&"]
     assert [a.type_.is_right_reference() for a in args] == [True, True]
-    assert [a.type_.unqualified_non_ref_type_name for a in args] == ["int", "int"]
+    assert [a.type_.unqualified_non_ref_type_name for a in args] == [
+        "int",
+        "int",
+    ]
 
     assert functions[3].name == "add_hostdevice"
     assert functions[3].return_type.name == "int"
@@ -259,7 +262,9 @@ def test_load_ast_typedefs(sample_typedef_source, test_pickle):
 
 def test_load_ast_function_templates(sample_function_template_source, test_pickle):
     decls = parse_declarations_from_source(
-        sample_function_template_source, [sample_function_template_source], "sm_80"
+        sample_function_template_source,
+        [sample_function_template_source],
+        "sm_80",
     )
 
     _, _, ft, _, _, _ = astuple(decls)
@@ -375,7 +380,9 @@ def test_load_ast_nested_structs(sample_nested_structs_source, test_pickle):
 
 def test_load_ast_access_specifiers(sample_access_specifier_source, test_pickle):
     decls = parse_declarations_from_source(
-        sample_access_specifier_source, [sample_access_specifier_source], "sm_80"
+        sample_access_specifier_source,
+        [sample_access_specifier_source],
+        "sm_80",
     )
 
     structs, _, _, _, _, _ = astuple(decls)
@@ -494,7 +501,11 @@ def test_load_struct_function_execution_space(
             "sm_70",
             {
                 "structs": [
-                    {"name": "Functor", "methods": ["operator()"], "fields": ["k"]}
+                    {
+                        "name": "Functor",
+                        "methods": ["operator()"],
+                        "fields": ["k"],
+                    }
                 ],
                 "functions": [{"name": "fpi", "return_type": "float"}],
             },
