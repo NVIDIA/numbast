@@ -27,11 +27,7 @@ extra_options = [
     "-std=c++17",
 ]
 
-extra_include_paths = [
-    f"-I{config.CUDA_INCLUDE_PATH}/cub/",
-    f"-I{config.CUDA_INCLUDE_PATH}/cccl/libcudacxx/include/",
-    f"-I{config.CUDA_INCLUDE_PATH}/cccl/thrust/",
-]
+extra_include_paths = []
 
 
 # Copied from numba.cuda.cudadrv.nvrtc, modified to allow extra options to be
