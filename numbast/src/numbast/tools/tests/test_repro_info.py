@@ -46,12 +46,16 @@ def test_repro_info(tmpdir):
     with open(os.path.join(output_folder, "data.py")) as f:
         bindings = f.readlines()
 
+    print("\n".join(bindings))
+
     expected_info = {
         "Ast_canopy version",
         "Numbast version",
         "Generation command",
         "Static binding generator parameters",
         "Config file path (relative to the path of the generated binding)",
+        "Cudatoolkit version",
+        "Default CUDA_HOME path",
     }
 
     # Check that all expected info are present within the generated binding in
