@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numbast"
-version = "0.2.1"
+dynamic = ["version"]
 description = "Numbast - auto Numba binding generation tool for CUDA C++."
 requires-python = ">=3.7"
 classifiers = [
@@ -18,10 +18,13 @@ classifiers = [
 dependencies= [
     "numba>=0.59.0",
     "numba-cuda",
-    "ast_canopy>=0.2.1",
+    "ast_canopy>=0.3.0",
     "click",
     "pyyaml"
 ]
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
 
 [project.scripts]
 numbast = "numbast.tool:static_binding_generator"

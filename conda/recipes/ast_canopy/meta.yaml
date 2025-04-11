@@ -1,10 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-{% set version = load_file_regex(
-    load_file="VERSION",
-    regex_pattern="(?P<value>.*)"
-)[0] %}
 {% set data = load_file_data("pyproject.toml") %}
 {% set project_data = data.get("project") %}
 {% set project_urls = project_data["urls"] %}
@@ -12,7 +8,7 @@
 
 package:
   name: ast_canopy
-  version: {{ version }}
+  version: {{ PROJECT_VERSION }}
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
@@ -35,7 +31,7 @@ build:
     - SCCACHE_S3_NO_CREDENTIALS
 
 source:
-  path: ../../../ast_canopy
+  path: ../../..
 
 requirements:
   build:

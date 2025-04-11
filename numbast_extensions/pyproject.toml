@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numbast_extensions"
-version = "0.0.2"
+dynamic = ["version"]
 description = "Numba extensions for exotic data types in Numba, built with Numbast"
 requires-python = ">=3.7"
 classifiers = [
@@ -17,7 +17,6 @@ classifiers = [
 ]
 dependencies= [
     "numba-cuda",
-    "ast_canopy>=0.2.0",
     "numbast>=0.2.0"
 ]
 
@@ -41,6 +40,8 @@ exclude = [
     "tests.*",
 ]
 
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E402"]

@@ -1,8 +1,15 @@
+#!/bin/bash
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import numbast_extensions.bf16
+set -x -e
+set -o pipefail
 
-import importlib.metadata
+echo ""
 
-__version__ = importlib.metadata.version("numbast_extensions")
+env
+
+echo ""
+
+cd numbast_extensions
+$PYTHON -m pip install . -vv
