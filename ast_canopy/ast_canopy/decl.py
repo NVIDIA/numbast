@@ -138,7 +138,9 @@ class Function:
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.Function):
-        return cls(c_obj.name, c_obj.return_type, c_obj.params, c_obj.exec_space)
+        return cls(
+            c_obj.name, c_obj.return_type, c_obj.params, c_obj.exec_space
+        )
 
 
 class FunctionTemplate:
@@ -323,4 +325,6 @@ class ClassTemplate:
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.ClassTemplate):
-        return cls(c_obj.record, c_obj.template_parameters, c_obj.num_min_required_args)
+        return cls(
+            c_obj.record, c_obj.template_parameters, c_obj.num_min_required_args
+        )

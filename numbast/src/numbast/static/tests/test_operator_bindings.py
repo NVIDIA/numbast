@@ -11,7 +11,11 @@ from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
 
-from numbast.static.renderer import get_rendered_imports, get_rendered_shims, get_prefix
+from numbast.static.renderer import (
+    get_rendered_imports,
+    get_rendered_shims,
+    get_prefix,
+)
 from numbast.static.renderer import clear_base_renderer_cache
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import StaticFunctionsRenderer

@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-
 name: Build and Test
-
 on:
   workflow_call:
     inputs:
@@ -26,15 +24,14 @@ on:
         description: 'CPU model'
         required: true
         type: string
-
 jobs:
   build-and-test:
     runs-on: linux-${{ inputs.CPU }}-gpu-${{ inputs.GPU }}-latest-1
     container: # GPU jobs must run in a container
-        # Numbast depends on conda installed CTK, thus system CTK should not matter. Similarly for python version.
-        image: rapidsai/ci-conda:latest
-        env:
-          NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
+      # Numbast depends on conda installed CTK, thus system CTK should not matter. Similarly for python version.
+      image: rapidsai/ci-conda:latest
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
     env:
       RAPIDS_TESTS_DIR: ${{ github.workspace }}/test-results
     steps:

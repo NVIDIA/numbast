@@ -11,15 +11,11 @@ version = "0.0.1"
 description = "Numba extensions for float16 in Numba"
 requires-python = ">=3.7"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
 ]
-dependencies= [
-    "numba>=0.59.0",
-    "ast_canopy>=0.0.1",
-    "numbast>=0.0.1"
-]
+dependencies = ["numba>=0.59.0", "ast_canopy>=0.0.1", "numbast>=0.0.1"]
 
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"
@@ -28,5 +24,5 @@ repository = "https://github.com/NVIDIA/numbast"
 [project.optional-dependencies]
 dev = ["ruff"]
 
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
+[tool.ruff]
+# Please use pyproject.toml from the project root

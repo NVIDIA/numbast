@@ -134,7 +134,7 @@ def test_simple_cli(tmpdir, kernel):
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -168,7 +168,7 @@ def test_simple_cli_retain(tmpdir, kernel):
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -185,7 +185,14 @@ def test_simple_cli_no_retain(tmpdir):
     false_path = subdir / "false.cuh"
     result = runner.invoke(
         static_binding_generator,
-        ["--input-header", data, "--output-dir", subdir, "--retain", false_path],
+        [
+            "--input-header",
+            data,
+            "--output-dir",
+            subdir,
+            "--retain",
+            false_path,
+        ],
     )
 
     assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
@@ -193,7 +200,7 @@ def test_simple_cli_no_retain(tmpdir):
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -232,7 +239,7 @@ def test_simple_cli_compute_capability(tmpdir, cc, expected):
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -258,7 +265,7 @@ def test_simple_cli_empty_retain(tmpdir):
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -305,7 +312,7 @@ Data Models:
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -355,7 +362,7 @@ Data Models:
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -399,7 +406,7 @@ Data Models:
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -444,7 +451,7 @@ Data Models:
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -491,7 +498,7 @@ Data Models:
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -549,7 +556,7 @@ Data Models:
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -594,7 +601,7 @@ Data Models: {{}}
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
@@ -649,7 +656,7 @@ Data Models: {{}}
     output = subdir / "data.py"
     assert os.path.exists(output)
 
-    with open(output, "r") as f:
+    with open(output) as f:
         bindings = f.read()
 
     globals = {}
