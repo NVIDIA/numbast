@@ -15,7 +15,12 @@ from ast_canopy.api import get_default_cuda_path
 
 class BaseRenderer:
     Prefix = """
-numba.config.CUDA_ENABLE_PYNVJITLINK = True
+import importlib
+
+if importlib.util.find_spec("pynvjitlink"):
+    numba.config.CUDA_ENABLE_PYNVJITLINK = True
+else:
+    raise RuntimeError("Numbast generated bindings require pynvjitlink.")
 """
 
     Shim = """
