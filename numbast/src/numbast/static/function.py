@@ -143,7 +143,9 @@ def {func_name}():
         _pointer_wrapped_param_types = [
             wrap_pointer(typ) for typ in self._argument_numba_types
         ]
-        self._pointer_wrapped_param_types_str = ", ".join(_pointer_wrapped_param_types)
+        self._pointer_wrapped_param_types_str = ", ".join(
+            _pointer_wrapped_param_types
+        )
 
         # Cache the unique shim name
         self._deduplicated_shim_name = deduplicate_overloads(decl.mangled_name)
@@ -160,7 +162,9 @@ def {func_name}():
         self._c_ext_argument_pointer_types = c_ptr_arglist
 
         # Cache the list of dereferenced arguments
-        self._deref_args_str = ", ".join("*" + arg.name for arg in self._decl.params)
+        self._deref_args_str = ", ".join(
+            "*" + arg.name for arg in self._decl.params
+        )
 
     @property
     def _signature_cases(self):
@@ -200,7 +204,9 @@ def {func_name}():
             nargs=nargs_str,
         )
 
-        self._decl_device_rendered = decl_device_rendered + "\n" + caller_rendered
+        self._decl_device_rendered = (
+            decl_device_rendered + "\n" + caller_rendered
+        )
 
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
@@ -271,7 +277,9 @@ def {func_name}():
         self._render_python_api()
         self._render_scoped_lower()
 
-        self._python_rendered = self._python_api_rendered + "\n" + self._lower_rendered
+        self._python_rendered = (
+            self._python_api_rendered + "\n" + self._lower_rendered
+        )
 
         return self._python_rendered
 
@@ -283,7 +291,9 @@ def {func_name}():
         C shim functions: str
             The C shim function strings for this function.
         """
-        self.Includes.add(self.includes_template.format(header_path=self._header_path))
+        self.Includes.add(
+            self.includes_template.format(header_path=self._header_path)
+        )
         self._c_rendered = self._c_ext_shim_rendered
         return self._c_rendered
 
@@ -406,8 +416,12 @@ class {op_typing_name}(ConcreteTemplate):
         self._skip_non_device = skip_non_device
         self._skip_prefix = skip_prefix
 
-        self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
-        self._op_typing_signature_cache: dict[str, list[str]] = defaultdict(list)
+        self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(
+            list
+        )
+        self._op_typing_signature_cache: dict[str, list[str]] = defaultdict(
+            list
+        )
 
         self._python_rendered = []
         self._c_rendered = []
@@ -417,7 +431,9 @@ class {op_typing_name}(ConcreteTemplate):
         self.Imports.add("from numba.cuda.cudadecl import register")
         self.Imports.add("from numba.cuda.cudadecl import register_global")
         self.Imports.add("from numba import types")
-        self.Imports.add("from numba.core.typing.templates import ConcreteTemplate")
+        self.Imports.add(
+            "from numba.core.typing.templates import ConcreteTemplate"
+        )
 
         self._render_func_typings()
         self._render_op_typing()
@@ -475,7 +491,9 @@ class {op_typing_name}(ConcreteTemplate):
                 execution_space.device,
                 execution_space.host_device,
             }:
-                warn(f"Skipping non-device function {decl.name} in {self._header_path}")
+                warn(
+                    f"Skipping non-device function {decl.name} in {self._header_path}"
+                )
                 continue
 
             renderer = None
@@ -484,15 +502,17 @@ class {op_typing_name}(ConcreteTemplate):
                     # copy assignment operator, do not support in Numba / Python, skip
                     continue
                 try:
-                    renderer = StaticOverloadedOperatorRenderer(decl, self._header_path)
+                    renderer = StaticOverloadedOperatorRenderer(
+                        decl, self._header_path
+                    )
                 except TypeNotFoundError as e:
                     warn(
                         f"Skipping operator {decl.name} in {self._header_path} due to missing type {e.type_name}"
                     )
                     continue
-                self._op_typing_signature_cache[renderer.func_name_python].append(
-                    renderer.get_signature()
-                )
+                self._op_typing_signature_cache[
+                    renderer.func_name_python
+                ].append(renderer.get_signature())
             elif not decl.is_operator:
                 try:
                     renderer = StaticNonOperatorFunctionRenderer(

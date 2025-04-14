@@ -41,7 +41,9 @@ class {enum_name}(IntEnum):
             self._decl.enumerators, self._decl.enumerator_values
         ):
             enumerators.append(
-                self.enumerator_template.format(enumerator=enumerator, value=value)
+                self.enumerator_template.format(
+                    enumerator=enumerator, value=value
+                )
             )
 
         self._python_rendered = self.enum_template.format(

@@ -24,7 +24,7 @@ def render_aliases(aliases: dict[str, list[str]]):
     Parameter
     ---------
     aliases: dict[str, list[str]]
-        Keys of `aliases` are the underlying name of all alises. The value contains a
+        Keys of `aliases` are the underlying name of all aliases. The value contains a
         list of aliases corresponding to that name.
 
     Return

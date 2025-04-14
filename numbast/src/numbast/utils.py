@@ -81,7 +81,9 @@ def paramvar_to_str(arg: pylibastcanopy.ParamVar):
         if "*" in base_ty:
             # Pointer to array type: int (*arr)[10]
             loc = base_ty.rfind("*")
-            fml_arg = base_ty[: loc + 1] + f"*{arg.name}" + base_ty[loc + 1 :] + sizes
+            fml_arg = (
+                base_ty[: loc + 1] + f"*{arg.name}" + base_ty[loc + 1 :] + sizes
+            )
         else:
             # Regular array type: int arr[10]
             fml_arg = base_ty + f" (*{arg.name})" + sizes

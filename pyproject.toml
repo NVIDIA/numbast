@@ -3,3 +3,32 @@
 ignore-regex = "\\b(.{1,4})\\b"
 builtin = "clear"
 quiet-level = 3
+
+[tool.ruff]
+# Always generate Python 3.7-compatible code.
+target-version = "py37"
+line-length = 80
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 80
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 80
+max-line-length = 80
+
+[tool.ruff.lint]
+extend-select = ["UP"]
+fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore E402: Module level import not at top of file. This is because
+# pynvjitlink numba patch needs to be imported and patched before the shim
+# writer imports.
+"__init__.py" = ["F401", "E402"]
+
+# Ignore unused local variables in Numba kernel, the purpose of these tests are
+# to test Numba JIT works with novel types.
+"numbast_extensions/tests/*" = ["F841"]
+
+"ast_canopy/pylibastcanopy.pyi" = ["F821"]

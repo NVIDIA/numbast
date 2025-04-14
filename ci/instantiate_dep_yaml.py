@@ -14,7 +14,9 @@ def cli(template_path, output_path, cuda_version, python_version):
     click.echo("Updating environment template.")
     env = Environment(loader=FileSystemLoader(os.path.dirname(template_path)))
     template = env.get_template(os.path.basename(template_path))
-    output = template.render(cuda_version=cuda_version, python_version=python_version)
+    output = template.render(
+        cuda_version=cuda_version, python_version=python_version
+    )
     print(output)
     with open(output_path, "w") as f:
         f.write(output)

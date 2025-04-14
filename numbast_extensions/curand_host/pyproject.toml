@@ -23,3 +23,6 @@ classifiers = [
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"
 repository = "https://github.com/NVIDIA/numbast"
+
+[tool.ruff]
+# Please use pyproject.toml from the project root

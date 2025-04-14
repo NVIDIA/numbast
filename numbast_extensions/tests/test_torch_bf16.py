@@ -26,7 +26,9 @@ def test_torchbf16():
     b = torch.ones([2, 2], device=torch.device("cuda:0"), dtype=torch.bfloat16)
     expected = torch.sin(a + b)
 
-    out = torch.zeros([2, 2], device=torch.device("cuda:0"), dtype=torch.bfloat16)
+    out = torch.zeros(
+        [2, 2], device=torch.device("cuda:0"), dtype=torch.bfloat16
+    )
 
     threadsperblock = (16, 16)
     blockspergrid = (1, 1)

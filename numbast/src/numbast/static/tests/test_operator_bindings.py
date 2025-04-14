@@ -68,7 +68,7 @@ def impl(data_folder):
     header = data_folder("operator.cuh")
     src = data_folder("src", "operator.cu")
 
-    with open(src, "r") as f:
+    with open(src) as f:
         impl = f.read()
 
     return cuda.CUSource(f"#include <{header}>" + "\n" + impl)

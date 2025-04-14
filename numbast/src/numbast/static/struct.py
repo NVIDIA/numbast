@@ -158,7 +158,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
         _pointer_wrapped_param_types = [
             wrap_pointer(typ) for typ in self._nb_param_types
         ]
-        self._pointer_wrapped_param_types_str = ", ".join(_pointer_wrapped_param_types)
+        self._pointer_wrapped_param_types_str = ", ".join(
+            _pointer_wrapped_param_types
+        )
 
         # Cache the list of parameter types in C++ pointer types
         c_ptr_arglist = ", ".join(
@@ -176,7 +178,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
         )
 
         # Cache the unique shim name
-        shim_func_name = f"__{self._struct_name}__{self._ctor_decl.mangled_name}"
+        shim_func_name = (
+            f"__{self._struct_name}__{self._ctor_decl.mangled_name}"
+        )
         self._deduplicated_shim_name = deduplicate_overloads(shim_func_name)
 
         # Underscore separated names of parameters
@@ -188,7 +192,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
         self._device_caller_name = f"{self._struct_name}_device_caller"
 
         # lower scope name
-        self._lower_scope_name = f"_lower_{struct_name}_{self._nb_param_str_concat}"
+        self._lower_scope_name = (
+            f"_lower_{struct_name}_{self._nb_param_str_concat}"
+        )
 
     def _render_decl_device(self):
         """Render codes that declares a foreign function for this constructor in Numba."""
@@ -342,7 +348,9 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
 
         self.Imports.add("from numba.cuda.cudadecl import register")
         self.Imports.add("from numba.cuda.cudadecl import register_global")
-        self.Imports.add("from numba.core.typing.templates import ConcreteTemplate")
+        self.Imports.add(
+            "from numba.core.typing.templates import ConcreteTemplate"
+        )
         self.Imports.add("from numba.types import Function")
 
         signatures_str = ", ".join(signature_strs)
@@ -505,16 +513,20 @@ def {lower_scope_name}(shim_stream, shim_obj):
         # All arguments are passed by pointers in C-CPP shim interop
         self.Imports.add("from numba.types import CPointer")
 
-        decl_device_rendered = self.struct_conversion_op_decl_device_template.format(
-            device_decl_name=self._device_decl_name,
-            unique_shim_name=self._unique_shim_name,
-            cast_to_type=self._nb_cast_to_type_str,
-            struct_type_name=self._struct_type_name,
+        decl_device_rendered = (
+            self.struct_conversion_op_decl_device_template.format(
+                device_decl_name=self._device_decl_name,
+                unique_shim_name=self._unique_shim_name,
+                cast_to_type=self._nb_cast_to_type_str,
+                struct_type_name=self._struct_type_name,
+            )
         )
 
-        device_caller_rendered = self.struct_conversion_op_caller_template.format(
-            device_decl_name=self._device_decl_name,
-            caller_name=self._caller_name,
+        device_caller_rendered = (
+            self.struct_conversion_op_caller_template.format(
+                device_decl_name=self._device_decl_name,
+                caller_name=self._caller_name,
+            )
         )
 
         self._decl_device_rendered = (
@@ -542,11 +554,13 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
         self.Imports.add("from numba.core.extending import lower_cast")
 
-        self._lowering_rendered = self.struct_conversion_op_lowering_template.format(
-            struct_name=self._struct_name,
-            cast_to_type=self._nb_cast_to_type_str,
-            struct_type_name=self._struct_type_name,
-            struct_device_caller_name=self._caller_name,
+        self._lowering_rendered = (
+            self.struct_conversion_op_lowering_template.format(
+                struct_name=self._struct_name,
+                cast_to_type=self._nb_cast_to_type_str,
+                struct_type_name=self._struct_type_name,
+                struct_device_caller_name=self._caller_name,
+            )
         )
 
     def _render(self):
@@ -730,7 +744,9 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         self._data_model = data_model
 
-        self.Imports.add(f"from numba.types import {self._parent_type.__qualname__}")
+        self.Imports.add(
+            f"from numba.types import {self._parent_type.__qualname__}"
+        )
         self._parent_type_str = self._parent_type.__qualname__
 
         self.Imports.add(
@@ -780,10 +796,12 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         if self._data_model == PrimitiveModel:
             self.Imports.add("from llvmlite import ir")
-            self._data_model_rendered = self.primitive_data_model_template.format(
-                struct_type_class_name=self._struct_type_class_name,
-                struct_model_name=self._struct_model_name,
-                struct_name=self._struct_name,
+            self._data_model_rendered = (
+                self.primitive_data_model_template.format(
+                    struct_type_class_name=self._struct_type_class_name,
+                    struct_model_name=self._struct_model_name,
+                    struct_name=self._struct_name,
+                )
             )
         elif self._data_model == StructModel:
             member_types_tuples = [
@@ -816,7 +834,9 @@ class {struct_attr_typing_name}(AttributeTemplate):
             self.Imports.add(
                 "from numba.core.typing.templates import AttributeTemplate"
             )
-            self.Imports.add("from numba.core.extending import make_attribute_wrapper")
+            self.Imports.add(
+                "from numba.core.extending import make_attribute_wrapper"
+            )
 
             public_fields = [
                 f for f in self._decl.fields if f.access == access_kind.public_
@@ -863,7 +883,9 @@ class {struct_attr_typing_name}(AttributeTemplate):
         )
         static_ctors_renderer._render()
 
-        self._struct_ctors_python_rendered = static_ctors_renderer.python_rendered
+        self._struct_ctors_python_rendered = (
+            static_ctors_renderer.python_rendered
+        )
         self._struct_ctors_c_rendered = static_ctors_renderer.c_rendered
 
     def _render_conversion_ops(self):
@@ -880,7 +902,9 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self._struct_conversion_ops_python_rendered = (
             static_convops_renderer.python_rendered
         )
-        self._struct_conversion_ops_c_rendered = static_convops_renderer.c_rendered
+        self._struct_conversion_ops_c_rendered = (
+            static_convops_renderer.c_rendered
+        )
 
     def render_python(self) -> tuple[set[str], str]:
         """Renders the python portion of the bindings.
@@ -931,7 +955,9 @@ class {struct_attr_typing_name}(AttributeTemplate):
             required to compile the shim function. The second element of the tuple
             is the concatenated shim function C program.
         """
-        self.Includes.add(self.includes_template.format(header_path=self._header_path))
+        self.Includes.add(
+            self.includes_template.format(header_path=self._header_path)
+        )
 
         self._c_ext_merged_shim = "\n".join(
             [
@@ -999,7 +1025,9 @@ class StaticStructsRenderer(BaseRenderer):
                 name, (Type, StructModel, self._default_header)
             )
             if header_path is None:
-                raise ValueError(f"CUDA struct {name} does not provide a header path.")
+                raise ValueError(
+                    f"CUDA struct {name} does not provide a header path."
+                )
 
             SSR = StaticStructRenderer(decl, nb_ty, nb_datamodel, header_path)
 

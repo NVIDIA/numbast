@@ -41,7 +41,9 @@ def patch_extra_include_paths():
     numba_patch.extra_include_paths = old_extra_include_paths
 
 
-def test_cli_yml_inputs_additional_includes(tmpdir, kernel, patch_extra_include_paths):
+def test_cli_yml_inputs_additional_includes(
+    tmpdir, kernel, patch_extra_include_paths
+):
     name = "additional_include"
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), f"{name}.cuh")

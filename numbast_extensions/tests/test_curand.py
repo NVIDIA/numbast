@@ -103,7 +103,9 @@ def test_curand_int(States):
         total += host_results[i]
 
     # A random distribution should have a fraction of 0.5 of low bits set
-    fraction = np.float32(total) / np.float32(nthreads * sample_count * repetitions)
+    fraction = np.float32(total) / np.float32(
+        nthreads * sample_count * repetitions
+    )
 
     assert np.isclose(fraction, 0.5, atol=1e-5)
 
@@ -150,7 +152,9 @@ def test_curand_uniform(States):
     for i in range(nthreads):
         total += host_results[i]
 
-    fraction = np.float32(total) / np.float32(sample_count * nthreads * repetitions)
+    fraction = np.float32(total) / np.float32(
+        sample_count * nthreads * repetitions
+    )
 
     assert np.isclose(fraction, 0.5, atol=1e-4)
 
@@ -197,7 +201,9 @@ def test_curand_normal(States):
     for i in range(nthreads):
         total += host_results[i]
 
-    fraction = np.float32(total) / np.float32(sample_count * nthreads * repetitions)
+    fraction = np.float32(total) / np.float32(
+        sample_count * nthreads * repetitions
+    )
 
     assert np.isclose(fraction, 0.682689492, atol=1e-4)
 
@@ -220,7 +226,9 @@ def test_curand_sobol_scramble():
         dim = 3 * id
 
         for z in range(3):
-            dirptr = ffi.from_buffer(sobolDirectionVectors[vector_size * (dim + z) :])
+            dirptr = ffi.from_buffer(
+                sobolDirectionVectors[vector_size * (dim + z) :]
+            )
             curand_init(
                 dirptr,
                 sobolScrambleConstants[dim + z],
@@ -261,10 +269,14 @@ def test_curand_sobol_scramble():
 
     devResult = cuda.to_device(np.zeros(nthreads, dtype=np.int32))
 
-    setup[blocks, threads](sobolDirectionVectors, sobolScrambleConstants, states)
+    setup[blocks, threads](
+        sobolDirectionVectors, sobolScrambleConstants, states
+    )
 
     for i in range(repetitions):
-        count_within_unit_sphere[blocks, threads](states, sample_count, devResult)
+        count_within_unit_sphere[blocks, threads](
+            states, sample_count, devResult
+        )
 
     result = devResult.copy_to_host()
 
@@ -272,7 +284,9 @@ def test_curand_sobol_scramble():
     for i in range(nthreads):
         total += result[i]
 
-    fraction = np.float64(total) / np.float64(sample_count * nthreads * repetitions)
+    fraction = np.float64(total) / np.float64(
+        sample_count * nthreads * repetitions
+    )
 
     assert_allclose(fraction * 8.0, 4.0 / 3 * np.pi, atol=1e-4)
 
@@ -308,11 +322,17 @@ def test_curand_poisson_simple():
         queue_length = 0
 
         for min in range(1, 60 * HOURS + 1):
-            new_customers = curand_poisson(states[id], 4 * (math.sin(min / 100.0) + 1))
-            queue_length = update_queue(id, min, new_customers, queue_length, queue)
+            new_customers = curand_poisson(
+                states[id], 4 * (math.sin(min / 100.0) + 1)
+            )
+            queue_length = update_queue(
+                id, min, new_customers, queue_length, queue
+            )
 
     states = curandStatesXORWOW(nthreads)
-    devResults = cuda.to_device(np.zeros((60 * HOURS, nthreads), dtype=np.uint32))
+    devResults = cuda.to_device(
+        np.zeros((60 * HOURS, nthreads), dtype=np.uint32)
+    )
 
     setup[blocks, threads](states)
     simple_device_API_kernel[blocks, threads](states, devResults)
@@ -320,7 +340,9 @@ def test_curand_poisson_simple():
     hostResults = devResults.copy_to_host()
 
     files = sorted(
-        glob.glob(os.path.join(os.path.dirname(__file__), "simple_poisson_gold_*"))
+        glob.glob(
+            os.path.join(os.path.dirname(__file__), "simple_poisson_gold_*")
+        )
     )
 
     gold = None
