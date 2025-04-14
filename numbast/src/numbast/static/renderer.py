@@ -24,9 +24,9 @@ else:
 """
 
     Shim = """
-entry_point = \"{includes}\"
+{shim_include}
 shim_stream = io.StringIO()
-shim_stream.write(entry_point)
+shim_stream.write(shim_include)
 shim_obj = CUSource(shim_stream)
 """
 
@@ -117,15 +117,16 @@ def get_prefix() -> str:
     return BaseRenderer.Prefix
 
 
-def get_shim_stream_obj(header: str) -> str:
-    if not header.startswith("#"):
-        header = f"#include <{header}>"
-
-    return BaseRenderer.Shim.format(includes=header)
+def get_shim_stream_obj(shim_include: str) -> str:
+    shim_include = f"shim_include = {shim_include}"
+    return BaseRenderer.Shim.format(shim_include=shim_include)
 
 
-def get_rendered_imports() -> str:
-    imports = "\n".join(BaseRenderer.Imports)
+def get_rendered_imports(additional_imports: list[str] = []) -> str:
+    imports = "\n".join(BaseRenderer.Imports) + "\n"
+    for imprt in additional_imports:
+        imports += f"import {imprt}\n"
+
     imports += "\n" * 2
     for vty in BaseRenderer.Imported_VectorTypes:
         imports += f"{vty} = vector_types['{vty}']\n"

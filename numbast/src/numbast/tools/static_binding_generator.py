@@ -41,18 +41,40 @@ MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
 
 class YamlConfig:
-    input_header: str
+    """Configuration File for Static Binding Generation.
+
+    Attributes
+    ----------
+    entry_point : str
+        The parsing entry point for Numbast to start looking for function
+        declarations.
+    retain_list : list[str]
+        The list of files from which the declarations are retained in the
+        final generated binding output. Bindings that exist in other source,
+        which may get transitively included in the declaration, are ignored
+        in bindings output.
+    additional_imports : list[str]
+        The list of additional imports to add to the binding file.
+    shim_include_override : str:
+        Override the include line of the shim function to specified string.
+        If not specified, default to `#include <path_to_entry_point>`.
+    """
+
+    entry_point: str
     retain_list: list[str]
     types: dict[str, numba.types.Type]
     datamodels: dict[str, numba.core.datamodel.models.DataModel]
     exclude_functions: list[str]
     exclude_structs: list[str]
     clang_includes_paths: list[str]
+    macro_expanded_function_prefixes: list[str]
+    additional_imports: list[str]
+    shim_include_override: str
 
     def __init__(self, cfg_path):
         with open(cfg_path) as f:
             config = yaml.load(f, yaml.Loader)
-            self.input_header = config["Entry Point"]
+            self.entry_point = config["Entry Point"]
             self.retain_list = config["File List"]
             self.types = _str_value_to_numba_type(config.get("Types", {}))
             self.datamodels = _str_value_to_numba_datamodel(
@@ -72,6 +94,12 @@ class YamlConfig:
                 "Macro-expanded Function Prefixes", []
             )
 
+            self.additional_imports = config.get("Additional Import", [])
+
+            self.shim_include_override = config.get(
+                "Shim Include Override", None
+            )
+
             if self.exclude_functions is None:
                 self.exclude_functions = []
             if self.exclude_structs is None:
@@ -82,9 +110,9 @@ class YamlConfig:
         self._verify_exists()
 
     def _verify_exists(self):
-        if not os.path.exists(self.input_header):
+        if not os.path.exists(self.entry_point):
             raise ValueError(
-                f"Input header file does not exist: {self.input_header}"
+                f"Input header file does not exist: {self.entry_point}"
             )
         for f in self.retain_list:
             if not os.path.exists(f):
@@ -259,6 +287,8 @@ def _static_binding_generator(
     exclude_structs: list[str],
     clang_include_paths: list[str],
     anon_filename_decl_prefix_allowlist: list[str],
+    additional_imports: list[str] = [],
+    shim_include_override: str | None = None,
     log_generates: bool = False,
     cfg_file_path: str | None = None,
     sbg_params: dict[str, str] = {},
@@ -277,7 +307,8 @@ def _static_binding_generator(
     - exclude_structs (list[str]): List of struct names to exclude from the bindings.
     - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
     - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
-    - log_generates (bool, optional): Flag to log the list of bindings to generate. Defaults to False.
+    - additional_imports (list[str]): The list of additional imports to add to binding.
+    - shim_include_override (str, optional): The command to override the include line of the shim functions.
     - cfg_file_path (str, optional): Path to the configuration file. Defaults to None.
     - sbg_params (dict, optional): A dictionary of parameters for the static binding generator. Defaults to empty dict.
 
@@ -326,8 +357,13 @@ def _static_binding_generator(
     )
 
     prefix_str = get_prefix()
-    shim_stream_str = get_shim_stream_obj(header=entry_point)
-    imports_str = get_rendered_imports()
+
+    if shim_include_override is not None:
+        shim_include = f"'#include <' + {shim_include_override} + '>'"
+    else:
+        shim_include = f'"#include <{entry_point}>"'
+    shim_stream_str = get_shim_stream_obj(shim_include=shim_include)
+    imports_str = get_rendered_imports(additional_imports=additional_imports)
 
     # Example: Save the processed output to the output directory
     output_file = os.path.join(output_dir, f"{basename}.py")
@@ -381,7 +417,7 @@ def ruff_format_binding_file(binding_file_path: str):
 @click.command()
 @click.pass_context
 @click.option(
-    "--input-header",
+    "--entry-point",
     type=click.Path(exists=True, dir_okay=False, readable=True),
 )
 @click.option("--retain")
@@ -405,13 +441,14 @@ def ruff_format_binding_file(binding_file_path: str):
     default=None,
 )
 @click.option(
+    "-fmt",
     "--run-ruff-format",
     type=bool,
     default=True,
 )
 def static_binding_generator(
     ctx,
-    input_header,
+    entry_point,
     retain,
     cfg_path,
     output_dir,
@@ -423,9 +460,9 @@ def static_binding_generator(
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
 
-    INPUT_HEADER: Path to the input CUDA header file.
+    ENTRY POINT: Path to the input CUDA header file.
     CFG_PATH: Path to the configuration file in YAML format. If specified, only COMPUTE_CAPABILITY and OUTPUT_DIR is allowed as parameter.
-    RETAIN: Comma separated list of file names to keep parsing, default to INPUT_HEADER.
+    RETAIN: Comma separated list of file names to keep parsing, default to ENTRY POINT.
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
     DATAMODELS: A dictionary in JSON string that maps name of the struct to their Numba datamodel.
@@ -443,16 +480,14 @@ def static_binding_generator(
         raise ValueError("Compute capability must start with `sm_`")
 
     if cfg_path:
-        if any(
-            x is not None for x in [input_header, retain, types, datamodels]
-        ):
+        if any(x is not None for x in [entry_point, retain, types, datamodels]):
             raise ValueError(
                 "When CFG_PATH specified, none of INPUT_HEADER, RETAIN, TYPES and DATAMODELS should be specified."
             )
 
         cfg = YamlConfig(cfg_path)
         output_file = _static_binding_generator(
-            cfg.input_header,
+            cfg.entry_point,
             cfg.retain_list,
             output_dir,
             cfg.types,
@@ -462,6 +497,8 @@ def static_binding_generator(
             cfg.exclude_structs,
             cfg.clang_includes_paths,
             cfg.macro_expanded_function_prefixes,
+            cfg.additional_imports,
+            cfg.shim_include_override,
             cfg_file_path=cfg_path,
             sbg_params=ctx.params,
         )
@@ -472,7 +509,7 @@ def static_binding_generator(
         return
 
     if retain is None:
-        retain_list = [input_header]
+        retain_list = [entry_point]
     else:
         retain_list = retain.split(",")
 
@@ -480,7 +517,7 @@ def static_binding_generator(
         raise ValueError("At least one file name to retain must be provided.")
 
     output_file = _static_binding_generator(
-        input_header,
+        entry_point,
         retain_list,
         output_dir,
         types,
@@ -488,6 +525,8 @@ def static_binding_generator(
         compute_capability,
         [],  # TODO: parse excludes from input
         [],  # TODO: parse excludes from input
+        [],
+        [],
     )
 
     if run_ruff_format:

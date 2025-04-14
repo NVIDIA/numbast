@@ -17,9 +17,8 @@ def kernel():
     def _lazy_kernel(globals):
         ffi = cffi.FFI()
         set42 = globals["set42"]
-        c_ext_shim_source = globals["c_ext_shim_source"]
 
-        @cuda.jit(link=[c_ext_shim_source])
+        @cuda.jit
         def kernel(arr):
             ptr = ffi.from_buffer(arr)
             set42(ptr)
