@@ -292,6 +292,7 @@ def _static_binding_generator(
         return
 
     entry_point = os.path.abspath(entry_point)
+    retain_list = [os.path.abspath(path) for path in retain_list]
 
     # TODO: we don't have tests on different compute capabilities for the static binding generator yet.
     # This will be added in future PRs.
