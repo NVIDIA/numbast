@@ -46,8 +46,6 @@ def test_repro_info(tmpdir):
     with open(os.path.join(output_folder, "data.py")) as f:
         bindings = f.readlines()
 
-    print("\n".join(bindings))
-
     expected_info = {
         "Ast_canopy version",
         "Numbast version",
