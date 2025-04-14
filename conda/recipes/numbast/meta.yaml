@@ -56,6 +56,7 @@ requirements:
     - pynvjitlink >=0.2
     - pyyaml
     - click
+    - jinja2
 
 about:
   license_family: Apache
