@@ -57,6 +57,7 @@ requirements:
     - pyyaml
     - click
     - jinja2
+    - ruff
 
 about:
   license_family: Apache
