@@ -66,7 +66,7 @@ def bfloat16():
     )
 
     prefix_str = get_pynvjitlink_guard()
-    shim_stream_str = get_shim_stream_obj(header=cuda_bf16)
+    shim_stream_str = get_shim_stream_obj(cuda_bf16)
     imports_str = get_rendered_imports()
 
     bindings = f"""
