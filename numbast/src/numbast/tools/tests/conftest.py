@@ -66,11 +66,19 @@ def run_in_isolated_folder(tmpdir):
             ],
         )
 
+        assert result.exit_code == 0
+
         binding_name = header.split(".")[0] + ".py"
+        binding_path = os.path.join(output_folder, binding_name)
+
+        with open(binding_path) as f:
+            binding = f.read()
+
         return {
             "result": result,
             "output_folder": output_folder,
-            "binding_path": os.path.join(output_folder, binding_name),
+            "binding_path": binding_path,
+            "binding": binding,
         }
 
     return _run

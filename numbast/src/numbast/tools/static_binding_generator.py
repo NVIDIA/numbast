@@ -70,6 +70,7 @@ class YamlConfig:
     macro_expanded_function_prefixes: list[str]
     additional_imports: list[str]
     shim_include_override: str
+    require_pynvjitlink: bool
 
     def __init__(self, cfg_path):
         with open(cfg_path) as f:
@@ -99,6 +100,8 @@ class YamlConfig:
             self.shim_include_override = config.get(
                 "Shim Include Override", None
             )
+
+            self.require_pynvjitlink = config.get("Require Pynvjitlink", False)
 
             if self.exclude_functions is None:
                 self.exclude_functions = []
@@ -289,6 +292,7 @@ def _static_binding_generator(
     anon_filename_decl_prefix_allowlist: list[str],
     additional_imports: list[str] = [],
     shim_include_override: str | None = None,
+    require_pynvjitlink: bool = False,
     log_generates: bool = False,
     cfg_file_path: str | None = None,
     sbg_params: dict[str, str] = {},
@@ -309,6 +313,7 @@ def _static_binding_generator(
     - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
     - additional_imports (list[str]): The list of additional imports to add to binding.
     - shim_include_override (str, optional): The command to override the include line of the shim functions.
+    - require_pynvjitlink (bool, optional): If true, detect if pynvjitlink is installed, raise an error if not.
     - cfg_file_path (str, optional): Path to the configuration file. Defaults to None.
     - sbg_params (dict, optional): A dictionary of parameters for the static binding generator. Defaults to empty dict.
 
@@ -356,7 +361,10 @@ def _static_binding_generator(
         functions, entry_point, exclude_functions
     )
 
-    prefix_str = get_pynvjitlink_guard()
+    if require_pynvjitlink:
+        pynvjitlink_guard = get_pynvjitlink_guard()
+    else:
+        pynvjitlink_guard = ""
 
     if shim_include_override is not None:
         shim_include = f"'#include <' + {shim_include_override} + '>'"
@@ -384,8 +392,8 @@ def _static_binding_generator(
 
 # Imports:
 {imports_str}
-# Prefixes:
-{prefix_str}
+# Setups:
+{pynvjitlink_guard}
 # Shim Stream:
 {shim_stream_str}
 # Enums:
@@ -499,6 +507,7 @@ def static_binding_generator(
             cfg.macro_expanded_function_prefixes,
             cfg.additional_imports,
             cfg.shim_include_override,
+            cfg.require_pynvjitlink,
             cfg_file_path=cfg_path,
             sbg_params=ctx.params,
         )

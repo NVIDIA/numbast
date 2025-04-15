@@ -17,10 +17,8 @@ class BaseRenderer:
     Pynvjitlink_guard = """
 import importlib
 
-if importlib.util.find_spec("pynvjitlink"):
-    numba.config.CUDA_ENABLE_PYNVJITLINK = True
-else:
-    raise RuntimeError("Numbast generated bindings require pynvjitlink.")
+if not importlib.util.find_spec("pynvjitlink"):
+    raise RuntimeErorr("Pynvjitlink is required to run this binding.")
 """
 
     Shim = """
