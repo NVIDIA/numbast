@@ -76,7 +76,7 @@ class StaticEnumsRenderer(BaseRenderer):
             self._python_str += "\n" + get_rendered_imports()
 
         if with_prefix:
-            self._python_str += "\n" + self.Prefix
+            self._python_str += "\n" + self.Pynvjitlink_guard
 
         self._python_str += "\n" + "\n".join(self._python_rendered)
 

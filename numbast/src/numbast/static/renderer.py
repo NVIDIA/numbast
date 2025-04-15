@@ -14,7 +14,7 @@ from ast_canopy.api import get_default_cuda_path
 
 
 class BaseRenderer:
-    Prefix = """
+    Pynvjitlink_guard = """
 import importlib
 
 if importlib.util.find_spec("pynvjitlink"):
@@ -114,7 +114,7 @@ def get_reproducible_info(
 
 
 def get_pynvjitlink_guard() -> str:
-    return BaseRenderer.Prefix
+    return BaseRenderer.Pynvjitlink_guard
 
 
 def get_shim_stream_obj(shim_include: str) -> str:

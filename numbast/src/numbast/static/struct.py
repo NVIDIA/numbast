@@ -1046,7 +1046,7 @@ class StaticStructsRenderer(BaseRenderer):
             self._python_str += "\n" + get_rendered_imports()
 
         if with_prefix:
-            self._python_str += "\n" + self.Prefix
+            self._python_str += "\n" + self.Pynvjitlink_guard
             self._python_str += "\n" + get_shim_stream_obj(self._default_header)
 
         self._python_str += "\n" + "\n".join(python_rendered)
