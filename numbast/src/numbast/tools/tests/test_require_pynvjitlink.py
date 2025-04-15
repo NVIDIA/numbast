@@ -10,9 +10,8 @@ import pytest
 
 @pytest.mark.parametrize("require_pynvjitlink", [True, False])
 def test_require_pynvjitlink(run_in_isolated_folder, require_pynvjitlink):
-    """Tests:
-    1. Additional Import field actually adds custom import libs in binding
-    2. Shim Include Override overrides the shim include line
+    """Tests if `require_pynvjitlink` field conditionally adds pynvjitlink
+    guard.
     """
     res = run_in_isolated_folder(
         "require_pynvjitlink.yml.j2",
@@ -42,10 +41,6 @@ kernel[1, 1]()
     test_kernel = os.path.join(output_folder, "test.py")
     with open(test_kernel, "w") as f:
         f.write(test_kernel_src)
-
-    with open(os.path.join(output_folder, "data.py")) as f:
-        binding = f.read()
-        print(binding)
 
     res = subprocess.run(
         [sys.executable, test_kernel],
