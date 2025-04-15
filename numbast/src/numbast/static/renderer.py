@@ -113,7 +113,7 @@ def get_reproducible_info(
     return "\n".join(commented) + "\n"
 
 
-def get_prefix() -> str:
+def get_pynvjitlink_guard() -> str:
     return BaseRenderer.Prefix
 
 

@@ -20,7 +20,7 @@ from pylibastcanopy import Enum, Typedef
 
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
-    get_prefix,
+    get_pynvjitlink_guard,
     get_shim_stream_obj,
     get_rendered_imports,
     get_reproducible_info,
@@ -356,7 +356,7 @@ def _static_binding_generator(
         functions, entry_point, exclude_functions
     )
 
-    prefix_str = get_prefix()
+    prefix_str = get_pynvjitlink_guard()
 
     if shim_include_override is not None:
         shim_include = f"'#include <' + {shim_include_override} + '>'"

@@ -17,7 +17,7 @@ from numbast.static.function import StaticFunctionsRenderer
 from numbast.tools.static_binding_generator import _typedef_to_aliases
 from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
-    get_prefix,
+    get_pynvjitlink_guard,
     get_shim_stream_obj,
     get_rendered_imports,
 )
@@ -71,7 +71,7 @@ def float16():
         with_prefix=False, with_imports=False, with_shim_functions=False
     )
 
-    prefix_str = get_prefix()
+    prefix_str = get_pynvjitlink_guard()
     shim_stream_str = get_shim_stream_obj(cuda_fp16)
     imports_str = get_rendered_imports()
 
