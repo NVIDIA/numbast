@@ -417,7 +417,10 @@ def ruff_format_binding_file(binding_file_path: str):
     if not os.path.exists(binding_file_path):
         return
 
-    subprocess.run(["ruff", "check", "--fix", binding_file_path], check=True)
+    subprocess.run(
+        ["ruff", "check", "--select", "I", "--fix", binding_file_path],
+        check=True,
+    )
 
     print("Formatted.")
 
