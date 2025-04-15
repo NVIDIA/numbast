@@ -18,7 +18,7 @@ class BaseRenderer:
 import importlib
 
 if not importlib.util.find_spec("pynvjitlink"):
-    raise RuntimeErorr("Pynvjitlink is required to run this binding.")
+    raise RuntimeError("Pynvjitlink is required to run this binding.")
 """
 
     Shim = """
