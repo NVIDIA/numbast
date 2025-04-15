@@ -86,7 +86,7 @@ def function_decl(header):
 def foo_impl(data_folder, header):
     src = data_folder("src", "struct.cu")
     header = header["struct"]
-    with open(src, "r") as f:
+    with open(src) as f:
         impl = f.read()
 
     header_str = f"#include <{header}>"

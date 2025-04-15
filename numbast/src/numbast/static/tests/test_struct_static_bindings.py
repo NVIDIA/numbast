@@ -51,7 +51,7 @@ def decl(data_folder, header):
 @pytest.fixture(scope="module")
 def impl(data_folder, header):
     src = data_folder("src", "struct.cu")
-    with open(src, "r") as f:
+    with open(src) as f:
         impl = f.read()
 
     header_str = f"#include <{header}>"
