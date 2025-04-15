@@ -224,7 +224,7 @@ def _generate_structs(struct_decls, header_path, types, data_models, excludes):
     SSR = StaticStructsRenderer(struct_decls, specs, excludes=excludes)
 
     return SSR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
     )
 
 
@@ -236,7 +236,7 @@ def _generate_functions(
     SFR = StaticFunctionsRenderer(func_decls, header_path, excludes=excludes)
 
     return SFR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
     )
 
 
@@ -244,7 +244,7 @@ def _generate_enums(enum_decls: list[Enum]):
     """Create enum bindings."""
     SER = StaticEnumsRenderer(enum_decls)
     return SER.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
     )
 
 

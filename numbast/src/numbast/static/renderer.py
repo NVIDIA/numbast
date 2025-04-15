@@ -80,7 +80,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     def render_as_str(
         self,
         *,
-        with_prefix: bool,
+        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_functions: bool,
     ) -> str:

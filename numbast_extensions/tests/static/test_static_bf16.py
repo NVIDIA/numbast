@@ -58,11 +58,11 @@ def bfloat16():
     SFR = StaticFunctionsRenderer(functions, cuda_bf16)
 
     struct_bindings = SSR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
     )
 
     function_bindings = SFR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
     )
 
     prefix_str = get_pynvjitlink_guard()

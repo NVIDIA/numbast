@@ -38,10 +38,10 @@ def cuda_decls(data_folder):
     SFR = StaticFunctionsRenderer(functions, header)
 
     struct_bindings = SSR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
     )
     function_bindings = SFR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
     )
 
     bindings = "\n".join(
