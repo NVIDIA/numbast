@@ -85,11 +85,11 @@ class StaticEnumsRenderer(BaseRenderer):
         *,
         require_pynvjitlink: bool,
         with_imports: bool,
-        with_shim_functions: bool,
+        with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 
-        if with_shim_functions is True:
+        if with_shim_stream is True:
             raise ValueError("Enum renderer does not render shim functions.")
 
         self._render(require_pynvjitlink, with_imports)

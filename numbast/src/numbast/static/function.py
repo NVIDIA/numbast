@@ -476,7 +476,12 @@ class {op_typing_name}(ConcreteTemplate):
 
         self._func_typing_rendered = "\n".join(typings_rendered)
 
-    def _render(self, require_pynvjitlink: bool, with_imports: bool):
+    def _render(
+        self,
+        require_pynvjitlink: bool,
+        with_imports: bool,
+        with_shim_stream: bool,
+    ):
         """Render python bindings and shim functions."""
         self.Imports.add("from numba.cuda import CUSource")
 
@@ -547,7 +552,10 @@ class {op_typing_name}(ConcreteTemplate):
 
         if require_pynvjitlink:
             self._python_str += "\n" + self.Pynvjitlink_guard
-            self._python_str += "\n" + get_shim_stream_obj(self._header_path)
+
+        if with_shim_stream:
+            shim_include = f'"#include<{self._header_path}>"'
+            self._python_str += "\n" + get_shim_stream_obj(shim_include)
 
         self._python_str += "\n" + "\n".join(python_rendered)
 
@@ -562,16 +570,12 @@ class {op_typing_name}(ConcreteTemplate):
         *,
         require_pynvjitlink: bool,
         with_imports: bool,
-        with_shim_functions: bool,
+        with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render(require_pynvjitlink, with_imports)
 
-        if with_shim_functions:
-            output = self._python_str + "\n" + self._shim_function_pystr
-        else:
-            output = self._python_str
-
+        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        output = self._python_str
         file_logger.debug(output)
 
         return output

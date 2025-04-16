@@ -80,7 +80,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
         *,
         require_pynvjitlink: bool,
         with_imports: bool,
-        with_shim_functions: bool,
+        with_shim_stream: bool,
     ) -> str:
         raise NotImplementedError()
 

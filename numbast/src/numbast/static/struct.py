@@ -1014,7 +1014,12 @@ class StaticStructsRenderer(BaseRenderer):
 
         self._excludes = excludes
 
-    def _render(self, require_pynvjitlink: bool, with_imports: bool):
+    def _render(
+        self,
+        require_pynvjitlink: bool,
+        with_imports: bool,
+        with_shim_stream: bool,
+    ):
         """Render all structs in `decls`."""
         for decl in self._decls:
             name = decl.name
@@ -1047,7 +1052,10 @@ class StaticStructsRenderer(BaseRenderer):
 
         if require_pynvjitlink:
             self._python_str += "\n" + self.Pynvjitlink_guard
-            self._python_str += "\n" + get_shim_stream_obj(self._default_header)
+
+        if with_shim_stream:
+            shim_include = f'"#include<{self._default_header}>"'
+            self._python_str += "\n" + get_shim_stream_obj(shim_include)
 
         self._python_str += "\n" + "\n".join(python_rendered)
 
@@ -1058,16 +1066,12 @@ class StaticStructsRenderer(BaseRenderer):
         *,
         require_pynvjitlink: bool,
         with_imports: bool,
-        with_shim_functions: bool,
+        with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render(require_pynvjitlink, with_imports)
 
-        if with_shim_functions:
-            output = self._python_str + "\n" + self._shim_function_pystr
-        else:
-            output = self._python_str
-
+        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        output = self._python_str
         file_logger.debug(output)
 
         return output

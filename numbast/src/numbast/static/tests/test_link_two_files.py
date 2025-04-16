@@ -44,7 +44,7 @@ def foo_decl(header):
     SSR = StaticStructsRenderer(structs, specs, header)
 
     bindings = SSR.render_as_str(
-        require_pynvjitlink=True, with_imports=True, with_shim_functions=True
+        require_pynvjitlink=True, with_imports=True, with_shim_stream=True
     )
 
     globals = {}
@@ -71,7 +71,7 @@ def function_decl(header):
     SFR = StaticFunctionsRenderer(functions, header)
 
     bindings = SFR.render_as_str(
-        require_pynvjitlink=True, with_imports=True, with_shim_functions=True
+        require_pynvjitlink=True, with_imports=True, with_shim_stream=True
     )
     globals = {}
     exec(bindings, globals)

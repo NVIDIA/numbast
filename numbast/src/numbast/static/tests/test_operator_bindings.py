@@ -38,17 +38,18 @@ def cuda_decls(data_folder):
     SFR = StaticFunctionsRenderer(functions, header)
 
     struct_bindings = SSR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
     )
     function_bindings = SFR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
     )
 
+    shim_include = f'"#include<{header}>"'
     bindings = "\n".join(
         [
             get_rendered_imports(),
             get_pynvjitlink_guard(),
-            get_shim_stream_obj(header),
+            get_shim_stream_obj(shim_include),
             struct_bindings,
             function_bindings,
         ]
