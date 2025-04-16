@@ -78,13 +78,13 @@ extern "C" __device__ int
 
     c_ext_shim_var_template = """
 shim_raw_str = \"\"\"{shim_rendered}\"\"\"
-shim_stream.write(shim_raw_str)
 """
 
     lowering_template = """
 @lower({func_name}, {params})
 def impl(context, builder, sig, args):
     context._external_linkage.add(shim_obj)
+    shim_stream.write(shim_raw_str)
     ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(ptrs, sig.args, args):
         builder.store(arg, ptr, align=getattr(ty, "alignof_", None))

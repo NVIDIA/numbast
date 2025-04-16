@@ -39,7 +39,6 @@ class StaticStructMethodRenderer(BaseRenderer):
 
     c_ext_shim_var_template = """
 shim_raw_str = \"\"\"{shim_rendered}\"\"\"
-shim_stream.write(shim_raw_str)
 """
 
 
@@ -85,6 +84,7 @@ extern "C" __device__ int
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
     context._external_linkage.add(shim_obj)
+    shim_stream.write(shim_raw_str)
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(argptrs, sig.args, args):
@@ -438,6 +438,7 @@ def {caller_name}(arg):
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
     context._external_linkage.add(shim_obj)
+    shim_stream.write(shim_raw_str)
     ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
 
