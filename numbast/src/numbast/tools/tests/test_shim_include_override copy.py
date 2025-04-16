@@ -49,10 +49,6 @@ kernel[1, 1]()
     with open(test_kernel, "w") as f:
         f.write(test_kernel_src)
 
-    with open(os.path.join(output_folder, "data.py")) as f:
-        binding = f.read()
-        print(binding)
-
     res = subprocess.run(
         [sys.executable, test_kernel],
         cwd=output_folder,

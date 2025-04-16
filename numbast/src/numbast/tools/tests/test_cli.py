@@ -244,7 +244,6 @@ def test_simple_cli_compute_capability(tmpdir, cc, expected):
     globals = {}
     exec(bindings, globals)
 
-    print(globals.keys())
     assert ("mul" in globals) is expected
 
 

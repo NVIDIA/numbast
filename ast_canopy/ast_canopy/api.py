@@ -150,14 +150,7 @@ def parse_declarations_from_source(
     additional_includes: list[str] = [],
     anon_filename_decl_prefix_allowlist: list[str] = [],
     verbose: bool = False,
-) -> tuple[
-    list[Struct],
-    list[Function],
-    list[bindings.FunctionTemplate],
-    list[ClassTemplate],
-    list[bindings.Typedef],
-    list[bindings.Enum],
-]:
+) -> Declarations:
     """Given a source file, parse all *top-level* declarations from it.
     Returns a tuple that each contains a list of declaration objects for the source file.
 
