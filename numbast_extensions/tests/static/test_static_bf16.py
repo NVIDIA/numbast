@@ -12,7 +12,10 @@ from numba.core.datamodel.models import PrimitiveModel, StructModel
 
 from ast_canopy import parse_declarations_from_source
 from numbast.static.struct import StaticStructsRenderer
-from numbast.static.function import StaticFunctionsRenderer
+from numbast.static.function import (
+    StaticFunctionsRenderer,
+    clear_function_apis_registry,
+)
 from numbast.tools.static_binding_generator import _typedef_to_aliases
 from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
@@ -21,6 +24,7 @@ from numbast.static.renderer import (
     get_shim_stream_obj,
     get_rendered_imports,
 )
+from numbast.static.types import reset_types
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
@@ -28,7 +32,9 @@ COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
 @pytest.fixture(scope="module")
 def bfloat16():
+    reset_types()
     clear_base_renderer_cache()
+    clear_function_apis_registry()
 
     cuda_bf16 = os.path.join(CUDA_INCLUDE_PATH, "cuda_bf16.h")
     cuda_bf16_hpp = os.path.join(CUDA_INCLUDE_PATH, "cuda_bf16.hpp")
@@ -82,10 +88,6 @@ def bfloat16():
 """
 
     globals = {}
-
-    with open("/tmp/bf16.py", "w") as f:
-        f.write(bindings)
-
     exec(bindings, globals)
 
     public_apis = ["nv_bfloat16", "nv_bfloat16", "hsin"]

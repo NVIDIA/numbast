@@ -2,20 +2,31 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
+import copy
 
 from numbast.types import CTYPE_MAPS
 from numbast.static.renderer import BaseRenderer
 from numbast.errors import TypeNotFoundError
 
 
-CTYPE_TO_NBTYPE_STR = {k: str(v) for k, v in CTYPE_MAPS.items()}
-CTYPE_TO_NBTYPE_STR.update({"bool": "bool_", "void": "void"})
+_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
+    k: str(v) for k, v in CTYPE_MAPS.items()
+} | {"bool": "bool_", "void": "void"}
+
+CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
 
 def register_enum_type_str(enum_name: str):
     global CTYPE_TO_NBTYPE_STR
 
     CTYPE_TO_NBTYPE_STR[enum_name] = enum_name
+
+
+def reset_types():
+    global CTYPE_TO_NBTYPE_STR
+
+    CTYPE_TO_NBTYPE_STR.clear()
+    CTYPE_TO_NBTYPE_STR.update(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
 
 def to_numba_type_str(ty: str):

@@ -12,7 +12,10 @@ from numba.core.datamodel.models import PrimitiveModel, StructModel
 
 from ast_canopy import parse_declarations_from_source
 from numbast.static.struct import StaticStructsRenderer
-from numbast.static.function import StaticFunctionsRenderer
+from numbast.static.function import (
+    StaticFunctionsRenderer,
+    clear_function_apis_registry,
+)
 from numbast.tools.static_binding_generator import _typedef_to_aliases
 from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
@@ -21,6 +24,7 @@ from numbast.static.renderer import (
     get_shim_stream_obj,
     get_rendered_imports,
 )
+from numbast.static.types import reset_types
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
@@ -28,7 +32,10 @@ COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
 @pytest.fixture(scope="module")
 def float16():
+    reset_types()
     clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     cuda_fp16 = os.path.join(CUDA_INCLUDE_PATH, "cuda_fp16.h")
     cuda_fp16_hpp = os.path.join(CUDA_INCLUDE_PATH, "cuda_fp16.hpp")
 
@@ -58,8 +65,8 @@ def float16():
     }
 
     aliases = _typedef_to_aliases(typedefs)
-
     typedef_bindings = render_aliases(aliases)
+
     SSR = StaticStructsRenderer(structs, specs, default_header=cuda_fp16)
     SFR = StaticFunctionsRenderer(functions, cuda_fp16)
 
@@ -86,9 +93,6 @@ def float16():
 """
 
     globals = {}
-    with open("/tmp/data.py", "w") as f:
-        f.write(bindings)
-
     exec(bindings, globals)
 
     public_apis = ["half", "half2", "hsin"]
