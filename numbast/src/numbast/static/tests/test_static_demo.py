@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from functools import partial
 
 from numba import cuda
 from numba.types import Number, float64
@@ -14,7 +13,7 @@ from numbast.static.struct import StaticStructsRenderer
 
 
 @pytest.fixture(scope="module")
-def cuda_struct(data_folder):
+def decl(data_folder):
     header = data_folder("demo.cuh")
 
     specs = {"__myfloat16": (Number, PrimitiveModel, header)}
@@ -24,31 +23,25 @@ def cuda_struct(data_folder):
 
     assert len(structs) == 1
 
-    SSR = StaticStructsRenderer(structs, specs)
+    SSR = StaticStructsRenderer(structs, specs, header)
 
     bindings = SSR.render_as_str(
-        with_prefix=True, with_imports=True, with_shim_functions=True
+        require_pynvjitlink=True, with_imports=True, with_shim_stream=True
     )
 
     globals = {}
     exec(bindings, globals)
 
-    public_apis = [*specs, "c_ext_shim_source"]
+    public_apis = [*specs]
     assert all(public_api in globals for public_api in public_apis)
 
     return {k: globals[k] for k in public_apis}
 
 
-@pytest.fixture(scope="module")
-def numbast_jit(cuda_struct):
-    c_ext_shim_source = cuda_struct["c_ext_shim_source"]
-    return partial(cuda.jit, link=[c_ext_shim_source])
+def test_demo(decl):
+    __myfloat16 = decl["__myfloat16"]
 
-
-def test_demo(cuda_struct, numbast_jit):
-    __myfloat16 = cuda_struct["__myfloat16"]
-
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         foo = __myfloat16(3.14)  # noqa: F841
 

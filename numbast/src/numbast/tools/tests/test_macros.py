@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 
 import numpy as np
@@ -15,9 +18,8 @@ def kernel():
         forty_two_int = globals["forty_two_int"]
         forty_two_float = globals["forty_two_float"]
         forty_two_double = globals["forty_two_double"]
-        c_ext_shim_source = globals["c_ext_shim_source"]
 
-        @cuda.jit(link=[c_ext_shim_source])
+        @cuda.jit
         def kernel(arr):
             arr[0] = forty_two_int()
             arr[1] = int(forty_two_float())

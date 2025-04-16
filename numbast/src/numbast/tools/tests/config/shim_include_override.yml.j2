@@ -1,0 +1,13 @@
+Name: Test Data
+Version: 0.0.1
+Entry Point: {{ data }}
+File List:
+    - {{ data }}
+Exclude: {}
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+Shim Include Override: "os.path.join(os.path.dirname(__file__), 'data.cuh')"
+Additional Import:
+    - os
