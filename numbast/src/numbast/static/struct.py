@@ -84,7 +84,7 @@ extern "C" __device__ int
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
     context._external_linkage.add(shim_obj)
-    shim_stream.write(shim_raw_str)
+    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(argptrs, sig.args, args):
@@ -252,6 +252,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._device_caller_name,
             pointer_wrapped_args=self._pointer_wrapped_param_types_str,
+            unique_shim_name=self._deduplicated_shim_name,
         )
 
     def _render(self):
@@ -438,7 +439,7 @@ def {caller_name}(arg):
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
     context._external_linkage.add(shim_obj)
-    shim_stream.write(shim_raw_str)
+    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
 
@@ -561,6 +562,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
                 cast_to_type=self._nb_cast_to_type_str,
                 struct_type_name=self._struct_type_name,
                 struct_device_caller_name=self._caller_name,
+                unique_shim_name=self._unique_shim_name,
             )
         )
 

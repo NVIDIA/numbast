@@ -21,9 +21,26 @@ if not importlib.util.find_spec("pynvjitlink"):
     raise RuntimeError("Pynvjitlink is required to run this binding.")
 """
 
+    KeyedStringIO = """
+class _KeyedStringIO(io.StringIO):
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, *kwarg)
+        self._keys = set()
+
+    def write_with_key(self, key: str, value: str):
+        if key in self._keys:
+            return
+        self._keys.add(key)
+        self.write(value)
+
+    def reset(self):
+        self._keys.clear()
+        self.seek(0)
+"""
+
     Shim = """
 {shim_include}
-shim_stream = io.StringIO()
+shim_stream = _KeyedStringIO()
 shim_stream.write(shim_include)
 shim_obj = CUSource(shim_stream)
 """
@@ -117,7 +134,12 @@ def get_pynvjitlink_guard() -> str:
 
 def get_shim_stream_obj(shim_include: str) -> str:
     shim_include = f"shim_include = {shim_include}"
-    return BaseRenderer.Shim.format(shim_include=shim_include)
+
+    return (
+        BaseRenderer.KeyedStringIO
+        + "\n"
+        + BaseRenderer.Shim.format(shim_include=shim_include)
+    )
 
 
 def get_rendered_imports(additional_imports: list[str] = []) -> str:
