@@ -83,7 +83,7 @@ extern "C" __device__ int
     struct_ctor_lowering_template = """
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
-    context._external_linkage.add(shim_obj)
+    context.active_code_library.add_linking_file(shim_obj)
     shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
@@ -438,7 +438,7 @@ def {caller_name}(arg):
     struct_conversion_op_lowering_template = """
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
-    context._external_linkage.add(shim_obj)
+    context.active_code_library.add_linking_file(shim_obj)
     shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
