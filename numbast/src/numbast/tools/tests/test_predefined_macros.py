@@ -16,7 +16,6 @@ def test_predefined_macros(run_in_isolated_folder):
         {},
         ruff_format=True,
         load_symbols=True,
-        show_binding=True,
     )
 
     result = res["result"]
