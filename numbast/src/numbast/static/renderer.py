@@ -39,12 +39,10 @@ class _KeyedStringIO(io.StringIO):
 """
 
     Shim = """
-shim_prefix = \"\"
 {shim_defines}
 {shim_include}
 shim_prefix = shim_defines + \"\\n\" + shim_include
 shim_stream = _KeyedStringIO()
-print(shim_prefix)
 shim_stream.write(shim_prefix)
 shim_obj = CUSource(shim_stream)
 """
