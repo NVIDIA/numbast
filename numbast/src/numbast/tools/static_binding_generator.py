@@ -21,7 +21,7 @@ from pylibastcanopy import Enum, Typedef
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_pynvjitlink_guard,
-    get_shim_stream_obj,
+    get_shim,
     get_rendered_imports,
     get_reproducible_info,
 )
@@ -62,8 +62,8 @@ class YamlConfig:
 
     entry_point: str
     retain_list: list[str]
-    types: dict[str, numba.types.Type]
-    datamodels: dict[str, numba.core.datamodel.models.DataModel]
+    types: dict[str, type]
+    datamodels: dict[str, type]
     exclude_functions: list[str]
     exclude_structs: list[str]
     clang_includes_paths: list[str]
@@ -71,6 +71,7 @@ class YamlConfig:
     additional_imports: list[str]
     shim_include_override: str
     require_pynvjitlink: bool
+    predefined_macros: list[str]
 
     def __init__(self, cfg_path):
         with open(cfg_path) as f:
@@ -102,6 +103,7 @@ class YamlConfig:
             )
 
             self.require_pynvjitlink = config.get("Require Pynvjitlink", False)
+            self.predefined_macros = config.get("Predefined Macros", [])
 
             if self.exclude_functions is None:
                 self.exclude_functions = []
@@ -125,7 +127,7 @@ class YamlConfig:
                 raise ValueError(f"File in include list does not exist: {f}")
 
 
-def _str_value_to_numba_type(d: dict[str, str]) -> dict[str, numba.types.Type]:
+def _str_value_to_numba_type(d: dict[str, str]) -> dict[str, type]:
     """Converts string typed value to numba `types` objects"""
     return {k: getattr(numba.types, v) for k, v in d.items()}
 
@@ -158,7 +160,7 @@ numba_type_dict = NumbaTypeDictType()
 
 def _str_value_to_numba_datamodel(
     d: dict[str, str],
-) -> dict[str, numba.core.datamodel.models.DataModel]:
+) -> dict[str, type]:
     """Converts string typed value to numba `datamodel` objects"""
     return {k: getattr(numba.core.datamodel.models, v) for k, v in d.items()}
 
@@ -290,13 +292,14 @@ def _static_binding_generator(
     exclude_structs: list[str],
     clang_include_paths: list[str],
     anon_filename_decl_prefix_allowlist: list[str],
+    predefined_macros: list[str] = [],
     additional_imports: list[str] = [],
     shim_include_override: str | None = None,
     require_pynvjitlink: bool = False,
     log_generates: bool = False,
     cfg_file_path: str | None = None,
     sbg_params: dict[str, str] = {},
-):
+) -> str:
     """
     A function to generate CUDA static bindings for CUDA C++ headers.
 
@@ -311,6 +314,7 @@ def _static_binding_generator(
     - exclude_structs (list[str]): List of struct names to exclude from the bindings.
     - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
     - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
+    -
     - additional_imports (list[str]): The list of additional imports to add to binding.
     - shim_include_override (str, optional): The command to override the include line of the shim functions.
     - require_pynvjitlink (bool, optional): If true, detect if pynvjitlink is installed, raise an error if not.
@@ -318,14 +322,15 @@ def _static_binding_generator(
     - sbg_params (dict, optional): A dictionary of parameters for the static binding generator. Defaults to empty dict.
 
     Returns:
-    None
+    str
+        Path to the generated binding file
     """
     try:
         basename = os.path.basename(entry_point)
         basename = basename.split(".")[0]
     except Exception:
         click.echo(f"Unable to extract base name from {entry_point}.")
-        return
+        raise
 
     entry_point = os.path.abspath(entry_point)
     retain_list = [os.path.abspath(path) for path in retain_list]
@@ -339,6 +344,7 @@ def _static_binding_generator(
         cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
         additional_includes=clang_include_paths,
         anon_filename_decl_prefix_allowlist=anon_filename_decl_prefix_allowlist,
+        defines=predefined_macros,
         verbose=VERBOSE,
     )
     structs = decls.structs
@@ -370,7 +376,9 @@ def _static_binding_generator(
         shim_include = f"'#include <' + {shim_include_override} + '>'"
     else:
         shim_include = f'"#include <{entry_point}>"'
-    shim_stream_str = get_shim_stream_obj(shim_include=shim_include)
+    shim_stream_str = get_shim(
+        shim_include=shim_include, predefined_macros=predefined_macros
+    )
     imports_str = get_rendered_imports(additional_imports=additional_imports)
 
     # Example: Save the processed output to the output directory
@@ -508,6 +516,7 @@ def static_binding_generator(
             cfg.exclude_structs,
             cfg.clang_includes_paths,
             cfg.macro_expanded_function_prefixes,
+            cfg.predefined_macros,
             cfg.additional_imports,
             cfg.shim_include_override,
             cfg.require_pynvjitlink,

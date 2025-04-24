@@ -39,9 +39,13 @@ class _KeyedStringIO(io.StringIO):
 """
 
     Shim = """
+shim_prefix = \"\"
+{shim_defines}
 {shim_include}
+shim_prefix = shim_defines + \"\\n\" + shim_include
 shim_stream = _KeyedStringIO()
-shim_stream.write(shim_include)
+print(shim_prefix)
+shim_stream.write(shim_prefix)
 shim_obj = CUSource(shim_stream)
 """
 
@@ -132,13 +136,31 @@ def get_pynvjitlink_guard() -> str:
     return BaseRenderer.Pynvjitlink_guard
 
 
-def get_shim_stream_obj(shim_include: str) -> str:
+def get_shim(shim_include: str, predefined_macros: list[str]) -> str:
+    """Render the code block for shim functions.
+
+    This includes:
+    1. Predefined macros used to runtime-compile the shim functions
+       `shim_defines`
+    2. The include path that declares functions used inside the shim functions
+       `shim_include`
+    3. `KeyedStringIO` - a string stream that only writes once to the stream
+       per key
+    4. An instance of `KeyedStringIO`, a module-level object that allows lower
+       function writes shim functions to.
+    """
+    defines_expanded = [f"#define {define}" for define in predefined_macros]
+    defines = "\\n".join(defines_expanded)
+    defines_py = f'shim_defines = "{defines}"'
+
     shim_include = f"shim_include = {shim_include}"
 
     return (
         BaseRenderer.KeyedStringIO
         + "\n"
-        + BaseRenderer.Shim.format(shim_include=shim_include)
+        + BaseRenderer.Shim.format(
+            shim_include=shim_include, shim_defines=defines_py
+        )
     )
 
 

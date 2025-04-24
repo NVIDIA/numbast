@@ -21,7 +21,7 @@ from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
     clear_base_renderer_cache,
     get_pynvjitlink_guard,
-    get_shim_stream_obj,
+    get_shim,
     get_rendered_imports,
 )
 from numbast.static.types import reset_types
@@ -75,7 +75,7 @@ def bfloat16():
 
     prefix_str = get_pynvjitlink_guard()
     include = f"'#include <{cuda_bf16}>'"
-    shim_stream_str = get_shim_stream_obj(include)
+    shim_stream_str = get_shim(include)
     imports_str = get_rendered_imports()
 
     bindings = f"""

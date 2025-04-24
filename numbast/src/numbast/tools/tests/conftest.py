@@ -32,7 +32,14 @@ def run_in_isolated_folder(tmpdir):
     # - <header_b>.cuh
     # - test_a.py
     # - test_b.py
-    def _run(cfg_template, header, params, ruff_format=False):
+    def _run(
+        cfg_template,
+        header,
+        params,
+        ruff_format=False,
+        load_symbols=False,
+        show_binding=False,
+    ):
         root = tmpdir
         config_folder = root.mkdir("config")
         output_folder = root.mkdir("output")
@@ -62,7 +69,7 @@ def run_in_isolated_folder(tmpdir):
                 "--output-dir",
                 output_folder,
                 "-fmt",
-                ruff_format,
+                "true" if ruff_format else "false",
             ],
         )
 
@@ -74,11 +81,19 @@ def run_in_isolated_folder(tmpdir):
         with open(binding_path) as f:
             binding = f.read()
 
+        symbols = {}
+        if load_symbols:
+            exec(binding, symbols)
+
+        if show_binding:
+            print(binding)
+
         return {
             "result": result,
             "output_folder": output_folder,
             "binding_path": binding_path,
             "binding": binding,
+            "symbols": symbols,
         }
 
     return _run

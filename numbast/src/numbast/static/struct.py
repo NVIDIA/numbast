@@ -16,7 +16,7 @@ from ast_canopy.decl import Struct, StructMethod
 from numbast.static.renderer import (
     BaseRenderer,
     get_rendered_imports,
-    get_shim_stream_obj,
+    get_shim,
 )
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
 from numbast.utils import (
@@ -1058,7 +1058,7 @@ class StaticStructsRenderer(BaseRenderer):
 
         if with_shim_stream:
             shim_include = f'"#include<{self._default_header}>"'
-            self._python_str += "\n" + get_shim_stream_obj(shim_include)
+            self._python_str += "\n" + get_shim(shim_include)
 
         self._python_str += "\n" + "\n".join(python_rendered)
 

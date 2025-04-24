@@ -12,7 +12,7 @@ from ast_canopy import parse_declarations_from_source
 
 from numbast.static.renderer import (
     get_rendered_imports,
-    get_shim_stream_obj,
+    get_shim,
     get_pynvjitlink_guard,
 )
 from numbast.static.renderer import clear_base_renderer_cache
@@ -49,7 +49,7 @@ def cuda_decls(data_folder):
         [
             get_rendered_imports(),
             get_pynvjitlink_guard(),
-            get_shim_stream_obj(shim_include),
+            get_shim(shim_include),
             struct_bindings,
             function_bindings,
         ]
