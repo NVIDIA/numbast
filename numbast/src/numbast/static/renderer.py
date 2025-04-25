@@ -134,7 +134,7 @@ def get_pynvjitlink_guard() -> str:
     return BaseRenderer.Pynvjitlink_guard
 
 
-def get_shim(shim_include: str, predefined_macros: list[str]) -> str:
+def get_shim(shim_include: str, predefined_macros: list[str] = []) -> str:
     """Render the code block for shim functions.
 
     This includes:
