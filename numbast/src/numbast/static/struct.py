@@ -753,7 +753,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self._parent_type_str = self._parent_type.__qualname__
 
         self.Imports.add(
-            f"from {self._data_model.__module__} import {self._data_model.__qualname__}"
+            f"from numba.core.datamodel import {self._data_model.__qualname__}"
         )
         self._data_model_str = self._data_model.__qualname__
 
