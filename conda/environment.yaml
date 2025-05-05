@@ -11,7 +11,7 @@ dependencies:
   - python=3.10
   - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
   - clangdev==18 # >=18 supports CTK 12.3
-  - numba-cuda
+  - numba-cuda >=0.10
   - pybind11
   - pytest
   - pytest-benchmark
