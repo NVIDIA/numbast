@@ -3,6 +3,12 @@
 name: Publish CONDA PKG
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-release
+  cancel-in-progress: true
 jobs:
   build-conda-x86_64:
     uses: ./.github/workflows/conda-python-build.yaml
