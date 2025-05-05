@@ -15,7 +15,7 @@ jobs:
     secrets: inherit
     with:
       build_type: branch
-      script: "ci/build_conda.sh"
+      script: "ci/build_conda_python.sh"
       CPU: "amd64"
       upload_to_conda: true
   build-conda-aarch64:
@@ -23,6 +23,6 @@ jobs:
     secrets: inherit
     with:
       build_type: branch
-      script: "ci/build_conda.sh"
+      script: "ci/build_conda_python.sh"
       CPU: "arm64"
       upload_to_conda: true
