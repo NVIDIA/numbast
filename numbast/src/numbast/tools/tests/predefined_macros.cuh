@@ -3,6 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-#include "bar.cuh"
-
-void __device__ set42(int *arr) { *arr = bar(42); }
+#ifdef __MY_CUSTOM_MACRO__
+int __device__ identity(int a) { return a; }
+#endif

@@ -149,15 +149,9 @@ def parse_declarations_from_source(
     cxx_standard: str = "c++17",
     additional_includes: list[str] = [],
     anon_filename_decl_prefix_allowlist: list[str] = [],
+    defines: list[str] = [],
     verbose: bool = False,
-) -> tuple[
-    list[Struct],
-    list[Function],
-    list[bindings.FunctionTemplate],
-    list[ClassTemplate],
-    list[bindings.Typedef],
-    list[bindings.Enum],
-]:
+) -> Declarations:
     """Given a source file, parse all *top-level* declarations from it.
     Returns a tuple that each contains a list of declaration objects for the source file.
 
@@ -196,6 +190,9 @@ def parse_declarations_from_source(
     anon_filename_decl_prefix_allowlist : list[str], optional
         A list of prefixes to allow declarations with anonymous filename from. This is a temporary
         workaround to allow expanded macros to be included in the AST.
+
+    defines : list[str], optionsl
+        A list of implicit defines that passes into clangTooling via "-D" flag.
 
     verbose : bool, optional
         If True, print the stderr from clang++ invocation.
@@ -245,6 +242,8 @@ def parse_declarations_from_source(
         else:
             return []
 
+    define_flags = [f"-D{define}" for define in defines]
+
     command_line_options = [
         "clang++",
         "--cuda-device-only",
@@ -257,6 +256,7 @@ def parse_declarations_from_source(
         *cccl_libs,
         f"-I{cudatoolkit_include_dir}",
         *[f"-I{path}" for path in additional_includes],
+        *define_flags,
         source_file_path,
     ]
 

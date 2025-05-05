@@ -8,7 +8,11 @@ import tempfile
 from collections import defaultdict
 from warnings import warn
 
-from numbast.static.renderer import BaseRenderer
+from numbast.static.renderer import (
+    BaseRenderer,
+    get_rendered_imports,
+    get_shim,
+)
 from numbast.static.types import to_numba_type_str
 from numbast.utils import deduplicate_overloads, make_function_shim
 from numbast.errors import TypeNotFoundError
@@ -72,9 +76,15 @@ extern "C" __device__ int
 }}
     """
 
+    c_ext_shim_var_template = """
+shim_raw_str = \"\"\"{shim_rendered}\"\"\"
+"""
+
     lowering_template = """
 @lower({func_name}, {params})
 def impl(context, builder, sig, args):
+    context.active_code_library.add_linking_file(shim_obj)
+    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(ptrs, sig.args, args):
         builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
@@ -87,11 +97,17 @@ def impl(context, builder, sig, args):
     )
 """
 
-    scoped_lowering_template = """
-def _{unique_function_name}_lower():
-    {body}
+    lowering_body_template = """
+{shim_var}
+{decl_device}
+{lowering}
+"""
 
-_{unique_function_name}_lower()
+    scoped_lowering_template = """
+def _{unique_function_name}_lower(shim_stream, shim_obj):
+{body}
+
+_{unique_function_name}_lower(shim_stream, shim_obj)
 """
 
     function_python_api_template = """
@@ -194,12 +210,17 @@ def {func_name}():
 
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
+        self.Imports.add("from numba.cuda import CUSource")
 
         self._c_ext_shim_rendered = make_function_shim(
             shim_name=self._deduplicated_shim_name,
             func_name=self._decl.name,
             return_type=self._decl.return_type.unqualified_non_ref_type_name,
             params=self._decl.params,
+        )
+
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_rendered=self._c_ext_shim_rendered,
         )
 
         self.ShimFunctions.append(self._c_ext_shim_rendered)
@@ -216,6 +237,7 @@ def {func_name}():
             caller_name=self._caller_name,
             return_type=self._return_numba_type_str,
             pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
+            unique_shim_name=self._deduplicated_shim_name,
         )
 
     def _render_scoped_lower(self):
@@ -230,11 +252,12 @@ def {func_name}():
         self._render_shim_function()
         self._render_lowering()
 
-        lower_body = indent(
-            self._decl_device_rendered + "\n" + self._lowering_rendered,
-            prefix="    ",
-            predicate=lambda x: True,
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
         )
+        lower_body = indent(lower_body, " " * 4)
 
         self._lower_rendered = self.scoped_lowering_template.format(
             unique_function_name=self._deduplicated_shim_name,
@@ -454,7 +477,12 @@ class {op_typing_name}(ConcreteTemplate):
 
         self._func_typing_rendered = "\n".join(typings_rendered)
 
-    def _render(self, with_prefix: bool, with_imports: bool):
+    def _render(
+        self,
+        require_pynvjitlink: bool,
+        with_imports: bool,
+        with_shim_stream: bool,
+    ):
         """Render python bindings and shim functions."""
         self.Imports.add("from numba.cuda import CUSource")
 
@@ -519,11 +547,16 @@ class {op_typing_name}(ConcreteTemplate):
         python_rendered.append(self._typing_rendered)
 
         self._python_str = ""
-        if with_prefix:
-            self._python_str += "\n" + self.Prefix
 
         if with_imports:
-            self._python_str += "\n" + "\n".join(self.Imports)
+            self._python_str += "\n" + get_rendered_imports()
+
+        if require_pynvjitlink:
+            self._python_str += "\n" + self.Pynvjitlink_guard
+
+        if with_shim_stream:
+            shim_include = f'"#include<{self._header_path}>"'
+            self._python_str += "\n" + get_shim(shim_include)
 
         self._python_str += "\n" + "\n".join(python_rendered)
 
@@ -531,27 +564,19 @@ class {op_typing_name}(ConcreteTemplate):
         for c in self._c_rendered:
             c_rendered.append(c)
 
-        self._c_str = "\n".join(self.Includes) + "\n".join(c_rendered)
-
-        self._shim_function_pystr = self.MemoryShimWriterTemplate.format(
-            shim_funcs=self._c_str
-        )
+        self._shim_function_pystr = self._c_str = ""
 
     def render_as_str(
         self,
         *,
-        with_prefix: bool,
+        require_pynvjitlink: bool,
         with_imports: bool,
-        with_shim_functions: bool,
+        with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render(with_prefix, with_imports)
 
-        if with_shim_functions:
-            output = self._python_str + "\n" + self._shim_function_pystr
-        else:
-            output = self._python_str
-
+        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        output = self._python_str
         file_logger.debug(output)
 
         return output

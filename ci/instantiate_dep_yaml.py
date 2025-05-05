@@ -17,7 +17,6 @@ def cli(template_path, output_path, cuda_version, python_version):
     output = template.render(
         cuda_version=cuda_version, python_version=python_version
     )
-    print(output)
     with open(output_path, "w") as f:
         f.write(output)
 

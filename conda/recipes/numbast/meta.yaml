@@ -52,10 +52,12 @@ requirements:
     - cuda-version >=12.5
     - numba >=0.59
     - python
-    - numba-cuda
+    - numba-cuda >=0.10
     - pynvjitlink >=0.2
     - pyyaml
     - click
+    - jinja2
+    - ruff
 
 about:
   license_family: Apache

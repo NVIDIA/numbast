@@ -3,7 +3,6 @@
 
 import pytest
 import os
-from functools import partial
 import math
 
 import numpy as np
@@ -13,14 +12,19 @@ from numba.core.datamodel.models import PrimitiveModel, StructModel
 
 from ast_canopy import parse_declarations_from_source
 from numbast.static.struct import StaticStructsRenderer
-from numbast.static.function import StaticFunctionsRenderer
+from numbast.static.function import (
+    StaticFunctionsRenderer,
+    clear_function_apis_registry,
+)
 from numbast.tools.static_binding_generator import _typedef_to_aliases
 from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
-    get_prefix,
-    get_rendered_shims,
+    clear_base_renderer_cache,
+    get_pynvjitlink_guard,
+    get_shim,
     get_rendered_imports,
 )
+from numbast.static.types import reset_types
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
@@ -28,6 +32,10 @@ COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 
 @pytest.fixture(scope="module")
 def float16():
+    reset_types()
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     cuda_fp16 = os.path.join(CUDA_INCLUDE_PATH, "cuda_fp16.h")
     cuda_fp16_hpp = os.path.join(CUDA_INCLUDE_PATH, "cuda_fp16.hpp")
 
@@ -57,53 +65,47 @@ def float16():
     }
 
     aliases = _typedef_to_aliases(typedefs)
-
     typedef_bindings = render_aliases(aliases)
 
     SSR = StaticStructsRenderer(structs, specs, default_header=cuda_fp16)
     SFR = StaticFunctionsRenderer(functions, cuda_fp16)
 
     struct_bindings = SSR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
     )
 
     function_bindings = SFR.render_as_str(
-        with_prefix=False, with_imports=False, with_shim_functions=False
+        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
     )
 
-    prefix_str = get_prefix()
+    prefix_str = get_pynvjitlink_guard()
+    include = f"'#include <{cuda_fp16}>'"
+    shim_stream_str = get_shim(include)
     imports_str = get_rendered_imports()
-    shim_function_str = get_rendered_shims()
 
     bindings = f"""
 {prefix_str}
 {imports_str}
+{shim_stream_str}
 {struct_bindings}
 {function_bindings}
 {typedef_bindings}
-{shim_function_str}
 """
 
     globals = {}
     exec(bindings, globals)
 
-    public_apis = ["half", "half2", "hsin", "c_ext_shim_source"]
+    public_apis = ["half", "half2", "hsin"]
     assert all(public_api in globals for public_api in public_apis)
 
     return {k: globals[k] for k in public_apis}
 
 
-@pytest.fixture(scope="module")
-def numbast_jit(float16):
-    c_ext_shim_source = float16["c_ext_shim_source"]
-    return partial(cuda.jit, link=[c_ext_shim_source])
-
-
-def test_float16(float16, numbast_jit):
+def test_float16(float16):
     fp16 = float16["half"]
     hsin = float16["hsin"]
 
-    @numbast_jit
+    @cuda.jit
     def kernel(arr):
         three = fp16(1.0) + fp16(2.0)
         sin_three = hsin(three)
