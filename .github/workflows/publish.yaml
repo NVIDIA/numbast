@@ -3,6 +3,12 @@
 name: Publish CONDA PKG
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-release
+  cancel-in-progress: true
 jobs:
   build-conda-x86_64:
     uses: ./.github/workflows/conda-python-build.yaml
@@ -11,7 +17,7 @@ jobs:
       build_type: branch
       script: "ci/build_conda.sh"
       CPU: "amd64"
-      GPU: "v100"
+      GPU: "l4"
       upload_to_conda: true
   build-conda-aarch64:
     uses: ./.github/workflows/conda-python-build.yaml
