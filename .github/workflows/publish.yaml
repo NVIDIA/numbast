@@ -17,7 +17,7 @@ jobs:
       build_type: branch
       script: "ci/build_conda.sh"
       CPU: "amd64"
-      GPU: "v100"
+      GPU: "l4"
       upload_to_conda: true
   build-conda-aarch64:
     uses: ./.github/workflows/conda-python-build.yaml
