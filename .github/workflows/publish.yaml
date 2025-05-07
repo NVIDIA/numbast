@@ -10,19 +10,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-release
   cancel-in-progress: true
 jobs:
-  build-conda-x86_64:
+  build-conda:
     uses: ./.github/workflows/conda-python-build.yaml
     secrets: inherit
     with:
-      build_type: branch
+      build_type: release
       script: "ci/build_conda_python.sh"
-      CPU: "amd64"
-      upload_to_conda: true
-  build-conda-aarch64:
-    uses: ./.github/workflows/conda-python-build.yaml
-    secrets: inherit
-    with:
-      build_type: branch
-      script: "ci/build_conda_python.sh"
-      CPU: "arm64"
       upload_to_conda: true
