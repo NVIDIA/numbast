@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 import ast_canopy
 
@@ -63,6 +64,11 @@ class FunctionInstantiation(BaseInstantiation):
 
         if header is None:
             header = self.function.parse_entry_point
+
+        if not os.path.exists(header):
+            raise ValueError(f"{header} does not exist.")
+
+        header = os.path.abspath(header)
 
         assembled_code_template = """
 #include <{header}>
