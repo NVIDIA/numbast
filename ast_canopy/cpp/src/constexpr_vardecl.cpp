@@ -14,10 +14,10 @@ ConstExprVar::ConstExprVar(const clang::VarDecl *VD)
     throw std::runtime_error("Not a constexpr variable");
   }
 
-  clang::APValue *ap_value = VD->getEvaluatedValue();
+  clang::APValue *ap_value = VD->evaluateValue();
 
   if (ap_value == nullptr) {
-    throw std::runtime_error("Value is not yet known.");
+    throw std::runtime_error("Evaluation is not successful.");
   }
 
   std::cout << ap_value->getKind() << std::endl;
