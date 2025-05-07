@@ -75,13 +75,13 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   }
 
   if (rp == RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE) {
-    // A record with class template parent is not instantiated, and thus
-    // computing size and alignment of such a record is not possible.
     clang::QualType type = RD->getASTContext().getTypeDeclType(RD);
     clang::ASTContext &ctx = RD->getASTContext();
     sizeof_ = ctx.getTypeSize(type) / ctx.getCharWidth();
     alignof_ = ctx.getTypeAlign(type) / ctx.getCharWidth();
   } else {
+    // A record with class template parent is not instantiated, and thus
+    // computing size and alignment of such a record is not possible.
     sizeof_ = INVALID_SIZE_OF;
     alignof_ = INVALID_ALIGN_OF;
   }
