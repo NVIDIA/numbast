@@ -102,6 +102,7 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
             assembled_code,
             "ast_canopy_var_value__",
             "sm_80",
+            verbose=True,
         )
 
         return res.value
