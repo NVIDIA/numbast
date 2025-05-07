@@ -15,9 +15,15 @@ from ast_canopy.decl import Struct, StructMethod
 
 from numbast.static.renderer import (
     BaseRenderer,
+    get_rendered_imports,
+    get_shim,
 )
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
-from numbast.utils import deduplicate_overloads
+from numbast.utils import (
+    deduplicate_overloads,
+    make_struct_ctor_shim,
+    make_struct_conversion_operator_shim,
+)
 from numbast.errors import TypeNotFoundError
 
 file_logger = getLogger(f"{__name__}")
@@ -26,7 +32,17 @@ file_logger.debug(f"Struct debug outputs are written to {logger_path}")
 file_logger.addHandler(FileHandler(logger_path))
 
 
-class StaticStructCtorRenderer(BaseRenderer):
+class StaticStructMethodRenderer(BaseRenderer):
+    """Base class for all struct methods
+    TODO: merge all common code paths
+    """
+
+    c_ext_shim_var_template = """
+shim_raw_str = \"\"\"{shim_rendered}\"\"\"
+"""
+
+
+class StaticStructCtorRenderer(StaticStructMethodRenderer):
     """Renderer for a single struct constructor.
 
     Parameters
@@ -67,6 +83,8 @@ extern "C" __device__ int
     struct_ctor_lowering_template = """
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
+    context.active_code_library.add_linking_file(shim_obj)
+    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(argptrs, sig.args, args):
@@ -85,11 +103,17 @@ def ctor_impl(context, builder, sig, args):
     return builder.load(selfptr, align=getattr({struct_type_name}, "alignof_", None))
     """
 
-    lower_overload_scope_template = """
-def {lower_scope_name}():
-    {body}
+    lowering_body_template = """
+{shim_var}
+{decl_device}
+{lowering}
+"""
 
-{lower_scope_name}()
+    lower_overload_scope_template = """
+def {lower_scope_name}(shim_stream, shim_obj):
+{body}
+
+{lower_scope_name}(shim_stream, shim_obj)
 """
 
     struct_ctor_signature_template = "signature({struct_type_name}, {arglist})"
@@ -108,11 +132,13 @@ def {lower_scope_name}():
         struct_name: str,
         struct_type_class: str,
         struct_type_name: str,
+        header_path: str,
         ctor_decl: StructMethod,
     ):
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
         self._ctor_decl = ctor_decl
 
         self._struct_ctor_device_decl_str = f"_ctor_decl_{struct_name}"
@@ -132,7 +158,9 @@ def {lower_scope_name}():
         _pointer_wrapped_param_types = [
             wrap_pointer(typ) for typ in self._nb_param_types
         ]
-        self._pointer_wrapped_param_types_str = ", ".join(_pointer_wrapped_param_types)
+        self._pointer_wrapped_param_types_str = ", ".join(
+            _pointer_wrapped_param_types
+        )
 
         # Cache the list of parameter types in C++ pointer types
         c_ptr_arglist = ", ".join(
@@ -150,7 +178,9 @@ def {lower_scope_name}():
         )
 
         # Cache the unique shim name
-        shim_func_name = f"__{self._struct_name}__{self._ctor_decl.mangled_name}"
+        shim_func_name = (
+            f"__{self._struct_name}__{self._ctor_decl.mangled_name}"
+        )
         self._deduplicated_shim_name = deduplicate_overloads(shim_func_name)
 
         # Underscore separated names of parameters
@@ -162,7 +192,9 @@ def {lower_scope_name}():
         self._device_caller_name = f"{self._struct_name}_device_caller"
 
         # lower scope name
-        self._lower_scope_name = f"_lower_{struct_name}_{self._nb_param_str_concat}"
+        self._lower_scope_name = (
+            f"_lower_{struct_name}_{self._nb_param_str_concat}"
+        )
 
     def _render_decl_device(self):
         """Render codes that declares a foreign function for this constructor in Numba."""
@@ -197,11 +229,14 @@ def {lower_scope_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        self._c_ext_shim_rendered = self.struct_ctor_c_ext_shim_template.format(
-            unique_shim_name=self._deduplicated_shim_name,
+        self._c_ext_shim_rendered = make_struct_ctor_shim(
+            shim_name=self._deduplicated_shim_name,
             struct_name=self._struct_name,
-            arglist=self._c_ext_argument_pointer_types,
-            args=self._deref_args_str,
+            params=self._ctor_decl.params,
+        )
+
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_rendered=self._c_ext_shim_rendered,
         )
 
         self.ShimFunctions.append(self._c_ext_shim_rendered)
@@ -217,6 +252,7 @@ def {lower_scope_name}():
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._device_caller_name,
             pointer_wrapped_args=self._pointer_wrapped_param_types_str,
+            unique_shim_name=self._deduplicated_shim_name,
         )
 
     def _render(self):
@@ -229,11 +265,12 @@ def {lower_scope_name}():
         self._render_shim_function()
         self._render_lowering()
 
-        lower_body = indent(
-            self._decl_device_rendered + "\n" + self._lowering_rendered,
-            prefix="    ",
-            predicate=lambda x: True,
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
         )
+        lower_body = indent(lower_body, " " * 4)
 
         self._python_rendered = self.lower_overload_scope_template.format(
             lower_scope_name=self._lower_scope_name,
@@ -287,11 +324,13 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         struct_name,
         struct_type_class,
         struct_type_name,
+        header_path,
     ):
         self._ctor_decls = ctor_decls
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
 
         self._python_rendered = ""
         self._c_rendered = ""
@@ -310,7 +349,9 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
 
         self.Imports.add("from numba.cuda.cudadecl import register")
         self.Imports.add("from numba.cuda.cudadecl import register_global")
-        self.Imports.add("from numba.core.typing.templates import ConcreteTemplate")
+        self.Imports.add(
+            "from numba.core.typing.templates import ConcreteTemplate"
+        )
         self.Imports.add("from numba.types import Function")
 
         signatures_str = ", ".join(signature_strs)
@@ -333,6 +374,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
                     struct_name=self._struct_name,
                     struct_type_class=self._struct_type_class,
                     struct_type_name=self._struct_type_name,
+                    header_path=self._header_path,
                     ctor_decl=ctor_decl,
                 )
             except TypeNotFoundError as e:
@@ -364,7 +406,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         return self._c_rendered
 
 
-class StaticStructConversionOperatorRenderer(BaseRenderer):
+class StaticStructConversionOperatorRenderer(StaticStructMethodRenderer):
     """Renderer for a single struct conversion operator.
 
     Parameters
@@ -393,17 +435,11 @@ def {caller_name}(arg):
     return {device_decl_name}(arg)
     """
 
-    struct_conversion_op_c_ext_shim_template = """
-extern "C" __device__ int
-{unique_shim_name}({return_type} &retval, {struct_name} *self) {{
-    retval = self->{method_name}();
-    return 0;
-}}
-    """
-
     struct_conversion_op_lowering_template = """
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
+    context.active_code_library.add_linking_file(shim_obj)
+    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
     builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
 
@@ -418,11 +454,17 @@ def impl(context, builder, fromty, toty, value):
     )
     """
 
-    lower_scope_template = """
-def {lower_scope_name}():
-    {body}
+    lowering_body_template = """
+{shim_var}
+{decl_device}
+{lowering}
+"""
 
-{lower_scope_name}()
+    lower_scope_template = """
+def {lower_scope_name}(shim_stream, shim_obj):
+{body}
+
+{lower_scope_name}(shim_stream, shim_obj)
 """
 
     def __init__(
@@ -430,11 +472,13 @@ def {lower_scope_name}():
         struct_name: str,
         struct_type_class: str,
         struct_type_name: str,
+        header_path: str,
         convop_decl: StructMethod,
     ):
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
         self._convop_decl = convop_decl
 
         self._device_decl_name = f"_op_decl_{struct_name}"
@@ -471,16 +515,20 @@ def {lower_scope_name}():
         # All arguments are passed by pointers in C-CPP shim interop
         self.Imports.add("from numba.types import CPointer")
 
-        decl_device_rendered = self.struct_conversion_op_decl_device_template.format(
-            device_decl_name=self._device_decl_name,
-            unique_shim_name=self._unique_shim_name,
-            cast_to_type=self._nb_cast_to_type_str,
-            struct_type_name=self._struct_type_name,
+        decl_device_rendered = (
+            self.struct_conversion_op_decl_device_template.format(
+                device_decl_name=self._device_decl_name,
+                unique_shim_name=self._unique_shim_name,
+                cast_to_type=self._nb_cast_to_type_str,
+                struct_type_name=self._struct_type_name,
+            )
         )
 
-        device_caller_rendered = self.struct_conversion_op_caller_template.format(
-            device_decl_name=self._device_decl_name,
-            caller_name=self._caller_name,
+        device_caller_rendered = (
+            self.struct_conversion_op_caller_template.format(
+                device_decl_name=self._device_decl_name,
+                caller_name=self._caller_name,
+            )
         )
 
         self._decl_device_rendered = (
@@ -490,13 +538,15 @@ def {lower_scope_name}():
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
 
-        self._c_ext_shim_rendered = (
-            self.struct_conversion_op_c_ext_shim_template.format(
-                unique_shim_name=self._unique_shim_name,
-                return_type=self._cast_to_type.name,
-                struct_name=self._struct_name,
-                method_name=self._convop_decl.name,
-            )
+        self._c_ext_shim_rendered = make_struct_conversion_operator_shim(
+            shim_name=self._unique_shim_name,
+            struct_name=self._struct_name,
+            method_name=self._convop_decl.name,
+            return_type=self._cast_to_type.name,
+        )
+
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_rendered=self._c_ext_shim_rendered,
         )
 
         self.ShimFunctions.append(self._c_ext_shim_rendered)
@@ -506,11 +556,14 @@ def {lower_scope_name}():
 
         self.Imports.add("from numba.core.extending import lower_cast")
 
-        self._lowering_rendered = self.struct_conversion_op_lowering_template.format(
-            struct_name=self._struct_name,
-            cast_to_type=self._nb_cast_to_type_str,
-            struct_type_name=self._struct_type_name,
-            struct_device_caller_name=self._caller_name,
+        self._lowering_rendered = (
+            self.struct_conversion_op_lowering_template.format(
+                struct_name=self._struct_name,
+                cast_to_type=self._nb_cast_to_type_str,
+                struct_type_name=self._struct_type_name,
+                struct_device_caller_name=self._caller_name,
+                unique_shim_name=self._unique_shim_name,
+            )
         )
 
     def _render(self):
@@ -523,11 +576,12 @@ def {lower_scope_name}():
         self._render_shim_function()
         self._render_lowering()
 
-        lower_body = indent(
-            self._decl_device_rendered + "\n" + self._lowering_rendered,
-            prefix="    ",
-            predicate=lambda x: True,
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
         )
+        lower_body = indent(lower_body, " " * 4)
 
         self._python_rendered = self.lower_scope_template.format(
             lower_scope_name=self._lower_scope_name,
@@ -559,11 +613,13 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
         struct_name,
         struct_type_class,
         struct_type_name,
+        header_path,
     ):
         self._convop_decls = convop_decls
         self._struct_name = struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
+        self._header_path = header_path
 
         self._python_rendered = ""
         self._c_rendered = ""
@@ -576,6 +632,7 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
                 struct_name=self._struct_name,
                 struct_type_class=self._struct_type_class,
                 struct_type_name=self._struct_type_name,
+                header_path=self._header_path,
                 convop_decl=convop_decl,
             )
             renderer._render()
@@ -626,6 +683,8 @@ class {struct_type_class_name}({parent_type}):
     python_api_template = """
 # Make Python API for struct
 {struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_type_name}}})
+
+as_numba_type.register({struct_name}, {struct_type_name})
 """
 
     primitive_data_model_template = """
@@ -688,11 +747,13 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         self._data_model = data_model
 
-        self.Imports.add(f"from numba.types import {self._parent_type.__qualname__}")
+        self.Imports.add(
+            f"from numba.types import {self._parent_type.__qualname__}"
+        )
         self._parent_type_str = self._parent_type.__qualname__
 
         self.Imports.add(
-            f"from {self._data_model.__module__} import {self._data_model.__qualname__}"
+            f"from numba.core.datamodel import {self._data_model.__qualname__}"
         )
         self._data_model_str = self._data_model.__qualname__
 
@@ -724,8 +785,11 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         This is the python handle to use it in Numba kernels.
         """
+        self.Imports.add("from numba.extending import as_numba_type")
+
         self._python_api_rendered = self.python_api_template.format(
-            struct_type_name=self._struct_type_name, struct_name=self._struct_name
+            struct_type_name=self._struct_type_name,
+            struct_name=self._struct_name,
         )
 
     def _render_data_model(self):
@@ -735,14 +799,19 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         if self._data_model == PrimitiveModel:
             self.Imports.add("from llvmlite import ir")
-            self._data_model_rendered = self.primitive_data_model_template.format(
-                struct_type_class_name=self._struct_type_class_name,
-                struct_model_name=self._struct_model_name,
-                struct_name=self._struct_name,
+            self._data_model_rendered = (
+                self.primitive_data_model_template.format(
+                    struct_type_class_name=self._struct_type_class_name,
+                    struct_model_name=self._struct_model_name,
+                    struct_name=self._struct_name,
+                )
             )
         elif self._data_model == StructModel:
             member_types_tuples = [
-                (f.name, to_numba_type_str(f.type_.unqualified_non_ref_type_name))
+                (
+                    f.name,
+                    to_numba_type_str(f.type_.unqualified_non_ref_type_name),
+                )
                 for f in self._decl.fields
             ]
 
@@ -768,7 +837,9 @@ class {struct_attr_typing_name}(AttributeTemplate):
             self.Imports.add(
                 "from numba.core.typing.templates import AttributeTemplate"
             )
-            self.Imports.add("from numba.core.extending import make_attribute_wrapper")
+            self.Imports.add(
+                "from numba.core.extending import make_attribute_wrapper"
+            )
 
             public_fields = [
                 f for f in self._decl.fields if f.access == access_kind.public_
@@ -810,11 +881,14 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_name=self._struct_name,
             struct_type_class=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
+            header_path=self._header_path,
             ctor_decls=self._decl.constructors(),
         )
         static_ctors_renderer._render()
 
-        self._struct_ctors_python_rendered = static_ctors_renderer.python_rendered
+        self._struct_ctors_python_rendered = (
+            static_ctors_renderer.python_rendered
+        )
         self._struct_ctors_c_rendered = static_ctors_renderer.c_rendered
 
     def _render_conversion_ops(self):
@@ -824,13 +898,16 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_type_class=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
             convop_decls=self._decl.conversion_operators(),
+            header_path=self._header_path,
         )
         static_convops_renderer._render()
 
         self._struct_conversion_ops_python_rendered = (
             static_convops_renderer.python_rendered
         )
-        self._struct_conversion_ops_c_rendered = static_convops_renderer.c_rendered
+        self._struct_conversion_ops_c_rendered = (
+            static_convops_renderer.c_rendered
+        )
 
     def render_python(self) -> tuple[set[str], str]:
         """Renders the python portion of the bindings.
@@ -881,10 +958,15 @@ class {struct_attr_typing_name}(AttributeTemplate):
             required to compile the shim function. The second element of the tuple
             is the concatenated shim function C program.
         """
-        self.Includes.add(self.includes_template.format(header_path=self._header_path))
+        self.Includes.add(
+            self.includes_template.format(header_path=self._header_path)
+        )
 
         self._c_ext_merged_shim = "\n".join(
-            [self._struct_ctors_c_rendered, self._struct_conversion_ops_c_rendered]
+            [
+                self._struct_ctors_c_rendered,
+                self._struct_conversion_ops_c_rendered,
+            ]
         )
 
         return self.Includes, self._c_ext_merged_shim
@@ -935,7 +1017,12 @@ class StaticStructsRenderer(BaseRenderer):
 
         self._excludes = excludes
 
-    def _render(self, with_prefix: bool, with_imports: bool):
+    def _render(
+        self,
+        require_pynvjitlink: bool,
+        with_imports: bool,
+        with_shim_stream: bool,
+    ):
         """Render all structs in `decls`."""
         for decl in self._decls:
             name = decl.name
@@ -946,7 +1033,9 @@ class StaticStructsRenderer(BaseRenderer):
                 name, (Type, StructModel, self._default_header)
             )
             if header_path is None:
-                raise ValueError(f"CUDA struct {name} does not provide a header path.")
+                raise ValueError(
+                    f"CUDA struct {name} does not provide a header path."
+                )
 
             SSR = StaticStructRenderer(decl, nb_ty, nb_datamodel, header_path)
 
@@ -960,37 +1049,32 @@ class StaticStructsRenderer(BaseRenderer):
             python_rendered.append(py)
 
         self._python_str = ""
-        if with_prefix:
-            self._python_str += "\n" + self.Prefix
 
         if with_imports:
-            self._python_str += "\n" + "\n".join(self.Imports)
+            self._python_str += "\n" + get_rendered_imports()
+
+        if require_pynvjitlink:
+            self._python_str += "\n" + self.Pynvjitlink_guard
+
+        if with_shim_stream:
+            shim_include = f'"#include<{self._default_header}>"'
+            self._python_str += "\n" + get_shim(shim_include)
 
         self._python_str += "\n" + "\n".join(python_rendered)
 
-        includes = set()
-        c_rendered = []
-        for inc, c in self._c_rendered:
-            includes |= inc
-            c_rendered.append(c)
-
-        self._c_str = "\n".join(includes) + "\n".join(c_rendered)
-
-        self._shim_function_pystr = self.MemoryShimWriterTemplate.format(
-            shim_funcs=self._c_str
-        )
+        self._shim_function_pystr = self._c_str = ""
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        require_pynvjitlink: bool,
+        with_imports: bool,
+        with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
-        self._render(with_prefix, with_imports)
 
-        if with_shim_functions:
-            output = self._python_str + "\n" + self._shim_function_pystr
-        else:
-            output = self._python_str
-
+        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        output = self._python_str
         file_logger.debug(output)
 
         return output

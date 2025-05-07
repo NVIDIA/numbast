@@ -134,7 +134,9 @@ def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
             ) from e
 
     if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
-        include_path = s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
+        include_path = (
+            s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
+        )
         logger.info(f"Found NVCC default include path, {include_path=}")
         return include_path
     else:
@@ -153,6 +155,7 @@ def parse_declarations_from_source(
     cxx_standard: str = "c++17",
     additional_includes: list[str] = [],
     anon_filename_decl_prefix_allowlist: list[str] = [],
+    defines: list[str] = [],
     verbose: bool = False,
 ) -> Declarations:
     """Given a source file, parse all *top-level* declarations from it.
@@ -192,7 +195,10 @@ def parse_declarations_from_source(
 
     anon_filename_decl_prefix_allowlist : list[str], optional
         A list of prefixes to allow declarations with anonymous filename from. This is a temporary
-        workaround to allow expaneded macros to be included in the AST.
+        workaround to allow expanded macros to be included in the AST.
+
+    defines : list[str], optionsl
+        A list of implicit defines that passes into clangTooling via "-D" flag.
 
     verbose : bool, optional
         If True, print the stderr from clang++ invocation.
@@ -209,7 +215,9 @@ def parse_declarations_from_source(
         if not isinstance(p, str):
             raise TypeError(f"Additional include path must be a string: {p}")
         if p.startswith("-I"):
-            raise ValueError(f"Additional include path must not start with -I: {p}")
+            raise ValueError(
+                f"Additional include path must not start with -I: {p}"
+            )
         if not os.path.exists(p):
             raise FileNotFoundError(f"Additional include path not found: {p}")
 
@@ -224,7 +232,9 @@ def parse_declarations_from_source(
         cccl_libs = []
 
     clang_resource_file = (
-        subprocess.check_output(["clang++", "-print-resource-dir"]).decode().strip()
+        subprocess.check_output(["clang++", "-print-resource-dir"])
+        .decode()
+        .strip()
     )
 
     clang_search_paths = get_default_compiler_search_paths()
@@ -235,6 +245,8 @@ def parse_declarations_from_source(
             return [f"--cuda-path={cuda_path}"]
         else:
             return []
+
+    define_flags = [f"-D{define}" for define in defines]
 
     command_line_options = [
         "clang++",
@@ -248,6 +260,7 @@ def parse_declarations_from_source(
         *cccl_libs,
         f"-I{cudatoolkit_include_dir}",
         *[f"-I{path}" for path in additional_includes],
+        *define_flags,
         source_file_path,
     ]
 
@@ -257,7 +270,9 @@ def parse_declarations_from_source(
 
     with capture_fd(STREAMFD.STDERR) as cap:
         decls = bindings.parse_declarations_from_command_line(
-            command_line_options, files_to_retain, anon_filename_decl_prefix_allowlist
+            command_line_options,
+            files_to_retain,
+            anon_filename_decl_prefix_allowlist,
         )
 
     werr = cap.snap()
@@ -275,9 +290,12 @@ def parse_declarations_from_source(
                 "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
             )
 
-    structs = [Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records]
+    structs = [
+        Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records
+    ]
     functions = [
-        Function.from_c_obj(c_obj, source_file_path) for c_obj in decls.functions
+        Function.from_c_obj(c_obj, source_file_path)
+        for c_obj in decls.functions
     ]
     function_templates = [
         FunctionTemplate.from_c_obj(c_obj, source_file_path)
@@ -312,7 +330,9 @@ def value_from_constexpr_vardecl(
         f.flush()
 
         clang_resource_file = (
-            subprocess.check_output(["clang++", "-print-resource-dir"]).decode().strip()
+            subprocess.check_output(["clang++", "-print-resource-dir"])
+            .decode()
+            .strip()
         )
 
         clang_search_paths = get_default_compiler_search_paths()
@@ -347,5 +367,7 @@ def value_from_constexpr_vardecl(
         if werr and verbose:
             print(werr)
 
-        result = ConstExprVar.from_c_obj(c_result) if c_result is not None else None
+        result = (
+            ConstExprVar.from_c_obj(c_result) if c_result is not None else None
+        )
         return result

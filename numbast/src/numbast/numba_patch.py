@@ -12,7 +12,9 @@ from ast_canopy.api import get_default_cuda_compiler_include
 logger = logging.getLogger(__name__)
 
 old_cuda_include_path = config.CUDA_INCLUDE_PATH
-new_cuda_include_path = get_default_cuda_compiler_include(config.CUDA_INCLUDE_PATH)
+new_cuda_include_path = get_default_cuda_compiler_include(
+    config.CUDA_INCLUDE_PATH
+)
 if old_cuda_include_path != new_cuda_include_path:
     logger.debug("Updating CUDA include path to %s", new_cuda_include_path)
 os.environ["NUMBA_CUDA_INCLUDE_PATH"] = new_cuda_include_path
@@ -25,11 +27,7 @@ extra_options = [
     "-std=c++17",
 ]
 
-extra_include_paths = [
-    f"-I{config.CUDA_INCLUDE_PATH}/cub/",
-    f"-I{config.CUDA_INCLUDE_PATH}/cccl/libcudacxx/include/",
-    f"-I{config.CUDA_INCLUDE_PATH}/cccl/thrust/",
-]
+extra_include_paths = []
 
 
 # Copied from numba.cuda.cudadrv.nvrtc, modified to allow extra options to be
@@ -65,7 +63,14 @@ def nvrtc_compile(src, name, cc, ltoir=False):
     cudadrv_path = os.path.dirname(os.path.abspath(cudadrv))
     numba_cuda_path = os.path.dirname(cudadrv_path)
     numba_include = f"-I{numba_cuda_path}"
-    options = [arch, *extra_include_paths, include, numba_include, "-rdc", "true"]
+    options = [
+        arch,
+        *extra_include_paths,
+        include,
+        numba_include,
+        "-rdc",
+        "true",
+    ]
     options += extra_options
     if ltoir:
         options.append("-dlto")

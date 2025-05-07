@@ -192,7 +192,9 @@ class FunctionTemplate(Template):
         self.parse_entry_point = parse_entry_point
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.FunctionTemplate, parse_entry_point: str):
+    def from_c_obj(
+        cls, c_obj: bindings.FunctionTemplate, parse_entry_point: str
+    ):
         return cls(
             c_obj.template_parameters,
             c_obj.num_min_required_args,
@@ -218,7 +220,12 @@ class StructMethod(Function):
         parse_entry_point: str,
     ):
         super().__init__(
-            name, return_type, params, exec_space, is_constexpr, parse_entry_point
+            name,
+            return_type,
+            params,
+            exec_space,
+            is_constexpr,
+            parse_entry_point,
         )
         self.kind = kind
         self.is_move_constructor = is_move_constructor
@@ -313,7 +320,10 @@ class Struct:
         return cls(
             c_obj.name,
             c_obj.fields,
-            [StructMethod.from_c_obj(m, parse_entry_point) for m in c_obj.methods],
+            [
+                StructMethod.from_c_obj(m, parse_entry_point)
+                for m in c_obj.methods
+            ],
             [
                 FunctionTemplate.from_c_obj(tm, parse_entry_point)
                 for tm in c_obj.templated_methods

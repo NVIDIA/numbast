@@ -11,14 +11,15 @@ env
 
 echo ""
 
-BUILD_DIR=$SRC_DIR/cpp/build
-CPP_DIR=$SRC_DIR/cpp
+BUILD_DIR=$SRC_DIR/ast_canopy/cpp/build
+CPP_DIR=$SRC_DIR/ast_canopy/cpp
 
 echo SRC_DIR=$SRC_DIR
 echo CPP_DIR=$CPP_DIR
 echo BUILD_DIR=$BUILD_DIR
 
 # Relative to ast_canopy/ <-- This is essential for conda build
+cd ast_canopy
 echo "Making directory..."
 mkdir -p cpp/build
 echo "entering cpp build..."
@@ -41,4 +42,4 @@ echo "done!"
 popd
 
 echo "pip installing..."
-$PYTHON -m pip install $SRC_DIR -vv
+$PYTHON -m pip install . -vv

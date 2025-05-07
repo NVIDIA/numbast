@@ -77,7 +77,7 @@ struct ConstExprVar {
 struct Field {
   Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS);
   Field(const std::string &name, const Type &type, const access_kind &access)
-      : name(name), type(type), access(access){};
+      : name(name), type(type), access(access) {};
 
   std::string name;
   Type type;

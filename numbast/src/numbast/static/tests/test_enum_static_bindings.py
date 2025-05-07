@@ -23,12 +23,10 @@ def cuda_enum(data_folder):
     SER = StaticEnumsRenderer(enums)
 
     bindings = SER.render_as_str(
-        with_prefix=True, with_imports=True, with_shim_functions=False
+        require_pynvjitlink=True, with_imports=True, with_shim_stream=False
     )
 
     globals = {}
-    with open("/tmp/data.py", "w") as f:
-        f.write(bindings)
 
     exec(bindings, globals)
 

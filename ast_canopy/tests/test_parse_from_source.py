@@ -32,7 +32,9 @@ def sample_typedef_source():
 @pytest.fixture(scope="module")
 def sample_function_template_source():
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(current_directory, "data/", "sample_function_template.cu")
+    return os.path.join(
+        current_directory, "data/", "sample_function_template.cu"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -50,7 +52,9 @@ def sample_nested_structs_source():
 @pytest.fixture(scope="module")
 def sample_access_specifier_source():
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(current_directory, "data/", "sample_access_specifier.cu")
+    return os.path.join(
+        current_directory, "data/", "sample_access_specifier.cu"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -71,7 +75,9 @@ def sample_load_by_cc_source():
     return os.path.join(current_directory, "data/", "sample_diff_by_cc.cu")
 
 
-@pytest.fixture(scope="module", params=[False, True], ids=["no_pickle", "pickle"])
+@pytest.fixture(
+    scope="module", params=[False, True], ids=["no_pickle", "pickle"]
+)
 def test_pickle(request):
     return request.param
 
@@ -110,7 +116,9 @@ def test_load_ast_structs(sample_struct_source, test_pickle):
     assert [a.name for a in meth.params] == ["other"]
     assert [a.type_.name for a in meth.params] == ["foo &&"]
     assert [a.type_.is_right_reference() for a in meth.params] == [True]
-    assert [a.type_.unqualified_non_ref_type_name for a in meth.params] == ["foo"]
+    assert [a.type_.unqualified_non_ref_type_name for a in meth.params] == [
+        "foo"
+    ]
 
     meth = s.methods[2]
     assert meth.name == "add"
@@ -173,12 +181,15 @@ def test_load_ast_structs(sample_struct_source, test_pickle):
     assert len(s.templated_methods) == 1
     assert s.templated_methods[0].num_min_required_args == 1
     assert s.templated_methods[0].function.name == "bar"
-    assert s.templated_methods[0].function.return_type.name == "type-parameter-0-0"
+    assert (
+        s.templated_methods[0].function.return_type.name == "type-parameter-0-0"
+    )
     assert len(s.templated_methods[0].function.params) == 0
     assert len(s.templated_methods[0].template_parameters) == 1
     assert s.templated_methods[0].template_parameters[0].name == "T"
     assert (
-        s.templated_methods[0].template_parameters[0].type_.name == "type-parameter-0-0"
+        s.templated_methods[0].template_parameters[0].type_.name
+        == "type-parameter-0-0"
     )
 
     assert s.parse_entry_point == sample_struct_source
@@ -224,7 +235,10 @@ def test_load_ast_functions(sample_function_source, test_pickle):
     assert [a.name for a in args] == ["a", "b"]
     assert [a.type_.name for a in args] == ["int &&", "int &&"]
     assert [a.type_.is_right_reference() for a in args] == [True, True]
-    assert [a.type_.unqualified_non_ref_type_name for a in args] == ["int", "int"]
+    assert [a.type_.unqualified_non_ref_type_name for a in args] == [
+        "int",
+        "int",
+    ]
 
     assert functions[3].name == "add_hostdevice"
     assert functions[3].return_type.name == "int"
@@ -261,7 +275,9 @@ def test_load_ast_typedefs(sample_typedef_source, test_pickle):
     assert len(typedefs) == 3
 
     assert structs[0].name == "A"
-    second_struct_name = structs[1].name  # Originally unnamed, renamed with its AST ID.
+    second_struct_name = structs[
+        1
+    ].name  # Originally unnamed, renamed with its AST ID.
     assert structs[2].name == "C"
 
     assert typedefs[0].name == "A1"
@@ -272,9 +288,13 @@ def test_load_ast_typedefs(sample_typedef_source, test_pickle):
     assert typedefs[2].underlying_name == "C"
 
 
-def test_load_ast_function_templates(sample_function_template_source, test_pickle):
+def test_load_ast_function_templates(
+    sample_function_template_source, test_pickle
+):
     decls = parse_declarations_from_source(
-        sample_function_template_source, [sample_function_template_source], "sm_80"
+        sample_function_template_source,
+        [sample_function_template_source],
+        "sm_80",
     )
 
     _, _, ft, _, _, _ = astuple(decls)
@@ -393,9 +413,13 @@ def test_load_ast_nested_structs(sample_nested_structs_source, test_pickle):
     assert structs[0].nested_records[0].methods[0].name == "bar"
 
 
-def test_load_ast_access_specifiers(sample_access_specifier_source, test_pickle):
+def test_load_ast_access_specifiers(
+    sample_access_specifier_source, test_pickle
+):
     decls = parse_declarations_from_source(
-        sample_access_specifier_source, [sample_access_specifier_source], "sm_80"
+        sample_access_specifier_source,
+        [sample_access_specifier_source],
+        "sm_80",
     )
 
     structs, _, _, _, _, _ = astuple(decls)
@@ -514,7 +538,11 @@ def test_load_struct_function_execution_space(
             "sm_70",
             {
                 "structs": [
-                    {"name": "Functor", "methods": ["operator()"], "fields": ["k"]}
+                    {
+                        "name": "Functor",
+                        "methods": ["operator()"],
+                        "fields": ["k"],
+                    }
                 ],
                 "functions": [{"name": "fpi", "return_type": "float"}],
             },

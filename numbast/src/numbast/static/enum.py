@@ -7,7 +7,7 @@ import os
 
 from ast_canopy.pylibastcanopy import Enum
 
-from numbast.static.renderer import BaseRenderer
+from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import register_enum_type_str
 
 file_logger = getLogger(f"{__name__}")
@@ -41,7 +41,9 @@ class {enum_name}(IntEnum):
             self._decl.enumerators, self._decl.enumerator_values
         ):
             enumerators.append(
-                self.enumerator_template.format(enumerator=enumerator, value=value)
+                self.enumerator_template.format(
+                    enumerator=enumerator, value=value
+                )
             )
 
         self._python_rendered = self.enum_template.format(
@@ -56,11 +58,12 @@ class StaticEnumsRenderer(BaseRenderer):
     """
 
     def __init__(self, decls: list[Enum]):
+        super().__init__(decls)
         self._decls = decls
 
         self._python_rendered = []
 
-    def _render(self, with_prefix, with_imports):
+    def _render(self, require_pynvjitlink, with_imports):
         """Render python bindings for enums."""
         self._python_str = ""
 
@@ -69,23 +72,27 @@ class StaticEnumsRenderer(BaseRenderer):
             SER._render()
             self._python_rendered.append(SER._python_rendered)
 
-        if with_prefix:
-            self._python_str += "\n" + self.Prefix
-
         if with_imports:
-            self._python_str += "\n" + "\n".join(self.Imports)
+            self._python_str += "\n" + get_rendered_imports()
+
+        if require_pynvjitlink:
+            self._python_str += "\n" + self.Pynvjitlink_guard
 
         self._python_str += "\n" + "\n".join(self._python_rendered)
 
     def render_as_str(
-        self, *, with_prefix: bool, with_imports: bool, with_shim_functions: bool
+        self,
+        *,
+        require_pynvjitlink: bool,
+        with_imports: bool,
+        with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 
-        if with_shim_functions is True:
+        if with_shim_stream is True:
             raise ValueError("Enum renderer does not render shim functions.")
 
-        self._render(with_prefix, with_imports)
+        self._render(require_pynvjitlink, with_imports)
 
         file_logger.debug(self._python_str)
 

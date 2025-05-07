@@ -7,21 +7,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numbast"
-version = "0.2.1"
+dynamic = ["version"]
 description = "Numbast - auto Numba binding generation tool for CUDA C++."
 requires-python = ">=3.7"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
 ]
-dependencies= [
-    "numba>=0.59.0",
-    "numba-cuda",
-    "ast_canopy>=0.2.1",
-    "click",
-    "pyyaml"
+dependencies = [
+  "numba>=0.59.0",
+  "numba-cuda",
+  "ast_canopy>=0.3.0",
+  "click",
+  "pyyaml",
 ]
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }
 
 [project.scripts]
 numbast = "numbast.tool:static_binding_generator"
@@ -33,7 +36,5 @@ repository = "https://github.com/NVIDIA/numbast"
 [project.optional-dependencies]
 dev = ["ruff"]
 
-[tool.ruff.lint.per-file-ignores]
-# Ignore E402: Module level import not at top of file. This is because pynvjitlink
-# numba patch needs to be imported and patched before the shim writer imports.
-"__init__.py" = ["F401", "E402"]
+[tool.ruff]
+# Please use pyproject.toml from the project root

@@ -5,6 +5,7 @@
 
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
+#include <clang/Basic/Version.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
@@ -56,8 +57,15 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
   DiagnosticConsumer *DiagConsumer =
       new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
+
+#if CLANG_VERSION_MAJOR >= 20
+  IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
+  auto Diags = CompilerInstance::createDiagnostics(*FS, &*DiagOpts,
+                                                   &*DiagConsumer, false);
+#else
   auto Diags =
       CompilerInstance::createDiagnostics(&*DiagOpts, &*DiagConsumer, false);
+#endif
 
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, Diags, ""));

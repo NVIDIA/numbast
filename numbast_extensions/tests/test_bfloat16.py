@@ -11,7 +11,7 @@ if cuda.get_current_device().compute_capability < (8, 0):
         allow_module_level=True,
     )
 
-
+import numbast_extensions
 from numbast_extensions.bf16 import (
     nv_bfloat16,
     htrunc,
@@ -36,6 +36,11 @@ import numpy as np
 
 from numba import int16, int32, int64, uint16, uint32, uint64, float32, float64
 from numba.types import float16
+
+
+def test_version():
+    ver = numbast_extensions.__version__
+    assert "\n" not in ver
 
 
 def test_ctor():
@@ -169,7 +174,9 @@ def test_arithmetic():
         ],
         atol=1e-2,
     )
-    np.testing.assert_equal(logic, [a == b, a != b, a > b, a < b, a >= b, a <= b])
+    np.testing.assert_equal(
+        logic, [a == b, a != b, a > b, a < b, a >= b, a <= b]
+    )
 
 
 def test_math_func():

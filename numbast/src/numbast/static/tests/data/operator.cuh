@@ -7,11 +7,9 @@ struct Foo {
 public:
   int x;
 
-  __device__ Foo() {}
-  __device__ Foo(int x) : x(x) {}
+  __device__ Foo();
+  __device__ Foo(int x);
 };
 
 // Overloaded functions
-Foo __device__ operator+(const Foo &lhs, const Foo &rhs) {
-  return Foo(lhs.x + rhs.x);
-}
+Foo __device__ operator+(const Foo &lhs, const Foo &rhs);

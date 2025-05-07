@@ -7,19 +7,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numbast_extensions"
-version = "0.0.2"
+dynamic = ["version"]
 description = "Numba extensions for exotic data types in Numba, built with Numbast"
 requires-python = ">=3.7"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
 ]
-dependencies= [
-    "numba-cuda",
-    "ast_canopy>=0.2.0",
-    "numbast>=0.2.0"
-]
+dependencies = ["numba-cuda", "numbast>=0.2.0"]
 
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"
@@ -34,14 +30,10 @@ include-package-data = true
 zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = [
-    "docs",
-    "tests",
-    "docs.*",
-    "tests.*",
-]
+exclude = ["docs", "tests", "docs.*", "tests.*"]
 
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }
 
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401", "E402"]
-"tests/*" = ["F841"] # Ignore unused local variables in Numba kernel, the purpose of these tests are to test Numba JIT works with novel types.
+[tool.ruff]
+# Please use pyproject.toml from the project root
