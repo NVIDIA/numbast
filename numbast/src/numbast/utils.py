@@ -7,7 +7,7 @@ import re
 
 from numba.cuda.compiler import ExternFunction
 
-import ast_canopy.pylibastcanopy as pylibastcanopy
+import pylibastcanopy
 
 OVERLOADS_CNT: dict[str, int] = defaultdict(int)  # overload counter
 

@@ -3,7 +3,7 @@
 
 from enum import IntEnum
 
-import ast_canopy.pylibastcanopy as pylibastcanopy
+import pylibastcanopy as pylibastcanopy
 from numbast.types import register_enum_type
 
 

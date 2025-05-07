@@ -10,7 +10,7 @@ import warnings
 from numba.types import Type
 from numba.core.datamodel.models import StructModel, PrimitiveModel
 
-from ast_canopy.pylibastcanopy import access_kind
+from pylibastcanopy import access_kind
 from ast_canopy.decl import Struct, StructMethod
 
 from numbast.static.renderer import (
