@@ -8,12 +8,14 @@ from ast_canopy import value_from_constexpr_vardecl
 @pytest.fixture(scope="module")
 def sample_value_from_constexpr_vardecl():
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(current_directory, "data/", "sample_constexpr_vardecl.cu")
+    return os.path.join(
+        current_directory, "data/", "sample_constexpr_vardecl.cu"
+    )
 
 
 @pytest.fixture(scope="module")
 def source(sample_value_from_constexpr_vardecl):
-    with open(sample_value_from_constexpr_vardecl, "r") as f:
+    with open(sample_value_from_constexpr_vardecl) as f:
         src = f.read()
     return src
 

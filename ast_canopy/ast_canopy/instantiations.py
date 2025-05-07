@@ -9,7 +9,7 @@ import ast_canopy
 class BaseInstantiation:
     """Indicates a instantiation of a template"""
 
-    def __init__(self, template: "ast_canopy.decl.Template"):
+    def __init__(self, template: ast_canopy.decl.Template):
         self.template_parameters = template.template_parameters
         self._template_param_names = [
             tparam.name for tparam in self.template_parameters
@@ -21,7 +21,10 @@ class BaseInstantiation:
         return self
 
     def validate(self):
-        if any(key not in self._template_param_names for key in self.instantiated_args):
+        if any(
+            key not in self._template_param_names
+            for key in self.instantiated_args
+        ):
             raise ValueError(
                 f"Invalid template parameter names: {self.instantiated_args.keys()}, allowed template parameter names: {self._template_param_names}"
             )
@@ -29,7 +32,8 @@ class BaseInstantiation:
     @property
     def param_list(self):
         return [
-            self.instantiated_args[tparam.name] for tparam in self.template_parameters
+            self.instantiated_args[tparam.name]
+            for tparam in self.template_parameters
         ]
 
     def get_instantiated_c_stmt(self) -> str:
@@ -50,7 +54,7 @@ class BaseInstantiation:
 class FunctionInstantiation(BaseInstantiation):
     """Indicates an instantiation of a function template"""
 
-    def __init__(self, function_template: "ast_canopy.decl.FunctionTemplate"):
+    def __init__(self, function_template: ast_canopy.decl.FunctionTemplate):
         super().__init__(function_template)
         self.function = function_template.function
 
@@ -79,10 +83,14 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
         # Construct default-initialized arguments.
         argument_decls = ""
         for i, arg in enumerate(args):
-            argument_decls += f"__device__ {arg.get_instantiated_c_stmt()} arg_{i};\n"
+            argument_decls += (
+                f"__device__ {arg.get_instantiated_c_stmt()} arg_{i};\n"
+            )
 
         fml_arglist = ",".join([f"arg_{i}" for i in range(len(args))])
-        tfunc_instantiation = self.get_instantiated_c_stmt() + f"({fml_arglist});"
+        tfunc_instantiation = (
+            self.get_instantiated_c_stmt() + f"({fml_arglist});"
+        )
 
         assembled_code = assembled_code_template.format(
             header=header,
@@ -102,7 +110,7 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
 class ClassInstantiation(BaseInstantiation):
     """Indicates an instantiation of a class template"""
 
-    def __init__(self, class_template: "ast_canopy.decl.ClassTemplate"):
+    def __init__(self, class_template: ast_canopy.decl.ClassTemplate):
         super().__init__(class_template)
         self.record = class_template.record
 

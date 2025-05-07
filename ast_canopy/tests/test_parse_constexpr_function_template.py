@@ -38,4 +38,7 @@ def test_parse_constexpr_function_template(sample_constexpr_function_template):
     assert class_temp[0].record.name == "foo_t"
     assert len(class_temp[0].template_parameters) == 1
     assert class_temp[0].template_parameters[0].name == "N"
-    assert class_temp[0].template_parameters[0].kind == template_param_kind.non_type
+    assert (
+        class_temp[0].template_parameters[0].kind
+        == template_param_kind.non_type
+    )
