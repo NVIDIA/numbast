@@ -6,6 +6,8 @@ import typing
 
 import pylibastcanopy as bindings
 
+from ast_canopy.instantiations import FunctionInstantiation, ClassInstantiation
+
 CXX_OP_TO_PYTHON_OP = {
     "+": [operator.pos, operator.add],
     "-": [operator.neg, operator.sub],
@@ -38,6 +40,23 @@ CXX_OP_TO_PYTHON_OP = {
     "=": None,  # assignment in python can be indexed assignment or sliced assignment, but copy assignment doesn't exist.
 }
 
+CXX_TYPE_TO_PYTHON_TYPE = {
+    "int": int,
+    "unsigned int": int,
+    "long": int,
+    "unsigned long": int,
+    "long long": int,
+    "unsigned long long": int,
+    "int16_t": int,
+    "int32_t": int,
+    "int64_t": int,
+    "uint16_t": int,
+    "uint32_t": int,
+    "uint64_t": int,
+    "float": float,
+    "double": float,
+}
+
 
 class Function:
     """
@@ -53,6 +72,8 @@ class Function:
         return_type: bindings.Type,
         params: list[bindings.ParamVar],
         exec_space: bindings.execution_space,
+        is_constexpr: bool,
+        parse_entry_point: str,
     ):
         self.name = name
         self.return_type = return_type
@@ -60,6 +81,9 @@ class Function:
         self.is_operator = self.name.startswith("operator")
         self._op_str = self.name[8:] if self.is_operator else None
         self.exec_space = exec_space
+        self.is_constexpr = is_constexpr
+
+        self.parse_entry_point = parse_entry_point
 
     def __str__(self):
         return f"{self.name}({', '.join(str(p) for p in self.params)}) -> {self.return_type}"
@@ -137,30 +161,50 @@ class Function:
             return CXX_OP_TO_PYTHON_OP[self._op_str]
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.Function):
+    def from_c_obj(cls, c_obj: bindings.Function, parse_entry_point: str):
         return cls(
-            c_obj.name, c_obj.return_type, c_obj.params, c_obj.exec_space
+            c_obj.name,
+            c_obj.return_type,
+            c_obj.params,
+            c_obj.exec_space,
+            c_obj.is_constexpr,
+            parse_entry_point,
         )
 
 
-class FunctionTemplate:
+class Template:
+    def __init__(self, template_parameters, num_min_required_args):
+        self.template_parameters = template_parameters
+        self.num_min_required_args = num_min_required_args
+
+
+class FunctionTemplate(Template):
     def __init__(
         self,
         template_parameters: list[bindings.TemplateParam],
-        function: Function,
         num_min_required_args: int,
+        function: Function,
+        parse_entry_point: str,
     ):
-        self.template_parameters = template_parameters
+        super().__init__(template_parameters, num_min_required_args)
         self.function = function
-        self.num_min_required_args = num_min_required_args
+
+        self.parse_entry_point = parse_entry_point
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.FunctionTemplate):
+    def from_c_obj(
+        cls, c_obj: bindings.FunctionTemplate, parse_entry_point: str
+    ):
         return cls(
             c_obj.template_parameters,
-            Function.from_c_obj(c_obj.function),
             c_obj.num_min_required_args,
+            Function.from_c_obj(c_obj.function, parse_entry_point),
+            parse_entry_point,
         )
+
+    def instantiate(self, **kwargs):
+        tfunc = FunctionInstantiation(self)
+        return tfunc.instantiate(**kwargs)
 
 
 class StructMethod(Function):
@@ -171,9 +215,18 @@ class StructMethod(Function):
         params: list[bindings.ParamVar],
         kind: bindings.method_kind,
         exec_space: bindings.execution_space,
-        is_move_constructor: bool = False,
+        is_constexpr: bool,
+        is_move_constructor: bool,
+        parse_entry_point: str,
     ):
-        super().__init__(name, return_type, params, exec_space)
+        super().__init__(
+            name,
+            return_type,
+            params,
+            exec_space,
+            is_constexpr,
+            parse_entry_point,
+        )
         self.kind = kind
         self.is_move_constructor = is_move_constructor
 
@@ -192,14 +245,16 @@ class StructMethod(Function):
             return CXX_OP_TO_PYTHON_OP[self._op_str]
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.Method):
+    def from_c_obj(cls, c_obj: bindings.Method, parse_entry_point: str):
         return cls(
             c_obj.name,
             c_obj.return_type,
             c_obj.params,
             c_obj.kind,
             c_obj.exec_space,
+            c_obj.is_constexpr,
             c_obj.is_move_constructor(),
+            parse_entry_point,
         )
 
 
@@ -232,6 +287,7 @@ class Struct:
         nested_class_templates: list[bindings.ClassTemplate],
         sizeof_: int,
         alignof_: int,
+        parse_entry_point: str,
     ):
         self.name = name
         self.fields = fields
@@ -241,6 +297,8 @@ class Struct:
         self.nested_class_templates = nested_class_templates
         self.sizeof_ = sizeof_
         self.alignof_ = alignof_
+
+        self.parse_entry_point = parse_entry_point
 
     def constructors(self):
         for m in self.methods:
@@ -258,73 +316,88 @@ class Struct:
                 yield m
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.Record):
-        methods = [StructMethod.from_c_obj(m) for m in c_obj.methods]
+    def from_c_obj(cls, c_obj: bindings.Record, parse_entry_point: str):
         return cls(
             c_obj.name,
             c_obj.fields,
-            methods,
-            [FunctionTemplate.from_c_obj(tm) for tm in c_obj.templated_methods],
+            [
+                StructMethod.from_c_obj(m, parse_entry_point)
+                for m in c_obj.methods
+            ],
+            [
+                FunctionTemplate.from_c_obj(tm, parse_entry_point)
+                for tm in c_obj.templated_methods
+            ],
             c_obj.nested_records,
             c_obj.nested_class_templates,
             c_obj.sizeof_,
             c_obj.alignof_,
+            parse_entry_point,
         )
 
 
 class TemplatedStruct(Struct):
-    def __init__(
-        self,
-        name: str,
-        fields: list[bindings.Field],
-        methods: list[TemplatedStructMethod],
-        templated_methods: list[FunctionTemplate],
-        nested_records: list[bindings.Record],
-        nested_class_templates: list[bindings.ClassTemplate],
-        sizeof_: int,
-        alignof_: int,
-    ):
-        super().__init__(
-            name,
-            fields,
-            [],
-            templated_methods,
-            nested_records,
-            nested_class_templates,
-            sizeof_,
-            alignof_,
-        )
-        self.methods = methods
+    templated_methods: list[TemplatedStructMethod]
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.Record):
-        methods = [TemplatedStructMethod.from_c_obj(m) for m in c_obj.methods]
-
+    def from_c_obj(cls, c_obj: bindings.Record, parse_entry_point: str):
         return cls(
             c_obj.name,
             c_obj.fields,
-            methods,
-            [FunctionTemplate.from_c_obj(tm) for tm in c_obj.templated_methods],
+            [
+                TemplatedStructMethod.from_c_obj(m, parse_entry_point)
+                for m in c_obj.methods
+            ],
+            [
+                FunctionTemplate.from_c_obj(tm, parse_entry_point)
+                for tm in c_obj.templated_methods
+            ],
             c_obj.nested_records,
             c_obj.nested_class_templates,
             c_obj.sizeof_,
             c_obj.alignof_,
+            parse_entry_point,
         )
 
 
-class ClassTemplate:
+class ClassTemplate(Template):
     def __init__(
         self,
-        record: bindings.Record,
+        record: TemplatedStruct,
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
+        parse_entry_point: str,
     ):
-        self.record = TemplatedStruct.from_c_obj(record)
-        self.template_parameters = template_parameters
-        self.num_min_required_args = num_min_required_args
+        super().__init__(template_parameters, num_min_required_args)
+        self.record = record
+
+        self.parse_entry_point = parse_entry_point
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.ClassTemplate):
+    def from_c_obj(cls, c_obj: bindings.ClassTemplate, parse_entry_point: str):
         return cls(
-            c_obj.record, c_obj.template_parameters, c_obj.num_min_required_args
+            TemplatedStruct.from_c_obj(c_obj.record, parse_entry_point),
+            c_obj.template_parameters,
+            c_obj.num_min_required_args,
+            parse_entry_point,
         )
+
+    def instantiate(self, **kwargs):
+        tstruct = ClassInstantiation(self)
+        return tstruct.instantiate(**kwargs)
+
+
+class ConstExprVar:
+    def __init__(self, name: str, type_: bindings.Type, value_serialized: str):
+        self.name = name
+        self.type_ = type_
+        self.value_serialized = value_serialized
+
+    @classmethod
+    def from_c_obj(cls, c_obj: bindings.ConstExprVar):
+        return cls(c_obj.name, c_obj.type_, c_obj.value)
+
+    @property
+    def value(self):
+        cxx_type_name = self.type_.unqualified_non_ref_type_name
+        return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)

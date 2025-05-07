@@ -13,7 +13,13 @@ from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
 
 import pylibastcanopy as bindings
 
-from ast_canopy.decl import Function, Struct, ClassTemplate
+from ast_canopy.decl import (
+    Function,
+    Struct,
+    FunctionTemplate,
+    ClassTemplate,
+    ConstExprVar,
+)
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
@@ -23,7 +29,7 @@ logger = logging.getLogger(f"AST_Canopy.{__name__}")
 class Declarations:
     structs: list[Struct]
     functions: list[Function]
-    function_templates: list[bindings.FunctionTemplate]
+    function_templates: list[FunctionTemplate]
     class_templates: list[ClassTemplate]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
@@ -199,9 +205,7 @@ def parse_declarations_from_source(
 
     Returns
     -------
-    tuple:
-        A tuple containing lists of declaration objects from the source file.
-        See decl.py and pylibastcanopy.pyi for the declaration object types.
+    Declarations: See `Declarations` struct definition for detail.
     """
 
     if not os.path.exists(source_file_path):
@@ -286,17 +290,84 @@ def parse_declarations_from_source(
                 "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
             )
 
-    structs = [Struct.from_c_obj(c_obj) for c_obj in decls.records]
-    functions = [Function.from_c_obj(c_obj) for c_obj in decls.functions]
+    structs = [
+        Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records
+    ]
+    functions = [
+        Function.from_c_obj(c_obj, source_file_path)
+        for c_obj in decls.functions
+    ]
+    function_templates = [
+        FunctionTemplate.from_c_obj(c_obj, source_file_path)
+        for c_obj in decls.function_templates
+    ]
     class_templates = [
-        ClassTemplate.from_c_obj(c_obj) for c_obj in decls.class_templates
+        ClassTemplate.from_c_obj(c_obj, source_file_path)
+        for c_obj in decls.class_templates
     ]
 
     return Declarations(
         structs,
         functions,
-        decls.function_templates,
+        function_templates,
         class_templates,
         decls.typedefs,
         decls.enums,
     )
+
+
+def value_from_constexpr_vardecl(
+    source: str,
+    vardecl_name: str,
+    compute_capability: str,
+    cxx_standard: str = "c++17",
+    verbose: bool = False,
+) -> bindings.ConstExprVar | None:
+    """Extract the values from constexpr VarDecl of given name."""
+
+    with tempfile.NamedTemporaryFile(mode="w") as f:
+        f.write(source)
+        f.flush()
+
+        clang_resource_file = (
+            subprocess.check_output(["clang++", "-print-resource-dir"])
+            .decode()
+            .strip()
+        )
+
+        clang_search_paths = get_default_compiler_search_paths()
+
+        def custom_cuda_home() -> list[str]:
+            cuda_path = get_default_cuda_path()
+            if cuda_path:
+                return [f"--cuda-path={cuda_path}"]
+            else:
+                return []
+
+        cudatoolkit_include_dir: str = get_default_cuda_compiler_include()
+        command_line_options = [
+            "clang++",
+            "--cuda-device-only",
+            "-xcuda",
+            f"--cuda-gpu-arch={compute_capability}",
+            *custom_cuda_home(),
+            f"-std={cxx_standard}",
+            f"-isystem{clang_resource_file}/include/",
+            *[f"-I{path}" for path in clang_search_paths],
+            f"-I{cudatoolkit_include_dir}",
+            f.name,
+        ]
+
+        with capture_fd(STREAMFD.STDERR) as cap:
+            c_result = bindings.value_from_constexpr_vardecl(
+                command_line_options, vardecl_name
+            )
+
+        werr = cap.snap()
+        if werr and verbose:
+            print(werr)
+
+        result = (
+            ConstExprVar.from_c_obj(c_result) if c_result is not None else None
+        )
+        return result

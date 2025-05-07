@@ -29,7 +29,8 @@ execution_space get_execution_space(const clang::FunctionDecl *FD) {
 
 Function::Function(const clang::FunctionDecl *FD)
     : name(FD->getNameAsString()),
-      return_type(FD->getReturnType(), FD->getASTContext()) {
+      return_type(FD->getReturnType(), FD->getASTContext()),
+      is_constexpr(FD->isConstexpr()) {
   params.reserve(FD->getNumParams());
   std::transform(FD->param_begin(), FD->param_end(), std::back_inserter(params),
                  [](const clang::ParmVarDecl *PVD) { return ParamVar(PVD); });

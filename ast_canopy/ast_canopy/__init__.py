@@ -7,9 +7,11 @@ __version__ = importlib.metadata.version("ast_canopy")
 
 from ast_canopy.api import (
     parse_declarations_from_source,
+    value_from_constexpr_vardecl,
 )
 
 __all__ = [
     "__version__",
     "parse_declarations_from_source",
+    "value_from_constexpr_vardecl",
 ]

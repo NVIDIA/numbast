@@ -35,6 +35,8 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
       // size.
       auto id = RD->getID();
 
+      // Anonymous structs, such as struct { int a; } X; is named as
+      // "unnamed<ID>". This behavior is not persistent.
       std::string name = RD->getNameAsString();
       std::string rename_for_unamed =
           name.empty() ? "unnamed" + std::to_string(id) : name;

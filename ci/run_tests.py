@@ -14,6 +14,7 @@ def run_pytest(lib, test_dir):
     command = [
         "pytest",
         "-v",
+        "-s",
         "--continue-on-collection-errors",
         "--cache-clear",
         f"--junitxml={junitxml}",
