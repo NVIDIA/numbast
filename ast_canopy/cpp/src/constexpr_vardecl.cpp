@@ -15,6 +15,11 @@ ConstExprVar::ConstExprVar(const clang::VarDecl *VD)
   }
 
   clang::APValue *ap_value = VD->getEvaluatedValue();
+
+  if (ap_value == nullptr) {
+    throw std::runtime_error("Value is not yet known.");
+  }
+
   std::cout << ap_value->getKind() << std::endl;
 
   if (ap_value->isInt()) {
