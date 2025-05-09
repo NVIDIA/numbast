@@ -83,8 +83,10 @@ Declarations parse_declarations_from_command_line(
 
   Declarations decls;
   std::unordered_map<int64_t, std::string> record_id_to_name;
+  std::unordered_set<int64_t> record_id_with_ctpsd_ancestor;
   detail::traverse_ast_payload payload{&decls, &record_id_to_name,
-                                       &files_to_retain, &whitelist_prefixes};
+                                       &files_to_retain, &whitelist_prefixes,
+                                       &record_id_with_ctpsd_ancestor};
 
   detail::FunctionCallback func_callback(&payload);
   detail::RecordCallback record_callback(&payload);
@@ -92,8 +94,12 @@ Declarations parse_declarations_from_command_line(
   detail::FunctionTemplateCallback func_template_callback(&payload);
   detail::ClassTemplateCallback class_template_callback(&payload);
   detail::EnumCallback enum_callback(&payload);
+  detail::ClassTemplatePartialSpecializationCallback ctpsd_callback(&payload);
 
   MatchFinder finder;
+
+  finder.addMatcher(classTemplatePartialSpecializationDecl().bind("ctpsd"),
+                    &ctpsd_callback);
 
   // Match all free standing, non template functions.
   finder.addMatcher(
