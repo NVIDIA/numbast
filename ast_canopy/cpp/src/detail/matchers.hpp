@@ -7,6 +7,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <clang/ASTMatchers/ASTMatchFinder.h>
@@ -26,6 +27,9 @@ struct traverse_ast_payload {
   std::unordered_map<int64_t, std::string> *record_id_to_name;
   std::vector<std::string> *files_to_retain;
   std::vector<std::string> *prefixes_to_whitelist;
+  // The set of record IDs that has ClassTemplatePartialSpecializationDecl in
+  // ancestor
+  std::unordered_set<int64_t> *record_id_with_ctpsd_ancestor;
 };
 
 struct vardecl_matcher_payload {
@@ -96,6 +100,16 @@ public:
 
 private:
   vardecl_matcher_payload *payload;
+};
+
+class ClassTemplatePartialSpecializationCallback
+    : public MatchFinder::MatchCallback {
+public:
+  ClassTemplatePartialSpecializationCallback(traverse_ast_payload *);
+  void run(const MatchFinder::MatchResult &) override;
+
+private:
+  traverse_ast_payload *payload;
 };
 
 } // namespace detail

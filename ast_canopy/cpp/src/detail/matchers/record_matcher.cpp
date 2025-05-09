@@ -35,6 +35,15 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
       // size.
       auto id = RD->getID();
 
+      // WAR: since
+      // unless(hasAncestor(classTemplatePartialSpecializationDecl())) is not
+      // functioning, we implemented a custom traversal in CTPSD matcher to log
+      // all recordDecl. For any recordDecl that showed up inside CTPSD, we skip
+      // them, as they are not top level decl.
+      auto skip_set = payload->record_id_with_ctpsd_ancestor;
+      if (skip_set->find(id) != skip_set->end())
+        return;
+
       // Anonymous structs, such as struct { int a; } X; is named as
       // "unnamed<ID>". This behavior is not persistent.
       std::string name = RD->getNameAsString();

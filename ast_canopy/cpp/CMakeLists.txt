@@ -34,7 +34,8 @@ add_library(astcanopy SHARED
             src/detail/matchers/function_template_matcher.cpp
             src/detail/matchers/class_template_matcher.cpp
             src/detail/matchers/enum_matcher.cpp
-            src/detail/matchers/constexpr_vardecl_matcher.cpp)
+            src/detail/matchers/constexpr_vardecl_matcher.cpp
+            src/detail/matchers/class_template_partial_specialization_matcher.cpp)
 
 # Define the public headers for astcanopy here.
 target_sources(astcanopy
