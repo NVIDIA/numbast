@@ -314,7 +314,7 @@ def _static_binding_generator(
     - exclude_structs (list[str]): List of struct names to exclude from the bindings.
     - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
     - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
-    -
+    - predefined_macros (list[str]): List of macros defined prior to parsing the header and prefixing shim functions.
     - additional_imports (list[str]): The list of additional imports to add to binding.
     - shim_include_override (str, optional): The command to override the include line of the shim functions.
     - require_pynvjitlink (bool, optional): If true, detect if pynvjitlink is installed, raise an error if not.
