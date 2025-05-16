@@ -166,6 +166,9 @@ def {func_name}():
             "*" + arg.name for arg in self._decl.params
         )
 
+        # Track the public symbols from a function binding
+        self._function_symbols.append(self._decl.name)
+
     @property
     def _signature_cases(self):
         """The python string that declares the signature of this function."""

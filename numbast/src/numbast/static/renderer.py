@@ -71,6 +71,15 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     Includes: set[str] = set()
     """includes to add in c extension shims."""
 
+    _nbtype_symbols: list[str] = []
+    """List of new created Numba types to expose."""
+
+    _record_symbols: list[str] = []
+    """List of new record handles to expose."""
+
+    _function_symbols: list[str] = []
+    """List of new function handles to expose."""
+
     def __init__(self, decl):
         self.Imports.add("import numba")
         self.Imports.add("import io")
@@ -105,11 +114,14 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 
 
 def clear_base_renderer_cache():
-    BaseRenderer.Imports = set()
-    BaseRenderer.Imported_VectorTypes = []
-    BaseRenderer.Includes = set()
-    BaseRenderer.ShimFunctions = []
-    BaseRenderer._imported_numba_types = set()
+    BaseRenderer.Imports.clear()
+    BaseRenderer.Imported_VectorTypes.clear()
+    BaseRenderer.Includes.clear()
+    BaseRenderer.ShimFunctions.clear()
+    BaseRenderer._imported_numba_types.clear()
+    BaseRenderer._nbtype_symbols.clear()
+    BaseRenderer._record_symbols.clear()
+    BaseRenderer._function_symbols.clear()
 
 
 def get_reproducible_info(
@@ -172,3 +184,63 @@ def get_rendered_imports(additional_imports: list[str] = []) -> str:
         imports += f"{vty} = vector_types['{vty}']\n"
 
     return imports
+
+
+def _get_nbtype_symbols() -> str:
+    template = """
+_NBTYPE_SYMBOLS = [{nbtype_symbols}]
+"""
+
+    symbols = BaseRenderer._nbtype_symbols
+    quote_wrapped = [f'"{s}"' for s in symbols]
+    concat = ",".join(quote_wrapped)
+    code = template.format(nbtype_symbols=concat)
+    return code
+
+
+def _get_record_symbols() -> str:
+    template = """
+_RECORD_SYMBOLS = [{record_symbols}]
+"""
+
+    symbols = BaseRenderer._record_symbols
+    quote_wrapped = [f'"{s}"' for s in symbols]
+    concat = ",".join(quote_wrapped)
+    code = template.format(record_symbols=concat)
+    return code
+
+
+def _get_function_symbols() -> str:
+    template = """
+_FUNCTION_SYMBOLS = [{function_symbols}]
+"""
+
+    symbols = BaseRenderer._function_symbols
+    quote_wrapped = [f'"{s}"' for s in symbols]
+    concat = ",".join(quote_wrapped)
+    code = template.format(function_symbols=concat)
+    return code
+
+
+def get_all_exposed_symbols() -> str:
+    """Return the definition of all exposed symbols via `__all__`.
+
+    A generated binding module exposes the following symbols:
+    - Name of a record, corresponds to the handle of the python object
+    - Name of the record type instance in Numba, corresponds to the record's numba type
+    - Name of a function, corresponds to the handle of the python object
+    """
+
+    nbtype_symbols = _get_nbtype_symbols()
+    record_symbols = _get_record_symbols()
+    function_symbols = _get_function_symbols()
+
+    all_symbols = f"""
+{nbtype_symbols}
+{record_symbols}
+{function_symbols}
+
+__all__ = _NBTYPE_SYMBOLS + _RECORD_SYMBOLS + _FUNCTION_SYMBOLS
+"""
+
+    return all_symbols
