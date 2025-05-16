@@ -768,6 +768,11 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         CTYPE_TO_NBTYPE_STR[decl.name] = self._struct_type_name
 
+        # Track the public symbols that should be exposed via a
+        # struct creation
+        self._nbtype_symbols.append(self._struct_type_name)
+        self._record_symbols.append(self._struct_name)
+
     def _render_typing(self):
         """Render typing of the struct."""
 
