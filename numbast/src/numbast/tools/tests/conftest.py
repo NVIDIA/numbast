@@ -36,6 +36,7 @@ def run_in_isolated_folder(tmpdir):
         cfg_template,
         header,
         params,
+        output_name=None,
         ruff_format=False,
         load_symbols=False,
         show_binding=False,
@@ -52,6 +53,8 @@ def run_in_isolated_folder(tmpdir):
         shutil.copy(src_data, target_data)
 
         params["data"] = target_data
+        if output_name is not None:
+            params["output_name"] = output_name
 
         env = Environment(loader=FileSystemLoader(here))
         template = env.get_template(os.path.join("config/", cfg_template))
@@ -75,8 +78,9 @@ def run_in_isolated_folder(tmpdir):
 
         assert result.exit_code == 0
 
-        binding_name = header.split(".")[0] + ".py"
-        binding_path = os.path.join(output_folder, binding_name)
+        if output_name is None:
+            output_name = header.split(".")[0] + ".py"
+        binding_path = os.path.join(output_folder, output_name)
 
         with open(binding_path) as f:
             binding = f.read()

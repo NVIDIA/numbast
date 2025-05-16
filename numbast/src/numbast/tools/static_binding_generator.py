@@ -58,6 +58,8 @@ class YamlConfig:
     shim_include_override : str:
         Override the include line of the shim function to specified string.
         If not specified, default to `#include <path_to_entry_point>`.
+
+    TODO: Migrate the docstring from `_static_binding_generator` to here.
     """
 
     entry_point: str
@@ -72,6 +74,7 @@ class YamlConfig:
     shim_include_override: str
     require_pynvjitlink: bool
     predefined_macros: list[str]
+    output_name: str
 
     def __init__(self, cfg_path):
         with open(cfg_path) as f:
@@ -111,6 +114,8 @@ class YamlConfig:
                 self.exclude_structs = []
             if self.clang_includes_paths is None:
                 self.clang_includes_paths = []
+
+            self.output_name = config.get("Output Name", None)
 
         self._verify_exists()
 
@@ -292,6 +297,7 @@ def _static_binding_generator(
     exclude_structs: list[str],
     clang_include_paths: list[str],
     anon_filename_decl_prefix_allowlist: list[str],
+    output_name: str = None,
     predefined_macros: list[str] = [],
     additional_imports: list[str] = [],
     shim_include_override: str | None = None,
@@ -314,7 +320,8 @@ def _static_binding_generator(
     - exclude_structs (list[str]): List of struct names to exclude from the bindings.
     - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
     - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
-    -
+    - output_name (str): The name of the output binding file, default None. When set to None, use the same name as input file (renamed with .py extension)
+    - predefined_macros (list[str]): List of macros defined prior to parsing the header and prefixing shim functions.
     - additional_imports (list[str]): The list of additional imports to add to binding.
     - shim_include_override (str, optional): The command to override the include line of the shim functions.
     - require_pynvjitlink (bool, optional): If true, detect if pynvjitlink is installed, raise an error if not.
@@ -382,7 +389,10 @@ def _static_binding_generator(
     imports_str = get_rendered_imports(additional_imports=additional_imports)
 
     # Example: Save the processed output to the output directory
-    output_file = os.path.join(output_dir, f"{basename}.py")
+    if output_name is None:
+        output_file = os.path.join(output_dir, f"{basename}.py")
+    else:
+        output_file = os.path.join(output_dir, output_name)
 
     # Full command line that generate the binding:
     cmd = " ".join(sys.argv)
@@ -516,6 +526,7 @@ def static_binding_generator(
             cfg.exclude_structs,
             cfg.clang_includes_paths,
             cfg.macro_expanded_function_prefixes,
+            cfg.output_name,
             cfg.predefined_macros,
             cfg.additional_imports,
             cfg.shim_include_override,
