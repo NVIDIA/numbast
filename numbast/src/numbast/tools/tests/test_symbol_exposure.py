@@ -9,13 +9,17 @@ import sys
 def test_symbol_exposure(run_in_isolated_folder):
     """Test that only a limited set of symbols are exposed via __all__ imports."""
     res = run_in_isolated_folder(
-        "cfg.yml.j2", "data.cuh", {}, ruff_format=False
+        "cfg.yml.j2", "data.cuh", {}, load_symbols=True, ruff_format=False
     )
 
     run_result = res["result"]
     output_folder = res["output_folder"]
+    symbols = res["symbols"]
+    alls = symbols["__all__"]
 
     assert run_result.exit_code == 0
+
+    assert len(alls) == 4, (len(alls) != 4, alls)  # Foo, add, mul, _type_Foo
 
     test_kernel_src = """
 from numba import cuda
@@ -23,7 +27,8 @@ from data import *
 @cuda.jit
 def kernel():
     foo = Foo()         # Verify record symbol
-    one = add(foo.x, 1) # Verify function synbol
+    one = add(foo.x, 1) # Verify function symbol
+    two = mul(one, 2)
 
 kernel[1, 1]()
 
