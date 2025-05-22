@@ -26,3 +26,7 @@ dependencies:
   - scikit-build-core
   - pip
   - ninja
+  - pyyaml
+  - ruff
+  - click
+  - jinja2

@@ -7,6 +7,8 @@ import json
 from collections import defaultdict
 import sys
 import subprocess
+import importlib
+import warnings
 
 import yaml
 
@@ -542,7 +544,11 @@ def static_binding_generator(
         )
 
         if run_ruff_format:
-            ruff_format_binding_file(output_file)
+            spec = importlib.util.find_spec("ruff")
+            if spec is None:
+                warnings.warn("Ruff is not on the system. Formatting skipped.")
+            else:
+                ruff_format_binding_file(output_file)
 
         return
 
