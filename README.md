@@ -25,7 +25,7 @@ Next, install all subcomponents:
 ```bash
 bash ast_canopy/build.sh
 pip install numbast/ \
-  numbast_extensions/bf16 \
+  numbast_extensions/ \
   numbast_extensions/fp16 \
   numbast_extensions/curand_device \
   numbast_extensions/curand_host
