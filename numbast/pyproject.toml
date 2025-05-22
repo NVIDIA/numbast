@@ -19,8 +19,9 @@ dependencies = [
   "numba>=0.59.0",
   "numba-cuda",
   "ast_canopy>=0.3.0",
-  "click",
   "pyyaml",
+  "click",
+  "jinja2",
 ]
 
 [tool.setuptools.dynamic]
