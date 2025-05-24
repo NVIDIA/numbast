@@ -78,6 +78,7 @@ class YamlConfig:
     require_pynvjitlink: bool
     predefined_macros: list[str]
     output_name: str
+    cooperative_launch_required_apis: list[str]
 
     def __init__(self, cfg_path):
         with open(cfg_path) as f:
@@ -119,6 +120,10 @@ class YamlConfig:
                 self.clang_includes_paths = []
 
             self.output_name = config.get("Output Name", None)
+
+            self.cooperative_launch_required_apis = config.get(
+                "Cooperative Launch Required APIs", []
+            )
 
         self._verify_exists()
 
@@ -242,11 +247,19 @@ def _generate_structs(struct_decls, header_path, types, data_models, excludes):
 
 
 def _generate_functions(
-    func_decls: list[Function], header_path: str, excludes: list[str]
+    func_decls: list[Function],
+    header_path: str,
+    excludes: list[str],
+    cooperative_launch_functions: list[str],
 ) -> str:
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
 
-    SFR = StaticFunctionsRenderer(func_decls, header_path, excludes=excludes)
+    SFR = StaticFunctionsRenderer(
+        func_decls,
+        header_path,
+        excludes=excludes,
+        cooperative_launch_required=cooperative_launch_functions,
+    )
 
     return SFR.render_as_str(
         require_pynvjitlink=False, with_imports=False, with_shim_stream=False
@@ -300,6 +313,7 @@ def _static_binding_generator(
     exclude_structs: list[str],
     clang_include_paths: list[str],
     anon_filename_decl_prefix_allowlist: list[str],
+    cooperative_launch_required_apis: list[str] = [],
     output_name: str = None,
     predefined_macros: list[str] = [],
     additional_imports: list[str] = [],
@@ -324,6 +338,7 @@ def _static_binding_generator(
     - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
     - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
     - output_name (str): The name of the output binding file, default None. When set to None, use the same name as input file (renamed with .py extension)
+    - cooperative_launch_required_apis (list[str]): The list of functions, when used in kernel, should cause the kernel to be launched with cooperative launch.
     - predefined_macros (list[str]): List of macros defined prior to parsing the header and prefixing shim functions.
     - additional_imports (list[str]): The list of additional imports to add to binding.
     - shim_include_override (str, optional): The command to override the include line of the shim functions.
@@ -374,7 +389,10 @@ def _static_binding_generator(
     )
 
     function_bindings = _generate_functions(
-        functions, entry_point, exclude_functions
+        functions,
+        entry_point,
+        exclude_functions,
+        cooperative_launch_required_apis,
     )
 
     if require_pynvjitlink:
@@ -534,6 +552,7 @@ def static_binding_generator(
             cfg.exclude_structs,
             cfg.clang_includes_paths,
             cfg.macro_expanded_function_prefixes,
+            cfg.cooperative_launch_required_apis,
             cfg.output_name,
             cfg.predefined_macros,
             cfg.additional_imports,

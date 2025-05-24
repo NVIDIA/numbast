@@ -76,7 +76,7 @@ def run_in_isolated_folder(tmpdir):
             ],
         )
 
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stdout
 
         if output_name is None:
             output_name = header.split(".")[0] + ".py"
