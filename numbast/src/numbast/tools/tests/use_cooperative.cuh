@@ -1,14 +1,20 @@
+// clang-format off
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+// clang-format on
+
 #include <cooperative_groups.h>
 #include <cuda/barrier>
 
 namespace cg = cooperative_groups;
 
-__device__ void _wait_on_tile(cuda::barrier<cuda::thread_scope_block> &tile) {
+__device__ __inline__ void
+_wait_on_tile(cuda::barrier<cuda::thread_scope_block> &tile) {
   auto token = tile.arrive();
   tile.wait(std::move(token));
 }
 
-extern "C" __device__ int cta_barrier() {
+extern "C" __device__ __inline__ int cta_barrier() {
   auto cta = cg::this_thread_block();
   cg::thread_block_tile<32> tile = cg::tiled_partition<32>(cta);
   __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
