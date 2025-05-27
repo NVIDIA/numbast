@@ -39,56 +39,28 @@ into three categories:
 
 Remember, if you are unsure about anything, don't hesitate to comment on issues and ask for clarifications!
 
-### Managing PR labels
+## Releases
 
-Each PR must be labeled according to whether it is a "breaking" or "non-breaking" change (using Github labels). This is used to highlight changes that users should know about when upgrading.
+The release process for Numbast involves the following steps:
 
-For Numbast, a "breaking" change is one that modifies the public, non-experimental, Python API in a
-non-backward-compatible way. The C++ API does not have an expectation of backward compatibility at this
-time, so changes to it are not typically considered breaking. Backward-compatible API changes to the Python
-API (such as adding a new keyword argument to a function) do not need to be labeled.
+- Open a PR to update `VERSION` to the desired version.
+- Generate a short changelog with `git log v<PREVIOUS_VERSION>..HEAD --oneline --pretty=format:"- %s"`
+- Put the changelog in the version update PR description.
+- Once `main` is updated, tag the release:
+```
+git checkout main && git pull
+git tag -a v<VERSION>
+```
+- For the tag annotation, paste the same changelog as above, like this:
+```
+v<VERSION>
 
-Additional labels must be applied to indicate whether the change is a feature, improvement, bugfix, or documentation change. See the shared numbast documentation for these labels: https://github.com/nvidia/kb/issues/42.
-
-### Seasoned developers
-
-Once you have gotten your feet wet and are more comfortable with the code, you
-can look at the prioritized issues of our next release in our [project board](https://github.com/orgs/nvidia/projects/80).
-
-> **Pro Tip:** Always look at the release board with the highest number for
-issues to work on. This is where RAPIDS developers also focus their efforts.
-
-Look at the unassigned issues, and find an issue you are comfortable with
-contributing to. Start with _Step 3_ from above, commenting on the issue to let
-others know you are working on it. If you have any questions related to the
-implementation of the issue, ask them in the issue instead of the PR.
-
-### Branches and Versions
-
-The Numbast repository has two main branches:
-
-1. `main` branch: it contains the last released version. Only hotfixes are targeted and merged into it.
-2. `branch-x.y`: it is the development branch which contains the upcoming release. All the new features should be based on this branch and Merge/Pull request should target this branch (with the exception of hotfixes).
-
-### Additional details
-
-For every new version `x.y` of Numbast there is a corresponding branch called `branch-x.y`, from where new feature development starts and PRs will be targeted and merged before its release. The exceptions to this are the 'hotfixes' that target the `main` branch, which target critical issues raised by Github users and are directly merged to `main` branch, and create a new subversion of the project. While trying to patch an issue which requires a 'hotfix', please state the intent in the PR.
-
-For all development, your changes should be pushed into a branch (created using the naming instructions below) in your own fork of Numbast and then create a pull request when the code is ready.
-
-A few days before releasing version `x.y` the code of the current development branch (`branch-x.y`) will be frozen and a new branch, 'branch-x+1.y' will be created to continue development.
-
-### Branch naming
-
-Branches used to create PRs should have a name of the form `<type>-<name>`
-which conforms to the following conventions:
-- Type:
-    - fea - For if the branch is for a new feature(s)
-    - enh - For if the branch is an enhancement of an existing feature(s)
-    - bug - For if the branch is for fixing a bug(s) or regression(s)
-- Name:
-    - A name to convey what is being worked on
-    - Please use dashes or underscores between words as opposed to spaces.
+- ... (bullet points on release items)
+```
+- Push the tag:
+```
+git push git@github.com:NVIDIA/numbast.git v<VERSION>
+```
 
 ## Attribution
 Portions adopted from https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md
