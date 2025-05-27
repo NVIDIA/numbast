@@ -41,7 +41,7 @@ Remember, if you are unsure about anything, don't hesitate to comment on issues 
 
 ## Releases
 
-The release process for Numba-CUDA involves the following steps:
+The release process for Numbast involves the following steps:
 
 - Open a PR to update `VERSION` to the desired version.
 - Generate a short changelog with `git log v<PREVIOUS_VERSION>..HEAD --oneline --pretty=format:"- %s"`
