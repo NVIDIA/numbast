@@ -29,6 +29,7 @@ def kernel():
     cta_barrier()
 
 kernel[1, 1]()
+assert kernel.overloads[()].cooperative, f"{{kernel.overloads[()].cooperative=}}"
 """
 
     test_kernel = os.path.join(output_folder, "test.py")
