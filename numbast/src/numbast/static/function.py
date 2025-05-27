@@ -80,10 +80,16 @@ extern "C" __device__ int
 shim_raw_str = \"\"\"{shim_rendered}\"\"\"
 """
 
+    use_cooperative_template = (
+        "\n"
+        + indent("context.active_code_library.use_cooperative = True", " " * 4)
+        + "\n"
+    )
+
     lowering_template = """
 @lower({func_name}, {params})
 def impl(context, builder, sig, args):
-    context.active_code_library.add_linking_file(shim_obj)
+    context.active_code_library.add_linking_file(shim_obj){use_cooperative}
     shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
     for ptr, ty, arg in zip(ptrs, sig.args, args):
@@ -120,10 +126,11 @@ def {func_name}():
     The API maybe empty because operator reuses `operator.X` handles.
     """
 
-    def __init__(self, decl: Function, header_path: str):
+    def __init__(self, decl: Function, header_path: str, use_cooperative: bool):
         super().__init__(decl)
         self._decl = decl
         self._header_path = header_path
+        self._use_cooperative = use_cooperative
 
         self._argument_numba_types = [
             to_numba_type_str(arg.unqualified_non_ref_type_name)
@@ -234,6 +241,10 @@ def {func_name}():
         self.Imports.add("from numba.cuda.cudaimpl import lower")
         self.Imports.add("from numba.core.typing import signature")
 
+        use_cooperative = ""
+        if self._use_cooperative:
+            use_cooperative = self.use_cooperative_template
+
         self._lowering_rendered = self.lowering_template.format(
             func_name=self.func_name_python,
             params=self._argument_numba_types_str,
@@ -241,6 +252,7 @@ def {func_name}():
             return_type=self._return_numba_type_str,
             pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
             unique_shim_name=self._deduplicated_shim_name,
+            use_cooperative=use_cooperative,
         )
 
     def _render_scoped_lower(self):
@@ -322,7 +334,7 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
     """Name of the corresponding python operator converted from C++."""
 
     def __init__(self, decl: Function, header_path: str):
-        super().__init__(decl, header_path)
+        super().__init__(decl, header_path, use_cooperative=False)
 
         self._py_op = decl.overloaded_operator_to_python_operator
         self._py_op_name = f"operator.{self._py_op.__name__}"
@@ -359,8 +371,8 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
     _py_op_name: str
     """Name of the corresponding python operator converted from C++."""
 
-    def __init__(self, decl: Function, header_path: str):
-        super().__init__(decl, header_path)
+    def __init__(self, decl: Function, header_path: str, use_cooperative: bool):
+        super().__init__(decl, header_path, use_cooperative)
 
     def _render_python_api(self):
         if self._decl.name in function_apis_registry:
@@ -389,6 +401,10 @@ class StaticFunctionsRenderer(BaseRenderer):
         A list of function names to exclude from the generation
     skip_non_device: bool, default True
         If True, skip generating functions that are not device declared.
+    skip_prefix: str, default "__"
+        If function name is prefixed with `skip_prefix`, they are skipped. Defaults to double underscore.
+    cooperative_launch_required: list[str], default []
+        The list of names of functions that require cooperative launch.
     """
 
     func_typing_template = """
@@ -413,12 +429,14 @@ class {op_typing_name}(ConcreteTemplate):
         excludes: list[str] = [],
         skip_non_device: bool = True,
         skip_prefix: str = "__",
+        cooperative_launch_required: list[str] = [],
     ):
         self._decls = decls
         self._header_path = header_path
         self._excludes = excludes
         self._skip_non_device = skip_non_device
         self._skip_prefix = skip_prefix
+        self._cooperative_launch_required = cooperative_launch_required
 
         self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(
             list
@@ -524,8 +542,10 @@ class {op_typing_name}(ConcreteTemplate):
                 ].append(renderer.get_signature())
             elif not decl.is_operator:
                 try:
+                    name = decl.name
+                    use_cooperative = name in self._cooperative_launch_required
                     renderer = StaticNonOperatorFunctionRenderer(
-                        decl, self._header_path
+                        decl, self._header_path, use_cooperative
                     )
                 except TypeNotFoundError as e:
                     warn(
