@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import re
 from textwrap import indent
 from logging import getLogger, FileHandler
 import tempfile
@@ -28,6 +29,32 @@ file_logger.addHandler(FileHandler(logger_path))
 
 function_apis_registry: set[str] = set()
 """A set of created function API names."""
+
+
+def _matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
+    """Check if a function name matches any of the provided regex patterns.
+
+    Parameters
+    ----------
+    name : str
+        Function name to check
+    patterns : list[str]
+        List of regex patterns to match against
+
+    Returns
+    -------
+    bool
+        True if the name matches any pattern, False otherwise
+    """
+    for pattern in patterns:
+        try:
+            if re.search(pattern, name):
+                return True
+        except re.error:
+            # If regex is invalid, log warning and skip
+            warn(f"Invalid regex pattern: {pattern}")
+            continue
+    return False
 
 
 class StaticFunctionRenderer(BaseRenderer):
@@ -404,7 +431,7 @@ class StaticFunctionsRenderer(BaseRenderer):
     skip_prefix: str, default "__"
         If function name is prefixed with `skip_prefix`, they are skipped. Defaults to double underscore.
     cooperative_launch_required: list[str], default []
-        The list of names of functions that require cooperative launch.
+        A list of regular expressions. Functions whose names match any of these patterns will require cooperative launch.
     """
 
     func_typing_template = """
@@ -543,7 +570,9 @@ class {op_typing_name}(ConcreteTemplate):
             elif not decl.is_operator:
                 try:
                     name = decl.name
-                    use_cooperative = name in self._cooperative_launch_required
+                    use_cooperative = _matches_any_regex_pattern(
+                        name, self._cooperative_launch_required
+                    )
                     renderer = StaticNonOperatorFunctionRenderer(
                         decl, self._header_path, use_cooperative
                     )

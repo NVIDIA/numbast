@@ -79,9 +79,10 @@ class YamlConfig:
     output_name : str
         The name of the output binding file, default None. When set to None, use
         the same name as input file (renamed with .py extension).
-    cooperative_launch_required_apis : list[str]
-        The list of functions, when used in kernel, should cause the kernel to be
-        launched with cooperative launch.
+    cooperative_launch_required_functions_regex : list[str]
+        The list of regular expressions. When any function name matches any of these
+        regex patterns, the function should cause the kernel to be launched with
+        cooperative launch.
     """
 
     entry_point: str
@@ -97,7 +98,7 @@ class YamlConfig:
     require_pynvjitlink: bool
     predefined_macros: list[str]
     output_name: str
-    cooperative_launch_required_apis: list[str]
+    cooperative_launch_required_functions_regex: list[str]
 
     def __init__(self, cfg_path):
         with open(cfg_path) as f:
@@ -140,8 +141,8 @@ class YamlConfig:
 
             self.output_name = config.get("Output Name", None)
 
-            self.cooperative_launch_required_apis = config.get(
-                "Cooperative Launch Required APIs", []
+            self.cooperative_launch_required_functions_regex = config.get(
+                "Cooperative Launch Required Functions Regex", []
             )
 
         self._verify_exists()
@@ -162,7 +163,7 @@ class YamlConfig:
         require_pynvjitlink: bool = False,
         predefined_macros: list[str] = None,
         output_name: str = None,
-        cooperative_launch_required_apis: list[str] = None,
+        cooperative_launch_required_functions_regex: list[str] = None,
     ):
         """Create a YamlConfig instance from individual parameters instead of a config file."""
         instance = cls.__new__(cls)
@@ -181,8 +182,8 @@ class YamlConfig:
         instance.require_pynvjitlink = require_pynvjitlink
         instance.predefined_macros = predefined_macros or []
         instance.output_name = output_name
-        instance.cooperative_launch_required_apis = (
-            cooperative_launch_required_apis or []
+        instance.cooperative_launch_required_functions_regex = (
+            cooperative_launch_required_functions_regex or []
         )
         instance._verify_exists()
         return instance
@@ -431,7 +432,7 @@ def _static_binding_generator(
         functions,
         entry_point,
         config.exclude_functions,
-        config.cooperative_launch_required_apis,
+        config.cooperative_launch_required_functions_regex,
     )
 
     if config.require_pynvjitlink:
