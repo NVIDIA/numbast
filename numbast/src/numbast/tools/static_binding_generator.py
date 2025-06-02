@@ -49,20 +49,39 @@ class YamlConfig:
     Attributes
     ----------
     entry_point : str
-        The parsing entry point for Numbast to start looking for function
-        declarations.
+        Path to the input CUDA header file.
     retain_list : list[str]
-        The list of files from which the declarations are retained in the
-        final generated binding output. Bindings that exist in other source,
-        which may get transitively included in the declaration, are ignored
-        in bindings output.
+        List of file names to keep parsing. The list of files from which the
+        declarations are retained in the final generated binding output. Bindings
+        that exist in other source, which may get transitively included in the
+        declaration, are ignored in bindings output.
+    types : dict[str, type]
+        A dictionary that maps struct names to their Numba types.
+    datamodels : dict[str, type]
+        A dictionary that maps struct names to their Numba data models.
+    exclude_functions : list[str]
+        List of function names to exclude from the bindings.
+    exclude_structs : list[str]
+        List of struct names to exclude from the bindings.
+    clang_includes_paths : list[str]
+        List of additional include paths to use when parsing the header file.
+    macro_expanded_function_prefixes : list[str]
+        List of prefixes to allow for anonymous filename declarations.
     additional_imports : list[str]
         The list of additional imports to add to the binding file.
-    shim_include_override : str:
+    shim_include_override : str
         Override the include line of the shim function to specified string.
         If not specified, default to `#include <path_to_entry_point>`.
-
-    TODO: Migrate the docstring from `_static_binding_generator` to here.
+    require_pynvjitlink : bool
+        If true, detect if pynvjitlink is installed, raise an error if not.
+    predefined_macros : list[str]
+        List of macros defined prior to parsing the header and prefixing shim functions.
+    output_name : str
+        The name of the output binding file, default None. When set to None, use
+        the same name as input file (renamed with .py extension).
+    cooperative_launch_required_apis : list[str]
+        The list of functions, when used in kernel, should cause the kernel to be
+        launched with cooperative launch.
     """
 
     entry_point: str
@@ -126,6 +145,47 @@ class YamlConfig:
             )
 
         self._verify_exists()
+
+    @classmethod
+    def from_params(
+        cls,
+        entry_point: str,
+        retain_list: list[str],
+        types: dict[str, type] = None,
+        datamodels: dict[str, type] = None,
+        exclude_functions: list[str] = None,
+        exclude_structs: list[str] = None,
+        clang_includes_paths: list[str] = None,
+        macro_expanded_function_prefixes: list[str] = None,
+        additional_imports: list[str] = None,
+        shim_include_override: str = None,
+        require_pynvjitlink: bool = False,
+        predefined_macros: list[str] = None,
+        output_name: str = None,
+        cooperative_launch_required_apis: list[str] = None,
+    ):
+        """Create a YamlConfig instance from individual parameters instead of a config file."""
+        instance = cls.__new__(cls)
+        instance.entry_point = entry_point
+        instance.retain_list = retain_list
+        instance.types = types or {}
+        instance.datamodels = datamodels or {}
+        instance.exclude_functions = exclude_functions or []
+        instance.exclude_structs = exclude_structs or []
+        instance.clang_includes_paths = clang_includes_paths or []
+        instance.macro_expanded_function_prefixes = (
+            macro_expanded_function_prefixes or []
+        )
+        instance.additional_imports = additional_imports or []
+        instance.shim_include_override = shim_include_override
+        instance.require_pynvjitlink = require_pynvjitlink
+        instance.predefined_macros = predefined_macros or []
+        instance.output_name = output_name
+        instance.cooperative_launch_required_apis = (
+            cooperative_launch_required_apis or []
+        )
+        instance._verify_exists()
+        return instance
 
     def _verify_exists(self):
         if not os.path.exists(self.entry_point):
@@ -303,22 +363,9 @@ def log_files_to_generate(
 
 
 def _static_binding_generator(
-    entry_point: str,
-    retain_list: list[str],
+    config: YamlConfig,
     output_dir: str,
-    types: dict[str, type],
-    datamodels: dict[str, type],
     compute_capability: str,
-    exclude_functions: list[str],
-    exclude_structs: list[str],
-    clang_include_paths: list[str],
-    anon_filename_decl_prefix_allowlist: list[str],
-    cooperative_launch_required_apis: list[str] = [],
-    output_name: str = None,
-    predefined_macros: list[str] = [],
-    additional_imports: list[str] = [],
-    shim_include_override: str | None = None,
-    require_pynvjitlink: bool = False,
     log_generates: bool = False,
     cfg_file_path: str | None = None,
     sbg_params: dict[str, str] = {},
@@ -327,22 +374,10 @@ def _static_binding_generator(
     A function to generate CUDA static bindings for CUDA C++ headers.
 
     Parameters:
-    - entry_point (str): Path to the input CUDA header file.
-    - retain_list (list[str]): List of file names to keep parsing.
+    - config (YamlConfig): Configuration object containing all binding generation settings.
     - output_dir (str): Path to the output directory where the processed files will be saved.
-    - types (dict[str, type]): A dictionary that maps struct names to their Numba types.
-    - datamodels (dict[str, type]): A dictionary that maps struct names to their Numba data models.
     - compute_capability (str): Compute capability of the CUDA device.
-    - exclude_functions (list[str]): List of function names to exclude from the bindings.
-    - exclude_structs (list[str]): List of struct names to exclude from the bindings.
-    - clang_include_paths (list[str]): List of additional include paths to use when parsing the header file.
-    - anon_filename_decl_prefix_allowlist (list[str]): List of prefixes to allow for anonymous filename declarations.
-    - output_name (str): The name of the output binding file, default None. When set to None, use the same name as input file (renamed with .py extension)
-    - cooperative_launch_required_apis (list[str]): The list of functions, when used in kernel, should cause the kernel to be launched with cooperative launch.
-    - predefined_macros (list[str]): List of macros defined prior to parsing the header and prefixing shim functions.
-    - additional_imports (list[str]): The list of additional imports to add to binding.
-    - shim_include_override (str, optional): The command to override the include line of the shim functions.
-    - require_pynvjitlink (bool, optional): If true, detect if pynvjitlink is installed, raise an error if not.
+    - log_generates (bool, optional): Whether to log the list of generated bindings. Defaults to False.
     - cfg_file_path (str, optional): Path to the configuration file. Defaults to None.
     - sbg_params (dict, optional): A dictionary of parameters for the static binding generator. Defaults to empty dict.
 
@@ -351,14 +386,14 @@ def _static_binding_generator(
         Path to the generated binding file
     """
     try:
-        basename = os.path.basename(entry_point)
+        basename = os.path.basename(config.entry_point)
         basename = basename.split(".")[0]
     except Exception:
-        click.echo(f"Unable to extract base name from {entry_point}.")
+        click.echo(f"Unable to extract base name from {config.entry_point}.")
         raise
 
-    entry_point = os.path.abspath(entry_point)
-    retain_list = [os.path.abspath(path) for path in retain_list]
+    entry_point = os.path.abspath(config.entry_point)
+    retain_list = [os.path.abspath(path) for path in config.retain_list]
 
     # TODO: we don't have tests on different compute capabilities for the static binding generator yet.
     # This will be added in future PRs.
@@ -367,9 +402,9 @@ def _static_binding_generator(
         retain_list,
         compute_capability=compute_capability,
         cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
-        additional_includes=clang_include_paths,
-        anon_filename_decl_prefix_allowlist=anon_filename_decl_prefix_allowlist,
-        defines=predefined_macros,
+        additional_includes=config.clang_includes_paths,
+        anon_filename_decl_prefix_allowlist=config.macro_expanded_function_prefixes,
+        defines=config.predefined_macros,
         verbose=VERBOSE,
     )
     structs = decls.structs
@@ -385,35 +420,41 @@ def _static_binding_generator(
 
     enum_bindings = _generate_enums(enums)
     struct_bindings = _generate_structs(
-        structs, entry_point, types, datamodels, exclude_structs
+        structs,
+        entry_point,
+        config.types,
+        config.datamodels,
+        config.exclude_structs,
     )
 
     function_bindings = _generate_functions(
         functions,
         entry_point,
-        exclude_functions,
-        cooperative_launch_required_apis,
+        config.exclude_functions,
+        config.cooperative_launch_required_apis,
     )
 
-    if require_pynvjitlink:
+    if config.require_pynvjitlink:
         pynvjitlink_guard = get_pynvjitlink_guard()
     else:
         pynvjitlink_guard = ""
 
-    if shim_include_override is not None:
-        shim_include = f"'#include <' + {shim_include_override} + '>'"
+    if config.shim_include_override is not None:
+        shim_include = f"'#include <' + {config.shim_include_override} + '>'"
     else:
         shim_include = f'"#include <{entry_point}>"'
     shim_stream_str = get_shim(
-        shim_include=shim_include, predefined_macros=predefined_macros
+        shim_include=shim_include, predefined_macros=config.predefined_macros
     )
-    imports_str = get_rendered_imports(additional_imports=additional_imports)
+    imports_str = get_rendered_imports(
+        additional_imports=config.additional_imports
+    )
 
     # Example: Save the processed output to the output directory
-    if output_name is None:
+    if config.output_name is None:
         output_file = os.path.join(output_dir, f"{basename}.py")
     else:
-        output_file = os.path.join(output_dir, output_name)
+        output_file = os.path.join(output_dir, config.output_name)
 
     # Full command line that generate the binding:
     cmd = " ".join(sys.argv)
@@ -452,7 +493,9 @@ def _static_binding_generator(
 
     with open(output_file, "w") as file:
         file.write(assembled)
-        click.echo(f"Bindings for {entry_point} generated in {output_file}")
+        click.echo(
+            f"Bindings for {config.entry_point} generated in {output_file}"
+        )
 
     return output_file
 
@@ -542,22 +585,10 @@ def static_binding_generator(
 
         cfg = YamlConfig(cfg_path)
         output_file = _static_binding_generator(
-            cfg.entry_point,
-            cfg.retain_list,
+            cfg,
             output_dir,
-            cfg.types,
-            cfg.datamodels,
             compute_capability,
-            cfg.exclude_functions,
-            cfg.exclude_structs,
-            cfg.clang_includes_paths,
-            cfg.macro_expanded_function_prefixes,
-            cfg.cooperative_launch_required_apis,
-            cfg.output_name,
-            cfg.predefined_macros,
-            cfg.additional_imports,
-            cfg.shim_include_override,
-            cfg.require_pynvjitlink,
+            log_generates=True,
             cfg_file_path=cfg_path,
             sbg_params=ctx.params,
         )
@@ -579,17 +610,18 @@ def static_binding_generator(
     if len(retain_list) == 0:
         raise ValueError("At least one file name to retain must be provided.")
 
+    cfg = YamlConfig.from_params(
+        entry_point=entry_point,
+        retain_list=retain_list,
+        types=types or {},
+        datamodels=datamodels or {},
+    )
+
     output_file = _static_binding_generator(
-        entry_point,
-        retain_list,
+        cfg,
         output_dir,
-        types,
-        datamodels,
         compute_capability,
-        [],  # TODO: parse excludes from input
-        [],  # TODO: parse excludes from input
-        [],
-        [],
+        log_generates=True,
     )
 
     if run_ruff_format:
