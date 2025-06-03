@@ -5,6 +5,8 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 
 def test_use_cooperative(run_in_isolated_folder):
     """Test that only a limited set of symbols are exposed via __all__ imports."""
@@ -172,3 +174,16 @@ assert not regular_kernel.overloads[()].cooperative, f"regular_function should n
     )
 
     assert res.returncode == 0, res.stdout.decode("utf-8")
+
+
+def test_use_cooperative_invalid_regex(run_in_isolated_folder):
+    """Test that functions not matching regex patterns are not marked as cooperative."""
+
+    with pytest.raises(ValueError, match="Invalid regex pattern"):
+        run_in_isolated_folder(
+            "cooperative_launch_invalid_regex.yml.j2",
+            "use_cooperative.cuh",
+            {},
+            load_symbols=True,
+            ruff_format=False,
+        )

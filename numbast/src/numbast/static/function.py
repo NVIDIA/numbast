@@ -34,6 +34,8 @@ function_apis_registry: set[str] = set()
 def _matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
     """Check if a function name matches any of the provided regex patterns.
 
+    NOTE: This function assumes all input patterns are valid regex patterns.
+
     Parameters
     ----------
     name : str
@@ -47,13 +49,8 @@ def _matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
         True if the name matches any pattern, False otherwise
     """
     for pattern in patterns:
-        try:
-            if re.search(pattern, name):
-                return True
-        except re.error:
-            # If regex is invalid, log warning and skip
-            warn(f"Invalid regex pattern: {pattern}")
-            continue
+        if re.search(pattern, name):
+            return True
     return False
 
 

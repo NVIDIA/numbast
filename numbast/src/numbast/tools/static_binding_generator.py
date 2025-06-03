@@ -9,6 +9,7 @@ import sys
 import subprocess
 import importlib
 import warnings
+import re
 
 import yaml
 
@@ -146,6 +147,7 @@ class YamlConfig:
             )
 
         self._verify_exists()
+        self._verify_regex_patterns()
 
     @classmethod
     def from_params(
@@ -186,6 +188,7 @@ class YamlConfig:
             cooperative_launch_required_functions_regex or []
         )
         instance._verify_exists()
+        instance._verify_regex_patterns()
         return instance
 
     def _verify_exists(self):
@@ -199,6 +202,13 @@ class YamlConfig:
         for f in self.clang_includes_paths:
             if not os.path.exists(f):
                 raise ValueError(f"File in include list does not exist: {f}")
+
+    def _verify_regex_patterns(self):
+        for pattern in self.cooperative_launch_required_functions_regex:
+            try:
+                re.compile(pattern)
+            except re.error:
+                raise ValueError(f"Invalid regex pattern: {pattern}")
 
 
 def _str_value_to_numba_type(d: dict[str, str]) -> dict[str, type]:
