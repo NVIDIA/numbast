@@ -35,6 +35,7 @@ from numbast.static.function import (
 )
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
+from numbast.tools.yaml_tags import string_constructor
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
@@ -42,6 +43,9 @@ VERBOSE = False
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
+
+# Register custom YAML constructor for !join tag
+yaml.add_constructor("!numbast_join", string_constructor)
 
 
 class YamlConfig:
