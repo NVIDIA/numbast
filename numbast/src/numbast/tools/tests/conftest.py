@@ -3,6 +3,7 @@
 
 import os
 import shutil
+import warnings
 
 import pytest
 
@@ -63,18 +64,20 @@ def run_in_isolated_folder(tmpdir):
         with open(config_path, "w") as f:
             f.write(config)
 
-        runner = CliRunner()
-        result = runner.invoke(
-            static_binding_generator,
-            [
-                "--cfg-path",
-                config_path,
-                "--output-dir",
-                output_folder,
-                "-fmt",
-                "true" if ruff_format else "false",
-            ],
-        )
+        runner = CliRunner(catch_exceptions=False)
+
+        with warnings.catch_warnings(record=True) as w:
+            result = runner.invoke(
+                static_binding_generator,
+                [
+                    "--cfg-path",
+                    config_path,
+                    "--output-dir",
+                    output_folder,
+                    "-fmt",
+                    "true" if ruff_format else "false",
+                ],
+            )
 
         assert result.exit_code == 0, result.stdout
 
@@ -98,6 +101,7 @@ def run_in_isolated_folder(tmpdir):
             "binding_path": binding_path,
             "binding": binding,
             "symbols": symbols,
+            "warnings": w,
         }
 
     return _run

@@ -9,6 +9,7 @@ import sys
 import subprocess
 import importlib
 import warnings
+import re
 
 import yaml
 
@@ -34,6 +35,7 @@ from numbast.static.function import (
 )
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
+from numbast.tools.yaml_tags import string_constructor
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
@@ -41,6 +43,9 @@ VERBOSE = False
 
 CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
+
+# Register custom YAML constructor for !join tag
+yaml.add_constructor("!numbast_join", string_constructor)
 
 
 class YamlConfig:
@@ -79,9 +84,10 @@ class YamlConfig:
     output_name : str
         The name of the output binding file, default None. When set to None, use
         the same name as input file (renamed with .py extension).
-    cooperative_launch_required_apis : list[str]
-        The list of functions, when used in kernel, should cause the kernel to be
-        launched with cooperative launch.
+    cooperative_launch_required_functions_regex : list[str]
+        The list of regular expressions. When any function name matches any of these
+        regex patterns, the function should cause the kernel to be launched with
+        cooperative launch.
     """
 
     entry_point: str
@@ -97,7 +103,7 @@ class YamlConfig:
     require_pynvjitlink: bool
     predefined_macros: list[str]
     output_name: str
-    cooperative_launch_required_apis: list[str]
+    cooperative_launch_required_functions_regex: list[str]
 
     def __init__(self, cfg_path):
         with open(cfg_path) as f:
@@ -140,11 +146,12 @@ class YamlConfig:
 
             self.output_name = config.get("Output Name", None)
 
-            self.cooperative_launch_required_apis = config.get(
-                "Cooperative Launch Required APIs", []
+            self.cooperative_launch_required_functions_regex = config.get(
+                "Cooperative Launch Required Functions Regex", []
             )
 
         self._verify_exists()
+        self._verify_regex_patterns()
 
     @classmethod
     def from_params(
@@ -162,7 +169,7 @@ class YamlConfig:
         require_pynvjitlink: bool = False,
         predefined_macros: list[str] = None,
         output_name: str = None,
-        cooperative_launch_required_apis: list[str] = None,
+        cooperative_launch_required_functions_regex: list[str] = None,
     ):
         """Create a YamlConfig instance from individual parameters instead of a config file."""
         instance = cls.__new__(cls)
@@ -181,10 +188,11 @@ class YamlConfig:
         instance.require_pynvjitlink = require_pynvjitlink
         instance.predefined_macros = predefined_macros or []
         instance.output_name = output_name
-        instance.cooperative_launch_required_apis = (
-            cooperative_launch_required_apis or []
+        instance.cooperative_launch_required_functions_regex = (
+            cooperative_launch_required_functions_regex or []
         )
         instance._verify_exists()
+        instance._verify_regex_patterns()
         return instance
 
     def _verify_exists(self):
@@ -198,6 +206,13 @@ class YamlConfig:
         for f in self.clang_includes_paths:
             if not os.path.exists(f):
                 raise ValueError(f"File in include list does not exist: {f}")
+
+    def _verify_regex_patterns(self):
+        for pattern in self.cooperative_launch_required_functions_regex:
+            try:
+                re.compile(pattern)
+            except re.error:
+                raise ValueError(f"Invalid regex pattern: {pattern}")
 
 
 def _str_value_to_numba_type(d: dict[str, str]) -> dict[str, type]:
@@ -431,7 +446,7 @@ def _static_binding_generator(
         functions,
         entry_point,
         config.exclude_functions,
-        config.cooperative_launch_required_apis,
+        config.cooperative_launch_required_functions_regex,
     )
 
     if config.require_pynvjitlink:
