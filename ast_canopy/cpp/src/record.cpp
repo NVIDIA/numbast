@@ -26,20 +26,17 @@ Record::Record(const std::string &name, const std::vector<Field> &fields,
                const std::vector<Record> &nested_records,
                const std::vector<ClassTemplate> &nested_class_templates,
                const std::size_t &sizeof_, const std::size_t &alignof_,
-               const std::string &source_range)
-    : name(name), fields(fields), methods(methods),
-      templated_methods(templated_methods), nested_records(nested_records),
+               const std::string &source_range,
+               const std::vector<std::string> &namespace_stack)
+    : Declaration(namespace_stack), name(name), fields(fields),
+      methods(methods), templated_methods(templated_methods),
+      nested_records(nested_records),
       nested_class_templates(nested_class_templates), sizeof_(sizeof_),
       alignof_(alignof_), source_range(source_range) {}
 
 Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp)
     : Declaration(RD) {
   using AS = clang::AccessSpecifier;
-
-#ifndef NDEBUG
-  source_range = RD->getSourceRange().printToString(
-      RD->getASTContext().getSourceManager());
-#endif
 
   name = RD->getNameAsString();
 
@@ -100,13 +97,15 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp)
   }
 
 #ifndef NDEBUG
+  source_range = RD->getSourceRange().printToString(
+      RD->getASTContext().getSourceManager());
   print(0);
 #endif
 }
 
 Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp,
                std::string name_override)
-    : Declaration(RD) {
+    : Record(RD, rp) {
   this->name = name_override;
 }
 

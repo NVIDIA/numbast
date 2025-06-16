@@ -8,6 +8,9 @@
 
 namespace ast_canopy {
 
+Declaration::Declaration(const std::vector<std::string> &ns_stack)
+    : namespace_stack(ns_stack) {}
+
 Declaration::Declaration(const clang::Decl *decl)
     : namespace_stack(extract_namespace_stack(decl)) {}
 

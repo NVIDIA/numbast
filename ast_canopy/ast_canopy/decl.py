@@ -58,7 +58,14 @@ CXX_TYPE_TO_PYTHON_TYPE = {
 }
 
 
-class Function:
+class Declaration:
+    """Base class for all declarations that can appear in a namespace."""
+
+    def __init__(self, namespace_stack: list[str]):
+        self.namespace_stack = namespace_stack
+
+
+class Function(Declaration):
     """
     Represents a C++ function.
 
@@ -74,7 +81,9 @@ class Function:
         exec_space: bindings.execution_space,
         is_constexpr: bool,
         parse_entry_point: str,
+        namespace_stack: list[str],
     ):
+        super().__init__(namespace_stack)
         self.name = name
         self.return_type = return_type
         self.params = params
@@ -169,6 +178,7 @@ class Function:
             c_obj.exec_space,
             c_obj.is_constexpr,
             parse_entry_point,
+            c_obj.namespace_stack,
         )
 
 
@@ -178,15 +188,17 @@ class Template:
         self.num_min_required_args = num_min_required_args
 
 
-class FunctionTemplate(Template):
+class FunctionTemplate(Template, Declaration):
     def __init__(
         self,
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
         function: Function,
         parse_entry_point: str,
+        namespace_stack: list[str],
     ):
-        super().__init__(template_parameters, num_min_required_args)
+        Template.__init__(self, template_parameters, num_min_required_args)
+        Declaration.__init__(self, namespace_stack)
         self.function = function
 
         self.parse_entry_point = parse_entry_point
@@ -200,6 +212,7 @@ class FunctionTemplate(Template):
             c_obj.num_min_required_args,
             Function.from_c_obj(c_obj.function, parse_entry_point),
             parse_entry_point,
+            c_obj.namespace_stack,
         )
 
     def instantiate(self, **kwargs):
@@ -218,6 +231,7 @@ class StructMethod(Function):
         is_constexpr: bool,
         is_move_constructor: bool,
         parse_entry_point: str,
+        namespace_stack: list[str],
     ):
         super().__init__(
             name,
@@ -226,6 +240,7 @@ class StructMethod(Function):
             exec_space,
             is_constexpr,
             parse_entry_point,
+            namespace_stack,
         )
         self.kind = kind
         self.is_move_constructor = is_move_constructor
@@ -255,6 +270,7 @@ class StructMethod(Function):
             c_obj.is_constexpr,
             c_obj.is_move_constructor(),
             parse_entry_point,
+            c_obj.namespace_stack,
         )
 
 
@@ -276,7 +292,7 @@ class TemplatedStructMethod(StructMethod):
             return self.name
 
 
-class Struct:
+class Struct(Declaration):
     def __init__(
         self,
         name: str,
@@ -288,7 +304,9 @@ class Struct:
         sizeof_: int,
         alignof_: int,
         parse_entry_point: str,
+        namespace_stack: list[str],
     ):
+        super().__init__(namespace_stack)
         self.name = name
         self.fields = fields
         self.methods = methods
@@ -333,6 +351,7 @@ class Struct:
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            c_obj.namespace_stack,
         )
 
 
@@ -357,18 +376,21 @@ class TemplatedStruct(Struct):
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            c_obj.namespace_stack,
         )
 
 
-class ClassTemplate(Template):
+class ClassTemplate(Template, Declaration):
     def __init__(
         self,
         record: TemplatedStruct,
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
         parse_entry_point: str,
+        namespace_stack: list[str],
     ):
-        super().__init__(template_parameters, num_min_required_args)
+        Template.__init__(self, template_parameters, num_min_required_args)
+        Declaration.__init__(self, namespace_stack)
         self.record = record
 
         self.parse_entry_point = parse_entry_point
@@ -380,6 +402,7 @@ class ClassTemplate(Template):
             c_obj.template_parameters,
             c_obj.num_min_required_args,
             parse_entry_point,
+            c_obj.namespace_stack,
         )
 
     def instantiate(self, **kwargs):

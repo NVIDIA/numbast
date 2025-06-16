@@ -13,8 +13,10 @@
 
 namespace ast_canopy {
 
-Typedef::Typedef(const std::string &name, const std::string &underlying_name)
-    : name(name), underlying_name(underlying_name) {}
+Typedef::Typedef(const std::string &name, const std::string &underlying_name,
+                 const std::vector<std::string> &namespace_stack)
+    : Declaration(namespace_stack), name(name),
+      underlying_name(underlying_name) {}
 
 Typedef::Typedef(const clang::TypedefDecl *TD,
                  std::unordered_map<int64_t, std::string> *record_id_to_name)

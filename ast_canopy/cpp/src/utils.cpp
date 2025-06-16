@@ -18,8 +18,10 @@ std::vector<std::string> extract_namespace_stack(const clang::Decl *decl) {
   while (context) {
     if (const clang::NamespaceDecl *ns =
             clang::dyn_cast<clang::NamespaceDecl>(context)) {
-      // Skip anonymous namespaces
-      if (!ns->isAnonymousNamespace()) {
+      // For anonymous namespaces, add an empty string
+      if (ns->isAnonymousNamespace()) {
+        namespace_stack.push_back("");
+      } else {
         namespace_stack.push_back(ns->getNameAsString());
       }
     }

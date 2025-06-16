@@ -5,9 +5,7 @@
 
 #include "matchers.hpp"
 
-#ifndef NDEBUG
 #include <iostream>
-#endif
 
 namespace ast_canopy {
 
@@ -27,7 +25,7 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
                   payload->files_to_retain->end(),
                   [&file_name](const std::string &file_to_retain) {
                     return file_name == file_to_retain;
-                  }))
+                  })) {
 
     if (RD->isThisDeclarationADefinition() && RD->isCompleteDefinition()) {
       // This is a complete definition, not a forward declaration.
@@ -52,6 +50,7 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
 
       auto &record_id_map = *payload->record_id_to_name;
       record_id_map[id] = rename_for_unamed;
+
       payload->decls->records.push_back(Record(
           RD, RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE, rename_for_unamed));
 
@@ -61,6 +60,7 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
       std::cout << source_range << std::endl;
 #endif
     }
+  }
 }
 
 } // namespace detail

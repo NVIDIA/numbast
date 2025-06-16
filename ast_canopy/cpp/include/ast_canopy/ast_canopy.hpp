@@ -43,13 +43,15 @@ struct Declaration {
   std::vector<std::string> namespace_stack;
 
   Declaration() = default;
+  explicit Declaration(const std::vector<std::string> &ns_stack);
   explicit Declaration(const clang::Decl *decl);
   virtual ~Declaration() = default;
 };
 
 struct Enum : public Declaration {
   Enum(const std::string &name, const std::vector<std::string> &enumerators,
-       const std::vector<std::string> &enumerator_values);
+       const std::vector<std::string> &enumerator_values,
+       const std::vector<std::string> &namespace_stack);
   Enum(const clang::EnumDecl *);
 
   std::string name;
@@ -125,7 +127,8 @@ struct TemplateParam {
 struct Function : public Declaration {
   Function(const std::string &name, const Type &return_type,
            const std::vector<ParamVar> &params,
-           const execution_space &exec_space);
+           const execution_space &exec_space,
+           const std::vector<std::string> &namespace_stack);
   Function(const clang::FunctionDecl *);
 
   std::string name;
@@ -138,7 +141,8 @@ struct Function : public Declaration {
 struct FunctionTemplate : public Template, public Declaration {
   FunctionTemplate(const std::vector<TemplateParam> &template_parameters,
                    const std::size_t &num_min_required_args,
-                   const Function &function);
+                   const Function &function,
+                   const std::vector<std::string> &namespace_stack);
   FunctionTemplate(const clang::FunctionTemplateDecl *);
   Function function;
 };
@@ -146,7 +150,8 @@ struct FunctionTemplate : public Template, public Declaration {
 struct Method : public Function {
   Method(const std::string &name, const Type &return_type,
          const std::vector<ParamVar> &params, const execution_space &exec_space,
-         const method_kind &kind);
+         const method_kind &kind,
+         const std::vector<std::string> &namespace_stack);
   Method(const clang::CXXMethodDecl *);
   method_kind kind;
 
@@ -168,7 +173,8 @@ struct Record : public Declaration {
          const std::vector<Record> &nested_records,
          const std::vector<ClassTemplate> &nested_class_templates,
          const std::size_t &sizeof_, const std::size_t &alignof_,
-         const std::string &source_range);
+         const std::string &source_range,
+         const std::vector<std::string> &namespace_stack);
   Record(const clang::CXXRecordDecl *, RecordAncestor);
   Record(const clang::CXXRecordDecl *, RecordAncestor,
          std::string); // overrides name from RD
@@ -188,11 +194,15 @@ struct Record : public Declaration {
 
 struct ClassTemplate : public Template, public Declaration {
   ClassTemplate(const clang::ClassTemplateDecl *);
+  ClassTemplate(const std::vector<TemplateParam> &template_parameters,
+                const std::size_t &num_min_required_args, const Record &record,
+                const std::vector<std::string> &namespace_stack);
   Record record;
 };
 
 struct Typedef : public Declaration {
-  Typedef(const std::string &name, const std::string &underlying_name);
+  Typedef(const std::string &name, const std::string &underlying_name,
+          const std::vector<std::string> &namespace_stack);
   Typedef(const clang::TypedefDecl *,
           std::unordered_map<int64_t, std::string> *);
 

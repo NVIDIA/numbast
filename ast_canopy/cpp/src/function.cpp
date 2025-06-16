@@ -32,4 +32,11 @@ Function::Function(const clang::FunctionDecl *FD)
   std::transform(FD->param_begin(), FD->param_end(), std::back_inserter(params),
                  [](const clang::ParmVarDecl *PVD) { return ParamVar(PVD); });
 }
+
+Function::Function(const std::string &name, const Type &return_type,
+                   const std::vector<ParamVar> &params,
+                   const execution_space &exec_space,
+                   const std::vector<std::string> &namespace_stack)
+    : Declaration(namespace_stack), name(name), return_type(return_type),
+      params(params), exec_space(exec_space), is_constexpr(false) {}
 } // namespace ast_canopy

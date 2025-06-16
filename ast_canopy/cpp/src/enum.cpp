@@ -8,8 +8,9 @@
 namespace ast_canopy {
 
 Enum::Enum(const std::string &name, const std::vector<std::string> &enumerators,
-           const std::vector<std::string> &enumerator_values)
-    : name(name), enumerators(enumerators),
+           const std::vector<std::string> &enumerator_values,
+           const std::vector<std::string> &namespace_stack)
+    : Declaration(namespace_stack), name(name), enumerators(enumerators),
       enumerator_values(enumerator_values) {}
 
 Enum::Enum(const clang::EnumDecl *ED)
