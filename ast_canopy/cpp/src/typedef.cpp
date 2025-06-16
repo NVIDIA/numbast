@@ -13,19 +13,26 @@
 
 namespace ast_canopy {
 
-Typedef::Typedef(const clang::TypedefDecl *TD,
-                 std::unordered_map<int64_t, std::string> *record_id_to_name) {
-  name = TD->getNameAsString();
-  clang::QualType qd = TD->getUnderlyingType();
-  clang::RecordDecl *underlying_record_decl = qd->getAsCXXRecordDecl();
+Typedef::Typedef(const std::string &name, const std::string &underlying_name)
+    : name(name), underlying_name(underlying_name) {}
 
-  underlying_name = record_id_to_name->at(underlying_record_decl->getID());
+Typedef::Typedef(const clang::TypedefDecl *TD,
+                 std::unordered_map<int64_t, std::string> *record_id_to_name)
+    : name(TD->getNameAsString()) {
+  const clang::Type *type = TD->getUnderlyingType().getTypePtr();
+  if (const clang::RecordType *RT = type->getAs<clang::RecordType>()) {
+    if (const clang::CXXRecordDecl *RD = RT->getAsCXXRecordDecl()) {
+      int64_t id = RD->getID();
+      underlying_name = record_id_to_name->contains(id)
+                            ? (*record_id_to_name)[id]
+                            : RD->getNameAsString();
+    }
+  } else {
+    underlying_name = TD->getUnderlyingType().getAsString();
+  }
 
 #ifndef NDEBUG
 
-  std::cout << name << std::endl;
-  std::cout << underlying_record_decl->getNameAsString() << std::endl;
-  std::cout << underlying_record_decl->getID() << std::endl;
   std::cout << "TYPEDEF: "
             << "name: " << name << " underlying_name: " << underlying_name
             << std::endl;

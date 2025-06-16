@@ -27,6 +27,12 @@ execution_space get_execution_space(const clang::FunctionDecl *FD) {
   }
 }
 
+Function::Function(const std::string &name, const Type &return_type,
+                   const std::vector<ParamVar> &params,
+                   const execution_space &exec_space)
+    : name(name), return_type(return_type), params(params),
+      exec_space(exec_space) {}
+
 Function::Function(const clang::FunctionDecl *FD)
     : name(FD->getNameAsString()),
       return_type(FD->getReturnType(), FD->getASTContext()),

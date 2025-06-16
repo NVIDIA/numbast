@@ -15,6 +15,12 @@
 
 namespace ast_canopy {
 
+FunctionTemplate::FunctionTemplate(
+    const std::vector<TemplateParam> &template_parameters,
+    const std::size_t &num_min_required_args, const Function &function)
+    : Template(std::move(template_parameters), num_min_required_args),
+      function(std::move(function)) {}
+
 FunctionTemplate::FunctionTemplate(const clang::FunctionTemplateDecl *FTD)
     : Template(FTD->getTemplateParameters()),
       function(FTD->getTemplatedDecl()) {}

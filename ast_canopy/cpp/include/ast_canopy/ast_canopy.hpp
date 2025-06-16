@@ -46,9 +46,7 @@ struct Declaration {
 
 struct Enum : public Declaration {
   Enum(const std::string &name, const std::vector<std::string> &enumerators,
-       const std::vector<std::string> &enumerator_values)
-      : name(name), enumerators(enumerators),
-        enumerator_values(enumerator_values) {}
+       const std::vector<std::string> &enumerator_values);
   Enum(const clang::EnumDecl *);
 
   std::string name;
@@ -65,8 +63,8 @@ struct Type {
   std::string name;
   std::string unqualified_non_ref_type_name;
 
-  bool is_right_reference() const { return _is_right_reference; }
-  bool is_left_reference() const { return _is_left_reference; }
+  bool is_right_reference() const;
+  bool is_left_reference() const;
 
 private:
   bool _is_right_reference;
@@ -84,8 +82,7 @@ struct ConstExprVar {
 
 struct Field {
   Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS);
-  Field(const std::string &name, const Type &type, const access_kind &access)
-      : name(name), type(type), access(access) {};
+  Field(const std::string &name, const Type &type, const access_kind &access);
 
   std::string name;
   Type type;
@@ -93,7 +90,7 @@ struct Field {
 };
 
 struct ParamVar {
-  ParamVar(std::string name, Type type) : name(std::move(name)), type(type) {}
+  ParamVar(std::string name, Type type);
   ParamVar(const clang::ParmVarDecl *PVD);
 
   std::string name;
@@ -102,9 +99,7 @@ struct ParamVar {
 
 struct Template {
   Template(const std::vector<TemplateParam> &template_parameters,
-           const std::size_t &num_min_required_args)
-      : template_parameters(template_parameters),
-        num_min_required_args(num_min_required_args) {}
+           const std::size_t &num_min_required_args);
   Template(const clang::TemplateParameterList *);
 
   std::vector<TemplateParam> template_parameters;
@@ -127,9 +122,7 @@ struct TemplateParam {
 struct Function : public Declaration {
   Function(const std::string &name, const Type &return_type,
            const std::vector<ParamVar> &params,
-           const execution_space &exec_space)
-      : name(name), return_type(return_type), params(params),
-        exec_space(exec_space) {}
+           const execution_space &exec_space);
   Function(const clang::FunctionDecl *);
 
   std::string name;
@@ -142,9 +135,7 @@ struct Function : public Declaration {
 struct FunctionTemplate : public Template, public Declaration {
   FunctionTemplate(const std::vector<TemplateParam> &template_parameters,
                    const std::size_t &num_min_required_args,
-                   const Function &function)
-      : Template(std::move(template_parameters), num_min_required_args),
-        function(std::move(function)) {}
+                   const Function &function);
   FunctionTemplate(const clang::FunctionTemplateDecl *);
   Function function;
 };
@@ -152,8 +143,7 @@ struct FunctionTemplate : public Template, public Declaration {
 struct Method : public Function {
   Method(const std::string &name, const Type &return_type,
          const std::vector<ParamVar> &params, const execution_space &exec_space,
-         const method_kind &kind)
-      : Function(name, return_type, params, exec_space), kind(kind) {}
+         const method_kind &kind);
   Method(const clang::CXXMethodDecl *);
   method_kind kind;
 
@@ -175,11 +165,7 @@ struct Record : public Declaration {
          const std::vector<Record> &nested_records,
          const std::vector<ClassTemplate> &nested_class_templates,
          const std::size_t &sizeof_, const std::size_t &alignof_,
-         const std::string &source_range)
-      : name(name), fields(fields), methods(methods),
-        templated_methods(templated_methods), nested_records(nested_records),
-        nested_class_templates(nested_class_templates), sizeof_(sizeof_),
-        alignof_(alignof_), source_range(source_range) {}
+         const std::string &source_range);
   Record(const clang::CXXRecordDecl *, RecordAncestor);
   Record(const clang::CXXRecordDecl *, RecordAncestor,
          std::string); // overrides name from RD
@@ -203,8 +189,7 @@ struct ClassTemplate : public Template, public Declaration {
 };
 
 struct Typedef : public Declaration {
-  Typedef(const std::string &name, const std::string &underlying_name)
-      : name(name), underlying_name(underlying_name) {}
+  Typedef(const std::string &name, const std::string &underlying_name);
   Typedef(const clang::TypedefDecl *,
           std::unordered_map<int64_t, std::string> *);
 

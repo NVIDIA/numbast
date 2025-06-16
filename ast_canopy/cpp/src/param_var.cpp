@@ -6,6 +6,9 @@
 #include <ast_canopy/ast_canopy.hpp>
 
 namespace ast_canopy {
+ParamVar::ParamVar(std::string name, Type type)
+    : name(std::move(name)), type(type) {}
+
 ParamVar::ParamVar(const clang::ParmVarDecl *PVD)
     : name(PVD->getNameAsString()), type(PVD->getType(), PVD->getASTContext()) {
 }

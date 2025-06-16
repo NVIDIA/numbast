@@ -20,6 +20,18 @@ std::size_t constexpr INVALID_SIZE_OF = std::numeric_limits<std::size_t>::max();
 std::size_t constexpr INVALID_ALIGN_OF =
     std::numeric_limits<std::size_t>::max();
 
+Record::Record(const std::string &name, const std::vector<Field> &fields,
+               const std::vector<Method> &methods,
+               const std::vector<FunctionTemplate> &templated_methods,
+               const std::vector<Record> &nested_records,
+               const std::vector<ClassTemplate> &nested_class_templates,
+               const std::size_t &sizeof_, const std::size_t &alignof_,
+               const std::string &source_range)
+    : name(name), fields(fields), methods(methods),
+      templated_methods(templated_methods), nested_records(nested_records),
+      nested_class_templates(nested_class_templates), sizeof_(sizeof_),
+      alignof_(alignof_), source_range(source_range) {}
+
 Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   using AS = clang::AccessSpecifier;
 

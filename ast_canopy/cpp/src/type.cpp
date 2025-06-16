@@ -99,4 +99,7 @@ Type::Type(const clang::QualType &qualtype, const clang::ASTContext &context) {
   _is_left_reference = ty->isLValueReferenceType();
 }
 
+bool Type::is_right_reference() const { return _is_right_reference; }
+bool Type::is_left_reference() const { return _is_left_reference; }
+
 } // namespace ast_canopy
