@@ -4,13 +4,14 @@
 // clang-format on
 
 #include <ast_canopy/ast_canopy.hpp>
+#include <ast_canopy/utils.hpp>
 
 namespace ast_canopy {
-ParamVar::ParamVar(std::string name, Type type)
-    : name(std::move(name)), type(type) {}
 
-ParamVar::ParamVar(const clang::ParmVarDecl *PVD)
-    : name(PVD->getNameAsString()), type(PVD->getType(), PVD->getASTContext()) {
-}
+Declaration::Declaration(const std::vector<std::string> &ns_stack)
+    : namespace_stack(ns_stack) {}
+
+Declaration::Declaration(const clang::Decl *decl)
+    : namespace_stack(extract_namespace_stack(decl)) {}
 
 } // namespace ast_canopy

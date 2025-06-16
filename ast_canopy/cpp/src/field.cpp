@@ -11,21 +11,30 @@
 
 namespace ast_canopy {
 
+Field::Field(const std::string &name, const Type &type,
+             const access_kind &access)
+    : name(name), type(type), access(access) {}
+
 Field::Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS)
     : name(FD->getNameAsString()), type(FD->getType(), FD->getASTContext()) {
-  if (AS == clang::AccessSpecifier::AS_public)
+  switch (AS) {
+  case clang::AS_public:
     access = access_kind::public_;
-  else if (AS == clang::AccessSpecifier::AS_protected)
+    break;
+  case clang::AS_protected:
     access = access_kind::protected_;
-  else if (AS == clang::AccessSpecifier::AS_private)
+    break;
+  case clang::AS_private:
     access = access_kind::private_;
-  else {
+    break;
+  default:
     // Fields in a class / struct must have an access specifier. See logic
     // in record.cpp.
 #ifndef NDEBUG
     std::cout << "Access specifier is NONE for: " << name << std::endl;
 #endif
     access = access_kind::public_;
+    break;
   }
 }
 } // namespace ast_canopy

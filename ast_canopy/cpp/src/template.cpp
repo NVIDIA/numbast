@@ -15,29 +15,25 @@
 
 namespace ast_canopy {
 
-Template::Template(const clang::TemplateParameterList *TPL)
-    : num_min_required_args(TPL->getMinRequiredArguments()) {
+Template::Template(const std::vector<TemplateParam> &template_parameters,
+                   const std::size_t &num_min_required_args)
+    : template_parameters(template_parameters),
+      num_min_required_args(num_min_required_args) {}
 
-  std::transform(
-      TPL->begin(), TPL->end(), std::back_inserter(template_parameters),
-      [](const clang::NamedDecl *ND) {
-        if (const clang::TemplateTypeParmDecl *TPD =
-                clang::dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
-          return TemplateParam(TPD);
-        } else if (const clang::NonTypeTemplateParmDecl *TPD =
-                       clang::dyn_cast<clang::NonTypeTemplateParmDecl>(ND)) {
-          return TemplateParam(TPD);
-        } else if (const clang::TemplateDecl *TD =
-                       clang::dyn_cast<clang::TemplateDecl>(ND)) {
-          if (const clang::TemplateTemplateParmDecl *TPD =
-                  clang::dyn_cast<clang::TemplateTemplateParmDecl>(TD)) {
-            return TemplateParam(TPD);
-          }
-        }
-
-        // Shouldn't fall through
-        throw std::runtime_error(ND->getNameAsString() +
-                                 " is unknown template parameter type");
-      });
+Template::Template(const clang::TemplateParameterList *TPL) {
+  template_parameters.reserve(TPL->size());
+  for (const auto *param : *TPL) {
+    if (const auto *TTPD =
+            clang::dyn_cast<clang::TemplateTypeParmDecl>(param)) {
+      template_parameters.emplace_back(TemplateParam(TTPD));
+    } else if (const auto *NTTPD =
+                   clang::dyn_cast<clang::NonTypeTemplateParmDecl>(param)) {
+      template_parameters.emplace_back(TemplateParam(NTTPD));
+    } else if (const auto *TTPD =
+                   clang::dyn_cast<clang::TemplateTemplateParmDecl>(param)) {
+      template_parameters.emplace_back(TemplateParam(TTPD));
+    }
+  }
+  num_min_required_args = TPL->getMinRequiredArguments();
 }
 } // namespace ast_canopy

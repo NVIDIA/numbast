@@ -36,11 +36,22 @@ enum class template_param_kind { type, non_type, template_ };
 
 enum class access_kind { public_, protected_, private_ };
 
-struct Enum {
+struct Declaration {
+  // Stores nested namespace names in bottom-up order (deepest to top-level)
+  // For example, for a declaration in "outer::middle::inner", the vector
+  // would contain ["inner", "middle", "outer"]
+  std::vector<std::string> namespace_stack;
+
+  Declaration() = default;
+  explicit Declaration(const std::vector<std::string> &ns_stack);
+  explicit Declaration(const clang::Decl *decl);
+  virtual ~Declaration() = default;
+};
+
+struct Enum : public Declaration {
   Enum(const std::string &name, const std::vector<std::string> &enumerators,
-       const std::vector<std::string> &enumerator_values)
-      : name(name), enumerators(enumerators),
-        enumerator_values(enumerator_values) {}
+       const std::vector<std::string> &enumerator_values,
+       const std::vector<std::string> &namespace_stack);
   Enum(const clang::EnumDecl *);
 
   std::string name;
@@ -57,8 +68,8 @@ struct Type {
   std::string name;
   std::string unqualified_non_ref_type_name;
 
-  bool is_right_reference() const { return _is_right_reference; }
-  bool is_left_reference() const { return _is_left_reference; }
+  bool is_right_reference() const;
+  bool is_left_reference() const;
 
 private:
   bool _is_right_reference;
@@ -76,8 +87,7 @@ struct ConstExprVar {
 
 struct Field {
   Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS);
-  Field(const std::string &name, const Type &type, const access_kind &access)
-      : name(name), type(type), access(access) {};
+  Field(const std::string &name, const Type &type, const access_kind &access);
 
   std::string name;
   Type type;
@@ -85,7 +95,7 @@ struct Field {
 };
 
 struct ParamVar {
-  ParamVar(std::string name, Type type) : name(std::move(name)), type(type) {}
+  ParamVar(std::string name, Type type);
   ParamVar(const clang::ParmVarDecl *PVD);
 
   std::string name;
@@ -94,9 +104,7 @@ struct ParamVar {
 
 struct Template {
   Template(const std::vector<TemplateParam> &template_parameters,
-           const std::size_t &num_min_required_args)
-      : template_parameters(template_parameters),
-        num_min_required_args(num_min_required_args) {}
+           const std::size_t &num_min_required_args);
   Template(const clang::TemplateParameterList *);
 
   std::vector<TemplateParam> template_parameters;
@@ -116,12 +124,11 @@ struct TemplateParam {
   Type type;
 };
 
-struct Function {
+struct Function : public Declaration {
   Function(const std::string &name, const Type &return_type,
            const std::vector<ParamVar> &params,
-           const execution_space &exec_space)
-      : name(name), return_type(return_type), params(params),
-        exec_space(exec_space) {}
+           const execution_space &exec_space,
+           const std::vector<std::string> &namespace_stack);
   Function(const clang::FunctionDecl *);
 
   std::string name;
@@ -131,12 +138,11 @@ struct Function {
   bool is_constexpr;
 };
 
-struct FunctionTemplate : public Template {
+struct FunctionTemplate : public Template, public Declaration {
   FunctionTemplate(const std::vector<TemplateParam> &template_parameters,
                    const std::size_t &num_min_required_args,
-                   const Function &function)
-      : Template(std::move(template_parameters), num_min_required_args),
-        function(std::move(function)) {}
+                   const Function &function,
+                   const std::vector<std::string> &namespace_stack);
   FunctionTemplate(const clang::FunctionTemplateDecl *);
   Function function;
 };
@@ -144,8 +150,8 @@ struct FunctionTemplate : public Template {
 struct Method : public Function {
   Method(const std::string &name, const Type &return_type,
          const std::vector<ParamVar> &params, const execution_space &exec_space,
-         const method_kind &kind)
-      : Function(name, return_type, params, exec_space), kind(kind) {}
+         const method_kind &kind,
+         const std::vector<std::string> &namespace_stack);
   Method(const clang::CXXMethodDecl *);
   method_kind kind;
 
@@ -160,18 +166,15 @@ enum class RecordAncestor {
   ANCESTOR_IS_NOT_TEMPLATE,
 };
 
-struct Record {
+struct Record : public Declaration {
   Record(const std::string &name, const std::vector<Field> &fields,
          const std::vector<Method> &methods,
          const std::vector<FunctionTemplate> &templated_methods,
          const std::vector<Record> &nested_records,
          const std::vector<ClassTemplate> &nested_class_templates,
          const std::size_t &sizeof_, const std::size_t &alignof_,
-         const std::string &source_range)
-      : name(name), fields(fields), methods(methods),
-        templated_methods(templated_methods), nested_records(nested_records),
-        nested_class_templates(nested_class_templates), sizeof_(sizeof_),
-        alignof_(alignof_), source_range(source_range) {}
+         const std::string &source_range,
+         const std::vector<std::string> &namespace_stack);
   Record(const clang::CXXRecordDecl *, RecordAncestor);
   Record(const clang::CXXRecordDecl *, RecordAncestor,
          std::string); // overrides name from RD
@@ -189,14 +192,17 @@ struct Record {
   void print(int) const;
 };
 
-struct ClassTemplate : public Template {
+struct ClassTemplate : public Template, public Declaration {
   ClassTemplate(const clang::ClassTemplateDecl *);
+  ClassTemplate(const std::vector<TemplateParam> &template_parameters,
+                const std::size_t &num_min_required_args, const Record &record,
+                const std::vector<std::string> &namespace_stack);
   Record record;
 };
 
-struct Typedef {
-  Typedef(const std::string &name, const std::string &underlying_name)
-      : name(name), underlying_name(underlying_name) {}
+struct Typedef : public Declaration {
+  Typedef(const std::string &name, const std::string &underlying_name,
+          const std::vector<std::string> &namespace_stack);
   Typedef(const clang::TypedefDecl *,
           std::unordered_map<int64_t, std::string> *);
 

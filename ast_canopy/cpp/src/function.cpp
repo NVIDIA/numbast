@@ -8,8 +8,6 @@
 
 #include <ast_canopy/ast_canopy.hpp>
 
-#include <algorithm>
-
 namespace ast_canopy {
 
 execution_space get_execution_space(const clang::FunctionDecl *FD) {
@@ -28,12 +26,17 @@ execution_space get_execution_space(const clang::FunctionDecl *FD) {
 }
 
 Function::Function(const clang::FunctionDecl *FD)
-    : name(FD->getNameAsString()),
+    : Declaration(FD), name(FD->getNameAsString()),
       return_type(FD->getReturnType(), FD->getASTContext()),
-      is_constexpr(FD->isConstexpr()) {
-  params.reserve(FD->getNumParams());
+      exec_space(get_execution_space(FD)), is_constexpr(FD->isConstexpr()) {
   std::transform(FD->param_begin(), FD->param_end(), std::back_inserter(params),
                  [](const clang::ParmVarDecl *PVD) { return ParamVar(PVD); });
-  exec_space = get_execution_space(FD);
 }
+
+Function::Function(const std::string &name, const Type &return_type,
+                   const std::vector<ParamVar> &params,
+                   const execution_space &exec_space,
+                   const std::vector<std::string> &namespace_stack)
+    : Declaration(namespace_stack), name(name), return_type(return_type),
+      params(params), exec_space(exec_space), is_constexpr(false) {}
 } // namespace ast_canopy

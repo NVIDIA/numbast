@@ -9,6 +9,13 @@
 
 namespace ast_canopy {
 
+Method::Method(const std::string &name, const Type &return_type,
+               const std::vector<ParamVar> &params,
+               const execution_space &exec_space, const method_kind &kind,
+               const std::vector<std::string> &namespace_stack)
+    : Function(name, return_type, params, exec_space, namespace_stack),
+      kind(kind) {}
+
 Method::Method(const clang::CXXMethodDecl *MD) : Function(MD) {
   if (const clang::CXXConstructorDecl *CD =
           clang::dyn_cast<clang::CXXConstructorDecl>(MD)) {
