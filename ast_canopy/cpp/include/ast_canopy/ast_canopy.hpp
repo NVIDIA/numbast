@@ -36,7 +36,15 @@ enum class template_param_kind { type, non_type, template_ };
 
 enum class access_kind { public_, protected_, private_ };
 
-struct Enum {
+struct Declaration {
+  // Stores nested namespace names in bottom-up order (deepest to top-level)
+  // For example, for a declaration in "outer::middle::inner", the vector
+  // would contain ["inner", "middle", "outer"]
+  std::vector<std::string> namespace_stack;
+  virtual ~Declaration() = default;
+};
+
+struct Enum : public Declaration {
   Enum(const std::string &name, const std::vector<std::string> &enumerators,
        const std::vector<std::string> &enumerator_values)
       : name(name), enumerators(enumerators),
@@ -116,7 +124,7 @@ struct TemplateParam {
   Type type;
 };
 
-struct Function {
+struct Function : public Declaration {
   Function(const std::string &name, const Type &return_type,
            const std::vector<ParamVar> &params,
            const execution_space &exec_space)
@@ -131,7 +139,7 @@ struct Function {
   bool is_constexpr;
 };
 
-struct FunctionTemplate : public Template {
+struct FunctionTemplate : public Template, public Declaration {
   FunctionTemplate(const std::vector<TemplateParam> &template_parameters,
                    const std::size_t &num_min_required_args,
                    const Function &function)
@@ -160,7 +168,7 @@ enum class RecordAncestor {
   ANCESTOR_IS_NOT_TEMPLATE,
 };
 
-struct Record {
+struct Record : public Declaration {
   Record(const std::string &name, const std::vector<Field> &fields,
          const std::vector<Method> &methods,
          const std::vector<FunctionTemplate> &templated_methods,
@@ -189,12 +197,12 @@ struct Record {
   void print(int) const;
 };
 
-struct ClassTemplate : public Template {
+struct ClassTemplate : public Template, public Declaration {
   ClassTemplate(const clang::ClassTemplateDecl *);
   Record record;
 };
 
-struct Typedef {
+struct Typedef : public Declaration {
   Typedef(const std::string &name, const std::string &underlying_name)
       : name(name), underlying_name(underlying_name) {}
   Typedef(const clang::TypedefDecl *,
