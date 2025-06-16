@@ -41,6 +41,9 @@ struct Declaration {
   // For example, for a declaration in "outer::middle::inner", the vector
   // would contain ["inner", "middle", "outer"]
   std::vector<std::string> namespace_stack;
+
+  Declaration() = default;
+  explicit Declaration(const clang::Decl *decl);
   virtual ~Declaration() = default;
 };
 

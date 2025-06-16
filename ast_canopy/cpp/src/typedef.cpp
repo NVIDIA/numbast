@@ -18,7 +18,7 @@ Typedef::Typedef(const std::string &name, const std::string &underlying_name)
 
 Typedef::Typedef(const clang::TypedefDecl *TD,
                  std::unordered_map<int64_t, std::string> *record_id_to_name)
-    : name(TD->getNameAsString()) {
+    : Declaration(TD), name(TD->getNameAsString()) {
   const clang::Type *type = TD->getUnderlyingType().getTypePtr();
   if (const clang::RecordType *RT = type->getAs<clang::RecordType>()) {
     if (const clang::CXXRecordDecl *RD = RT->getAsCXXRecordDecl()) {

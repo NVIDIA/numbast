@@ -32,7 +32,8 @@ Record::Record(const std::string &name, const std::vector<Field> &fields,
       nested_class_templates(nested_class_templates), sizeof_(sizeof_),
       alignof_(alignof_), source_range(source_range) {}
 
-Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
+Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp)
+    : Declaration(RD) {
   using AS = clang::AccessSpecifier;
 
 #ifndef NDEBUG
@@ -104,9 +105,9 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
 }
 
 Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp,
-               std::string name)
-    : Record(RD, rp) {
-  this->name = name;
+               std::string name_override)
+    : Declaration(RD) {
+  this->name = name_override;
 }
 
 void Record::print(int level) const {

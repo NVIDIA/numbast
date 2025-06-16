@@ -22,6 +22,6 @@ FunctionTemplate::FunctionTemplate(
       function(std::move(function)) {}
 
 FunctionTemplate::FunctionTemplate(const clang::FunctionTemplateDecl *FTD)
-    : Template(FTD->getTemplateParameters()),
+    : Template(FTD->getTemplateParameters()), Declaration(FTD),
       function(FTD->getTemplatedDecl()) {}
 } // namespace ast_canopy
