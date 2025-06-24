@@ -87,10 +87,10 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp,
         nested_records.emplace_back(Record(R, rp, parent_record_names));
       }
     }
-
-    // Pop the current record name from the parent record names stack
-    parent_record_names.pop_back();
   }
+
+  // Pop the current record name from the parent record names stack
+  parent_record_names.pop_back();
 
   if (rp == RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE) {
     clang::QualType type = RD->getASTContext().getTypeDeclType(RD);
