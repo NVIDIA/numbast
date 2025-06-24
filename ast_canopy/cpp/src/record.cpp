@@ -20,13 +20,24 @@ std::size_t constexpr INVALID_SIZE_OF = std::numeric_limits<std::size_t>::max();
 std::size_t constexpr INVALID_ALIGN_OF =
     std::numeric_limits<std::size_t>::max();
 
-Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
-  using AS = clang::AccessSpecifier;
+Record::Record(const std::string &name, const std::vector<Field> &fields,
+               const std::vector<Method> &methods,
+               const std::vector<FunctionTemplate> &templated_methods,
+               const std::vector<Record> &nested_records,
+               const std::vector<ClassTemplate> &nested_class_templates,
+               const std::size_t &sizeof_, const std::size_t &alignof_,
+               const std::string &source_range,
+               const std::vector<std::string> &namespace_stack)
+    : Declaration(namespace_stack), name(name), fields(fields),
+      methods(methods), templated_methods(templated_methods),
+      nested_records(nested_records),
+      nested_class_templates(nested_class_templates), sizeof_(sizeof_),
+      alignof_(alignof_), source_range(source_range) {}
 
-#ifndef NDEBUG
-  source_range = RD->getSourceRange().printToString(
-      RD->getASTContext().getSourceManager());
-#endif
+Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp,
+               std::vector<std::string> &parent_record_names)
+    : Declaration(RD) {
+  using AS = clang::AccessSpecifier;
 
   name = RD->getNameAsString();
 
@@ -36,6 +47,8 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   fields.reserve(std::distance(RD->field_begin(), RD->field_end()));
   methods.reserve(std::distance(RD->method_begin(), RD->method_end()));
   auto DC = static_cast<clang::DeclContext>(*RD);
+
+  parent_record_names.push_back(name);
 
   for (auto const *D : DC.decls()) {
     // Scan all declarations, if the declaration is a access specifier,
@@ -57,7 +70,8 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
       if (auto const *MD = clang::dyn_cast<clang::CXXMethodDecl>(D)) {
         if (MD->isImplicit())
           continue;
-        methods.emplace_back(Method(MD));
+
+        methods.emplace_back(Method(MD, parent_record_names));
       }
 
       if (auto const *FTD = clang::dyn_cast<clang::FunctionTemplateDecl>(D)) {
@@ -65,14 +79,18 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
       }
 
       if (auto const *CTD = clang::dyn_cast<clang::ClassTemplateDecl>(D)) {
-        nested_class_templates.emplace_back(ClassTemplate(CTD));
+        nested_class_templates.emplace_back(
+            ClassTemplate(CTD, parent_record_names));
       }
 
       if (auto const *R = clang::dyn_cast<clang::CXXRecordDecl>(D)) {
-        nested_records.emplace_back(Record(R, rp));
+        nested_records.emplace_back(Record(R, rp, parent_record_names));
       }
     }
   }
+
+  // Pop the current record name from the parent record names stack
+  parent_record_names.pop_back();
 
   if (rp == RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE) {
     clang::QualType type = RD->getASTContext().getTypeDeclType(RD);
@@ -87,14 +105,17 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   }
 
 #ifndef NDEBUG
+  source_range = RD->getSourceRange().printToString(
+      RD->getASTContext().getSourceManager());
   print(0);
 #endif
 }
 
 Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp,
-               std::string name)
-    : Record(RD, rp) {
-  this->name = name;
+               std::string name_override,
+               std::vector<std::string> &parent_record_names)
+    : Record(RD, rp, parent_record_names) {
+  this->name = name_override;
 }
 
 void Record::print(int level) const {

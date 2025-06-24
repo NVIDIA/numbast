@@ -178,9 +178,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
         )
 
         # Cache the unique shim name
-        shim_func_name = (
-            f"__{self._struct_name}__{self._ctor_decl.mangled_name}"
-        )
+        shim_func_name = f"_{self._ctor_decl.fully_qualified_name}"
         self._deduplicated_shim_name = deduplicate_overloads(shim_func_name)
 
         # Underscore separated names of parameters
@@ -497,7 +495,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
         # Cache the unique shim name of the c extension shim function
         self._unique_shim_name = deduplicate_overloads(
-            f"__{self._struct_name}_{self._convop_decl.mangled_name}"
+            f"__{self._convop_decl.fully_qualified_name}"
         )
 
         # device caller name

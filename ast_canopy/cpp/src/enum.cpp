@@ -7,7 +7,14 @@
 
 namespace ast_canopy {
 
-Enum::Enum(const clang::EnumDecl *ED) : name(ED->getNameAsString()) {
+Enum::Enum(const std::string &name, const std::vector<std::string> &enumerators,
+           const std::vector<std::string> &enumerator_values,
+           const std::vector<std::string> &namespace_stack)
+    : Declaration(namespace_stack), name(name), enumerators(enumerators),
+      enumerator_values(enumerator_values) {}
+
+Enum::Enum(const clang::EnumDecl *ED)
+    : Declaration(ED), name(ED->getNameAsString()) {
   for (const auto *enumerator : ED->enumerators()) {
     enumerators.push_back(enumerator->getNameAsString());
 

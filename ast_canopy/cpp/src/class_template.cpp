@@ -12,7 +12,18 @@
 #include <iostream>
 
 namespace ast_canopy {
-ClassTemplate::ClassTemplate(const clang::ClassTemplateDecl *CTD)
-    : Template(CTD->getTemplateParameters()),
-      record(CTD->getTemplatedDecl(), RecordAncestor::ANCESTOR_IS_TEMPLATE) {}
+
+ClassTemplate::ClassTemplate(
+    const std::vector<TemplateParam> &template_parameters,
+    const std::size_t &num_min_required_args, const Record &record,
+    const std::vector<std::string> &namespace_stack)
+    : Template(template_parameters, num_min_required_args),
+      Declaration(namespace_stack), record(record) {}
+
+ClassTemplate::ClassTemplate(const clang::ClassTemplateDecl *CTD,
+                             std::vector<std::string> &parent_record_names)
+    : Template(CTD->getTemplateParameters()), Declaration(CTD),
+      record(CTD->getTemplatedDecl(), RecordAncestor::ANCESTOR_IS_TEMPLATE,
+             parent_record_names) {}
+
 } // namespace ast_canopy

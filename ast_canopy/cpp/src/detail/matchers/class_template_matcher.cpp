@@ -38,8 +38,11 @@ void ClassTemplateCallback::run(const MatchFinder::MatchResult &Result) {
     std::cout << CTD->getNameAsString() << std::endl;
 #endif
 
-    if (!CTD->isImplicit())
-      payload->decls->class_templates.push_back(ClassTemplate(CTD));
+    if (!CTD->isImplicit()) {
+      std::vector<std::string> parent_record_names_stack;
+      payload->decls->class_templates.push_back(
+          ClassTemplate(CTD, parent_record_names_stack));
+    }
   }
 }
 

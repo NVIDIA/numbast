@@ -179,7 +179,9 @@ def {func_name}():
         )
 
         # Cache the unique shim name
-        self._deduplicated_shim_name = deduplicate_overloads(decl.mangled_name)
+        self._deduplicated_shim_name = deduplicate_overloads(
+            decl.fully_qualified_name
+        )
         self._caller_name = f"{self._deduplicated_shim_name}_caller"
 
         # Cache the list of parameter types in C++ pointer types
