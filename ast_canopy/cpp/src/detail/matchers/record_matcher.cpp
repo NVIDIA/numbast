@@ -51,8 +51,10 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
       auto &record_id_map = *payload->record_id_to_name;
       record_id_map[id] = rename_for_unamed;
 
-      payload->decls->records.push_back(Record(
-          RD, RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE, rename_for_unamed));
+      std::vector<std::string> parent_record_names_stack;
+      payload->decls->records.push_back(
+          Record(RD, RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE,
+                 rename_for_unamed, parent_record_names_stack));
 
 #ifndef NDEBUG
       std::string source_range =

@@ -20,8 +20,10 @@ ClassTemplate::ClassTemplate(
     : Template(template_parameters, num_min_required_args),
       Declaration(namespace_stack), record(record) {}
 
-ClassTemplate::ClassTemplate(const clang::ClassTemplateDecl *CTD)
+ClassTemplate::ClassTemplate(const clang::ClassTemplateDecl *CTD,
+                             std::vector<std::string> &parent_record_names)
     : Template(CTD->getTemplateParameters()), Declaration(CTD),
-      record(CTD->getTemplatedDecl(), RecordAncestor::ANCESTOR_IS_TEMPLATE) {}
+      record(CTD->getTemplatedDecl(), RecordAncestor::ANCESTOR_IS_TEMPLATE,
+             parent_record_names) {}
 
 } // namespace ast_canopy

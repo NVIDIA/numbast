@@ -61,8 +61,26 @@ CXX_TYPE_TO_PYTHON_TYPE = {
 class Declaration:
     """Base class for all declarations that can appear in a namespace."""
 
+    namespace_stack: list[str]
+    # Stores nested namespace names in bottom-up order (deepest to top-level)
+    # For example, for a declaration in "outer::middle::inner", the vector
+    # would contain ["inner", "middle", "outer"]
+
     def __init__(self, namespace_stack: list[str]):
         self.namespace_stack = namespace_stack
+
+    @property
+    def concatenated_namespace(
+        self,
+        delimiter: str = "_",
+        anonymous_namespace_placeholder: str = "anonymous",
+    ) -> str:
+        return delimiter.join(
+            [
+                x if x else anonymous_namespace_placeholder
+                for x in reversed(self.namespace_stack)
+            ]
+        )
 
 
 class Function(Declaration):
@@ -109,6 +127,15 @@ class Function(Declaration):
             name = "operator" + "_" + py_op.__name__
         name = name.replace(" ", "_")
         return name
+
+    @property
+    def fully_qualified_name(self):
+        namespace_prefix = (
+            f"{self.concatenated_namespace}_"
+            if self.concatenated_namespace
+            else ""
+        )
+        return f"{namespace_prefix}{self.mangled_name}"
 
     @property
     def param_types(self) -> list[bindings.Type]:
@@ -232,6 +259,7 @@ class StructMethod(Function):
         is_move_constructor: bool,
         parse_entry_point: str,
         namespace_stack: list[str],
+        parent_name_prefix: str,
     ):
         super().__init__(
             name,
@@ -244,6 +272,22 @@ class StructMethod(Function):
         )
         self.kind = kind
         self.is_move_constructor = is_move_constructor
+        self.parent_name_prefix = parent_name_prefix
+
+    @property
+    def fully_qualified_name(self):
+        namespace_prefix = (
+            f"{self.concatenated_namespace}_"
+            if self.concatenated_namespace
+            else ""
+        )
+        parent_name_all_level = (
+            f"{self.parent_name_prefix}_" if self.parent_name_prefix else ""
+        )
+        print(
+            f"namespace_prefix: {namespace_prefix}, parent_name_all_level: {parent_name_all_level}, mangled_name: {self.mangled_name}"
+        )
+        return f"{namespace_prefix}{parent_name_all_level}{self.mangled_name}"
 
     @property
     def overloaded_operator_to_python_operator(self):
@@ -271,6 +315,7 @@ class StructMethod(Function):
             c_obj.is_move_constructor(),
             parse_entry_point,
             c_obj.namespace_stack,
+            c_obj.parent_name_prefix(),
         )
 
 

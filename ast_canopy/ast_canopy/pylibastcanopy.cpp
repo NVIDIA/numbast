@@ -213,6 +213,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
   py::class_<Method, Function>(m, "Method")
       .def_readwrite("kind", &Method::kind)
       .def("is_move_constructor", &Method::is_move_constructor)
+      .def("parent_name_prefix", &Method::parent_name_prefix)
       .def(py::pickle(
           [](const Method &m) {
             Function f = m;

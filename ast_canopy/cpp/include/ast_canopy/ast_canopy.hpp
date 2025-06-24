@@ -19,6 +19,7 @@ namespace ast_canopy {
 
 struct TemplateParam;
 struct ClassTemplate;
+struct Record;
 
 enum class execution_space { undefined, host, device, host_device, global_ };
 
@@ -152,12 +153,14 @@ struct Method : public Function {
          const std::vector<ParamVar> &params, const execution_space &exec_space,
          const method_kind &kind,
          const std::vector<std::string> &namespace_stack);
-  Method(const clang::CXXMethodDecl *);
+  Method(const clang::CXXMethodDecl *, const std::vector<std::string> &);
   method_kind kind;
 
   bool is_move_constructor();
+  std::string_view parent_name_prefix() const;
 
 private:
+  std::string _parent_name_prefix;
   const clang::CXXMethodDecl *_clang_method;
 };
 
@@ -175,9 +178,11 @@ struct Record : public Declaration {
          const std::size_t &sizeof_, const std::size_t &alignof_,
          const std::string &source_range,
          const std::vector<std::string> &namespace_stack);
-  Record(const clang::CXXRecordDecl *, RecordAncestor);
   Record(const clang::CXXRecordDecl *, RecordAncestor,
-         std::string); // overrides name from RD
+         std::vector<std::string> &parent_record_names);
+  Record(
+      const clang::CXXRecordDecl *, RecordAncestor, std::string,
+      std::vector<std::string> &parent_record_names); // overrides name from RD
 
   std::string name;
   std::vector<Field> fields;
@@ -193,7 +198,8 @@ struct Record : public Declaration {
 };
 
 struct ClassTemplate : public Template, public Declaration {
-  ClassTemplate(const clang::ClassTemplateDecl *);
+  ClassTemplate(const clang::ClassTemplateDecl *,
+                std::vector<std::string> &parent_record_names);
   ClassTemplate(const std::vector<TemplateParam> &template_parameters,
                 const std::size_t &num_min_required_args, const Record &record,
                 const std::vector<std::string> &namespace_stack);
