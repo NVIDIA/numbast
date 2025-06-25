@@ -5,6 +5,7 @@
 
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclCXX.h>
+#include <clang/AST/Mangle.h>
 
 #include <ast_canopy/ast_canopy.hpp>
 
@@ -35,5 +36,14 @@ Function::Function(const clang::FunctionDecl *FD)
   std::transform(FD->param_begin(), FD->param_end(), std::back_inserter(params),
                  [](const clang::ParmVarDecl *PVD) { return ParamVar(PVD); });
   exec_space = get_execution_space(FD);
+
+  // Compute itanium mangled name
+  auto &context = FD->getASTContext();
+  auto &diag = context.getDiagnostics();
+  clang::ItaniumMangleContext *MC =
+      clang::ItaniumMangleContext::create(context, diag);
+  llvm::raw_string_ostream OS(mangled_name);
+  MC->mangleName(FD, OS);
+  OS.flush();
 }
 } // namespace ast_canopy

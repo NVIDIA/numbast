@@ -73,6 +73,7 @@ class Function:
         params: list[bindings.ParamVar],
         exec_space: bindings.execution_space,
         is_constexpr: bool,
+        mangled_name: str,
         parse_entry_point: str,
     ):
         self.name = name
@@ -82,6 +83,7 @@ class Function:
         self._op_str = self.name[8:] if self.is_operator else None
         self.exec_space = exec_space
         self.is_constexpr = is_constexpr
+        self.mangled_name = mangled_name
 
         self.parse_entry_point = parse_entry_point
 
@@ -91,15 +93,6 @@ class Function:
     def __repr__(self):
         old = super().__repr__()
         return f"{old[:-1]} {self.__str__()}>"
-
-    @property
-    def mangled_name(self):
-        name = self.name
-        if self.is_overloaded_operator():
-            py_op = self.overloaded_operator_to_python_operator
-            name = "operator" + "_" + py_op.__name__
-        name = name.replace(" ", "_")
-        return name
 
     @property
     def param_types(self) -> list[bindings.Type]:
@@ -168,6 +161,7 @@ class Function:
             c_obj.params,
             c_obj.exec_space,
             c_obj.is_constexpr,
+            c_obj.mangled_name,
             parse_entry_point,
         )
 
@@ -217,6 +211,7 @@ class StructMethod(Function):
         exec_space: bindings.execution_space,
         is_constexpr: bool,
         is_move_constructor: bool,
+        mangled_name: str,
         parse_entry_point: str,
     ):
         super().__init__(
@@ -225,6 +220,7 @@ class StructMethod(Function):
             params,
             exec_space,
             is_constexpr,
+            mangled_name,
             parse_entry_point,
         )
         self.kind = kind
@@ -254,6 +250,7 @@ class StructMethod(Function):
             c_obj.exec_space,
             c_obj.is_constexpr,
             c_obj.is_move_constructor(),
+            c_obj.mangled_name,
             parse_entry_point,
         )
 

@@ -129,6 +129,7 @@ struct Function {
   std::vector<ParamVar> params;
   execution_space exec_space;
   bool is_constexpr;
+  std::string mangled_name;
 };
 
 struct FunctionTemplate : public Template {
