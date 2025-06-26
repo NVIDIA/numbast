@@ -11,9 +11,6 @@ def test_multiple_decls(make_binding):
     binding = res1["bindings"]
     src = res1["src"]
 
-    with open("/tmp/test.py", "w") as f:
-        f.write(src)
-
     pat = r"def _lower_\w+_nbst\(shim_stream, shim_obj\):"
     matches = re.findall(pat, src)
     assert len(matches) == 1, "Expected exactly one lower function"
