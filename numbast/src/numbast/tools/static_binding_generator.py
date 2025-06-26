@@ -48,7 +48,7 @@ MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 yaml.add_constructor("!numbast_join", string_constructor)
 
 
-class YamlConfig:
+class Config:
     """Configuration File for Static Binding Generation.
 
     Attributes
@@ -74,14 +74,14 @@ class YamlConfig:
         List of prefixes to allow for anonymous filename declarations.
     additional_imports : list[str]
         The list of additional imports to add to the binding file.
-    shim_include_override : str
+    shim_include_override : str | None
         Override the include line of the shim function to specified string.
         If not specified, default to `#include <path_to_entry_point>`.
     require_pynvjitlink : bool
         If true, detect if pynvjitlink is installed, raise an error if not.
     predefined_macros : list[str]
         List of macros defined prior to parsing the header and prefixing shim functions.
-    output_name : str
+    output_name : str | None
         The name of the output binding file, default None. When set to None, use
         the same name as input file (renamed with .py extension).
     cooperative_launch_required_functions_regex : list[str]
@@ -99,100 +99,137 @@ class YamlConfig:
     clang_includes_paths: list[str]
     macro_expanded_function_prefixes: list[str]
     additional_imports: list[str]
-    shim_include_override: str
+    shim_include_override: str | None
     require_pynvjitlink: bool
     predefined_macros: list[str]
-    output_name: str
+    output_name: str | None
     cooperative_launch_required_functions_regex: list[str]
 
-    def __init__(self, cfg_path):
-        with open(cfg_path) as f:
-            config = yaml.load(f, yaml.Loader)
-            self.entry_point = config["Entry Point"]
-            self.retain_list = config["File List"]
-            self.types = _str_value_to_numba_type(config.get("Types", {}))
-            self.datamodels = _str_value_to_numba_datamodel(
-                config.get("Data Models", {})
-            )
+    def __init__(self, config_dict: dict):
+        """Initialize Config from a dictionary.
 
-            self.excludes = config.get("Exclude", {})
-            self.exclude_functions = self.excludes.get("Function", [])
-            self.exclude_structs = self.excludes.get("Struct", [])
+        Parameters
+        ----------
+        config_dict : dict
+            Dictionary containing configuration values.
+        """
+        self.entry_point = config_dict["Entry Point"]
+        self.retain_list = config_dict["File List"]
+        self.types = _str_value_to_numba_type(config_dict.get("Types", {}))
+        self.datamodels = _str_value_to_numba_datamodel(
+            config_dict.get("Data Models", {})
+        )
 
-            self.clang_includes_paths = config.get("Clang Include Paths", [])
+        self.excludes = config_dict.get("Exclude", {})
+        self.exclude_functions = self.excludes.get("Function", [])
+        self.exclude_structs = self.excludes.get("Struct", [])
 
-            # FIXME: We are pretending that the list of macro-expanded functions is the same
-            # as the list of declarations with anonymous filenames. This is not necessarily
-            # true.
-            self.macro_expanded_function_prefixes = config.get(
-                "Macro-expanded Function Prefixes", []
-            )
+        self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
 
-            self.additional_imports = config.get("Additional Import", [])
+        # FIXME: We are pretending that the list of macro-expanded functions is the same
+        # as the list of declarations with anonymous filenames. This is not necessarily
+        # true.
+        self.macro_expanded_function_prefixes = config_dict.get(
+            "Macro-expanded Function Prefixes", []
+        )
 
-            self.shim_include_override = config.get(
-                "Shim Include Override", None
-            )
+        self.additional_imports = config_dict.get("Additional Import", [])
 
-            self.require_pynvjitlink = config.get("Require Pynvjitlink", False)
-            self.predefined_macros = config.get("Predefined Macros", [])
+        self.shim_include_override = config_dict.get(
+            "Shim Include Override", None
+        )
 
-            if self.exclude_functions is None:
-                self.exclude_functions = []
-            if self.exclude_structs is None:
-                self.exclude_structs = []
-            if self.clang_includes_paths is None:
-                self.clang_includes_paths = []
+        self.require_pynvjitlink = config_dict.get("Require Pynvjitlink", False)
+        self.predefined_macros = config_dict.get("Predefined Macros", [])
 
-            self.output_name = config.get("Output Name", None)
+        if self.exclude_functions is None:
+            self.exclude_functions = []
+        if self.exclude_structs is None:
+            self.exclude_structs = []
+        if self.clang_includes_paths is None:
+            self.clang_includes_paths = []
 
-            self.cooperative_launch_required_functions_regex = config.get(
-                "Cooperative Launch Required Functions Regex", []
-            )
+        self.output_name = config_dict.get("Output Name", None)
+
+        self.cooperative_launch_required_functions_regex = config_dict.get(
+            "Cooperative Launch Required Functions Regex", []
+        )
 
         self._verify_exists()
         self._verify_regex_patterns()
+
+    @classmethod
+    def from_yaml_path(cls, cfg_path: str) -> "Config":
+        """Create a Config instance from a YAML file path.
+
+        Parameters
+        ----------
+        cfg_path : str
+            Path to the YAML configuration file.
+
+        Returns
+        -------
+        Config
+            A new Config instance.
+        """
+        with open(cfg_path) as f:
+            config_dict = yaml.load(f, yaml.Loader)
+        return cls(config_dict)
 
     @classmethod
     def from_params(
         cls,
         entry_point: str,
         retain_list: list[str],
-        types: dict[str, type] = None,
-        datamodels: dict[str, type] = None,
-        exclude_functions: list[str] = None,
-        exclude_structs: list[str] = None,
-        clang_includes_paths: list[str] = None,
-        macro_expanded_function_prefixes: list[str] = None,
-        additional_imports: list[str] = None,
-        shim_include_override: str = None,
+        types: dict[str, type],
+        datamodels: dict[str, type],
+        exclude_functions: list[str] | None = None,
+        exclude_structs: list[str] | None = None,
+        clang_includes_paths: list[str] | None = None,
+        macro_expanded_function_prefixes: list[str] | None = None,
+        additional_imports: list[str] | None = None,
+        shim_include_override: str | None = None,
         require_pynvjitlink: bool = False,
-        predefined_macros: list[str] = None,
-        output_name: str = None,
-        cooperative_launch_required_functions_regex: list[str] = None,
-    ):
-        """Create a YamlConfig instance from individual parameters instead of a config file."""
-        instance = cls.__new__(cls)
-        instance.entry_point = entry_point
-        instance.retain_list = retain_list
-        instance.types = types or {}
-        instance.datamodels = datamodels or {}
-        instance.exclude_functions = exclude_functions or []
-        instance.exclude_structs = exclude_structs or []
-        instance.clang_includes_paths = clang_includes_paths or []
-        instance.macro_expanded_function_prefixes = (
-            macro_expanded_function_prefixes or []
-        )
-        instance.additional_imports = additional_imports or []
-        instance.shim_include_override = shim_include_override
-        instance.require_pynvjitlink = require_pynvjitlink
-        instance.predefined_macros = predefined_macros or []
-        instance.output_name = output_name
-        instance.cooperative_launch_required_functions_regex = (
-            cooperative_launch_required_functions_regex or []
-        )
-        instance._verify_exists()
-        instance._verify_regex_patterns()
+        predefined_macros: list[str] | None = None,
+        output_name: str | None = None,
+        cooperative_launch_required_functions_regex: list[str] | None = None,
+    ) -> "Config":
+        """Create a Config instance from individual parameters instead of a config file."""
+        if types is None:
+            raise ValueError("Types must be provided")
+        if datamodels is None:
+            raise ValueError("Data models must be provided")
+
+        config_dict = {
+            "Entry Point": entry_point,
+            "File List": retain_list,
+            "Types": {},
+            "Data Models": {},
+            "Exclude": {
+                "Function": exclude_functions or [],
+                "Struct": exclude_structs or [],
+            },
+            "Clang Include Paths": clang_includes_paths or [],
+            "Macro-expanded Function Prefixes": macro_expanded_function_prefixes
+            or [],
+            "Additional Import": additional_imports or [],
+            "Shim Include Override": shim_include_override,
+            "Require Pynvjitlink": require_pynvjitlink,
+            "Predefined Macros": predefined_macros or [],
+            "Output Name": output_name,
+            "Cooperative Launch Required Functions Regex": cooperative_launch_required_functions_regex
+            or [],
+        }
+
+        # Convert types and datamodels back to string format for the dict
+        if types:
+            config_dict["Types"] = {k: v.__name__ for k, v in types.items()}
+        if datamodels:
+            config_dict["Data Models"] = {
+                k: v.__name__ for k, v in datamodels.items()
+            }
+
+        instance = cls(config_dict)
         return instance
 
     def _verify_exists(self):
@@ -378,7 +415,7 @@ def log_files_to_generate(
 
 
 def _static_binding_generator(
-    config: YamlConfig,
+    config: Config,
     output_dir: str,
     compute_capability: str,
     log_generates: bool = False,
@@ -389,7 +426,7 @@ def _static_binding_generator(
     A function to generate CUDA static bindings for CUDA C++ headers.
 
     Parameters:
-    - config (YamlConfig): Configuration object containing all binding generation settings.
+    - config (Config): Configuration object containing all binding generation settings.
     - output_dir (str): Path to the output directory where the processed files will be saved.
     - compute_capability (str): Compute capability of the CUDA device.
     - log_generates (bool, optional): Whether to log the list of generated bindings. Defaults to False.
@@ -598,7 +635,7 @@ def static_binding_generator(
                 "When CFG_PATH specified, none of INPUT_HEADER, RETAIN, TYPES and DATAMODELS should be specified."
             )
 
-        cfg = YamlConfig(cfg_path)
+        cfg = Config.from_yaml_path(cfg_path)
         output_file = _static_binding_generator(
             cfg,
             output_dir,
@@ -625,7 +662,7 @@ def static_binding_generator(
     if len(retain_list) == 0:
         raise ValueError("At least one file name to retain must be provided.")
 
-    cfg = YamlConfig.from_params(
+    cfg = Config.from_params(
         entry_point=entry_point,
         retain_list=retain_list,
         types=types or {},

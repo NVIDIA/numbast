@@ -183,18 +183,11 @@ def {lower_scope_name}(shim_stream, shim_obj):
         )
         self._deduplicated_shim_name = deduplicate_overloads(shim_func_name)
 
-        # Underscore separated names of parameters
-        self._nb_param_str_concat = "_".join(map(str, self._nb_param_types))
-        if not self._nb_param_str_concat:
-            self._nb_param_str_concat = "void"
-
         # device caller name
         self._device_caller_name = f"{self._struct_name}_device_caller"
 
         # lower scope name
-        self._lower_scope_name = (
-            f"_lower_{struct_name}_{self._nb_param_str_concat}"
-        )
+        self._lower_scope_name = f"_lower_{ctor_decl.mangled_name}"
 
     def _render_decl_device(self):
         """Render codes that declares a foreign function for this constructor in Numba."""

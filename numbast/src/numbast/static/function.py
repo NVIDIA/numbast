@@ -134,10 +134,10 @@ def impl(context, builder, sig, args):
 """
 
     scoped_lowering_template = """
-def _{unique_function_name}_lower(shim_stream, shim_obj):
+def {lower_scope_name}(shim_stream, shim_obj):
 {body}
 
-_{unique_function_name}_lower(shim_stream, shim_obj)
+{lower_scope_name}(shim_stream, shim_obj)
 """
 
     function_python_api_template = """
@@ -179,8 +179,15 @@ def {func_name}():
         )
 
         # Cache the unique shim name
+        # TODO: ast_canopy does not dictate that incomplete declarations not parsed
+        # in result, therefore, it's possible to have multiple declarations with the same mangled name.
+        # However, each function overload has its unique mangled name, so the correct way to
+        # avoid duplication here is to simply skip creating a bindings for functions that have
+        # already been created.
         self._deduplicated_shim_name = deduplicate_overloads(decl.mangled_name)
         self._caller_name = f"{self._deduplicated_shim_name}_caller"
+
+        self._lower_scope_name = f"_lower_{self._deduplicated_shim_name}"
 
         # Cache the list of parameter types in C++ pointer types
         c_ptr_arglist = ", ".join(
@@ -299,7 +306,7 @@ def {func_name}():
         lower_body = indent(lower_body, " " * 4)
 
         self._lower_rendered = self.scoped_lowering_template.format(
-            unique_function_name=self._deduplicated_shim_name,
+            lower_scope_name=self._lower_scope_name,
             body=lower_body,
         )
 
