@@ -8,6 +8,7 @@ from logging import getLogger, FileHandler
 import tempfile
 from collections import defaultdict
 from warnings import warn
+from typing import Union
 
 from numbast.static.renderer import (
     BaseRenderer,
@@ -15,17 +16,20 @@ from numbast.static.renderer import (
     get_shim,
 )
 from numbast.static.types import to_numba_type_str
-from numbast.utils import deduplicate_overloads, make_function_shim
-from numbast.errors import TypeNotFoundError
+from numbast.utils import make_function_shim
+from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
 
 from ast_canopy.decl import Function
 from pylibastcanopy import execution_space
 
 file_logger = getLogger(f"{__name__}")
-logger_path = os.path.join(tempfile.gettempdir(), "test.py")
+logger_path = os.path.join(tempfile.gettempdir(), "numbast_function.log")
 file_logger.debug(f"Function debug outputs are written to {logger_path}")
 file_logger.addHandler(FileHandler(logger_path))
+print(f"Function debug outputs are written to {logger_path}")
 
+function_mangled_name_registry: set[str] = set()
+"""A set of created function mangled names."""
 
 function_apis_registry: set[str] = set()
 """A set of created function API names."""
@@ -152,6 +156,11 @@ def {func_name}():
 
     def __init__(self, decl: Function, header_path: str, use_cooperative: bool):
         super().__init__(decl)
+
+        if decl.mangled_name in function_mangled_name_registry:
+            raise MangledFunctionNameConflictError(decl.mangled_name)
+        function_mangled_name_registry.add(decl.mangled_name)
+
         self._decl = decl
         self._header_path = header_path
         self._use_cooperative = use_cooperative
@@ -179,12 +188,7 @@ def {func_name}():
         )
 
         # Cache the unique shim name
-        # TODO: ast_canopy does not dictate that incomplete declarations not parsed
-        # in result, therefore, it's possible to have multiple declarations with the same mangled name.
-        # However, each function overload has its unique mangled name, so the correct way to
-        # avoid duplication here is to simply skip creating a bindings for functions that have
-        # already been created.
-        self._deduplicated_shim_name = deduplicate_overloads(decl.mangled_name)
+        self._deduplicated_shim_name = f"{decl.mangled_name}_nbst"
         self._caller_name = f"{self._deduplicated_shim_name}_caller"
 
         self._lower_scope_name = f"_lower_{self._deduplicated_shim_name}"
@@ -476,8 +480,90 @@ class {op_typing_name}(ConcreteTemplate):
             list
         )
 
-        self._python_rendered = []
-        self._c_rendered = []
+        self._python_rendered: list[str] = []
+        self._c_rendered: list[str] = []
+
+    def _should_skip_function(self, decl: Function) -> bool:
+        """Check if a function should be skipped based on various criteria."""
+        if decl.name in self._excludes:
+            return True
+
+        if decl.name.startswith(self._skip_prefix):
+            return True
+
+        if self._skip_non_device and decl.exec_space not in {
+            execution_space.device,
+            execution_space.host_device,
+        }:
+            warn(
+                f"Skipping non-device function {decl.name} in {self._header_path}"
+            )
+            return True
+
+        return False
+
+    def _create_operator_renderer(
+        self, decl: Function
+    ) -> StaticOverloadedOperatorRenderer | None:
+        """Create a renderer for overloaded operators."""
+        if decl.is_copy_assignment_operator():
+            # copy assignment operator, do not support in Numba / Python, skip
+            return None
+
+        try:
+            return StaticOverloadedOperatorRenderer(decl, self._header_path)
+        except TypeNotFoundError as e:
+            warn(
+                f"Skipping operator {decl.name} in {self._header_path} due to missing type {e.type_name}"
+            )
+            return None
+        except MangledFunctionNameConflictError as e:
+            file_logger.debug(
+                f"Duplicate operator declaration of mangled name {e.mangled_name} in {self._header_path}"
+            )
+            return None
+
+    def _create_function_renderer(
+        self, decl: Function
+    ) -> StaticNonOperatorFunctionRenderer | None:
+        """Create a renderer for non-operator functions."""
+        try:
+            name = decl.name
+            use_cooperative = _matches_any_regex_pattern(
+                name, self._cooperative_launch_required
+            )
+            return StaticNonOperatorFunctionRenderer(
+                decl, self._header_path, use_cooperative
+            )
+        except TypeNotFoundError as e:
+            warn(
+                f"Skipping function {decl.name} in {self._header_path} due to missing type {e.type_name}"
+            )
+            return None
+        except MangledFunctionNameConflictError as e:
+            file_logger.debug(
+                f"Duplicate function declaration of mangled name {e.mangled_name} in {self._header_path}"
+            )
+            return None
+
+    def _process_renderer(
+        self,
+        renderer: Union[
+            StaticOverloadedOperatorRenderer, StaticNonOperatorFunctionRenderer
+        ],
+    ):
+        """Process a created renderer and add its outputs to the appropriate caches."""
+        if isinstance(renderer, StaticOverloadedOperatorRenderer):
+            self._op_typing_signature_cache[renderer.func_name_python].append(
+                renderer.get_signature()
+            )
+        else:
+            self._func_typing_signature_cache[renderer._decl.name].append(
+                renderer.get_signature()
+            )
+
+        self._python_rendered.append(renderer.render_python())
+        self._c_rendered.append(renderer.render_c())
 
     def _render_typings(self):
         """Render typing for all functions"""
@@ -539,59 +625,22 @@ class {op_typing_name}(ConcreteTemplate):
         self.Imports.add("from numba.cuda import CUSource")
 
         for decl in self._decls:
-            if decl.name in self._excludes:
+            if self._should_skip_function(decl):
                 continue
 
-            if decl.name.startswith(self._skip_prefix):
-                continue
+            renderer: Union[
+                StaticOverloadedOperatorRenderer,
+                StaticNonOperatorFunctionRenderer,
+                None,
+            ] = None
 
-            if self._skip_non_device and decl.exec_space not in {
-                execution_space.device,
-                execution_space.host_device,
-            }:
-                warn(
-                    f"Skipping non-device function {decl.name} in {self._header_path}"
-                )
-                continue
-
-            renderer = None
             if decl.is_overloaded_operator():
-                if decl.is_copy_assignment_operator():
-                    # copy assignment operator, do not support in Numba / Python, skip
-                    continue
-                try:
-                    renderer = StaticOverloadedOperatorRenderer(
-                        decl, self._header_path
-                    )
-                except TypeNotFoundError as e:
-                    warn(
-                        f"Skipping operator {decl.name} in {self._header_path} due to missing type {e.type_name}"
-                    )
-                    continue
-                self._op_typing_signature_cache[
-                    renderer.func_name_python
-                ].append(renderer.get_signature())
+                renderer = self._create_operator_renderer(decl)
             elif not decl.is_operator:
-                try:
-                    name = decl.name
-                    use_cooperative = _matches_any_regex_pattern(
-                        name, self._cooperative_launch_required
-                    )
-                    renderer = StaticNonOperatorFunctionRenderer(
-                        decl, self._header_path, use_cooperative
-                    )
-                except TypeNotFoundError as e:
-                    warn(
-                        f"Skipping function {decl.name} in {self._header_path} due to missing type {e.type_name}"
-                    )
-                    continue
-                self._func_typing_signature_cache[decl.name].append(
-                    renderer.get_signature()
-                )
+                renderer = self._create_function_renderer(decl)
 
             if renderer:
-                self._python_rendered.append(renderer.render_python())
-                self._c_rendered.append(renderer.render_c())
+                self._process_renderer(renderer)
 
         # Assemble typings
         self._render_typings()

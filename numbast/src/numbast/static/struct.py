@@ -178,10 +178,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
         )
 
         # Cache the unique shim name
-        shim_func_name = (
-            f"__{self._struct_name}__{self._ctor_decl.mangled_name}"
-        )
-        self._deduplicated_shim_name = deduplicate_overloads(shim_func_name)
+        self._deduplicated_shim_name = f"{self._ctor_decl.mangled_name}_nbst"
 
         # device caller name
         self._device_caller_name = f"{self._struct_name}_device_caller"

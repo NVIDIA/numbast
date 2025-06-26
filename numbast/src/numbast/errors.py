@@ -23,3 +23,19 @@ class TypeNotFoundError(BaseASTError):
     @property
     def type_name(self):
         return self._type_name
+
+
+class MangledFunctionNameConflictError(BaseASTError):
+    """Indicate that a mangled function name is not unique.
+
+    This error is raised when a function with the same mangled name of a previously
+    generated binding is found.
+    """
+
+    def __init__(self, mangled_name: str):
+        self._mangled_name = mangled_name
+        super().__init__(f"Mangled function name {mangled_name} is not unique.")
+
+    @property
+    def mangled_name(self):
+        return self._mangled_name
