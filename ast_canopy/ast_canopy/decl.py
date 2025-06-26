@@ -185,6 +185,11 @@ class FunctionTemplate(Template):
 
         self.parse_entry_point = parse_entry_point
 
+    def __repr__(self) -> str:
+        name = self.function.name
+        tparam_names = [t.name for t in self.template_parameters]
+        return f"{name}<{','.join(tparam_names)}>"
+
     @classmethod
     def from_c_obj(
         cls, c_obj: bindings.FunctionTemplate, parse_entry_point: str
@@ -369,6 +374,11 @@ class ClassTemplate(Template):
         self.record = record
 
         self.parse_entry_point = parse_entry_point
+
+    def __repr__(self) -> str:
+        name = self.record.name
+        tparam_names = [t.name for t in self.template_parameters]
+        return f"{name}<{','.join(tparam_names)}>"
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.ClassTemplate, parse_entry_point: str):
