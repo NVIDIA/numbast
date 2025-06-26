@@ -483,6 +483,88 @@ class {op_typing_name}(ConcreteTemplate):
         self._python_rendered: list[str] = []
         self._c_rendered: list[str] = []
 
+    def _should_skip_function(self, decl: Function) -> bool:
+        """Check if a function should be skipped based on various criteria."""
+        if decl.name in self._excludes:
+            return True
+
+        if decl.name.startswith(self._skip_prefix):
+            return True
+
+        if self._skip_non_device and decl.exec_space not in {
+            execution_space.device,
+            execution_space.host_device,
+        }:
+            warn(
+                f"Skipping non-device function {decl.name} in {self._header_path}"
+            )
+            return True
+
+        return False
+
+    def _create_operator_renderer(
+        self, decl: Function
+    ) -> StaticOverloadedOperatorRenderer | None:
+        """Create a renderer for overloaded operators."""
+        if decl.is_copy_assignment_operator():
+            # copy assignment operator, do not support in Numba / Python, skip
+            return None
+
+        try:
+            return StaticOverloadedOperatorRenderer(decl, self._header_path)
+        except TypeNotFoundError as e:
+            warn(
+                f"Skipping operator {decl.name} in {self._header_path} due to missing type {e.type_name}"
+            )
+            return None
+        except MangledFunctionNameConflictError as e:
+            file_logger.debug(
+                f"Duplicate operator declaration of mangled name {e.mangled_name} in {self._header_path}"
+            )
+            return None
+
+    def _create_function_renderer(
+        self, decl: Function
+    ) -> StaticNonOperatorFunctionRenderer | None:
+        """Create a renderer for non-operator functions."""
+        try:
+            name = decl.name
+            use_cooperative = _matches_any_regex_pattern(
+                name, self._cooperative_launch_required
+            )
+            return StaticNonOperatorFunctionRenderer(
+                decl, self._header_path, use_cooperative
+            )
+        except TypeNotFoundError as e:
+            warn(
+                f"Skipping function {decl.name} in {self._header_path} due to missing type {e.type_name}"
+            )
+            return None
+        except MangledFunctionNameConflictError as e:
+            file_logger.debug(
+                f"Duplicate function declaration of mangled name {e.mangled_name} in {self._header_path}"
+            )
+            return None
+
+    def _process_renderer(
+        self,
+        renderer: Union[
+            StaticOverloadedOperatorRenderer, StaticNonOperatorFunctionRenderer
+        ],
+    ):
+        """Process a created renderer and add its outputs to the appropriate caches."""
+        if isinstance(renderer, StaticOverloadedOperatorRenderer):
+            self._op_typing_signature_cache[renderer.func_name_python].append(
+                renderer.get_signature()
+            )
+        else:
+            self._func_typing_signature_cache[renderer._decl.name].append(
+                renderer.get_signature()
+            )
+
+        self._python_rendered.append(renderer.render_python())
+        self._c_rendered.append(renderer.render_c())
+
     def _render_typings(self):
         """Render typing for all functions"""
         self.Imports.add("from numba.cuda.cudadecl import register")
@@ -543,19 +625,7 @@ class {op_typing_name}(ConcreteTemplate):
         self.Imports.add("from numba.cuda import CUSource")
 
         for decl in self._decls:
-            if decl.name in self._excludes:
-                continue
-
-            if decl.name.startswith(self._skip_prefix):
-                continue
-
-            if self._skip_non_device and decl.exec_space not in {
-                execution_space.device,
-                execution_space.host_device,
-            }:
-                warn(
-                    f"Skipping non-device function {decl.name} in {self._header_path}"
-                )
+            if self._should_skip_function(decl):
                 continue
 
             renderer: Union[
@@ -563,53 +633,14 @@ class {op_typing_name}(ConcreteTemplate):
                 StaticNonOperatorFunctionRenderer,
                 None,
             ] = None
+
             if decl.is_overloaded_operator():
-                if decl.is_copy_assignment_operator():
-                    # copy assignment operator, do not support in Numba / Python, skip
-                    continue
-                try:
-                    renderer = StaticOverloadedOperatorRenderer(
-                        decl, self._header_path
-                    )
-                except TypeNotFoundError as e:
-                    warn(
-                        f"Skipping operator {decl.name} in {self._header_path} due to missing type {e.type_name}"
-                    )
-                    continue
-                except MangledFunctionNameConflictError as e:
-                    file_logger.debug(
-                        f"Duplicate operator declaration of mangled name {e.mangled_name} in {self._header_path}"
-                    )
-                    continue
-                self._op_typing_signature_cache[
-                    renderer.func_name_python
-                ].append(renderer.get_signature())
+                renderer = self._create_operator_renderer(decl)
             elif not decl.is_operator:
-                try:
-                    name = decl.name
-                    use_cooperative = _matches_any_regex_pattern(
-                        name, self._cooperative_launch_required
-                    )
-                    renderer = StaticNonOperatorFunctionRenderer(
-                        decl, self._header_path, use_cooperative
-                    )
-                except TypeNotFoundError as e:
-                    warn(
-                        f"Skipping function {decl.name} in {self._header_path} due to missing type {e.type_name}"
-                    )
-                    continue
-                except MangledFunctionNameConflictError as e:
-                    file_logger.debug(
-                        f"Duplicate function declaration of mangled name {e.mangled_name} in {self._header_path}"
-                    )
-                    continue
-                self._func_typing_signature_cache[decl.name].append(
-                    renderer.get_signature()
-                )
+                renderer = self._create_function_renderer(decl)
 
             if renderer:
-                self._python_rendered.append(renderer.render_python())
-                self._c_rendered.append(renderer.render_c())
+                self._process_renderer(renderer)
 
         # Assemble typings
         self._render_typings()
