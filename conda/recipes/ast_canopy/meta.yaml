@@ -45,14 +45,14 @@ requirements:
     - pybind11
     - pip
     - scikit-build-core
-    - clangdev >=18
+    - clangdev >=19
     - llvmdev >=14
     - llvm >=14
   run:
     - cuda-version >=12.5
     - cuda-nvcc >=12.5
     - python
-    - clangdev >=18
+    - clangdev >=19
     # libcurand-dev contains `curand_mtgp32_kernel.h`, which is needed by clang
     # CUDA mode to function properly. See:
     # https://clang.llvm.org/doxygen/____clang__cuda__runtime__wrapper_8h_source.html
