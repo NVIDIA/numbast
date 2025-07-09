@@ -91,7 +91,7 @@ class FileShimWriter(ShimWriterBase):
     def links(self) -> Callable[[], Iterator[str]]:
         """Return an iterator to the file containing shim functions and PTXes.
 
-        Usage: @cuda.jit(link=shim_writer.links())
+        Usage: declare_device(..., link=[*shim_writer.links()])
         """
 
         def iter_shim_files() -> Iterator[str]:
@@ -137,7 +137,7 @@ class MemoryShimWriter(ShimWriterBase):
     ) -> Callable[[], Iterator[Union[cuda.CUSource, cuda.PTXSource]]]:
         """Return an iterator to the memory reference containing shim functions and PTXes.
 
-        Usage: @cuda.jit(link=shim_writer.links())
+        Usage: declare_device(..., link=[*shim_writer.links()])
         """
 
         def iter_shim_files() -> Iterator[Union[cuda.CUSource, cuda.PTXSource]]:
