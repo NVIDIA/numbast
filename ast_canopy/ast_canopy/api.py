@@ -50,6 +50,8 @@ def get_default_cuda_path() -> Optional[str]:
             logger.info(f"Found CUDA home: {cuda_home}")
             return cuda_home
 
+    return None
+
 
 def get_default_nvcc_path() -> Optional[str]:
     """Return the path to the default NVCC compiler binary."""
@@ -64,6 +66,8 @@ def get_default_nvcc_path() -> Optional[str]:
     if os.path.exists(nvcc_path):
         logger.info(f"Found NVCC path: {nvcc_path}")
         return nvcc_path
+
+    return None
 
 
 def get_default_compiler_search_paths() -> list[str]:

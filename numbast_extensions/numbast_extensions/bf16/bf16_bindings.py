@@ -13,7 +13,8 @@ from numbast import (
     bind_cxx_functions,
 )
 
-from numba import types, config, cuda
+from numba import types, cuda
+from numba.cuda import cuda_paths
 from numba.core.datamodel.models import PrimitiveModel, StructModel
 
 if cuda.get_current_device().compute_capability < (8, 0):
@@ -24,18 +25,21 @@ if cuda.get_current_device().compute_capability < (8, 0):
         "most bf16 features may not be available.",
     )
 
-CUDA_INCLUDE_PATH = config.CUDA_INCLUDE_PATH
 COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
+include_path_tuple = cuda_paths.get_cuda_paths()["include_dir"]
+if include_path_tuple is None:
+    raise RuntimeError("No CUDA installation found!")
+include_path = include_path_tuple.info
 
-cuda_bf16 = os.path.join(CUDA_INCLUDE_PATH, "cuda_bf16.h")
-cuda_bf16_hpp = os.path.join(CUDA_INCLUDE_PATH, "cuda_bf16.hpp")
+cuda_bf16 = os.path.join(include_path, "cuda_bf16.h")
+cuda_bf16_hpp = os.path.join(include_path, "cuda_bf16.hpp")
 
 
 decls = parse_declarations_from_source(
     cuda_bf16,
     [cuda_bf16, cuda_bf16_hpp],
     f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",
-    cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
+    cudatoolkit_include_dir=include_path,
 )
 structs, functions, typedefs, enums = (
     decls.structs,

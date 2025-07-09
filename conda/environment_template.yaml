@@ -10,8 +10,8 @@ channels:
 dependencies:
   - python={{ python_version }}
   - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
-  - clangdev>=18 # >=18 supports CTK 12.3
-  - numba-cuda >=0.10
+  - clangdev>=19
+  - numba-cuda >=0.16
   - pybind11
   - pytest
   - pytest-benchmark
@@ -22,7 +22,6 @@ dependencies:
   - cuda-version={{ cuda_version }}
   - cuda-toolkit={{ cuda_version }}
   - cuda-python={{ cuda_version }}
-  - pynvjitlink>=0.2.0
   - scikit-build-core
   - pip
   - ninja

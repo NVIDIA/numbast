@@ -5,8 +5,6 @@ import numba
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = True
 
-from numbast import numba_patch
-
 from numbast.struct import bind_cxx_struct, bind_cxx_structs
 from numbast.function import bind_cxx_function, bind_cxx_functions
 from numbast.enum import bind_cxx_enum
@@ -29,5 +27,4 @@ __all__ = [
     "bind_cxx_structs",
     "MemoryShimWriter",
     "FileShimWriter",
-    "numba_patch",
 ]

@@ -52,8 +52,7 @@ requirements:
     - cuda-version >=12.5
     - numba >=0.59
     - python
-    - numba-cuda >=0.10
-    - pynvjitlink >=0.2
+    - numba-cuda >=0.16
     - pyyaml
     - click
     - jinja2

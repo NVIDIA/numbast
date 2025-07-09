@@ -56,9 +56,13 @@ def cc():
 
 
 def link_to_add_kernel(shim_writer):
-    add = cuda.declare_device("add", types.int32(types.int32, types.int32))
+    add = cuda.declare_device(
+        "add",
+        types.int32(types.int32, types.int32),
+        link=[*shim_writer.links()],
+    )
 
-    @cuda.jit(link=shim_writer.links())
+    @cuda.jit
     def k(arr):
         arr[0] = add(1, 2)
 
@@ -68,9 +72,13 @@ def link_to_add_kernel(shim_writer):
 
 
 def link_to_mul_kernel(shim_writer):
-    mul = cuda.declare_device("mul", types.int32(types.int32, types.int32))
+    mul = cuda.declare_device(
+        "mul",
+        types.int32(types.int32, types.int32),
+        link=[*shim_writer.links()],
+    )
 
-    @cuda.jit(link=shim_writer.links())
+    @cuda.jit
     def k(arr):
         arr[0] = mul(1, 2)
 
