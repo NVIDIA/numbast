@@ -88,6 +88,9 @@ class Config:
         The list of regular expressions. When any function name matches any of these
         regex patterns, the function should cause the kernel to be launched with
         cooperative launch.
+    api_prefix_removal : dict[str, list[str]]
+        Dictionary mapping declaration types to lists of prefixes to remove from names.
+        For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
     """
 
     entry_point: str
@@ -104,6 +107,7 @@ class Config:
     predefined_macros: list[str]
     output_name: str | None
     cooperative_launch_required_functions_regex: list[str]
+    api_prefix_removal: dict[str, list[str]]
 
     def __init__(self, config_dict: dict):
         """Initialize Config from a dictionary.
@@ -155,6 +159,14 @@ class Config:
             "Cooperative Launch Required Functions Regex", []
         )
 
+        self.api_prefix_removal = config_dict.get("API Prefix Removal", {})
+
+        # Ensure prefix removal values are lists
+        if self.api_prefix_removal:
+            for key, value in self.api_prefix_removal.items():
+                if not isinstance(value, list):
+                    self.api_prefix_removal[key] = [value]
+
         self._verify_exists()
         self._verify_regex_patterns()
 
@@ -193,6 +205,7 @@ class Config:
         predefined_macros: list[str] | None = None,
         output_name: str | None = None,
         cooperative_launch_required_functions_regex: list[str] | None = None,
+        api_prefix_removal: dict[str, list[str]] | None = None,
     ) -> "Config":
         """Create a Config instance from individual parameters instead of a config file."""
         if types is None:
@@ -219,6 +232,7 @@ class Config:
             "Output Name": output_name,
             "Cooperative Launch Required Functions Regex": cooperative_launch_required_functions_regex
             or [],
+            "API Prefix Removal": api_prefix_removal or {},
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -363,6 +377,7 @@ def _generate_functions(
     header_path: str,
     excludes: list[str],
     cooperative_launch_functions: list[str],
+    function_prefix_removal: list[str],
 ) -> str:
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
 
@@ -371,6 +386,7 @@ def _generate_functions(
         header_path,
         excludes=excludes,
         cooperative_launch_required=cooperative_launch_functions,
+        function_prefix_removal=function_prefix_removal,
     )
 
     return SFR.render_as_str(
@@ -484,6 +500,7 @@ def _static_binding_generator(
         entry_point,
         config.exclude_functions,
         config.cooperative_launch_required_functions_regex,
+        config.api_prefix_removal.get("Function", []),
     )
 
     if config.require_pynvjitlink:

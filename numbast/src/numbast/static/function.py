@@ -406,16 +406,55 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
     _py_op_name: str
     """Name of the corresponding python operator converted from C++."""
 
-    def __init__(self, decl: Function, header_path: str, use_cooperative: bool):
+    def __init__(
+        self,
+        decl: Function,
+        header_path: str,
+        use_cooperative: bool,
+        function_prefix_removal: list[str] = [],
+    ):
         super().__init__(decl, header_path, use_cooperative)
+        self._function_prefix_removal = function_prefix_removal
+        self._python_func_name = self._apply_prefix_removal(self._decl.name)
+
+        # Override the base class symbol tracking to use the Python function name
+        # Remove the original name that was added by the base class
+        if self._decl.name in self._function_symbols:
+            self._function_symbols.remove(self._decl.name)
+        # Add the Python function name (with prefix removal applied)
+        self._function_symbols.append(self._python_func_name)
+
+    def _apply_prefix_removal(self, name: str) -> str:
+        """Apply prefix removal to a function name based on the configuration.
+
+        Parameters
+        ----------
+        name : str
+            The original function name
+
+        Returns
+        -------
+        str
+            The function name with prefixes removed
+        """
+        for prefix in self._function_prefix_removal:
+            if name.startswith(prefix):
+                return name[len(prefix) :]
+
+        return name
+
+    @property
+    def func_name_python(self):
+        """The name of the function in python with prefix removal applied."""
+        return self._python_func_name
 
     def _render_python_api(self):
-        if self._decl.name in function_apis_registry:
+        if self._python_func_name in function_apis_registry:
             self._python_api_rendered = ""
             return
-        function_apis_registry.add(self._decl.name)
+        function_apis_registry.add(self._python_func_name)
         self._python_api_rendered = self.function_python_api_template.format(
-            func_name=self._decl.name
+            func_name=self._python_func_name
         )
 
     def get_signature(self):
@@ -440,6 +479,9 @@ class StaticFunctionsRenderer(BaseRenderer):
         If function name is prefixed with `skip_prefix`, they are skipped. Defaults to double underscore.
     cooperative_launch_required: list[str], default []
         A list of regular expressions. Functions whose names match any of these patterns will require cooperative launch.
+    function_prefix_removal: list[str], default []
+        List of prefixes to remove from function names.
+        For example, ["prefix_"] would remove "prefix_" from function names.
     """
 
     func_typing_template = """
@@ -465,6 +507,7 @@ class {op_typing_name}(ConcreteTemplate):
         skip_non_device: bool = True,
         skip_prefix: str = "__",
         cooperative_launch_required: list[str] = [],
+        function_prefix_removal: list[str] = [],
     ):
         self._decls = decls
         self._header_path = header_path
@@ -472,6 +515,7 @@ class {op_typing_name}(ConcreteTemplate):
         self._skip_non_device = skip_non_device
         self._skip_prefix = skip_prefix
         self._cooperative_launch_required = cooperative_launch_required
+        self._function_prefix_removal = function_prefix_removal
 
         self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(
             list
@@ -533,7 +577,10 @@ class {op_typing_name}(ConcreteTemplate):
                 name, self._cooperative_launch_required
             )
             return StaticNonOperatorFunctionRenderer(
-                decl, self._header_path, use_cooperative
+                decl,
+                self._header_path,
+                use_cooperative,
+                self._function_prefix_removal,
             )
         except TypeNotFoundError as e:
             warn(
@@ -558,7 +605,7 @@ class {op_typing_name}(ConcreteTemplate):
                 renderer.get_signature()
             )
         else:
-            self._func_typing_signature_cache[renderer._decl.name].append(
+            self._func_typing_signature_cache[renderer.func_name_python].append(
                 renderer.get_signature()
             )
 
