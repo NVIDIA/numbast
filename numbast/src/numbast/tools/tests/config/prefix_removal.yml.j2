@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Name: Test Data
+Version: 0.0.1
+Entry Point: {{ data }}
+File List:
+    - {{ data }}
+Exclude: {}
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+API Prefix Removal:
+    Function:
+        - prefix_
