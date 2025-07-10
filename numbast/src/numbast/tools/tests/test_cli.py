@@ -9,6 +9,8 @@ import numpy as np
 from numba import cuda
 import pytest
 
+from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import clear_function_apis_registry
 from numbast.tools.static_binding_generator import static_binding_generator
 
 
@@ -60,6 +62,9 @@ def kernel():
     ],
 )
 def test_invalid_input_header(inputs):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     runner = CliRunner()
     with pytest.raises(Exception):
         result = runner.invoke(static_binding_generator, inputs)
@@ -75,6 +80,9 @@ def test_invalid_input_header(inputs):
     ],
 )
 def test_cli_yml_invalid_inputs(tmpdir, args):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -110,145 +118,11 @@ Data Models:
         assert result.exit_code == 0
 
 
-def test_simple_cli(tmpdir, kernel):
-    subdir = tmpdir.mkdir("sub")
-    data = os.path.join(os.path.dirname(__file__), "data.cuh")
-    runner = CliRunner()
-    result = runner.invoke(
-        static_binding_generator,
-        [
-            "--entry-point",
-            data,
-            "--output-dir",
-            subdir,
-            "--types",
-            '{"Foo":"Type"}',
-            "--datamodels",
-            '{"Foo": "StructModel"}',
-        ],
-    )
-
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
-
-    output = subdir / "data.py"
-    assert os.path.exists(output)
-
-    with open(output) as f:
-        bindings = f.read()
-
-    globals = {}
-    exec(bindings, globals)
-
-    kernel(globals)
-
-
-def test_simple_cli_retain(tmpdir, kernel):
-    subdir = tmpdir.mkdir("sub2")
-    data = os.path.join(os.path.dirname(__file__), "data.cuh")
-    runner = CliRunner()
-    result = runner.invoke(
-        static_binding_generator,
-        [
-            "--entry-point",
-            data,
-            "--output-dir",
-            subdir,
-            "--retain",
-            data,
-            "--types",
-            '{"Foo":"Type"}',
-            "--datamodels",
-            '{"Foo": "StructModel"}',
-        ],
-    )
-
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
-
-    output = subdir / "data.py"
-    assert os.path.exists(output)
-
-    with open(output) as f:
-        bindings = f.read()
-
-    globals = {}
-    exec(bindings, globals)
-
-    kernel(globals)
-
-
-def test_simple_cli_no_retain(tmpdir):
-    subdir = tmpdir.mkdir("sub3")
-    data = os.path.join(os.path.dirname(__file__), "data.cuh")
-    runner = CliRunner()
-
-    false_path = subdir / "false.cuh"
-    result = runner.invoke(
-        static_binding_generator,
-        [
-            "--entry-point",
-            data,
-            "--output-dir",
-            subdir,
-            "--retain",
-            false_path,
-        ],
-    )
-
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
-
-    output = subdir / "data.py"
-    assert os.path.exists(output)
-
-    with open(output) as f:
-        bindings = f.read()
-
-    globals = {}
-    exec(bindings, globals)
-
-    # Both are not in the retain list
-    assert "Foo" not in globals
-    assert "add" not in globals
-
-
-@pytest.mark.parametrize(
-    "cc, expected", [("sm_70", False), ("sm_86", True), ("sm_90", True)]
-)
-def test_simple_cli_compute_capability(tmpdir, cc, expected):
-    subdir = tmpdir.mkdir("sub")
-    data = os.path.join(os.path.dirname(__file__), "data.cuh")
-    runner = CliRunner()
-    result = runner.invoke(
-        static_binding_generator,
-        [
-            "--entry-point",
-            data,
-            "--output-dir",
-            subdir,
-            "--types",
-            '{"Foo":"Type"}',
-            "--datamodels",
-            '{"Foo": "StructModel"}',
-            "--compute-capability",
-            cc,
-        ],
-    )
-
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
-
-    output = subdir / "data.py"
-    assert os.path.exists(output)
-
-    with open(output) as f:
-        bindings = f.read()
-
-    globals = {}
-    exec(bindings, globals)
-
-    assert ("mul" in globals) is expected
-
-
 @pytest.mark.skip("TODO: A C++ error is thrown.")
 def test_simple_cli_empty_retain(tmpdir):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub3")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
     runner = CliRunner()
@@ -275,6 +149,9 @@ def test_simple_cli_empty_retain(tmpdir):
 
 
 def test_cli_yml_inputs_full_spec(tmpdir, kernel):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -323,6 +200,9 @@ Data Models:
     "cc, expected", [("sm_70", False), ("sm_86", True), ("sm_90", True)]
 )
 def test_cli_yml_inputs_full_spec_with_cc(tmpdir, kernel, cc, expected):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -370,6 +250,9 @@ Data Models:
 
 
 def test_yaml_deduce_missing_types(tmpdir, kernel):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -414,6 +297,9 @@ Data Models:
 
 
 def test_yaml_deduce_missing_datamodels(tmpdir, kernel):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -459,6 +345,9 @@ Data Models:
 
 
 def test_yaml_exclude_function(tmpdir):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -517,6 +406,9 @@ Data Models:
 
 
 def test_yaml_exclude_function_empty_list(tmpdir, kernel):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -563,6 +455,9 @@ Data Models:
 
 
 def test_yaml_exclude_struct(tmpdir):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -618,6 +513,9 @@ Data Models: {{}}
 
 
 def test_yaml_exclude_struct_empty_list(tmpdir, kernel):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 

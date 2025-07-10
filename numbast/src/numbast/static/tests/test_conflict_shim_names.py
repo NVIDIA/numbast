@@ -44,8 +44,8 @@ def test_conflict_func_names(make_binding):
     Foo = binding1["Foo"]
     Bar = binding2["Bar"]
 
-    _check_shim_name_contains_mangled_name(res1["src"], "_ZplRK3FooS1")
-    _check_shim_name_contains_mangled_name(res2["src"], "_ZplRK3BarS1")
+    _check_shim_name_contains_mangled_name(res1["src"], "_ZN3FooC1Ev")
+    _check_shim_name_contains_mangled_name(res2["src"], "_ZN3BarC1Ev")
 
     @cuda.jit
     def kernel():

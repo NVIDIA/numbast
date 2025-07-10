@@ -6,12 +6,11 @@ import os
 import cffi
 
 import numpy as np
-from numba import cuda
+from numba import cuda, config
 import pytest
 
 from click.testing import CliRunner
 
-from numbast import numba_patch
 from numbast.tools.static_binding_generator import static_binding_generator
 
 
@@ -35,12 +34,13 @@ def kernel():
 
 @pytest.fixture
 def patch_extra_include_paths():
-    old_extra_include_paths = numba_patch.extra_include_paths
-    numba_patch.extra_include_paths = numba_patch.extra_include_paths + [
-        f"-I{os.path.join(os.path.dirname(__file__), 'include')}"
-    ]
+    old_extra_include_paths = config.CUDA_NVRTC_EXTRA_SEARCH_PATHS
+
+    config.CUDA_NVRTC_EXTRA_SEARCH_PATHS = (
+        f"{os.path.join(os.path.dirname(__file__), 'include')}"
+    )
     yield
-    numba_patch.extra_include_paths = old_extra_include_paths
+    config.CUDA_NVRTC_EXTRA_SEARCH_PATHS = old_extra_include_paths
 
 
 def test_cli_yml_inputs_additional_includes(
@@ -56,10 +56,8 @@ Entry Point: {data}
 File List:
     - {data}
 Exclude: {{}}
-Types:
-    Foo: Type
-Data Models:
-    Foo: StructModel
+Types: {{}}
+Data Models: {{}}
 Clang Include Paths:
     - {os.path.join(os.path.dirname(__file__), "include")}
 """
