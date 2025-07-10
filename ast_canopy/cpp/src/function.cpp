@@ -10,6 +10,7 @@
 #include <ast_canopy/ast_canopy.hpp>
 
 #include <algorithm>
+#include <iostream>
 
 namespace ast_canopy {
 
@@ -43,7 +44,19 @@ Function::Function(const clang::FunctionDecl *FD)
   clang::ItaniumMangleContext *MC =
       clang::ItaniumMangleContext::create(context, diag);
   llvm::raw_string_ostream OS(mangled_name);
-  MC->mangleName(FD, OS);
+
+  clang::GlobalDecl GD;
+  if (const clang::CXXConstructorDecl *CCD =
+          clang::dyn_cast<clang::CXXConstructorDecl>(FD)) {
+    GD = clang::GlobalDecl(CCD, clang::Ctor_Complete);
+  } else if (const clang::CXXDestructorDecl *CDD =
+                 clang::dyn_cast<clang::CXXDestructorDecl>(FD)) {
+    GD = clang::GlobalDecl(CDD, clang::Dtor_Complete);
+  } else {
+    GD = clang::GlobalDecl(FD);
+  }
+
+  MC->mangleName(GD, OS);
   OS.flush();
 }
 } // namespace ast_canopy
