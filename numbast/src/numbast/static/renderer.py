@@ -146,7 +146,11 @@ def get_pynvjitlink_guard() -> str:
     return BaseRenderer.Pynvjitlink_guard
 
 
-def get_shim(shim_include: str, predefined_macros: list[str] = []) -> str:
+def get_shim(
+    shim_include: str,
+    predefined_macros: list[str] = [],
+    module_callbacks: dict[str, str] = {},
+) -> str:
     """Render the code block for shim functions.
 
     This includes:
@@ -158,6 +162,7 @@ def get_shim(shim_include: str, predefined_macros: list[str] = []) -> str:
        per key
     4. An instance of `KeyedStringIO`, a module-level object that allows lower
        function writes shim functions to.
+    5. Module callbacks setup and teardown if provided
     """
     defines_expanded = [f"#define {define}" for define in predefined_macros]
     defines = "\\n".join(defines_expanded)
@@ -165,12 +170,29 @@ def get_shim(shim_include: str, predefined_macros: list[str] = []) -> str:
 
     shim_include = f"shim_include = {shim_include}"
 
+    shim_template = BaseRenderer.Shim
+
+    # Add callback setting if provided
+    callbacks_setup = ""
+    if module_callbacks:
+        setup_callback = module_callbacks.get("setup", "")
+        teardown_callback = module_callbacks.get("teardown", "")
+
+        if setup_callback:
+            callbacks_setup += f"shim_obj.setup_callback = {setup_callback}\n"
+        if teardown_callback:
+            callbacks_setup += (
+                f"shim_obj.teardown_callback = {teardown_callback}\n"
+            )
+
     return (
         BaseRenderer.KeyedStringIO
         + "\n"
-        + BaseRenderer.Shim.format(
+        + shim_template.format(
             shim_include=shim_include, shim_defines=defines_py
         )
+        + "\n"
+        + callbacks_setup
     )
 
 
