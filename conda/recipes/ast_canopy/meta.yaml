@@ -45,7 +45,7 @@ requirements:
     - pybind11
     - pip
     - scikit-build-core
-    - clangdev >=19
+    - clangdev >=18
     - llvmdev >=14
     - llvm >=14
   run:
