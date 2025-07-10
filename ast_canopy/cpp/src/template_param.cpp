@@ -14,12 +14,14 @@ TemplateParam::TemplateParam(const clang::TemplateTypeParmDecl *TPD) {
   name = TPD->getNameAsString();
   type = Type(TPD->getASTContext().getTypeDeclType(TPD), TPD->getASTContext());
   kind = template_param_kind::type;
+  is_parameter_pack = TPD->isParameterPack();
 }
 
 TemplateParam::TemplateParam(const clang::NonTypeTemplateParmDecl *TPD) {
   name = TPD->getNameAsString();
   type = Type(TPD->getType(), TPD->getASTContext());
   kind = template_param_kind::non_type;
+  is_parameter_pack = TPD->isParameterPack();
 }
 
 TemplateParam::TemplateParam(const clang::TemplateTemplateParmDecl *TPD) {
