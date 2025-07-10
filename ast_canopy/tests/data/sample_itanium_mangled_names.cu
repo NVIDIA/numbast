@@ -4,20 +4,24 @@
 // clang-format on
 
 struct Foo {
-  Foo() = default;
+  __device__ Foo() = default;
+  __device__ Foo(int a) : a(a) {}
+  int a;
 };
 
 struct Bar {
-  Bar() = default;
+  __device__ Bar() = default;
+  __device__ Bar(int a) : a(a) {}
+  int a;
 };
 
-Foo operator+(const Foo &a, const Foo &b) { return Foo(); }
-Bar operator+(const Bar &a, const Bar &b) { return Bar(); }
+__device__ Foo operator+(const Foo &a, const Foo &b) { return Foo(); }
+__device__ Bar operator+(const Bar &a, const Bar &b) { return Bar(); }
 
 namespace ns1 {
-int inner_func(Foo a, Bar b) { return 0; }
+__device__ int inner_func(Foo a, Bar b) { return 0; }
 } // namespace ns1
 
 namespace ns2 {
-int inner_func(Foo a, Bar b) { return 0; }
+__device__ int inner_func(Foo a, Bar b) { return 0; }
 } // namespace ns2

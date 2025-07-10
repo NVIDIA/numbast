@@ -29,10 +29,14 @@ def test_itanium_mangled_name(decls):
     assert structs[1].name == "Bar"
 
     assert structs[0].methods[0].name == "Foo"
+    assert structs[0].methods[1].name == "Foo"
     assert structs[1].methods[0].name == "Bar"
+    assert structs[1].methods[1].name == "Bar"
 
     assert structs[0].methods[0].mangled_name == "_ZN3FooC1Ev"
+    assert structs[0].methods[1].mangled_name == "_ZN3FooC1Ei"
     assert structs[1].methods[0].mangled_name == "_ZN3BarC1Ev"
+    assert structs[1].methods[1].mangled_name == "_ZN3BarC1Ei"
 
     assert functions[0].name == "operator+"
     assert functions[1].name == "operator+"
