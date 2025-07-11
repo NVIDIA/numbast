@@ -23,6 +23,7 @@ rapids-mamba-retry create -n test \
   pynvjitlink >=0.2 \
   cuda-cudart-dev \
   python=${RAPIDS_PY_VERSION} \
+  cffi \
   ast_canopy \
   numbast \
   numbast-extensions
