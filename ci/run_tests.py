@@ -59,9 +59,9 @@ def run(
             )
 
     if all_tests or ast_canopy:
-        run_pytest("ast_canopy", ["ast_canopy/tests"])
+        run_pytest("ast_canopy", ["ast_canopy/"])
     if all_tests or numbast:
-        run_pytest("numbast", ["numbast/tests"])
+        run_pytest("numbast", ["numbast/"])
     if all_tests or bf16:
         run_pytest(
             "bf16",

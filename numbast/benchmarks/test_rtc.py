@@ -39,6 +39,7 @@ def simulate_header(request):
     yield adds, shim_writer
 
 
+@pytest.mark.skip(reason="benchmark is not run by default")
 def test_rtc(benchmark, simulate_header):
     def bench():
         adds, shim_writer = simulate_header

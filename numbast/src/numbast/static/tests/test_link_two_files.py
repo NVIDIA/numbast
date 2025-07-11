@@ -27,6 +27,7 @@ def header(data_folder):
 @pytest.fixture(scope="module")
 def foo_decl(header):
     clear_base_renderer_cache()
+    clear_function_apis_registry()
 
     header = header["struct"]
 

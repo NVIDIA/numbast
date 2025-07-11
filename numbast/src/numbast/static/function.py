@@ -562,7 +562,7 @@ class {op_typing_name}(ConcreteTemplate):
             )
             return None
         except MangledFunctionNameConflictError as e:
-            file_logger.debug(
+            warn(
                 f"Duplicate operator declaration of mangled name {e.mangled_name} in {self._header_path}"
             )
             return None
@@ -588,7 +588,7 @@ class {op_typing_name}(ConcreteTemplate):
             )
             return None
         except MangledFunctionNameConflictError as e:
-            file_logger.debug(
+            warn(
                 f"Duplicate function declaration of mangled name {e.mangled_name} in {self._header_path}"
             )
             return None
@@ -741,3 +741,4 @@ def clear_function_apis_registry():
     the same python session. Such as pytest.
     """
     function_apis_registry.clear()
+    function_mangled_name_registry.clear()
