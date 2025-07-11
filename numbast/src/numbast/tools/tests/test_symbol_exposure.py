@@ -5,6 +5,11 @@ import os
 import subprocess
 import sys
 
+from cuda.core.experimental import Device
+
+dev = Device(0)
+cc = dev.compute_capability
+
 
 def test_symbol_exposure(run_in_isolated_folder):
     """Test that only a limited set of symbols are exposed via __all__ imports."""
@@ -19,16 +24,23 @@ def test_symbol_exposure(run_in_isolated_folder):
 
     assert run_result.exit_code == 0
 
-    assert len(alls) == 4, (len(alls) != 4, alls)  # Foo, add, mul, _type_Foo
+    if cc >= (8, 6):
+        assert len(alls) == 4, (
+            len(alls) != 4,
+            alls,
+        )  # Foo, add, mul, _type_Foo
+    else:
+        assert len(alls) == 3, (len(alls) != 3, alls)  # Foo, add, _type_Foo
 
-    test_kernel_src = """
+    test_kernel_src = f"""
 from numba import cuda
 from data import *
+
 @cuda.jit
 def kernel():
     foo = Foo()         # Verify record symbol
     one = add(foo.x, 1) # Verify function symbol
-    two = mul(one, 2)
+    {"two = mul(one, 2)" if cc >= (8, 6) else ""}
 
 kernel[1, 1]()
 
