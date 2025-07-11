@@ -9,6 +9,6 @@ File List:
 Exclude: {}
 Types: {}
 Data Models: {}
-API Prefix Removal:
-    Function:
-        - prefix_
+Module Callbacks:
+    setup: "{{ setup_callback }}"
+    teardown: "{{ teardown_callback }}"

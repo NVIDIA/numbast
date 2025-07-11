@@ -96,6 +96,9 @@ class Config:
     api_prefix_removal : dict[str, list[str]]
         Dictionary mapping declaration types to lists of prefixes to remove from names.
         For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+    module_callbacks : dict[str, str]
+        Dictionary containing setup and teardown callbacks for the module.
+        Expected keys: "setup", "teardown". Each value is a string callback function.
     """
 
     entry_point: str
@@ -113,6 +116,7 @@ class Config:
     output_name: str | None
     cooperative_launch_required_functions_regex: list[str]
     api_prefix_removal: dict[str, list[str]]
+    module_callbacks: dict[str, str]
 
     def __init__(self, config_dict: dict):
         """Initialize Config from a dictionary.
@@ -172,6 +176,8 @@ class Config:
                 if not isinstance(value, list):
                     self.api_prefix_removal[key] = [value]
 
+        self.module_callbacks = config_dict.get("Module Callbacks", {})
+
         self._verify_exists()
         self._verify_regex_patterns()
 
@@ -211,6 +217,7 @@ class Config:
         output_name: str | None = None,
         cooperative_launch_required_functions_regex: list[str] | None = None,
         api_prefix_removal: dict[str, list[str]] | None = None,
+        module_callbacks: dict[str, str] | None = None,
     ) -> "Config":
         """Create a Config instance from individual parameters instead of a config file."""
         if types is None:
@@ -238,6 +245,7 @@ class Config:
             "Cooperative Launch Required Functions Regex": cooperative_launch_required_functions_regex
             or [],
             "API Prefix Removal": api_prefix_removal or {},
+            "Module Callbacks": module_callbacks or {},
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -518,7 +526,9 @@ def _static_binding_generator(
     else:
         shim_include = f'"#include <{entry_point}>"'
     shim_stream_str = get_shim(
-        shim_include=shim_include, predefined_macros=config.predefined_macros
+        shim_include=shim_include,
+        predefined_macros=config.predefined_macros,
+        module_callbacks=config.module_callbacks,
     )
     imports_str = get_rendered_imports(
         additional_imports=config.additional_imports
