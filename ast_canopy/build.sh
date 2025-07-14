@@ -5,6 +5,9 @@
 set -x -e
 set -o pipefail
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
 BUILD_TYPE="Release"
 Editable_Mode="false"
 
@@ -49,8 +52,8 @@ echo "Beginning astcanopy Build"
 
 # Clean the build cache
 echo "Cleaning ast_canopy/cpp/build cache..."
-rm -rf ast_canopy/cpp/build
-mkdir -p ast_canopy/cpp/build
+rm -rf "${SCRIPT_DIR}/cpp/build"
+mkdir -p "${SCRIPT_DIR}/cpp/build"
 echo "Cache cleaned. Starting fresh build..."
 
 env
@@ -58,7 +61,7 @@ echo ""
 
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Entering cpp build..."
-pushd ast_canopy/cpp/build
+pushd "${SCRIPT_DIR}/cpp/build"
 echo "Starting cmake config..."
 cmake ${CMAKE_ARGS} \
     -GNinja \
@@ -79,9 +82,9 @@ popd
 if [ "$Editable_Mode" = "true" ]; then
     # If it's set, perform an editable install of ast_canopy
     echo "pip installing in editable mode..."
-    pip install -e ast_canopy/ -vv
+    pip install -e "${SCRIPT_DIR}/" -vv
 else
     # If not, perform a normal install
     echo "pip installing..."
-    python -m pip install ast_canopy/ -vv
+    python -m pip install "${SCRIPT_DIR}/" -vv
 fi
