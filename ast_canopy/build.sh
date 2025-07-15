@@ -5,6 +5,8 @@
 set -x -e
 set -o pipefail
 
+PYTHON_EXECUTABLE="${PYTHON_EXECUTABLE:-python}"
+
 # Get the directory where this script is located
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
@@ -82,9 +84,9 @@ popd
 if [ "$Editable_Mode" = "true" ]; then
     # If it's set, perform an editable install of ast_canopy
     echo "pip installing in editable mode..."
-    pip install -e "${SCRIPT_DIR}/" -vv
+    $PYTHON_EXECUTABLE -m pip install -e "${SCRIPT_DIR}/" -vv
 else
     # If not, perform a normal install
     echo "pip installing..."
-    python -m pip install "${SCRIPT_DIR}/" -vv
+    $PYTHON_EXECUTABLE -m pip install "${SCRIPT_DIR}/" -vv
 fi
