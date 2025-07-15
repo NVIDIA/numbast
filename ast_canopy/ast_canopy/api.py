@@ -283,6 +283,10 @@ def parse_declarations_from_source(
     if werr:
         liblogger = logging.getLogger("libastcanopy")
         liblogger.debug(werr)
+
+        if "error" in werr.lower():
+            raise RuntimeError(werr)
+
         if verbose:
             print(werr)
         if (
