@@ -45,30 +45,16 @@ target_sources(astcanopy
   BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
   FILES include/ast_canopy/ast_canopy.hpp)
 
-# astcanopy shared lib target
-find_package(Clang REQUIRED)
+# Include LLVM configuration module
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/llvm.cmake)
 
-# Add path to LLVM modules
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${LLVM_CMAKE_DIR}"
-)
-
-# import LLVM CMake functions
-include(AddLLVM)
-
-set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
-
-target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
-                                      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+# Configure target include directories
+target_include_directories(astcanopy PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                       PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/detail/>
                                       INTERFACE $<INSTALL_INTERFACE:include>)
 
-add_definitions(${CLANG_DEFINITIONS})
-
-target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
-
-target_link_libraries(astcanopy PRIVATE clangTooling)
+# Configure LLVM for astcanopy target
+configure_llvm_for_target(astcanopy)
 
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
