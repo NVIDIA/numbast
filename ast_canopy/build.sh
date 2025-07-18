@@ -52,6 +52,15 @@ done
 
 echo "Beginning astcanopy Build"
 
+# Detect build system generator
+if command -v ninja >/dev/null 2>&1; then
+    CMAKE_GENERATOR="Ninja"
+    echo "Ninja detected. Using Ninja build system."
+else
+    CMAKE_GENERATOR="Unix Makefiles"
+    echo "Ninja not found. Falling back to Unix Makefiles."
+fi
+
 # Clean the build cache
 echo "Cleaning ast_canopy/cpp/build cache..."
 rm -rf "${SCRIPT_DIR}/cpp/build"
@@ -66,7 +75,7 @@ echo "Entering cpp build..."
 pushd "${SCRIPT_DIR}/cpp/build"
 echo "Starting cmake config..."
 cmake ${CMAKE_ARGS} \
-    -GNinja \
+    -G"${CMAKE_GENERATOR}" \
     -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
     -DCMAKE_PREFIX_PATH:PATH="${CONDA_PREFIX}" \
     -DCMAKE_INSTALL_PREFIX:PATH="${CONDA_PREFIX}" \
