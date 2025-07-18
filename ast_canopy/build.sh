@@ -82,6 +82,8 @@ cmake ${CMAKE_ARGS} \
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DBUILD_STATIC_LIBS:BOOL=OFF \
     -DCMAKE_CXX_STANDARD:STRING=17 \
+    -DCMAKE_CXX_FLAGS:STRING="-frtti" \
+    -DLLVM_ENABLE_RTTI:BOOL=ON \
     ../
 echo "cmake build..."
 cmake --build . -j
