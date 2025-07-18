@@ -68,7 +68,26 @@ add_definitions(${CLANG_DEFINITIONS})
 
 target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
 
-target_link_libraries(astcanopy PRIVATE clangTooling)
+# Ensure RTTI is enabled for this target
+target_compile_options(astcanopy PRIVATE -frtti)
+
+# Link required clang libraries - clangTooling alone is not sufficient
+# We need additional libraries that contain AST matcher symbols with RTTI
+target_link_libraries(astcanopy PRIVATE
+    clangTooling
+    clangASTMatchers
+    clangAST
+    clangBasic
+    clangFrontend
+    clangSerialization
+    clangDriver
+    clangParse
+    clangSema
+    clangAnalysis
+    clangEdit
+    clangRewrite
+    clangLex
+)
 
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 

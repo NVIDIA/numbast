@@ -19,6 +19,9 @@ python_add_library(pylibastcanopy MODULE ast_canopy/pylibastcanopy.cpp WITH_SOAB
 
 set_property(TARGET pylibastcanopy PROPERTY CXX_STANDARD 17)
 
+# Ensure RTTI is enabled for the Python bindings as well
+target_compile_options(pylibastcanopy PRIVATE -frtti)
+
 target_link_libraries(pylibastcanopy PRIVATE pybind11::headers)
 target_link_libraries(pylibastcanopy PUBLIC astcanopy::astcanopy)
 
