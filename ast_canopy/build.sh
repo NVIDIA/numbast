@@ -7,20 +7,24 @@ set -o pipefail
 
 BUILD_TYPE="Release"
 Editable_Mode="false"
+LLVM_LINKAGE="SHARED"
 
 usage() {
     echo "Usage: ./build.sh [options]"
     echo ""
     echo "Options:"
-    echo "  --develop  Install ast_canopy in editable mode"
-    echo "  --debug    Build libastcanopy in debug mode"
-    echo "  --help     Show this help message"
+    echo "  --develop              Install ast_canopy in editable mode"
+    echo "  --debug                Build libastcanopy in debug mode"
+    echo "  --llvm-linkage=TYPE    Set LLVM linkage type (STATIC or SHARED, default: SHARED)"
+    echo "  --help                 Show this help message"
     echo ""
     echo "Example usage:"
-    echo "  ./build.sh                   # Build and install in release mode"
-    echo "  ./build.sh --develop         # Build and install in editable mode"
-    echo "  ./build.sh --debug           # Build and install in debug mode"
-    echo "  ./build.sh --develop --debug # Build and install in editable and debug mode"
+    echo "  ./build.sh                           # Build and install in release mode with shared LLVM"
+    echo "  ./build.sh --develop                 # Build and install in editable mode"
+    echo "  ./build.sh --debug                   # Build and install in debug mode"
+    echo "  ./build.sh --llvm-linkage=STATIC     # Build with static LLVM linking"
+    echo "  ./build.sh --develop --debug         # Build and install in editable and debug mode"
+    echo "  ./build.sh --llvm-linkage=STATIC --debug # Build with static LLVM and debug mode"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -31,6 +35,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         --debug)
             BUILD_TYPE="Debug"
+            shift
+            ;;
+        --llvm-linkage=*)
+            LLVM_LINKAGE="${1#*=}"
+            if [[ "$LLVM_LINKAGE" != "STATIC" && "$LLVM_LINKAGE" != "SHARED" ]]; then
+                echo "Error: --llvm-linkage must be either STATIC or SHARED, got: $LLVM_LINKAGE"
+                usage
+                exit 1
+            fi
             shift
             ;;
         --help)
@@ -60,6 +73,12 @@ echo ""
 echo "Entering cpp build..."
 pushd ast_canopy/cpp/build
 echo "Starting cmake config..."
+echo "Build configuration:"
+echo "  BUILD_TYPE: ${BUILD_TYPE}"
+echo "  LLVM_LINKAGE: ${LLVM_LINKAGE}"
+echo "  Editable_Mode: ${Editable_Mode}"
+echo ""
+
 cmake ${CMAKE_ARGS} \
     -GNinja \
     -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
@@ -68,6 +87,7 @@ cmake ${CMAKE_ARGS} \
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DBUILD_STATIC_LIBS:BOOL=OFF \
     -DCMAKE_CXX_STANDARD:STRING=17 \
+    -DLLVM_LINKAGE:STRING="${LLVM_LINKAGE}" \
     ../
 echo "cmake build..."
 cmake --build . -j
