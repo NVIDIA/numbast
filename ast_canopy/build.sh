@@ -60,11 +60,10 @@ echo ""
 echo "Entering cpp build..."
 pushd ast_canopy/cpp/build
 echo "Starting cmake config..."
+# CMake automatically reads CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX from environment variables
 cmake ${CMAKE_ARGS} \
     -GNinja \
     -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
-    -DCMAKE_PREFIX_PATH:PATH="${CONDA_PREFIX}" \
-    -DCMAKE_INSTALL_PREFIX:PATH="${CONDA_PREFIX}" \
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DBUILD_STATIC_LIBS:BOOL=OFF \
     -DCMAKE_CXX_STANDARD:STRING=17 \
