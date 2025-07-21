@@ -5,6 +5,11 @@
 set -x -e
 set -o pipefail
 
+PYTHON_EXECUTABLE="${PYTHON_EXECUTABLE:-python}"
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
 BUILD_TYPE="Release"
 Editable_Mode="false"
 
@@ -47,10 +52,19 @@ done
 
 echo "Beginning astcanopy Build"
 
+# Detect build system generator
+if command -v ninja >/dev/null 2>&1; then
+    CMAKE_GENERATOR="Ninja"
+    echo "Ninja detected. Using Ninja build system."
+else
+    CMAKE_GENERATOR="Unix Makefiles"
+    echo "Ninja not found. Falling back to Unix Makefiles."
+fi
+
 # Clean the build cache
 echo "Cleaning ast_canopy/cpp/build cache..."
-rm -rf ast_canopy/cpp/build
-mkdir -p ast_canopy/cpp/build
+rm -rf "${SCRIPT_DIR}/cpp/build"
+mkdir -p "${SCRIPT_DIR}/cpp/build"
 echo "Cache cleaned. Starting fresh build..."
 
 env
@@ -58,15 +72,17 @@ echo ""
 
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Entering cpp build..."
-pushd ast_canopy/cpp/build
+pushd "${SCRIPT_DIR}/cpp/build"
 echo "Starting cmake config..."
 # CMake automatically reads CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX from environment variables
 cmake ${CMAKE_ARGS} \
-    -GNinja \
+    -G"${CMAKE_GENERATOR}" \
     -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DBUILD_STATIC_LIBS:BOOL=OFF \
     -DCMAKE_CXX_STANDARD:STRING=17 \
+    -DCMAKE_CXX_FLAGS:STRING="-frtti" \
+    -DLLVM_ENABLE_RTTI:BOOL=ON \
     ../
 echo "cmake build..."
 cmake --build . -j
@@ -78,9 +94,9 @@ popd
 if [ "$Editable_Mode" = "true" ]; then
     # If it's set, perform an editable install of ast_canopy
     echo "pip installing in editable mode..."
-    pip install -e ast_canopy/ -vv
+    $PYTHON_EXECUTABLE -m pip install -e "${SCRIPT_DIR}/" -vv
 else
     # If not, perform a normal install
     echo "pip installing..."
-    python -m pip install ast_canopy/ -vv
+    $PYTHON_EXECUTABLE -m pip install "${SCRIPT_DIR}/" -vv
 fi

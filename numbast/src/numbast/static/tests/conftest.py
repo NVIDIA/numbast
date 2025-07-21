@@ -33,10 +33,11 @@ def make_binding(tmpdir, data_folder):
         cfg = Config.from_params(
             entry_point=header_path,
             retain_list=[header_path],
+            gpu_arch=[cc],
             types=types,
             datamodels=datamodels,
         )
-        _static_binding_generator(cfg, tmpdir, cc)
+        _static_binding_generator(cfg, tmpdir)
 
         basename = header_name.split(".")[0]
         with open(tmpdir / f"{basename}.py") as f:

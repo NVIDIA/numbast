@@ -6,12 +6,13 @@ import subprocess
 import sys
 
 
-def test_module_callbacks_empty(run_in_isolated_folder):
+def test_module_callbacks_empty(run_in_isolated_folder, arch_str):
     """Test that Module Callbacks work when not provided (empty case)."""
     res = run_in_isolated_folder(
         "module_callbacks.yml.j2",
         "module_callbacks.cuh",
         {
+            "arch_str": arch_str,
             "setup_callback": "",
             "teardown_callback": "",
         },
@@ -70,12 +71,13 @@ kernel[1, 1]()
     )
 
 
-def test_module_callbacks_partial(run_in_isolated_folder):
+def test_module_callbacks_partial(run_in_isolated_folder, arch_str):
     """Test that Module Callbacks work when only one callback is provided."""
     res = run_in_isolated_folder(
         "module_callbacks.yml.j2",
         "module_callbacks.cuh",
         {
+            "arch_str": arch_str,
             "setup_callback": "lambda x: print('Setup only')",
             "teardown_callback": "",
         },
@@ -132,12 +134,13 @@ kernel[1, 1]()
     )
 
 
-def test_module_callbacks_both(run_in_isolated_folder):
+def test_module_callbacks_both(run_in_isolated_folder, arch_str):
     """Test that Module Callbacks work when both setup and teardown are provided."""
     res = run_in_isolated_folder(
         "module_callbacks.yml.j2",
         "module_callbacks.cuh",
         {
+            "arch_str": arch_str,
             "setup_callback": "lambda x: print('Setup callback called')",
             "teardown_callback": "lambda x: print('Teardown callback called')",
         },

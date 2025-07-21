@@ -32,7 +32,7 @@ def kernel():
     return _lazy_kernel
 
 
-def test_cli_yml_inputs_macro_expansion(tmpdir, kernel):
+def test_cli_yml_inputs_macro_expansion(tmpdir, kernel, arch_str):
     name = "macros"
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), f"{name}.cuh")
@@ -40,6 +40,8 @@ def test_cli_yml_inputs_macro_expansion(tmpdir, kernel):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Macro-expanded Function Prefixes:
@@ -56,8 +58,6 @@ Macro-expanded Function Prefixes:
         [
             "--cfg-path",
             cfg_file,
-            "--compute-capability",
-            "sm_50",
             "--output-dir",
             subdir,
         ],

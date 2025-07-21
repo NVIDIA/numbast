@@ -81,6 +81,10 @@ Declarations parse_declarations_from_command_line(
 
   auto ast = detail::default_ast_unit_from_command_line(options);
 
+  if (!ast) {
+    throw std::runtime_error("Failed to create an ASTUnit pointer.");
+  }
+
   Declarations decls;
   std::unordered_map<int64_t, std::string> record_id_to_name;
   std::unordered_set<int64_t> record_id_with_ctpsd_ancestor;
