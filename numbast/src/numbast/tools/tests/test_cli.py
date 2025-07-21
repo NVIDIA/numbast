@@ -136,9 +136,7 @@ Data Models:
 @pytest.mark.parametrize(
     "cc, expected", [("sm_70", False), ("sm_86", True), ("sm_90", True)]
 )
-def test_cli_yml_inputs_full_spec_with_cc(
-    tmpdir, kernel, cc, expected, arch_str
-):
+def test_cli_yml_inputs_full_spec_with_cc(tmpdir, cc, expected):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
