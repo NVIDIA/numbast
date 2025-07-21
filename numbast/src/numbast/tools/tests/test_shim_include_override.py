@@ -6,13 +6,18 @@ import subprocess
 import sys
 
 
-def test_shim_include_override_additional_import(run_in_isolated_folder):
+def test_shim_include_override_additional_import(
+    run_in_isolated_folder, arch_str
+):
     """Tests:
     1. Additional Import field actually adds custom import libs in binding
     2. Shim Include Override overrides the shim include line
     """
     res = run_in_isolated_folder(
-        "shim_include_override.yml.j2", "data.cuh", {}, ruff_format=False
+        "shim_include_override.yml.j2",
+        "data.cuh",
+        {"arch_str": arch_str},
+        ruff_format=False,
     )
 
     run_result = res["result"]

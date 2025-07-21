@@ -11,10 +11,14 @@ dev = Device(0)
 cc = dev.compute_capability
 
 
-def test_symbol_exposure(run_in_isolated_folder):
+def test_symbol_exposure(run_in_isolated_folder, arch_str):
     """Test that only a limited set of symbols are exposed via __all__ imports."""
     res = run_in_isolated_folder(
-        "cfg.yml.j2", "data.cuh", {}, load_symbols=True, ruff_format=False
+        "cfg.yml.j2",
+        "data.cuh",
+        {"arch_str": arch_str},
+        load_symbols=True,
+        ruff_format=False,
     )
 
     run_result = res["result"]
