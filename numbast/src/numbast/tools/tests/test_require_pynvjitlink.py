@@ -9,14 +9,16 @@ import pytest
 
 
 @pytest.mark.parametrize("require_pynvjitlink", [True, False])
-def test_require_pynvjitlink(run_in_isolated_folder, require_pynvjitlink):
+def test_require_pynvjitlink(
+    run_in_isolated_folder, require_pynvjitlink, arch_str
+):
     """Tests if `require_pynvjitlink` field conditionally adds pynvjitlink
     guard.
     """
     res = run_in_isolated_folder(
         "require_pynvjitlink.yml.j2",
         "data.cuh",
-        {"require_pynvjitlink": require_pynvjitlink},
+        {"require_pynvjitlink": require_pynvjitlink, "arch_str": arch_str},
         ruff_format=False,
     )
 

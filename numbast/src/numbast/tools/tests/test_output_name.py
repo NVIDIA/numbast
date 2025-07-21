@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 
-def test_output_name_override(run_in_isolated_folder):
+def test_output_name_override(run_in_isolated_folder, arch_str):
     """Tests:
     1. Name of output binding can be overridden via `Output Name` entry.
     """
@@ -16,7 +16,7 @@ def test_output_name_override(run_in_isolated_folder):
     res = run_in_isolated_folder(
         "output_name.yml.j2",
         "data.cuh",
-        {},
+        {"arch_str": arch_str},
         output_name=output_name,
         ruff_format=False,
     )

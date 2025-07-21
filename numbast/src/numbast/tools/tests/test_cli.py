@@ -35,43 +35,6 @@ def kernel():
 
 
 @pytest.mark.parametrize(
-    "inputs",
-    [
-        ["/tmp/non_existing.cuh"],
-        [
-            os.path.join(os.path.dirname(__file__), "data.cuh"),
-            "--output-dir",
-            "/tmp/non_existing/",
-        ],
-        [
-            os.path.join(os.path.dirname(__file__), "data.cuh"),
-            "--output-dir",
-            "/tmp/",
-            "--types",
-            "invalid_type_string",
-        ],
-        [
-            os.path.join(os.path.dirname(__file__), "data.cuh"),
-            "--output-dir",
-            "/tmp/",
-            "--types",
-            '{"Foo":"Type"}',
-            "--datamodels",
-            "invalid_datamodel_string",
-        ],
-    ],
-)
-def test_invalid_input_header(inputs):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
-    runner = CliRunner()
-    with pytest.raises(Exception):
-        result = runner.invoke(static_binding_generator, inputs)
-        assert result.exit_code == 0
-
-
-@pytest.mark.parametrize(
     "args",
     [
         ["--entry-point", "data.cuh"],
@@ -79,7 +42,7 @@ def test_invalid_input_header(inputs):
         ["--datamodels", '{"Foo": "StructModel"}'],
     ],
 )
-def test_cli_yml_invalid_inputs(tmpdir, args):
+def test_cli_yml_invalid_inputs(tmpdir, args, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -91,6 +54,8 @@ Version: 0.0.1
 Entry Point: {data}
 File List:
     - {data}
+GPU Arch:
+    - {arch_str}
 Exclude: []
 Types:
     Foo: Type
@@ -118,37 +83,7 @@ Data Models:
         assert result.exit_code == 0
 
 
-@pytest.mark.skip("TODO: A C++ error is thrown.")
-def test_simple_cli_empty_retain(tmpdir):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
-    subdir = tmpdir.mkdir("sub3")
-    data = os.path.join(os.path.dirname(__file__), "data.cuh")
-    runner = CliRunner()
-
-    result = runner.invoke(
-        static_binding_generator,
-        [data, "--output-dir", subdir, "--retain", ""],
-    )
-
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
-
-    output = subdir / "data.py"
-    assert os.path.exists(output)
-
-    with open(output) as f:
-        bindings = f.read()
-
-    globals = {}
-    exec(bindings, globals)
-
-    # Both are not in the retain list
-    assert "Foo" not in globals
-    assert "add" not in globals
-
-
-def test_cli_yml_inputs_full_spec(tmpdir, kernel):
+def test_cli_yml_inputs_full_spec(tmpdir, kernel, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -158,6 +93,8 @@ def test_cli_yml_inputs_full_spec(tmpdir, kernel):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Exclude: {{}}
@@ -199,7 +136,7 @@ Data Models:
 @pytest.mark.parametrize(
     "cc, expected", [("sm_70", False), ("sm_86", True), ("sm_90", True)]
 )
-def test_cli_yml_inputs_full_spec_with_cc(tmpdir, kernel, cc, expected):
+def test_cli_yml_inputs_full_spec_with_cc(tmpdir, cc, expected):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -209,6 +146,8 @@ def test_cli_yml_inputs_full_spec_with_cc(tmpdir, kernel, cc, expected):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {cc}
 File List:
     - {data}
 Exclude: {{}}
@@ -228,14 +167,12 @@ Data Models:
         [
             "--cfg-path",
             cfg_file,
-            "--compute-capability",
-            cc,
             "--output-dir",
             subdir,
         ],
     )
 
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+    assert result.exit_code == 0, f"CMD ERROR: {result.stderr}"
 
     output = subdir / "data.py"
     assert os.path.exists(output)
@@ -249,7 +186,7 @@ Data Models:
     assert ("mul" in bindings) is expected
 
 
-def test_yaml_deduce_missing_types(tmpdir, kernel):
+def test_yaml_deduce_missing_types(tmpdir, kernel, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -259,6 +196,8 @@ def test_yaml_deduce_missing_types(tmpdir, kernel):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Exclude: {{}}
@@ -282,7 +221,7 @@ Data Models:
         ],
     )
 
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+    assert result.exit_code == 0, f"CMD ERROR: {result.stderr}"
 
     output = subdir / "data.py"
     assert os.path.exists(output)
@@ -296,7 +235,7 @@ Data Models:
     kernel(globals)
 
 
-def test_yaml_deduce_missing_datamodels(tmpdir, kernel):
+def test_yaml_deduce_missing_datamodels(tmpdir, kernel, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -306,6 +245,8 @@ def test_yaml_deduce_missing_datamodels(tmpdir, kernel):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Exclude: {{}}
@@ -330,7 +271,7 @@ Data Models:
         ],
     )
 
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+    assert result.exit_code == 0, f"CMD ERROR: {result.stderr}"
 
     output = subdir / "data.py"
     assert os.path.exists(output)
@@ -344,7 +285,7 @@ Data Models:
     kernel(globals)
 
 
-def test_yaml_exclude_function(tmpdir):
+def test_yaml_exclude_function(tmpdir, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -354,6 +295,8 @@ def test_yaml_exclude_function(tmpdir):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Exclude:
@@ -405,7 +348,7 @@ Data Models:
     assert arr[0] == 0
 
 
-def test_yaml_exclude_function_empty_list(tmpdir, kernel):
+def test_yaml_exclude_function_empty_list(tmpdir, kernel, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -415,6 +358,8 @@ def test_yaml_exclude_function_empty_list(tmpdir, kernel):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Exclude:
@@ -440,7 +385,7 @@ Data Models:
         ],
     )
 
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+    assert result.exit_code == 0, f"CMD ERROR: {result.stderr}"
 
     output = subdir / "data.py"
     assert os.path.exists(output)
@@ -454,7 +399,7 @@ Data Models:
     kernel(globals)
 
 
-def test_yaml_exclude_struct(tmpdir):
+def test_yaml_exclude_struct(tmpdir, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -464,6 +409,8 @@ def test_yaml_exclude_struct(tmpdir):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Exclude:
@@ -512,7 +459,7 @@ Data Models: {{}}
     assert arr[0] == 3
 
 
-def test_yaml_exclude_struct_empty_list(tmpdir, kernel):
+def test_yaml_exclude_struct_empty_list(tmpdir, kernel, arch_str):
     clear_base_renderer_cache()
     clear_function_apis_registry()
 
@@ -522,6 +469,8 @@ def test_yaml_exclude_struct_empty_list(tmpdir, kernel):
     cfg = f"""Name: Test Data
 Version: 0.0.1
 Entry Point: {data}
+GPU Arch:
+    - {arch_str}
 File List:
     - {data}
 Exclude:
@@ -545,7 +494,7 @@ Data Models: {{}}
         ],
     )
 
-    assert result.exit_code == 0, f"CMD ERROR: {result.stdout}"
+    assert result.exit_code == 0, f"CMD ERROR: {result.stderr}"
 
     output = subdir / "data.py"
     assert os.path.exists(output)
