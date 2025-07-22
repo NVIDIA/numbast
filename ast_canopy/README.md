@@ -43,6 +43,17 @@ To autogenerate python interface file (pyi) for `pylibastcanopy` (for better typ
 stubgen -m pylibastcanopy -o ast_canopy
 ```
 
+### Custom Installation Path
+
+By default, `libastcanopy` is installed to the system's default CMake install prefix. You can override this behavior using the `ASTCANOPY_INSTALL_PATH` environment variable. This is useful when building in environments where you don't have write access to system directories, or when you want to install to a specific location.
+
+#### Using environment variable:
+```bash
+ASTCANOPY_INSTALL_PATH=/path/to/custom/install ./build.sh
+```
+
+**Note:** When using a custom install path, make sure that `LD_LIBRARY_PATH` is set so that pylibastcanopy can locate the library.
+
 ### Build System
 
 The build system depends on [cmake](https://cmake.org/) and [scikit-build-core](https://scikit-build-core.readthedocs.io/en/latest/index.html) and optionally [ninja](https://ninja-build.org/). In total, 3 libraries (packages) are built:

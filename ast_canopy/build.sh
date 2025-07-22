@@ -21,11 +21,16 @@ usage() {
     echo "  --debug    Build libastcanopy in debug mode"
     echo "  --help     Show this help message"
     echo ""
+    echo "Environment Variables:"
+    echo "  ASTCANOPY_INSTALL_PATH  Override the install path for libastcanopy"
+    echo "                          (default: CMAKE_INSTALL_PREFIX)"
+    echo ""
     echo "Example usage:"
-    echo "  ./build.sh                   # Build and install in release mode"
-    echo "  ./build.sh --develop         # Build and install in editable mode"
-    echo "  ./build.sh --debug           # Build and install in debug mode"
-    echo "  ./build.sh --develop --debug # Build and install in editable and debug mode"
+    echo "  ./build.sh                                    # Build and install in release mode"
+    echo "  ./build.sh --develop                          # Build and install in editable mode"
+    echo "  ./build.sh --debug                            # Build and install in debug mode"
+    echo "  ./build.sh --develop --debug                  # Build and install in editable and debug mode"
+    echo "  ASTCANOPY_INSTALL_PATH=/custom/path ./build.sh # Install libastcanopy to custom path"
 }
 
 while [[ $# -gt 0 ]]; do
