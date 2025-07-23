@@ -9,7 +9,7 @@ channels:
   - nvidia
 dependencies:
   - python={{ python_version }}
-  - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
+  - cmake>=3.29 # Allow overriding CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX
   - clangdev>=18
   - numba-cuda >=0.16
   - pybind11

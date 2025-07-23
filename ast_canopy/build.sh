@@ -21,11 +21,16 @@ usage() {
     echo "  --debug    Build libastcanopy in debug mode"
     echo "  --help     Show this help message"
     echo ""
+    echo "Environment Variables:"
+    echo "  ASTCANOPY_INSTALL_PATH  Override the install path for libastcanopy"
+    echo "                          (default: CMAKE_INSTALL_PREFIX)"
+    echo ""
     echo "Example usage:"
-    echo "  ./build.sh                   # Build and install in release mode"
-    echo "  ./build.sh --develop         # Build and install in editable mode"
-    echo "  ./build.sh --debug           # Build and install in debug mode"
-    echo "  ./build.sh --develop --debug # Build and install in editable and debug mode"
+    echo "  ./build.sh                                    # Build and install in release mode"
+    echo "  ./build.sh --develop                          # Build and install in editable mode"
+    echo "  ./build.sh --debug                            # Build and install in debug mode"
+    echo "  ./build.sh --develop --debug                  # Build and install in editable and debug mode"
+    echo "  ASTCANOPY_INSTALL_PATH=/custom/path ./build.sh # Install libastcanopy to custom path"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -74,11 +79,10 @@ echo ""
 echo "Entering cpp build..."
 pushd "${SCRIPT_DIR}/cpp/build"
 echo "Starting cmake config..."
+# CMake automatically reads CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX from environment variables
 cmake ${CMAKE_ARGS} \
     -G"${CMAKE_GENERATOR}" \
     -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
-    -DCMAKE_PREFIX_PATH:PATH="${CONDA_PREFIX}" \
-    -DCMAKE_INSTALL_PREFIX:PATH="${CONDA_PREFIX}" \
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DBUILD_STATIC_LIBS:BOOL=OFF \
     -DCMAKE_CXX_STANDARD:STRING=17 \

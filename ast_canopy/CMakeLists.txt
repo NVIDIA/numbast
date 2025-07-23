@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.29)
 
 # Oddly, C language is needed here to build in PyTorch image on aarch64
 # machine
@@ -10,6 +10,11 @@ project(${SKBUILD_PROJECT_NAME}
         VERSION ${SKBUILD_PROJECT_VERSION}
 	LANGUAGES C CXX)
 
+# Check for ASTCANOPY_INSTALL_PATH environment variable to help find astcanopy
+if(DEFINED ENV{ASTCANOPY_INSTALL_PATH})
+    message(STATUS "Using ASTCANOPY_INSTALL_PATH for package discovery: $ENV{ASTCANOPY_INSTALL_PATH}")
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{ASTCANOPY_INSTALL_PATH}")
+endif()
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
