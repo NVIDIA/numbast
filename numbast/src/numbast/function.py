@@ -132,7 +132,7 @@ def bind_cxx_operator_overload_function(
 def bind_cxx_non_operator_function(
     shim_writer: ShimWriter,
     func_decl: Function,
-    skip_prefix: str,
+    skip_prefix: str | None,
     exclude: set[str],
 ) -> object:
     """Make bindings for a C++ non operator function.
@@ -145,7 +145,7 @@ def bind_cxx_non_operator_function(
     func_decl : Function
         The declaration of the function in C++.
 
-    skip_prefix : str
+    skip_prefix : str | None
         Skip functions with this prefix.
 
     exclude : set[str]
@@ -159,7 +159,7 @@ def bind_cxx_non_operator_function(
     """
     global overload_registry
 
-    if func_decl.name.startswith(skip_prefix) or func_decl.name in exclude:
+    if (skip_prefix and func_decl.name.startswith(skip_prefix)) or func_decl.name in exclude:
         # Non public API
         return None
 
@@ -222,7 +222,7 @@ def bind_cxx_non_operator_function(
 def bind_cxx_function(
     shim_writer: ShimWriter,
     func_decl: Function,
-    skip_prefix: str = "__",
+    skip_prefix: str | None = None,
     skip_non_device: bool = True,
     exclude: set[str] = set(),
 ) -> object:
@@ -236,8 +236,8 @@ def bind_cxx_function(
     func_decl : Function
         Declaration of the function in CXX
 
-    skip_prefix : str
-        Skip functions with this prefix. Default to `__`.
+    skip_prefix : str | None
+        Skip functions with this prefix.
 
     skip_non_device : bool
         Skip non device functions. Default to True.
@@ -272,7 +272,7 @@ def bind_cxx_function(
 def bind_cxx_functions(
     shim_writer: ShimWriter,
     functions: list[Function],
-    skip_prefix: str = "__",
+    skip_prefix: str | None = None,
     skip_non_device: bool = True,
     exclude: set[str] = set(),
 ) -> list[object]:
@@ -286,8 +286,8 @@ def bind_cxx_functions(
     functions : list[Function]
         A list of function declarations in CXX.
 
-    skip_prefix : str
-        Skip functions with this prefix. Default to `__`.
+    skip_prefix : str | None
+        Skip functions with this prefix.
 
     skip_non_device : bool
         Skip non device functions. Default to True.

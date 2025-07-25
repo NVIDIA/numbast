@@ -71,7 +71,7 @@ class Config:
          A dictionary that maps struct names to their Numba types.
      datamodels : dict[str, type]
          A dictionary that maps struct names to their Numba data models.
-    exclude_functions : list[str]
+     exclude_functions : list[str]
          List of function names to exclude from the bindings.
      exclude_structs : list[str]
          List of struct names to exclude from the bindings.
@@ -101,6 +101,8 @@ class Config:
      module_callbacks : dict[str, str]
          Dictionary containing setup and teardown callbacks for the module.
          Expected keys: "setup", "teardown". Each value is a string callback function.
+     skip_prefix : str | None
+         Do not generate bindings for any functions that start with this prefix
     """
 
     entry_point: str
@@ -120,6 +122,7 @@ class Config:
     cooperative_launch_required_functions_regex: list[str]
     api_prefix_removal: dict[str, list[str]]
     module_callbacks: dict[str, str]
+    skip_prefix: str | None
 
     def __init__(self, config_dict: dict):
         """Initialize Config from a dictionary.
@@ -181,6 +184,7 @@ class Config:
                     self.api_prefix_removal[key] = [value]
 
         self.module_callbacks = config_dict.get("Module Callbacks", {})
+        self.skip_prefix = config_dict.get("Skip Prefix", None)
 
         # TODO: support multiple GPU architectures
         if len(self.gpu_arch) > 1:
@@ -229,6 +233,7 @@ class Config:
         cooperative_launch_required_functions_regex: list[str] | None = None,
         api_prefix_removal: dict[str, list[str]] | None = None,
         module_callbacks: dict[str, str] | None = None,
+        skip_prefix: str | None = None,
     ) -> "Config":
         """Create a Config instance from individual parameters instead of a config file."""
         if types is None:
@@ -258,6 +263,7 @@ class Config:
             or [],
             "API Prefix Removal": api_prefix_removal or {},
             "Module Callbacks": module_callbacks or {},
+            "Skip Prefix": skip_prefix,
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -403,6 +409,7 @@ def _generate_functions(
     excludes: list[str],
     cooperative_launch_functions: list[str],
     function_prefix_removal: list[str],
+    skip_prefix: str | None,
 ) -> str:
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
 
@@ -412,6 +419,7 @@ def _generate_functions(
         excludes=excludes,
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
+        skip_prefix=skip_prefix,
     )
 
     return SFR.render_as_str(
@@ -534,6 +542,7 @@ def _static_binding_generator(
         config.exclude_functions,
         config.cooperative_launch_required_functions_regex,
         config.api_prefix_removal.get("Function", []),
+        config.skip_prefix,
     )
 
     if config.require_pynvjitlink:
