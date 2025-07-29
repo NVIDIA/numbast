@@ -72,8 +72,8 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
 
 #if CLANG_VERSION_MAJOR >= 20
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
-  auto Diags = CompilerInstance::createDiagnostics(*FS, &*DiagOpts,
-                                                   diagnostics_consumer, false);
+  auto Diags = CompilerInstance::createDiagnostics(
+      *FS, &*DiagOpts, &diagnostics_consumer, false);
 #else
   auto Diags = CompilerInstance::createDiagnostics(
       &*DiagOpts, &diagnostics_consumer, false);
