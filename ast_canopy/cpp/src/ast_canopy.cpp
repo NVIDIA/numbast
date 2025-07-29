@@ -36,7 +36,30 @@ public:
     Info.FormatDiagnostic(buffer);
     if (DiagLevel == DiagnosticsEngine::Error ||
         DiagLevel == DiagnosticsEngine::Fatal) {
-      error_messages.push_back(std::string(buffer.begin(), buffer.end()));
+      // Create verbose error message with location and level information
+      std::string verbose_message;
+
+      // Add diagnostic level
+      const char *level_str =
+          (DiagLevel == DiagnosticsEngine::Error) ? "Error" : "Fatal";
+      verbose_message += "[" + std::string(level_str) + "] ";
+
+      // Add source location if available
+      if (Info.hasSourceManager() && Info.getLocation().isValid()) {
+        const SourceManager &SM = Info.getSourceManager();
+        SourceLocation loc = Info.getLocation();
+        PresumedLoc PLoc = SM.getPresumedLoc(loc);
+        if (PLoc.isValid()) {
+          verbose_message += PLoc.getFilename();
+          verbose_message += ":" + std::to_string(PLoc.getLine());
+          verbose_message += ":" + std::to_string(PLoc.getColumn()) + ": ";
+        }
+      }
+
+      // Add the original diagnostic message
+      verbose_message += std::string(buffer.begin(), buffer.end());
+
+      error_messages.push_back(verbose_message);
     }
   }
 };
@@ -91,7 +114,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
     if (has_error) {
       std::string error_message;
       for (const auto &msg : diagnostics_consumer.error_messages) {
-        error_message += msg + "\n";
+        error_message += "\n" + msg;
       }
       throw ParseError(error_message);
     }
