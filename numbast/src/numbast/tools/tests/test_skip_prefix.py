@@ -1,46 +1,40 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import subprocess
-import sys
 
-def test_skip_prefix(run_in_isolated_folder, arch_str):
+def test_skip_prefix_set(run_in_isolated_folder, arch_str):
     """Tests:
     1. Output binding can be skipped via `Skip Prefix` entry.
     """
-
+    output_name = "test1.py"
     res = run_in_isolated_folder(
         "skip_prefix.yml.j2",
         "data.cuh",
-        {"arch_str": arch_str, "skip_prefix": "m"}, # this will skip `mul`
+        {"arch_str": arch_str, "skip_prefix": "m"},
+        output_name=output_name,
         ruff_format=False,
+        load_symbols=True,
     )
 
-    run_result = res["result"]
-    output_folder = res["output_folder"]
-    binding_path = res["binding_path"]
+    assert res["result"].exit_code == 0
+    assert "add" in res["symbols"]
+    assert "mul" not in res["symbols"]
 
-    assert run_result.exit_code == 0
 
-    test_kernel_src = f"""
-from numba import cuda
-import data
-for sym in data.__all__:
-    print(sym)
-"""
-
-    test_kernel = os.path.join(output_folder, "test.py")
-    with open(test_kernel, "w") as f:
-        f.write(test_kernel_src)
-
-    res = subprocess.run(
-        [sys.executable, test_kernel],
-        cwd=output_folder,
-        capture_output=True,
-        text=True,
+def test_skip_prefix_unset(run_in_isolated_folder, arch_str):
+    """Tests:
+    1. Output binding is unaffected if `Skip Prefix` is not set
+    """
+    output_name = "test2.py"
+    res = run_in_isolated_folder(
+        "skip_prefix.yml.j2",
+        "data.cuh",
+        {"arch_str": arch_str},
+        output_name=output_name,
+        ruff_format=False,
+        load_symbols=True,
     )
 
-    assert res.returncode == 0, res.stdout
-    assert "add" in res.stdout
-    assert "mul" not in res.stdout
+    assert res["result"].exit_code == 0
+    assert "add" in res["symbols"]
+    assert "mul" in res["symbols"]

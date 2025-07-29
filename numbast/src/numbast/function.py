@@ -159,7 +159,9 @@ def bind_cxx_non_operator_function(
     """
     global overload_registry
 
-    if (skip_prefix and func_decl.name.startswith(skip_prefix)) or func_decl.name in exclude:
+    if (
+        skip_prefix and func_decl.name.startswith(skip_prefix)
+    ) or func_decl.name in exclude:
         # Non public API
         return None
 

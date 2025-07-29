@@ -54,56 +54,56 @@ yaml.add_constructor("!numbast_join", string_constructor)
 class Config:
     """Configuration File for Static Binding Generation.
 
-     Attributes
-     ----------
-     entry_point : str
-         Path to the input CUDA header file.
-     gpu_arch: list[str]
-         The list of GPU architectures to generate bindings for. Currently, only
-         one architecture per run is supported. Must be under pattern
-         `sm_<compute_capability>`. Required.
-     retain_list : list[str]
-         List of file names to keep parsing. The list of files from which the
-         declarations are retained in the final generated binding output. Bindings
-         that exist in other source, which may get transitively included in the
-         declaration, are ignored in bindings output.
-     types : dict[str, type]
-         A dictionary that maps struct names to their Numba types.
-     datamodels : dict[str, type]
-         A dictionary that maps struct names to their Numba data models.
-     exclude_functions : list[str]
-         List of function names to exclude from the bindings.
-     exclude_structs : list[str]
-         List of struct names to exclude from the bindings.
-     clang_includes_paths : list[str]
-         List of additional include paths to use when parsing the header file.
-     macro_expanded_function_prefixes : list[str]
-         List of prefixes to allow for anonymous filename declarations.
-     additional_imports : list[str]
-         The list of additional imports to add to the binding file.
-     shim_include_override : str | None
-         Override the include line of the shim function to specified string.
-         If not specified, default to `#include <path_to_entry_point>`.
-     require_pynvjitlink : bool
-         If true, detect if pynvjitlink is installed, raise an error if not.
-     predefined_macros : list[str]
-         List of macros defined prior to parsing the header and prefixing shim functions.
-     output_name : str | None
-         The name of the output binding file, default None. When set to None, use
-         the same name as input file (renamed with .py extension).
-     cooperative_launch_required_functions_regex : list[str]
-         The list of regular expressions. When any function name matches any of these
-         regex patterns, the function should cause the kernel to be launched with
-         cooperative launch.
-     api_prefix_removal : dict[str, list[str]]
-         Dictionary mapping declaration types to lists of prefixes to remove from names.
-         For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
-     module_callbacks : dict[str, str]
-         Dictionary containing setup and teardown callbacks for the module.
-         Expected keys: "setup", "teardown". Each value is a string callback function.
-     skip_prefix : str | None
-         Do not generate bindings for any functions that start with this prefix.
-         Has no effect if left unspecified.
+    Attributes
+    ----------
+    entry_point : str
+        Path to the input CUDA header file.
+    gpu_arch: list[str]
+        The list of GPU architectures to generate bindings for. Currently, only
+        one architecture per run is supported. Must be under pattern
+        `sm_<compute_capability>`. Required.
+    retain_list : list[str]
+        List of file names to keep parsing. The list of files from which the
+        declarations are retained in the final generated binding output. Bindings
+        that exist in other source, which may get transitively included in the
+        declaration, are ignored in bindings output.
+    types : dict[str, type]
+        A dictionary that maps struct names to their Numba types.
+    datamodels : dict[str, type]
+        A dictionary that maps struct names to their Numba data models.
+    exclude_functions : list[str]
+        List of function names to exclude from the bindings.
+    exclude_structs : list[str]
+        List of struct names to exclude from the bindings.
+    clang_includes_paths : list[str]
+        List of additional include paths to use when parsing the header file.
+    macro_expanded_function_prefixes : list[str]
+        List of prefixes to allow for anonymous filename declarations.
+    additional_imports : list[str]
+        The list of additional imports to add to the binding file.
+    shim_include_override : str | None
+        Override the include line of the shim function to specified string.
+        If not specified, default to `#include <path_to_entry_point>`.
+    require_pynvjitlink : bool
+        If true, detect if pynvjitlink is installed, raise an error if not.
+    predefined_macros : list[str]
+        List of macros defined prior to parsing the header and prefixing shim functions.
+    output_name : str | None
+        The name of the output binding file, default None. When set to None, use
+        the same name as input file (renamed with .py extension).
+    cooperative_launch_required_functions_regex : list[str]
+        The list of regular expressions. When any function name matches any of these
+        regex patterns, the function should cause the kernel to be launched with
+        cooperative launch.
+    api_prefix_removal : dict[str, list[str]]
+        Dictionary mapping declaration types to lists of prefixes to remove from names.
+        For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+    module_callbacks : dict[str, str]
+        Dictionary containing setup and teardown callbacks for the module.
+        Expected keys: "setup", "teardown". Each value is a string callback function.
+    skip_prefix : str | None
+        Do not generate bindings for any functions that start with this prefix.
+        Has no effect if left unspecified.
     """
 
     entry_point: str
