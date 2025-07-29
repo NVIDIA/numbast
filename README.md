@@ -9,6 +9,7 @@ There are several subcomponents: AST_Canopy, Numbast and a set of Numba Extensio
 
 - [ast_canopy](ast_canopy/README.md): CUDA Header Parser that depends on clangTooling
 - [numbast](numbast/README.md): Numba Binding Generator
+- [numbast_extensions](numbast_extensions/README.md): a set of Numba bindings for several CUDA libraries using Numbast
 
 ## Get Started
 
@@ -23,13 +24,17 @@ Next, install all subcomponents:
 
 ```bash
 bash ast_canopy/build.sh
-pip install numbast/
+pip install numbast/ \
+  numbast_extensions/ \
+  numbast_extensions/fp16 \
+  numbast_extensions/curand_device \
+  numbast_extensions/curand_host
 ```
 
 Validate the installation by running the tests:
 
 ```bash
-pytest ast_canopy/ numbast/
+pytest ast_canopy/ numbast_extensions/
 ```
 
 ### Example

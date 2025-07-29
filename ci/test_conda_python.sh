@@ -46,7 +46,7 @@ set +e
 
 rapids-logger "Run Tests"
 # Debug print
-python ci/run_tests.py --ast-canopy --numbast
+python ci/run_tests.py --ast-canopy --numbast --bf16
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
