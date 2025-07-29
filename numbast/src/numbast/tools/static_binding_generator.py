@@ -54,53 +54,56 @@ yaml.add_constructor("!numbast_join", string_constructor)
 class Config:
     """Configuration File for Static Binding Generation.
 
-     Attributes
-     ----------
-     entry_point : str
-         Path to the input CUDA header file.
-     gpu_arch: list[str]
-         The list of GPU architectures to generate bindings for. Currently, only
-         one architecture per run is supported. Must be under pattern
-         `sm_<compute_capability>`. Required.
-     retain_list : list[str]
-         List of file names to keep parsing. The list of files from which the
-         declarations are retained in the final generated binding output. Bindings
-         that exist in other source, which may get transitively included in the
-         declaration, are ignored in bindings output.
-     types : dict[str, type]
-         A dictionary that maps struct names to their Numba types.
-     datamodels : dict[str, type]
-         A dictionary that maps struct names to their Numba data models.
+    Attributes
+    ----------
+    entry_point : str
+        Path to the input CUDA header file.
+    gpu_arch: list[str]
+        The list of GPU architectures to generate bindings for. Currently, only
+        one architecture per run is supported. Must be under pattern
+        `sm_<compute_capability>`. Required.
+    retain_list : list[str]
+        List of file names to keep parsing. The list of files from which the
+        declarations are retained in the final generated binding output. Bindings
+        that exist in other source, which may get transitively included in the
+        declaration, are ignored in bindings output.
+    types : dict[str, type]
+        A dictionary that maps struct names to their Numba types.
+    datamodels : dict[str, type]
+        A dictionary that maps struct names to their Numba data models.
     exclude_functions : list[str]
-         List of function names to exclude from the bindings.
-     exclude_structs : list[str]
-         List of struct names to exclude from the bindings.
-     clang_includes_paths : list[str]
-         List of additional include paths to use when parsing the header file.
-     macro_expanded_function_prefixes : list[str]
-         List of prefixes to allow for anonymous filename declarations.
-     additional_imports : list[str]
-         The list of additional imports to add to the binding file.
-     shim_include_override : str | None
-         Override the include line of the shim function to specified string.
-         If not specified, default to `#include <path_to_entry_point>`.
-     require_pynvjitlink : bool
-         If true, detect if pynvjitlink is installed, raise an error if not.
-     predefined_macros : list[str]
-         List of macros defined prior to parsing the header and prefixing shim functions.
-     output_name : str | None
-         The name of the output binding file, default None. When set to None, use
-         the same name as input file (renamed with .py extension).
-     cooperative_launch_required_functions_regex : list[str]
-         The list of regular expressions. When any function name matches any of these
-         regex patterns, the function should cause the kernel to be launched with
-         cooperative launch.
-     api_prefix_removal : dict[str, list[str]]
-         Dictionary mapping declaration types to lists of prefixes to remove from names.
-         For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
-     module_callbacks : dict[str, str]
-         Dictionary containing setup and teardown callbacks for the module.
-         Expected keys: "setup", "teardown". Each value is a string callback function.
+        List of function names to exclude from the bindings.
+    exclude_structs : list[str]
+        List of struct names to exclude from the bindings.
+    clang_includes_paths : list[str]
+        List of additional include paths to use when parsing the header file.
+    macro_expanded_function_prefixes : list[str]
+        List of prefixes to allow for anonymous filename declarations.
+    additional_imports : list[str]
+        The list of additional imports to add to the binding file.
+    shim_include_override : str | None
+        Override the include line of the shim function to specified string.
+        If not specified, default to `#include <path_to_entry_point>`.
+    require_pynvjitlink : bool
+        If true, detect if pynvjitlink is installed, raise an error if not.
+    predefined_macros : list[str]
+        List of macros defined prior to parsing the header and prefixing shim functions.
+    output_name : str | None
+        The name of the output binding file, default None. When set to None, use
+        the same name as input file (renamed with .py extension).
+    cooperative_launch_required_functions_regex : list[str]
+        The list of regular expressions. When any function name matches any of these
+        regex patterns, the function should cause the kernel to be launched with
+        cooperative launch.
+    api_prefix_removal : dict[str, list[str]]
+        Dictionary mapping declaration types to lists of prefixes to remove from names.
+        For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+    module_callbacks : dict[str, str]
+        Dictionary containing setup and teardown callbacks for the module.
+        Expected keys: "setup", "teardown". Each value is a string callback function.
+    skip_prefix : str | None
+        Do not generate bindings for any functions that start with this prefix.
+        Has no effect if left unspecified.
     """
 
     entry_point: str
@@ -120,6 +123,7 @@ class Config:
     cooperative_launch_required_functions_regex: list[str]
     api_prefix_removal: dict[str, list[str]]
     module_callbacks: dict[str, str]
+    skip_prefix: str | None
 
     def __init__(self, config_dict: dict):
         """Initialize Config from a dictionary.
@@ -181,6 +185,7 @@ class Config:
                     self.api_prefix_removal[key] = [value]
 
         self.module_callbacks = config_dict.get("Module Callbacks", {})
+        self.skip_prefix = config_dict.get("Skip Prefix", None)
 
         # TODO: support multiple GPU architectures
         if len(self.gpu_arch) > 1:
@@ -229,6 +234,7 @@ class Config:
         cooperative_launch_required_functions_regex: list[str] | None = None,
         api_prefix_removal: dict[str, list[str]] | None = None,
         module_callbacks: dict[str, str] | None = None,
+        skip_prefix: str | None = None,
     ) -> "Config":
         """Create a Config instance from individual parameters instead of a config file."""
         if types is None:
@@ -258,6 +264,7 @@ class Config:
             or [],
             "API Prefix Removal": api_prefix_removal or {},
             "Module Callbacks": module_callbacks or {},
+            "Skip Prefix": skip_prefix,
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -403,6 +410,7 @@ def _generate_functions(
     excludes: list[str],
     cooperative_launch_functions: list[str],
     function_prefix_removal: list[str],
+    skip_prefix: str | None,
 ) -> str:
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
 
@@ -412,6 +420,7 @@ def _generate_functions(
         excludes=excludes,
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
+        skip_prefix=skip_prefix,
     )
 
     return SFR.render_as_str(
@@ -534,6 +543,7 @@ def _static_binding_generator(
         config.exclude_functions,
         config.cooperative_launch_required_functions_regex,
         config.api_prefix_removal.get("Function", []),
+        config.skip_prefix,
     )
 
     if config.require_pynvjitlink:
