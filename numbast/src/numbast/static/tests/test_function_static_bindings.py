@@ -13,12 +13,16 @@ from numba.cuda import device_array
 from ast_canopy import parse_declarations_from_source
 
 from numbast.static.renderer import clear_base_renderer_cache
-from numbast.static.function import StaticFunctionsRenderer
+from numbast.static.function import (
+    StaticFunctionsRenderer,
+    clear_function_apis_registry,
+)
 
 
 @pytest.fixture(scope="module")
 def decl(data_folder):
     clear_base_renderer_cache()
+    clear_function_apis_registry()
 
     header = data_folder("function.cuh")
 
