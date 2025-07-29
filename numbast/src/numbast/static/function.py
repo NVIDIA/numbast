@@ -664,7 +664,6 @@ class {op_typing_name}(ConcreteTemplate):
 
     def _render(
         self,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ):
@@ -703,9 +702,6 @@ class {op_typing_name}(ConcreteTemplate):
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
 
-        if require_pynvjitlink:
-            self._python_str += "\n" + self.Pynvjitlink_guard
-
         if with_shim_stream:
             shim_include = f'"#include<{self._header_path}>"'
             self._python_str += "\n" + get_shim(shim_include)
@@ -721,13 +717,12 @@ class {op_typing_name}(ConcreteTemplate):
     def render_as_str(
         self,
         *,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 
-        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        self._render(with_imports, with_shim_stream)
         output = self._python_str
         file_logger.debug(output)
 

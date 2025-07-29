@@ -25,9 +25,7 @@ def decl(data_folder):
 
     SSR = StaticStructsRenderer(structs, specs, header)
 
-    bindings = SSR.render_as_str(
-        require_pynvjitlink=True, with_imports=True, with_shim_stream=True
-    )
+    bindings = SSR.render_as_str(with_imports=True, with_shim_stream=True)
 
     globals = {}
     exec(bindings, globals)

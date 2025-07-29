@@ -24,7 +24,6 @@ from pylibastcanopy import Enum, Typedef
 
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
-    get_pynvjitlink_guard,
     get_shim,
     get_rendered_imports,
     get_reproducible_info,
@@ -84,8 +83,6 @@ class Config:
      shim_include_override : str | None
          Override the include line of the shim function to specified string.
          If not specified, default to `#include <path_to_entry_point>`.
-     require_pynvjitlink : bool
-         If true, detect if pynvjitlink is installed, raise an error if not.
      predefined_macros : list[str]
          List of macros defined prior to parsing the header and prefixing shim functions.
      output_name : str | None
@@ -114,7 +111,6 @@ class Config:
     macro_expanded_function_prefixes: list[str]
     additional_imports: list[str]
     shim_include_override: str | None
-    require_pynvjitlink: bool
     predefined_macros: list[str]
     output_name: str | None
     cooperative_launch_required_functions_regex: list[str]
@@ -156,7 +152,6 @@ class Config:
             "Shim Include Override", None
         )
 
-        self.require_pynvjitlink = config_dict.get("Require Pynvjitlink", False)
         self.predefined_macros = config_dict.get("Predefined Macros", [])
 
         if self.exclude_functions is None:
@@ -223,7 +218,6 @@ class Config:
         macro_expanded_function_prefixes: list[str] | None = None,
         additional_imports: list[str] | None = None,
         shim_include_override: str | None = None,
-        require_pynvjitlink: bool = False,
         predefined_macros: list[str] | None = None,
         output_name: str | None = None,
         cooperative_launch_required_functions_regex: list[str] | None = None,
@@ -251,7 +245,6 @@ class Config:
             or [],
             "Additional Import": additional_imports or [],
             "Shim Include Override": shim_include_override,
-            "Require Pynvjitlink": require_pynvjitlink,
             "Predefined Macros": predefined_macros or [],
             "Output Name": output_name,
             "Cooperative Launch Required Functions Regex": cooperative_launch_required_functions_regex
@@ -392,9 +385,7 @@ def _generate_structs(struct_decls, header_path, types, data_models, excludes):
 
     SSR = StaticStructsRenderer(struct_decls, specs, excludes=excludes)
 
-    return SSR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
-    )
+    return SSR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
 def _generate_functions(
@@ -414,17 +405,13 @@ def _generate_functions(
         function_prefix_removal=function_prefix_removal,
     )
 
-    return SFR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
-    )
+    return SFR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
 def _generate_enums(enum_decls: list[Enum]):
     """Create enum bindings."""
     SER = StaticEnumsRenderer(enum_decls)
-    return SER.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
-    )
+    return SER.render_as_str(with_imports=False, with_shim_stream=False)
 
 
 def log_files_to_generate(
@@ -536,11 +523,6 @@ def _static_binding_generator(
         config.api_prefix_removal.get("Function", []),
     )
 
-    if config.require_pynvjitlink:
-        pynvjitlink_guard = get_pynvjitlink_guard()
-    else:
-        pynvjitlink_guard = ""
-
     if config.shim_include_override is not None:
         shim_include = f"'#include <' + {config.shim_include_override} + '>'"
     else:
@@ -578,8 +560,6 @@ def _static_binding_generator(
 
 # Imports:
 {imports_str}
-# Setups:
-{pynvjitlink_guard}
 # Shim Stream:
 {shim_stream_str}
 # Enums:

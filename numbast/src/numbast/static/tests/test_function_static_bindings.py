@@ -29,9 +29,7 @@ def decl(data_folder):
 
     SFR = StaticFunctionsRenderer(functions, header)
 
-    bindings = SFR.render_as_str(
-        require_pynvjitlink=True, with_imports=True, with_shim_stream=True
-    )
+    bindings = SFR.render_as_str(with_imports=True, with_shim_stream=True)
     globals = {}
     exec(bindings, globals)
 

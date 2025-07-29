@@ -22,7 +22,6 @@ dependencies:
   - cuda-version=12.8
   - cuda-toolkit=12.8
   - cuda-python=12.8
-  - pynvjitlink>=0.2.0
   - scikit-build-core
   - pip
   - ninja
