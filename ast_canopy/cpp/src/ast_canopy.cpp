@@ -27,6 +27,20 @@ namespace ast_canopy {
 
 namespace detail {
 
+class AstCanopyDiagnosticsConsumer : public DiagnosticConsumer {
+public:
+  std::vector<std::string> error_messages;
+  void HandleDiagnostic(clang::DiagnosticsEngine::Level DiagLevel,
+                        const clang::Diagnostic &Info) override {
+    llvm::SmallVector<char, 1024> buffer;
+    Info.FormatDiagnostic(buffer);
+    if (DiagLevel == DiagnosticsEngine::Error ||
+        DiagLevel == DiagnosticsEngine::Fatal) {
+      error_messages.push_back(std::string(buffer.begin(), buffer.end()));
+    }
+  }
+};
+
 /**
  * @brief Return the source filename of the declaration.
  */
@@ -50,25 +64,38 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
 
   auto PCHContainerOps = std::make_shared<PCHContainerOperations>();
 
-  // Create a diagnostics engine that prints to llvm::errs(). llvm::errs()
-  // is a buffered err stream. By default, llvm::errs() writes directly to
-  // STDERR_FILENO, and is unbuffered. To capture the output, we need to
-  // manually redirect the stderr file descriptor (2).
+  // Create a diagnostics engine that captures errors. Writes error and fatal
+  // errors to the diagnostics_consumer. diagnostics_consumer stores the result
+  // to a vector of strings.
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
-  DiagnosticConsumer *DiagConsumer =
-      new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
+  detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
 
 #if CLANG_VERSION_MAJOR >= 20
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
   auto Diags = CompilerInstance::createDiagnostics(*FS, &*DiagOpts,
-                                                   &*DiagConsumer, false);
+                                                   diagnostics_consumer, false);
 #else
-  auto Diags =
-      CompilerInstance::createDiagnostics(&*DiagOpts, &*DiagConsumer, false);
+  auto Diags = CompilerInstance::createDiagnostics(
+      &*DiagOpts, &diagnostics_consumer, false);
 #endif
 
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, Diags, ""));
+
+  if (!ast) {
+    throw std::runtime_error("Failed to create an ASTUnit pointer.");
+  } else {
+    bool has_error =
+        Diags->hasErrorOccurred() || Diags->hasFatalErrorOccurred();
+
+    if (has_error) {
+      std::string error_message;
+      for (const auto &msg : diagnostics_consumer.error_messages) {
+        error_message += msg + "\n";
+      }
+      throw ParseError(error_message);
+    }
+  }
 
   return ast;
 }
@@ -80,10 +107,6 @@ Declarations parse_declarations_from_command_line(
     std::vector<std::string> whitelist_prefixes) {
 
   auto ast = detail::default_ast_unit_from_command_line(options);
-
-  if (!ast) {
-    throw std::runtime_error("Failed to create an ASTUnit pointer.");
-  }
 
   Declarations decls;
   std::unordered_map<int64_t, std::string> record_id_to_name;

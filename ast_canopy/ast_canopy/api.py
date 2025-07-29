@@ -274,31 +274,11 @@ def parse_declarations_from_source(
     if verbose:
         print(f"{command_line_options=}")
 
-    with capture_fd(STREAMFD.STDERR) as cap:
-        decls = bindings.parse_declarations_from_command_line(
-            command_line_options,
-            files_to_retain,
-            anon_filename_decl_prefix_allowlist,
-        )
-
-    werr = cap.snap()
-    if werr:
-        liblogger = logging.getLogger("libastcanopy")
-        liblogger.debug(werr)
-
-        if "error" in werr.lower():
-            raise RuntimeError(werr)
-
-        if verbose:
-            print(werr)
-        if (
-            "CUDA version" in werr
-            and "is newer than the latest supported version" in werr
-        ):
-            liblogger.info(
-                "Installed cudaToolkit version is newer than the latest supported version of the clangTooling "
-                "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
-            )
+    decls = bindings.parse_declarations_from_command_line(
+        command_line_options,
+        files_to_retain,
+        anon_filename_decl_prefix_allowlist,
+    )
 
     structs = [
         Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records
