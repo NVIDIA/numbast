@@ -102,7 +102,8 @@ class Config:
          Dictionary containing setup and teardown callbacks for the module.
          Expected keys: "setup", "teardown". Each value is a string callback function.
      skip_prefix : str | None
-         Do not generate bindings for any functions that start with this prefix
+         Do not generate bindings for any functions that start with this prefix.
+         Has no effect if left unspecified.
     """
 
     entry_point: str

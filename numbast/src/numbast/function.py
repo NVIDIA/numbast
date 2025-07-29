@@ -146,7 +146,7 @@ def bind_cxx_non_operator_function(
         The declaration of the function in C++.
 
     skip_prefix : str | None
-        Skip functions with this prefix.
+        Skip functions with this prefix. Has no effect if None or empty.
 
     exclude : set[str]
         A set of function names to exclude.
@@ -237,7 +237,7 @@ def bind_cxx_function(
         Declaration of the function in CXX
 
     skip_prefix : str | None
-        Skip functions with this prefix.
+        Skip functions with this prefix. Has no effect if None or empty.
 
     skip_non_device : bool
         Skip non device functions. Default to True.
@@ -287,7 +287,7 @@ def bind_cxx_functions(
         A list of function declarations in CXX.
 
     skip_prefix : str | None
-        Skip functions with this prefix.
+        Skip functions with this prefix. Has no effect if None or empty.
 
     skip_non_device : bool
         Skip non device functions. Default to True.

@@ -477,6 +477,7 @@ class StaticFunctionsRenderer(BaseRenderer):
         If True, skip generating functions that are not device declared.
     skip_prefix: str | None
         If function name is prefixed with `skip_prefix`, they are skipped.
+        Has no effect if `None` or empty string.
     cooperative_launch_required: list[str], default []
         A list of regular expressions. Functions whose names match any of these patterns will require cooperative launch.
     function_prefix_removal: list[str], default []
