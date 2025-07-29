@@ -75,6 +75,23 @@ echo "Cache cleaned. Starting fresh build..."
 env
 echo ""
 
+# Set CMAKE paths based on ASTCANOPY_INSTALL_PATH or conda environment detection
+if [ -n "$ASTCANOPY_INSTALL_PATH" ]; then
+    echo "ASTCANOPY_INSTALL_PATH is set to: $ASTCANOPY_INSTALL_PATH. Using custom install path."
+    export CMAKE_PREFIX_PATH="$ASTCANOPY_INSTALL_PATH"
+    export CMAKE_INSTALL_PREFIX="$ASTCANOPY_INSTALL_PATH"
+else
+    echo "Detecting conda environment..."
+    IS_CONDA=$($PYTHON_EXECUTABLE "${SCRIPT_DIR}/detect_conda.py")
+    if [ "$IS_CONDA" = "true" ]; then
+        echo "Conda environment detected. Setting CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX to CONDA_PREFIX: $CONDA_PREFIX"
+        export CMAKE_PREFIX_PATH="$CONDA_PREFIX"
+        export CMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
+    else
+        echo "Not in conda environment. Using default CMAKE paths."
+    fi
+fi
+
 # Relative to ast_canopy/ <-- This is essential for conda build
 echo "Entering cpp build..."
 pushd "${SCRIPT_DIR}/cpp/build"

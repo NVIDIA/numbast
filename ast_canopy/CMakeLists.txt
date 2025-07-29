@@ -10,12 +10,6 @@ project(${SKBUILD_PROJECT_NAME}
         VERSION ${SKBUILD_PROJECT_VERSION}
 	LANGUAGES C CXX)
 
-# Check for ASTCANOPY_INSTALL_PATH environment variable to help find astcanopy
-if(DEFINED ENV{ASTCANOPY_INSTALL_PATH})
-    message(STATUS "Using ASTCANOPY_INSTALL_PATH for package discovery: $ENV{ASTCANOPY_INSTALL_PATH}")
-    list(PREPEND CMAKE_PREFIX_PATH "$ENV{ASTCANOPY_INSTALL_PATH}")
-endif()
-
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(astcanopy ${SKBUILD_PROJECT_VERSION} REQUIRED)
