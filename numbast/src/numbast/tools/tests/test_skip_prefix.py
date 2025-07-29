@@ -8,15 +8,15 @@ def test_skip_prefix_set(run_in_isolated_folder, arch_str):
     """
     res = run_in_isolated_folder(
         "skip_prefix.yml.j2",
-        "data.cuh",
-        {"arch_str": arch_str, "skip_prefix": "m"},
+        "use_cooperative.cuh",
+        {"arch_str": arch_str, "skip_prefix": "cta_"},
         ruff_format=False,
         load_symbols=True,
     )
 
     assert res["result"].exit_code == 0
-    assert "add" in res["symbols"]
-    assert "mul" not in res["symbols"]
+    assert "cta_barrier" not in res["symbols"]
+    assert "global_barrier_sync" in res["symbols"]
 
 
 def test_skip_prefix_unset(run_in_isolated_folder, arch_str):
@@ -25,12 +25,12 @@ def test_skip_prefix_unset(run_in_isolated_folder, arch_str):
     """
     res = run_in_isolated_folder(
         "skip_prefix.yml.j2",
-        "data.cuh",
+        "use_cooperative.cuh",
         {"arch_str": arch_str},
         ruff_format=False,
         load_symbols=True,
     )
 
     assert res["result"].exit_code == 0
-    assert "add" in res["symbols"]
-    assert "mul" in res["symbols"]
+    assert "cta_barrier" in res["symbols"]
+    assert "global_barrier_sync" in res["symbols"]
