@@ -13,7 +13,7 @@ import re
 
 import yaml
 
-from numba import config, cuda
+from numba import config
 from numba.cuda import cuda_paths
 import numba.types
 import numba.core.datamodel.models
@@ -47,8 +47,6 @@ if include_dir is None:
     raise ValueError("Unable to find CUDAToolkit include directory")
 CUDA_INCLUDE_PATH = include_dir.info
 
-MACHINE_COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
-
 # Register custom YAML constructor for !join tag
 yaml.add_constructor("!numbast_join", string_constructor)
 
@@ -56,49 +54,57 @@ yaml.add_constructor("!numbast_join", string_constructor)
 class Config:
     """Configuration File for Static Binding Generation.
 
-    Attributes
-    ----------
-    entry_point : str
-        Path to the input CUDA header file.
-    retain_list : list[str]
-        List of file names to keep parsing. The list of files from which the
-        declarations are retained in the final generated binding output. Bindings
-        that exist in other source, which may get transitively included in the
-        declaration, are ignored in bindings output.
-    types : dict[str, type]
-        A dictionary that maps struct names to their Numba types.
-    datamodels : dict[str, type]
-        A dictionary that maps struct names to their Numba data models.
+     Attributes
+     ----------
+     entry_point : str
+         Path to the input CUDA header file.
+     gpu_arch: list[str]
+         The list of GPU architectures to generate bindings for. Currently, only
+         one architecture per run is supported. Must be under pattern
+         `sm_<compute_capability>`. Required.
+     retain_list : list[str]
+         List of file names to keep parsing. The list of files from which the
+         declarations are retained in the final generated binding output. Bindings
+         that exist in other source, which may get transitively included in the
+         declaration, are ignored in bindings output.
+     types : dict[str, type]
+         A dictionary that maps struct names to their Numba types.
+     datamodels : dict[str, type]
+         A dictionary that maps struct names to their Numba data models.
     exclude_functions : list[str]
-        List of function names to exclude from the bindings.
-    exclude_structs : list[str]
-        List of struct names to exclude from the bindings.
-    clang_includes_paths : list[str]
-        List of additional include paths to use when parsing the header file.
-    macro_expanded_function_prefixes : list[str]
-        List of prefixes to allow for anonymous filename declarations.
-    additional_imports : list[str]
-        The list of additional imports to add to the binding file.
-    shim_include_override : str | None
-        Override the include line of the shim function to specified string.
-        If not specified, default to `#include <path_to_entry_point>`.
-    require_pynvjitlink : bool
-        If true, detect if pynvjitlink is installed, raise an error if not.
-    predefined_macros : list[str]
-        List of macros defined prior to parsing the header and prefixing shim functions.
-    output_name : str | None
-        The name of the output binding file, default None. When set to None, use
-        the same name as input file (renamed with .py extension).
-    cooperative_launch_required_functions_regex : list[str]
-        The list of regular expressions. When any function name matches any of these
-        regex patterns, the function should cause the kernel to be launched with
-        cooperative launch.
-    api_prefix_removal : dict[str, list[str]]
-        Dictionary mapping declaration types to lists of prefixes to remove from names.
-        For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+         List of function names to exclude from the bindings.
+     exclude_structs : list[str]
+         List of struct names to exclude from the bindings.
+     clang_includes_paths : list[str]
+         List of additional include paths to use when parsing the header file.
+     macro_expanded_function_prefixes : list[str]
+         List of prefixes to allow for anonymous filename declarations.
+     additional_imports : list[str]
+         The list of additional imports to add to the binding file.
+     shim_include_override : str | None
+         Override the include line of the shim function to specified string.
+         If not specified, default to `#include <path_to_entry_point>`.
+     require_pynvjitlink : bool
+         If true, detect if pynvjitlink is installed, raise an error if not.
+     predefined_macros : list[str]
+         List of macros defined prior to parsing the header and prefixing shim functions.
+     output_name : str | None
+         The name of the output binding file, default None. When set to None, use
+         the same name as input file (renamed with .py extension).
+     cooperative_launch_required_functions_regex : list[str]
+         The list of regular expressions. When any function name matches any of these
+         regex patterns, the function should cause the kernel to be launched with
+         cooperative launch.
+     api_prefix_removal : dict[str, list[str]]
+         Dictionary mapping declaration types to lists of prefixes to remove from names.
+         For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+     module_callbacks : dict[str, str]
+         Dictionary containing setup and teardown callbacks for the module.
+         Expected keys: "setup", "teardown". Each value is a string callback function.
     """
 
     entry_point: str
+    gpu_arch: list[str]
     retain_list: list[str]
     types: dict[str, type]
     datamodels: dict[str, type]
@@ -113,6 +119,7 @@ class Config:
     output_name: str | None
     cooperative_launch_required_functions_regex: list[str]
     api_prefix_removal: dict[str, list[str]]
+    module_callbacks: dict[str, str]
 
     def __init__(self, config_dict: dict):
         """Initialize Config from a dictionary.
@@ -123,6 +130,7 @@ class Config:
             Dictionary containing configuration values.
         """
         self.entry_point = config_dict["Entry Point"]
+        self.gpu_arch = config_dict["GPU Arch"]
         self.retain_list = config_dict["File List"]
         self.types = _str_value_to_numba_type(config_dict.get("Types", {}))
         self.datamodels = _str_value_to_numba_datamodel(
@@ -172,6 +180,14 @@ class Config:
                 if not isinstance(value, list):
                     self.api_prefix_removal[key] = [value]
 
+        self.module_callbacks = config_dict.get("Module Callbacks", {})
+
+        # TODO: support multiple GPU architectures
+        if len(self.gpu_arch) > 1:
+            raise NotImplementedError(
+                "Multiple GPU architectures are not supported yet."
+            )
+
         self._verify_exists()
         self._verify_regex_patterns()
 
@@ -197,6 +213,7 @@ class Config:
     def from_params(
         cls,
         entry_point: str,
+        gpu_arch: list[str],
         retain_list: list[str],
         types: dict[str, type],
         datamodels: dict[str, type],
@@ -211,6 +228,7 @@ class Config:
         output_name: str | None = None,
         cooperative_launch_required_functions_regex: list[str] | None = None,
         api_prefix_removal: dict[str, list[str]] | None = None,
+        module_callbacks: dict[str, str] | None = None,
     ) -> "Config":
         """Create a Config instance from individual parameters instead of a config file."""
         if types is None:
@@ -220,6 +238,7 @@ class Config:
 
         config_dict = {
             "Entry Point": entry_point,
+            "GPU Arch": gpu_arch,
             "File List": retain_list,
             "Types": {},
             "Data Models": {},
@@ -238,6 +257,7 @@ class Config:
             "Cooperative Launch Required Functions Regex": cooperative_launch_required_functions_regex
             or [],
             "API Prefix Removal": api_prefix_removal or {},
+            "Module Callbacks": module_callbacks or {},
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -438,7 +458,6 @@ def log_files_to_generate(
 def _static_binding_generator(
     config: Config,
     output_dir: str,
-    compute_capability: str,
     log_generates: bool = False,
     cfg_file_path: str | None = None,
     sbg_params: dict[str, str] = {},
@@ -467,6 +486,15 @@ def _static_binding_generator(
 
     entry_point = os.path.abspath(config.entry_point)
     retain_list = [os.path.abspath(path) for path in config.retain_list]
+
+    if len(config.gpu_arch) == 0:
+        raise ValueError("At least one GPU architecture must be provided.")
+    elif len(config.gpu_arch) > 1:
+        raise NotImplementedError(
+            "Multiple GPU architectures are not supported yet."
+        )
+
+    compute_capability = config.gpu_arch[0]
 
     # TODO: we don't have tests on different compute capabilities for the static binding generator yet.
     # This will be added in future PRs.
@@ -518,7 +546,9 @@ def _static_binding_generator(
     else:
         shim_include = f'"#include <{entry_point}>"'
     shim_stream_str = get_shim(
-        shim_include=shim_include, predefined_macros=config.predefined_macros
+        shim_include=shim_include,
+        predefined_macros=config.predefined_macros,
+        module_callbacks=config.module_callbacks,
     )
     imports_str = get_rendered_imports(
         additional_imports=config.additional_imports
@@ -589,13 +619,6 @@ def ruff_format_binding_file(binding_file_path: str):
 @click.command()
 @click.pass_context
 @click.option(
-    "--entry-point",
-    type=click.Path(exists=True, dir_okay=False, readable=True),
-)
-@click.option("--retain")
-@click.option("--types", type=numba_type_dict)
-@click.option("--datamodels", type=numba_datamodel_dict)
-@click.option(
     "--cfg-path", type=click.Path(exists=True, dir_okay=False, readable=True)
 )
 @click.option(
@@ -608,11 +631,6 @@ def ruff_format_binding_file(binding_file_path: str):
     required=True,
 )
 @click.option(
-    "--compute-capability",
-    type=str,
-    default=None,
-)
-@click.option(
     "-fmt",
     "--run-ruff-format",
     type=bool,
@@ -620,83 +638,31 @@ def ruff_format_binding_file(binding_file_path: str):
 )
 def static_binding_generator(
     ctx,
-    entry_point,
-    retain,
     cfg_path,
     output_dir,
-    types,
-    datamodels,
-    compute_capability,
     run_ruff_format,
 ):
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
 
-    ENTRY POINT: Path to the input CUDA header file.
-    CFG_PATH: Path to the configuration file in YAML format. If specified, only COMPUTE_CAPABILITY and OUTPUT_DIR is allowed as parameter.
-    RETAIN: Comma separated list of file names to keep parsing, default to ENTRY POINT.
+    CFG_PATH: Path to the configuration file in YAML format.
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
-    TYPES: A dictionary in JSON string that maps name of the struct to their Numba type.
-    DATAMODELS: A dictionary in JSON string that maps name of the struct to their Numba datamodel.
-    COMPUTE_CAPABILITY: Compute capability of the CUDA device, default to the current machine's compute capability.
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     """
     reset_renderer()
 
-    if compute_capability is None:
-        compute_capability = (
-            f"sm_{MACHINE_COMPUTE_CAPABILITY[0]}{MACHINE_COMPUTE_CAPABILITY[1]}"
-        )
-
-    if not compute_capability.startswith("sm_"):
-        raise ValueError("Compute capability must start with `sm_`")
-
-    if cfg_path:
-        if any(x is not None for x in [entry_point, retain, types, datamodels]):
-            raise ValueError(
-                "When CFG_PATH specified, none of INPUT_HEADER, RETAIN, TYPES and DATAMODELS should be specified."
-            )
-
-        cfg = Config.from_yaml_path(cfg_path)
-        output_file = _static_binding_generator(
-            cfg,
-            output_dir,
-            compute_capability,
-            log_generates=True,
-            cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
-        )
-
-        if run_ruff_format:
-            spec = importlib.util.find_spec("ruff")
-            if spec is None:
-                warnings.warn("Ruff is not on the system. Formatting skipped.")
-            else:
-                ruff_format_binding_file(output_file)
-
-        return
-
-    if retain is None:
-        retain_list = [entry_point]
-    else:
-        retain_list = retain.split(",")
-
-    if len(retain_list) == 0:
-        raise ValueError("At least one file name to retain must be provided.")
-
-    cfg = Config.from_params(
-        entry_point=entry_point,
-        retain_list=retain_list,
-        types=types or {},
-        datamodels=datamodels or {},
-    )
-
+    cfg = Config.from_yaml_path(cfg_path)
     output_file = _static_binding_generator(
         cfg,
         output_dir,
-        compute_capability,
         log_generates=True,
+        cfg_file_path=cfg_path,
+        sbg_params=ctx.params,
     )
 
     if run_ruff_format:
-        ruff_format_binding_file(output_file)
+        spec = importlib.util.find_spec("ruff")
+        if spec is None:
+            warnings.warn("Ruff is not on the system. Formatting skipped.")
+        else:
+            ruff_format_binding_file(output_file)

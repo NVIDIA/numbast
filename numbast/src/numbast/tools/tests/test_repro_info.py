@@ -2,13 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-def test_repro_info(run_in_isolated_folder):
+def test_repro_info(run_in_isolated_folder, arch_str):
     """Consider both the config and output folder are traversible in the same
     tree, this PR makes sure that reproducible info accurately reflect where
     the config file can be located as a relative path to the binding file.
     """
 
-    res = run_in_isolated_folder("cfg.yml.j2", "data.cuh", {}, ruff_format=True)
+    res = run_in_isolated_folder(
+        "cfg.yml.j2", "data.cuh", {"arch_str": arch_str}, ruff_format=True
+    )
 
     result = res["result"]
     binding_path = res["binding_path"]

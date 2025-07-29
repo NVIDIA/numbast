@@ -7,6 +7,8 @@ import warnings
 
 import pytest
 
+from numba import cuda
+
 from jinja2 import Environment, FileSystemLoader
 
 from click.testing import CliRunner
@@ -105,3 +107,9 @@ def run_in_isolated_folder(tmpdir):
         }
 
     return _run
+
+
+@pytest.fixture
+def arch_str():
+    arch = cuda.get_current_device().compute_capability
+    return f"sm_{arch[0]}{arch[1]}"

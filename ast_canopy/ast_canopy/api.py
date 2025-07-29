@@ -6,7 +6,7 @@ import shutil
 import os
 import tempfile
 import logging
-from typing import Optional
+from typing import Optional, Any
 from dataclasses import dataclass
 
 from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
@@ -225,6 +225,8 @@ def parse_declarations_from_source(
         if not os.path.exists(p):
             raise FileNotFoundError(f"Additional include path not found: {p}")
 
+    _validate_compute_capability(compute_capability)
+
     if cccl_root:
         cccl_libs = [
             os.path.join(cccl_root, "libcudacxx", "include"),
@@ -379,3 +381,26 @@ def value_from_constexpr_vardecl(
             ConstExprVar.from_c_obj(c_result) if c_result is not None else None
         )
         return result
+
+
+def _validate_compute_capability(compute_capability: Any):
+    """Validate the compute capability string.
+
+    Parameters
+    ----------
+    compute_capability : Any
+        The compute capability string to validate.
+    """
+    if not isinstance(compute_capability, str):
+        raise TypeError(
+            f"Compute capability must be a string: {compute_capability}"
+        )
+
+    if not compute_capability.startswith("sm_"):
+        raise ValueError(
+            f"Compute capability must start with 'sm_': {compute_capability}"
+        )
+    if not compute_capability[3:].isdigit():
+        raise ValueError(
+            f"Compute capability must be in the form of 'sm_<compute_capability>': {compute_capability}"
+        )
