@@ -83,7 +83,13 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
         if typ in cls._imported_numba_types:
             return
 
-        if typ in vector_types:
+        if typ == "__nv_bfloat16":
+            cls.Imports.add(
+                "from numba.cuda._internal.cuda_bf16 import _type___nv_bfloat16"
+            )
+            cls._imported_numba_types.add(typ)
+
+        elif typ in vector_types:
             # CUDA target specific types
             cls.Imports.add("from numba.cuda.vector_types import vector_types")
             cls.Imported_VectorTypes.append(typ)

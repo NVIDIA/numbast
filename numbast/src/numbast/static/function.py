@@ -475,8 +475,9 @@ class StaticFunctionsRenderer(BaseRenderer):
         A list of function names to exclude from the generation
     skip_non_device: bool, default True
         If True, skip generating functions that are not device declared.
-    skip_prefix: str, default "__"
-        If function name is prefixed with `skip_prefix`, they are skipped. Defaults to double underscore.
+    skip_prefix: str | None
+        If function name is prefixed with `skip_prefix`, they are skipped.
+        Has no effect if `None` or empty string.
     cooperative_launch_required: list[str], default []
         A list of regular expressions. Functions whose names match any of these patterns will require cooperative launch.
     function_prefix_removal: list[str], default []
@@ -505,7 +506,7 @@ class {op_typing_name}(ConcreteTemplate):
         header_path: str,
         excludes: list[str] = [],
         skip_non_device: bool = True,
-        skip_prefix: str = "__",
+        skip_prefix: str | None = None,
         cooperative_launch_required: list[str] = [],
         function_prefix_removal: list[str] = [],
     ):
@@ -532,7 +533,7 @@ class {op_typing_name}(ConcreteTemplate):
         if decl.name in self._excludes:
             return True
 
-        if decl.name.startswith(self._skip_prefix):
+        if self._skip_prefix and decl.name.startswith(self._skip_prefix):
             return True
 
         if self._skip_non_device and decl.exec_space not in {
