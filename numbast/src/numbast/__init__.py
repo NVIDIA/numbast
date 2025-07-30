@@ -3,8 +3,6 @@
 
 import numba
 
-numba.config.CUDA_ENABLE_PYNVJITLINK = True
-
 from numbast.struct import bind_cxx_struct, bind_cxx_structs
 from numbast.function import bind_cxx_function, bind_cxx_functions
 from numbast.enum import bind_cxx_enum

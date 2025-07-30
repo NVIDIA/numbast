@@ -22,9 +22,7 @@ def cuda_enum(data_folder):
 
     SER = StaticEnumsRenderer(enums)
 
-    bindings = SER.render_as_str(
-        require_pynvjitlink=True, with_imports=True, with_shim_stream=False
-    )
+    bindings = SER.render_as_str(with_imports=True, with_shim_stream=False)
 
     globals = {}
 

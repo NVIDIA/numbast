@@ -44,7 +44,7 @@ __device__ __myfloat16 hsqrt(const __myfloat16 a);
 - `ast_canopy>=0.1.0`
 - `cuda-toolkit` >=12.5
 - `numba`>=0.59
-- `pynvjitlink`>=0.22
+- `numba-cuda`>=0.17.0
 
 ## Folder Structure
 

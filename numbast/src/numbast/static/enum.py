@@ -63,7 +63,7 @@ class StaticEnumsRenderer(BaseRenderer):
 
         self._python_rendered = []
 
-    def _render(self, require_pynvjitlink, with_imports):
+    def _render(self, with_imports):
         """Render python bindings for enums."""
         self._python_str = ""
 
@@ -75,15 +75,11 @@ class StaticEnumsRenderer(BaseRenderer):
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
 
-        if require_pynvjitlink:
-            self._python_str += "\n" + self.Pynvjitlink_guard
-
         self._python_str += "\n" + "\n".join(self._python_rendered)
 
     def render_as_str(
         self,
         *,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ) -> str:
@@ -92,7 +88,7 @@ class StaticEnumsRenderer(BaseRenderer):
         if with_shim_stream is True:
             raise ValueError("Enum renderer does not render shim functions.")
 
-        self._render(require_pynvjitlink, with_imports)
+        self._render(with_imports)
 
         file_logger.debug(self._python_str)
 

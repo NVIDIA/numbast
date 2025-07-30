@@ -20,7 +20,6 @@ rapids-mamba-retry create -n test \
   cuda-nvrtc \
   numba >=0.59 \
   numba-cuda >=0.2.0 \
-  pynvjitlink >=0.2 \
   cuda-cudart-dev \
   python=${RAPIDS_PY_VERSION} \
   cffi \
