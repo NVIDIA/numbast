@@ -445,8 +445,8 @@ Data Models: {{}}
 
     globals = {}
     exec(bindings, globals)
-
     assert "Foo" not in globals
+    assert "Bar" not in globals
 
     add = globals["add"]
 
@@ -504,5 +504,8 @@ Data Models: {{}}
 
     globals = {}
     exec(bindings, globals)
+
+    assert "Foo" in globals
+    assert "Bar" in globals
 
     kernel(globals)
