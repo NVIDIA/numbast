@@ -9,6 +9,8 @@ public:
   __device__ Foo() : x(0) {}
 };
 
+typedef Foo Bar;
+
 int __device__ add(int a, int b) { return a + b; }
 
 #if (defined(__CUDACC__) && (!defined(__CUDA_ARCH__) || (__CUDA_ARCH__ >= 860)))

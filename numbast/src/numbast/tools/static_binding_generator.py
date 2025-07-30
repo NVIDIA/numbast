@@ -511,7 +511,11 @@ def _static_binding_generator(
     structs = decls.structs
     functions = decls.functions
     enums = decls.enums
-    typedefs = decls.typedefs
+    typedefs = [
+        td
+        for td in decls.typedefs
+        if td.underlying_name not in config.exclude_structs
+    ]
 
     if log_generates:
         log_files_to_generate(functions, structs, enums, typedefs)
