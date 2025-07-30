@@ -273,7 +273,6 @@ def {func_name}():
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
-        self.Imports.add("from numba.cuda.cudaimpl import lower")
         self.Imports.add("from numba.core.typing import signature")
 
         use_cooperative = ""
@@ -615,8 +614,6 @@ class {op_typing_name}(ConcreteTemplate):
 
     def _render_typings(self):
         """Render typing for all functions"""
-        self.Imports.add("from numba.cuda.cudadecl import register")
-        self.Imports.add("from numba.cuda.cudadecl import register_global")
         self.Imports.add("from numba import types")
         self.Imports.add(
             "from numba.core.typing.templates import ConcreteTemplate"
