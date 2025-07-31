@@ -26,6 +26,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .value("default_constructor", method_kind::default_constructor)
       .value("copy_constructor", method_kind::copy_constructor)
       .value("move_constructor", method_kind::move_constructor)
+      .value("converting_constructor", method_kind::converting_constructor)
       .value("other_constructor", method_kind::other_constructor)
       .value("destructor", method_kind::destructor)
       .value("conversion_function", method_kind::conversion_function)

@@ -23,13 +23,14 @@ struct ClassTemplate;
 enum class execution_space { undefined, host, device, host_device, global_ };
 
 enum class method_kind {
-  default_constructor, // Default constructor (C++98)
-  copy_constructor,    // Copy constructor (C++98)
-  move_constructor,    // Move constructor (C++11)
-  other_constructor,   // Other constructors
-  destructor,          // Destructor (C++98)
-  conversion_function, // Conversion function (C++11)
-  other                // All other methods
+  default_constructor,    // Default constructor (C++98)
+  copy_constructor,       // Copy constructor (C++98)
+  move_constructor,       // Move constructor (C++11)
+  converting_constructor, // Converting constructor (C++11)
+  other_constructor,      // Other constructors
+  destructor,             // Destructor (C++98)
+  conversion_function,    // Conversion function (C++11)
+  other                   // All other methods
 };
 
 enum class template_param_kind { type, non_type, template_ };

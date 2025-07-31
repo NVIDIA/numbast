@@ -18,7 +18,7 @@ from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
-from pylibastcanopy import access_kind
+from pylibastcanopy import access_kind, method_kind
 from ast_canopy.decl import Struct, StructMethod
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
@@ -147,6 +147,20 @@ def bind_cxx_struct_ctor(
             (selfptr, *argptrs),
         )
         return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+
+    if ctor.kind == method_kind.converting_constructor:
+
+        @lower_cast(*param_types, s_type)
+        def conversion_impl(context, builder, fromty, toty, value):
+            return ctor_impl(
+                context,
+                builder,
+                nb_signature(
+                    s_type,
+                    *map(nbtypes.CPointer, param_types),
+                ),
+                value,
+            )
 
     return param_types
 
