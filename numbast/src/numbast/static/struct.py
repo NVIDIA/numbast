@@ -255,7 +255,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
         )
 
         if self._ctor_decl.kind == method_kind.converting_constructor:
-            self.Imports.add("from numba.cuda.cudaimpl import lower_cast")
             self._lowering_rendered += (
                 "\n"
                 + self.struct_conversion_ctor_lowering_template.format(
