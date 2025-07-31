@@ -21,6 +21,17 @@ if not importlib.util.find_spec("pynvjitlink"):
     raise RuntimeError("Pynvjitlink is required to run this binding.")
 """
 
+    SeparateRegistrySetup = """
+typing_registry = TypingRegistry()
+register = typing_registry.register
+register_attr = typing_registry.register_attr
+register_global = typing_registry.register_global
+target_registry = TargetRegistry()
+lower = target_registry.lower
+lower_attr = target_registry.lower_getattr
+lower_constant = target_registry.lower_constant
+"""
+
     KeyedStringIO = """
 class _KeyedStringIO(io.StringIO):
     def __init__(self, *arg, **kwarg):
@@ -90,7 +101,13 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
         if typ in cls._imported_numba_types:
             return
 
-        if typ in vector_types:
+        if typ == "__nv_bfloat16":
+            cls.Imports.add(
+                "from numba.cuda._internal.cuda_bf16 import _type___nv_bfloat16"
+            )
+            cls._imported_numba_types.add(typ)
+
+        elif typ in vector_types:
             # CUDA target specific types
             cls.Imports.add("from numba.cuda.vector_types import vector_types")
             cls.Imported_VectorTypes.append(typ)
@@ -266,3 +283,36 @@ __all__ = _NBTYPE_SYMBOLS + _RECORD_SYMBOLS + _FUNCTION_SYMBOLS
 """
 
     return all_symbols
+
+
+def registry_setup(use_separate_registry: bool) -> str:
+    """Get the registry setup code.
+
+    In Numba-CUDA, builtin registries are created a cudadecl and cudaimpl.
+    By default, Numbast bindings inject the registries into the existing
+    typing and target context. When use_separate_registry is True, Numbast
+    bindings create a new typing and target registry. User should add the
+    registries to the typing and target context manually.
+    """
+    if use_separate_registry:
+        BaseRenderer.Imports.add(
+            "from numba.core.typing.templates import Registry as TypingRegistry"
+        )
+        BaseRenderer.Imports.add(
+            "from numba.core.imputils import Registry as TargetRegistry"
+        )
+        return BaseRenderer.SeparateRegistrySetup
+    else:
+        BaseRenderer.Imports.add("from numba.cuda.cudadecl import register")
+        BaseRenderer.Imports.add(
+            "from numba.cuda.cudadecl import register_global"
+        )
+        BaseRenderer.Imports.add(
+            "from numba.cuda.cudadecl import register_attr"
+        )
+        BaseRenderer.Imports.add("from numba.cuda.cudaimpl import lower")
+        BaseRenderer.Imports.add("from numba.cuda.cudaimpl import lower_attr")
+        BaseRenderer.Imports.add(
+            "from numba.cuda.cudaimpl import lower_constant"
+        )
+        return ""

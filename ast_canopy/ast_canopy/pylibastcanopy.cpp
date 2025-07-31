@@ -15,6 +15,8 @@ using namespace ast_canopy;
 PYBIND11_MODULE(pylibastcanopy, m) {
   m.doc() = "Python bindings for canopy.hpp";
 
+  py::register_exception<ParseError>(m, "ParseError");
+
   py::enum_<execution_space>(m, "execution_space")
       .value("undefined", execution_space::undefined)
       .value("host", execution_space::host)

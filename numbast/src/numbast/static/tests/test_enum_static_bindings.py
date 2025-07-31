@@ -5,13 +5,15 @@ import pytest
 
 
 from ast_canopy import parse_declarations_from_source
-from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.renderer import clear_base_renderer_cache, registry_setup
+from numbast.static.function import clear_function_apis_registry
 from numbast.static.enum import StaticEnumsRenderer
 
 
 @pytest.fixture(scope="module")
 def cuda_enum(data_folder):
     clear_base_renderer_cache()
+    clear_function_apis_registry()
 
     header = data_folder("enum.cuh")
 
@@ -20,6 +22,7 @@ def cuda_enum(data_folder):
 
     assert len(enums) == 2
 
+    registry_setup(use_separate_registry=False)
     SER = StaticEnumsRenderer(enums)
 
     bindings = SER.render_as_str(

@@ -8,12 +8,6 @@ string(STRIP ${_version_raw} _version)
 
 project(astcanopy VERSION ${_version} LANGUAGES C CXX)
 
-# Check for ASTCANOPY_INSTALL_PATH environment variable
-if(DEFINED ENV{ASTCANOPY_INSTALL_PATH})
-    message(STATUS "Using ASTCANOPY_INSTALL_PATH from environment: $ENV{ASTCANOPY_INSTALL_PATH}")
-    set(CMAKE_INSTALL_PREFIX "$ENV{ASTCANOPY_INSTALL_PATH}" CACHE PATH "Install path prefix" FORCE)
-endif()
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -49,7 +43,8 @@ target_sources(astcanopy
   FILE_SET public_headers
   TYPE HEADERS
   BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-  FILES include/ast_canopy/ast_canopy.hpp)
+  FILES include/ast_canopy/ast_canopy.hpp
+  include/ast_canopy/error.hpp)
 
 # astcanopy shared lib target
 find_package(Clang REQUIRED)

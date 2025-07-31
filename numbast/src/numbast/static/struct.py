@@ -245,8 +245,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
-        self.Imports.add("from numba.cuda.cudaimpl import lower")
-
         self._lowering_rendered = self.struct_ctor_lowering_template.format(
             struct_name=self._struct_name,
             param_types=self._nb_param_types_str,
@@ -359,8 +357,6 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
             the constructors.
         """
 
-        self.Imports.add("from numba.cuda.cudadecl import register")
-        self.Imports.add("from numba.cuda.cudadecl import register_global")
         self.Imports.add(
             "from numba.core.typing.templates import ConcreteTemplate"
         )
@@ -850,7 +846,6 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self._struct_attr_typing_rendered = ""
 
         if self._data_model == StructModel:
-            self.Imports.add("from numba.cuda.cudadecl import register_attr")
             self.Imports.add(
                 "from numba.core.typing.templates import AttributeTemplate"
             )
