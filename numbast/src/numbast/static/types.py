@@ -48,6 +48,10 @@ def to_numba_type_str(ty: str):
         The corresponding string representing a Numba type
     """
 
+    if ty == "__nv_bfloat16":
+        BaseRenderer._try_import_numba_type("__nv_bfloat16")
+        return "_type___nv_bfloat16"
+
     if ty.endswith("*"):
         base_ty = ty.rstrip("*").rstrip(" ")
         ptr_ty_str = f"CPointer({to_numba_type_str(base_ty)})"

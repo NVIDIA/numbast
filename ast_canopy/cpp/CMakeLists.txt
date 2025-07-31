@@ -43,7 +43,8 @@ target_sources(astcanopy
   FILE_SET public_headers
   TYPE HEADERS
   BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-  FILES include/ast_canopy/ast_canopy.hpp)
+  FILES include/ast_canopy/ast_canopy.hpp
+  include/ast_canopy/error.hpp)
 
 # astcanopy shared lib target
 find_package(Clang REQUIRED)
