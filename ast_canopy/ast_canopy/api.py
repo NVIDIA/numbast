@@ -156,7 +156,7 @@ def parse_declarations_from_source(
     compute_capability: str,
     cccl_root: str = "",
     cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
-    cxx_standard: str = "c++17",
+    cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
     anon_filename_decl_prefix_allowlist: list[str] = [],
     defines: list[str] = [],
@@ -192,7 +192,7 @@ def parse_declarations_from_source(
         directory is used.
 
     cxx_standard : str, optional
-        The C++ standard to use. Default is "c++17".
+        The C++ standard to use. Default is "gnu++17".
 
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
@@ -310,7 +310,7 @@ def value_from_constexpr_vardecl(
     source: str,
     vardecl_name: str,
     compute_capability: str,
-    cxx_standard: str = "c++17",
+    cxx_standard: str = "gnu++17",
     verbose: bool = False,
 ) -> bindings.ConstExprVar | None:
     """Extract the values from constexpr VarDecl of given name."""
