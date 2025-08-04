@@ -28,6 +28,7 @@ from numbast.static.renderer import (
     get_rendered_imports,
     get_reproducible_info,
     get_all_exposed_symbols,
+    registry_setup,
 )
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import (
@@ -101,6 +102,11 @@ class Config:
     skip_prefix : str | None
         Do not generate bindings for any functions that start with this prefix.
         Has no effect if left unspecified.
+    separate_registry : bool
+        If true, use a separate typing and target registry for the generated binding.
+        By default, the new typing and target registries are added to the existing
+        typing and target context. When set to true, user should add the registries
+        to the typing and target context manually. Default to False.
     """
 
     entry_point: str
@@ -120,6 +126,7 @@ class Config:
     api_prefix_removal: dict[str, list[str]]
     module_callbacks: dict[str, str]
     skip_prefix: str | None
+    separate_registry: bool
 
     def __init__(self, config_dict: dict):
         """Initialize Config from a dictionary.
@@ -182,6 +189,8 @@ class Config:
         self.module_callbacks = config_dict.get("Module Callbacks", {})
         self.skip_prefix = config_dict.get("Skip Prefix", None)
 
+        self.separate_registry = config_dict.get("Use Separate Registry", False)
+
         # TODO: support multiple GPU architectures
         if len(self.gpu_arch) > 1:
             raise NotImplementedError(
@@ -229,6 +238,7 @@ class Config:
         api_prefix_removal: dict[str, list[str]] | None = None,
         module_callbacks: dict[str, str] | None = None,
         skip_prefix: str | None = None,
+        separate_registry: bool = False,
     ) -> "Config":
         """Create a Config instance from individual parameters instead of a config file."""
         if types is None:
@@ -258,6 +268,7 @@ class Config:
             "API Prefix Removal": api_prefix_removal or {},
             "Module Callbacks": module_callbacks or {},
             "Skip Prefix": skip_prefix,
+            "Separate Registry": separate_registry,
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -507,7 +518,11 @@ def _static_binding_generator(
     structs = decls.structs
     functions = decls.functions
     enums = decls.enums
-    typedefs = decls.typedefs
+    typedefs = [
+        td
+        for td in decls.typedefs
+        if td.underlying_name not in config.exclude_structs
+    ]
 
     if log_generates:
         log_files_to_generate(functions, structs, enums, typedefs)
@@ -532,6 +547,8 @@ def _static_binding_generator(
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
     )
+
+    registry_setup_str = registry_setup(config.separate_registry)
 
     if config.shim_include_override is not None:
         shim_include = f"'#include <' + {config.shim_include_override} + '>'"
@@ -570,6 +587,7 @@ def _static_binding_generator(
 
 # Imports:
 {imports_str}
+{registry_setup_str}
 # Shim Stream:
 {shim_stream_str}
 # Enums:

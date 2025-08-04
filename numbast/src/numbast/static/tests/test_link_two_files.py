@@ -8,7 +8,7 @@ from numba.types import Type, Number
 from numba.core.datamodel import StructModel, PrimitiveModel
 
 from ast_canopy import parse_declarations_from_source
-from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.renderer import clear_base_renderer_cache, registry_setup
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import (
     StaticFunctionsRenderer,
@@ -42,6 +42,7 @@ def foo_decl(header):
 
     assert len(structs) == 3
 
+    registry_setup(use_separate_registry=False)
     SSR = StaticStructsRenderer(structs, specs, header)
 
     bindings = SSR.render_as_str(with_imports=True, with_shim_stream=True)
@@ -67,6 +68,7 @@ def function_decl(header):
 
     assert len(functions) == 5
 
+    registry_setup(use_separate_registry=False)
     SFR = StaticFunctionsRenderer(functions, header)
 
     bindings = SFR.render_as_str(with_imports=True, with_shim_stream=True)

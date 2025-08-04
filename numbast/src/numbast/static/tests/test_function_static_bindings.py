@@ -12,7 +12,7 @@ from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
 
-from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.renderer import clear_base_renderer_cache, registry_setup
 from numbast.static.function import (
     StaticFunctionsRenderer,
     clear_function_apis_registry,
@@ -31,6 +31,7 @@ def decl(data_folder):
 
     assert len(functions) == 5
 
+    registry_setup(use_separate_registry=False)
     SFR = StaticFunctionsRenderer(functions, header)
 
     bindings = SFR.render_as_str(with_imports=True, with_shim_stream=True)

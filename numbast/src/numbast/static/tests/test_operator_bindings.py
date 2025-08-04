@@ -13,8 +13,10 @@ from ast_canopy import parse_declarations_from_source
 from numbast.static.renderer import (
     get_rendered_imports,
     get_shim,
+    registry_setup,
 )
 from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import clear_function_apis_registry
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import StaticFunctionsRenderer
 
@@ -22,6 +24,7 @@ from numbast.static.function import StaticFunctionsRenderer
 @pytest.fixture(scope="module")
 def cuda_decls(data_folder):
     clear_base_renderer_cache()
+    clear_function_apis_registry()
 
     header = data_folder("operator.cuh")
 
@@ -33,6 +36,7 @@ def cuda_decls(data_folder):
 
     assert len(structs) == 1
 
+    registry_setup(use_separate_registry=False)
     SSR = StaticStructsRenderer(structs, specs)
     SFR = StaticFunctionsRenderer(functions, header)
 
