@@ -105,10 +105,6 @@ class FileShimWriter(ShimWriterBase):
 class MemoryShimWriter(ShimWriterBase):
     """The helper class to manage shim functions, storing them in memory.
 
-    This class can only be enabled with pynvjitlink >= 0.2.0. pynvjitlink 0.2.0 patches numba
-    linker with numba.cuda.CUSource and numba.cuda.PTXSource, which then allows numba linker
-    to load these sources from memory.
-
     For each Numba bindings, the shim functions are combined into a single cuda.CUSource object.
     For each PTX, a separate cuda.PTXSource object is created.
     """

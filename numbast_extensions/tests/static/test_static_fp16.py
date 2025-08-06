@@ -21,7 +21,6 @@ from numbast.tools.static_binding_generator import _typedef_to_aliases
 from numbast.static.typedef import render_aliases
 from numbast.static.renderer import (
     clear_base_renderer_cache,
-    get_pynvjitlink_guard,
     get_shim,
     get_rendered_imports,
 )
@@ -75,20 +74,18 @@ def float16():
     SFR = StaticFunctionsRenderer(functions, cuda_fp16)
 
     struct_bindings = SSR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
+        with_imports=False, with_shim_stream=False
     )
 
     function_bindings = SFR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
+        with_imports=False, with_shim_stream=False
     )
 
-    prefix_str = get_pynvjitlink_guard()
     include = f"'#include <{cuda_fp16}>'"
     shim_stream_str = get_shim(include)
     imports_str = get_rendered_imports()
 
     bindings = f"""
-{prefix_str}
 {imports_str}
 {shim_stream_str}
 {struct_bindings}
