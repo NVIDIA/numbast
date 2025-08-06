@@ -40,9 +40,10 @@ enum class template_param_kind { type, non_type, template_ };
 enum class access_kind { public_, protected_, private_ };
 
 struct Decl {
-  SourceLocation source_location;
   Decl();
   Decl(const clang::Decl *decl);
+
+  SourceLocation source_location;
 };
 
 struct Enum : public Decl {
@@ -142,7 +143,7 @@ struct Function : public Decl {
   std::string mangled_name;
 };
 
-struct FunctionTemplate : public Template {
+struct FunctionTemplate : public Decl, public Template {
   FunctionTemplate(const std::vector<TemplateParam> &template_parameters,
                    const std::size_t &num_min_required_args,
                    const Function &function)
@@ -200,7 +201,7 @@ struct Record : public Decl {
   void print(int) const;
 };
 
-struct ClassTemplate : public Template {
+struct ClassTemplate : public Decl, public Template {
   ClassTemplate(const clang::ClassTemplateDecl *);
   Record record;
 };
