@@ -16,18 +16,7 @@ namespace ast_canopy {
 Decl::Decl() : source_location(SourceLocation()) {}
 
 Decl::Decl(const clang::Decl *decl) {
-  clang::SourceLocation loc = clang::SourceLocation(decl->getLocation());
-  bool is_valid = loc.isValid();
-  std::cout << "is_valid: " << is_valid << std::endl;
-  if (is_valid) {
-    clang::SourceManager &SM = decl->getASTContext().getSourceManager();
-    unsigned int row = SM.getSpellingLineNumber(loc);
-    unsigned int col = SM.getSpellingColumnNumber(loc);
-    llvm::StringRef file_name = SM.getFilename(loc);
-    source_location = SourceLocation(file_name.str(), row, col, is_valid);
-  } else {
-    source_location = SourceLocation("", 0, 0, is_valid);
-  }
+  source_location = detail::location_from_decl(decl);
 }
 
 } // namespace ast_canopy

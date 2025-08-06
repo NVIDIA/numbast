@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include <clang/AST/Decl.h>
 namespace ast_canopy {
 
 class SourceLocation {
@@ -26,5 +27,9 @@ private:
   unsigned int _line;
   unsigned int _column;
 };
+
+namespace detail {
+SourceLocation location_from_decl(const clang::Decl *decl);
+}
 
 }; // namespace ast_canopy
