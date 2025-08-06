@@ -7,7 +7,7 @@
 
 namespace ast_canopy {
 ParamVar::ParamVar(const clang::ParmVarDecl *PVD)
-    : name(PVD->getNameAsString()), type(PVD->getType(), PVD->getASTContext()) {
-}
+    : Decl(PVD), name(PVD->getNameAsString()),
+      type(PVD->getType(), PVD->getASTContext()) {}
 
 } // namespace ast_canopy
