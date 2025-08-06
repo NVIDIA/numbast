@@ -16,6 +16,6 @@
 namespace ast_canopy {
 
 FunctionTemplate::FunctionTemplate(const clang::FunctionTemplateDecl *FTD)
-    : Template(FTD->getTemplateParameters()),
+    : Decl(FTD), Template(FTD->getTemplateParameters()),
       function(FTD->getTemplatedDecl()) {}
 } // namespace ast_canopy

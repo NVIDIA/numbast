@@ -1,16 +1,23 @@
 from _typeshed import Incomplete
 from typing import ClassVar, overload
 
-class ClassTemplate(Template):
+class ClassTemplate(Decl, Template):
     num_min_required_args: int
     record: Incomplete
     def __init__(self, *args, **kwargs) -> None: ...
 
-class ConstExprVar:
+class ConstExprVar(Decl):
     name: str
     type_: Type
     value: str
     def __init__(self) -> None: ...
+
+class Decl:
+    source_location: SourceLocation
+    @overload
+    def __init__(self) -> None: ...
+    @overload
+    def __init__(self, arg0) -> None: ...
 
 class Declarations:
     class_templates: list[ClassTemplate]
@@ -21,26 +28,28 @@ class Declarations:
     typedefs: list[Typedef]
     def __init__(self, *args, **kwargs) -> None: ...
 
-class Enum:
+class Enum(Decl):
     enumerator_values: list[str]
     enumerators: list[str]
     name: str
     def __init__(self, arg0) -> None: ...
 
-class Field:
+class Field(Decl):
     access: access_kind
     name: str
     type_: Type
     def __init__(self, *args, **kwargs) -> None: ...
 
-class Function:
+class Function(Decl):
     exec_space: execution_space
+    is_constexpr: bool
+    mangled_name: str
     name: str
     params: list[ParamVar]
     return_type: Type
     def __init__(self, *args, **kwargs) -> None: ...
 
-class FunctionTemplate(Template):
+class FunctionTemplate(Decl, Template):
     function: Function
     num_min_required_args: int
     def __init__(self, *args, **kwargs) -> None: ...
@@ -50,12 +59,14 @@ class Method(Function):
     def __init__(self, *args, **kwargs) -> None: ...
     def is_move_constructor(self) -> bool: ...
 
-class ParamVar:
+class ParamVar(Decl):
     name: str
     type_: Type
     def __init__(self, arg0: str, arg1: Type) -> None: ...
 
-class Record:
+class ParseError(Exception): ...
+
+class Record(Decl):
     alignof_: int
     fields: list[Field]
     methods: list[Method]
@@ -66,12 +77,26 @@ class Record:
     templated_methods: list[FunctionTemplate]
     def __init__(self, *args, **kwargs) -> None: ...
 
+class SourceLocation:
+    @overload
+    def __init__(self) -> None: ...
+    @overload
+    def __init__(self, arg0: str, arg1: int, arg2: int, arg3: bool) -> None: ...
+    @property
+    def column(self) -> int: ...
+    @property
+    def file_name(self) -> str: ...
+    @property
+    def is_valid(self) -> bool: ...
+    @property
+    def line(self) -> int: ...
+
 class Template:
     num_min_required_args: int
     template_parameters: list[TemplateParam]
     def __init__(self, arg0: list[TemplateParam], arg1: int) -> None: ...
 
-class TemplateParam:
+class TemplateParam(Decl):
     kind: template_param_kind
     name: str
     type_: Type
@@ -89,7 +114,7 @@ class Type:
     def is_left_reference(self) -> bool: ...
     def is_right_reference(self) -> bool: ...
 
-class Typedef:
+class Typedef(Decl):
     name: str
     underlying_name: str
     def __init__(self, *args, **kwargs) -> None: ...
