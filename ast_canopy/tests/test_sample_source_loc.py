@@ -34,10 +34,11 @@ def test_source_location(data_folder):
     assert barctor.source_location.column == 5
     assert barctor.source_location.is_valid
 
+    # The template has the same source location as the function
     baz = decls.function_templates[0]
     assert "sample_source_loc.cu" in baz.source_location.file_name
-    assert baz.source_location.line == 12
-    assert baz.source_location.column == 0
+    assert baz.source_location.line == 13
+    assert baz.source_location.column == 33
     assert baz.source_location.is_valid
 
     assert "sample_source_loc.cu" in baz.function.source_location.file_name
@@ -45,10 +46,11 @@ def test_source_location(data_folder):
     assert baz.function.source_location.column == 33
     assert baz.function.source_location.is_valid
 
+    # The template has the same source location as the class
     bax = decls.class_templates[0]
     assert "sample_source_loc.cu" in bax.source_location.file_name
-    assert bax.source_location.line == 15
-    assert bax.source_location.column == 0
+    assert bax.source_location.line == 16
+    assert bax.source_location.column == 8
     assert bax.source_location.is_valid
 
     assert "sample_source_loc.cu" in bax.record.source_location.file_name
@@ -56,14 +58,14 @@ def test_source_location(data_folder):
     assert bax.record.source_location.column == 8
     assert bax.record.source_location.is_valid
 
-    watermelon = decls.enum_classes[0]
+    watermelon = decls.enums[0]
     assert "sample_source_loc.cu" in watermelon.source_location.file_name
     assert watermelon.source_location.line == 18
-    assert watermelon.source_location.column == 0
+    assert watermelon.source_location.column == 12
     assert watermelon.source_location.is_valid
 
     suika = decls.typedefs[0]
     assert "sample_source_loc.cu" in suika.source_location.file_name
-    assert suika.source_location.line == 19
-    assert suika.source_location.column == 0
+    assert suika.source_location.line == 20
+    assert suika.source_location.column == 20
     assert suika.source_location.is_valid
