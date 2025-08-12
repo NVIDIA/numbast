@@ -14,13 +14,6 @@ from ast_canopy.api import get_default_cuda_path
 
 
 class BaseRenderer:
-    Pynvjitlink_guard = """
-import importlib
-
-if not importlib.util.find_spec("pynvjitlink"):
-    raise RuntimeError("Pynvjitlink is required to run this binding.")
-"""
-
     SeparateRegistrySetup = """
 typing_registry = TypingRegistry()
 register = typing_registry.register
@@ -123,7 +116,6 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     def render_as_str(
         self,
         *,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ) -> str:
@@ -157,10 +149,6 @@ def get_reproducible_info(
     commented = [f"# {x}" for x in info]
 
     return "\n".join(commented) + "\n"
-
-
-def get_pynvjitlink_guard() -> str:
-    return BaseRenderer.Pynvjitlink_guard
 
 
 def get_shim(

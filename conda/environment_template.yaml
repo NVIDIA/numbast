@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 name: numbast
 channels:
-  - rapidsai
-  - rapidsai-nightly
   - numba
   - conda-forge
   - nvidia

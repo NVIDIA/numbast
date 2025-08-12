@@ -37,9 +37,7 @@ def decl(data_folder, header):
     registry_setup(use_separate_registry=False)
     SSR = StaticStructsRenderer(structs, specs, header)
 
-    bindings = SSR.render_as_str(
-        require_pynvjitlink=True, with_imports=True, with_shim_stream=True
-    )
+    bindings = SSR.render_as_str(with_imports=True, with_shim_stream=True)
 
     globals = {}
     exec(bindings, globals)
