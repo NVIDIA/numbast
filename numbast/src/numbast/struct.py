@@ -149,6 +149,9 @@ def bind_cxx_struct_ctor(
         return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
 
     if ctor.kind == method_kind.converting_constructor:
+        assert len(param_types) == 1, (
+            "isConvertinConstructor in clang ensures that only one parameter is passed"
+        )
 
         @lower_cast(*param_types, s_type)
         def conversion_impl(context, builder, fromty, toty, value):

@@ -109,8 +109,8 @@ def conversion_impl(context, builder, fromty, toty, value):
     return ctor_impl(
         context,
         builder,
-        signature({struct_type_name}, {pointer_wrapped_args}),
-        value,
+        signature({struct_type_name}, fromty),
+        [value],
     )
     """
 
@@ -254,6 +254,10 @@ def {lower_scope_name}(shim_stream, shim_obj):
             unique_shim_name=self._deduplicated_shim_name,
         )
 
+        # When the function being lowered is a non-explicit single-arg
+        # constructor (also called a converting constructor), we generate
+        # a lower_cast from the argument type to the struct type to
+        # match the C++ behavior of implicit conversion in python
         if self._ctor_decl.kind == method_kind.converting_constructor:
             self._lowering_rendered += (
                 "\n"
