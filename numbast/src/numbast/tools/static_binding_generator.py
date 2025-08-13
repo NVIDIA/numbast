@@ -551,7 +551,7 @@ def _static_binding_generator(
     registry_setup_str = registry_setup(config.separate_registry)
 
     if config.shim_include_override is not None:
-        shim_include = f"'#include <' + {config.shim_include_override} + '>'"
+        shim_include = f"'#include <' + '{config.shim_include_override}' + '>'"
     else:
         shim_include = f'"#include <{entry_point}>"'
     shim_stream_str = get_shim(
