@@ -109,8 +109,8 @@ def conversion_impl(context, builder, fromty, toty, value):
     return ctor_impl(
         context,
         builder,
-        signature({struct_type_name}, {pointer_wrapped_args}),
-        value,
+        signature({struct_type_name}, fromty),
+        [value],
     )
     """
 
@@ -254,6 +254,10 @@ def {lower_scope_name}(shim_stream, shim_obj):
             unique_shim_name=self._deduplicated_shim_name,
         )
 
+        # When the function being lowered is a non-explicit single-arg
+        # constructor (also called a converting constructor), we generate
+        # a lower_cast from the argument type to the struct type to
+        # match the C++ behavior of implicit conversion in python
         if self._ctor_decl.kind == method_kind.converting_constructor:
             self._lowering_rendered += (
                 "\n"
@@ -1030,7 +1034,6 @@ class StaticStructsRenderer(BaseRenderer):
 
     def _render(
         self,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ):
@@ -1064,9 +1067,6 @@ class StaticStructsRenderer(BaseRenderer):
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
 
-        if require_pynvjitlink:
-            self._python_str += "\n" + self.Pynvjitlink_guard
-
         if with_shim_stream:
             shim_include = f'"#include<{self._default_header}>"'
             self._python_str += "\n" + get_shim(shim_include)
@@ -1078,13 +1078,12 @@ class StaticStructsRenderer(BaseRenderer):
     def render_as_str(
         self,
         *,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 
-        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        self._render(with_imports, with_shim_stream)
         output = self._python_str
         file_logger.debug(output)
 
