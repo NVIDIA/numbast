@@ -1,3 +1,21 @@
+# Numbast 0.4.0 (Jun 2025)
+
+## Improvements
+- Use function mangled name to deduplicate forward declared function decls (#142)
+- Use Itanium Name Mangler to resolve shim function name conflicts (#139)
+- Alter cooperative launch list to regex list (#136)
+- Refactor `_static_binding_generator` with Config Input (#135)
+- Get contributing section from numba-cuda on making a new release (#134)
+- Add config for functions that requires cooperative launch (#133)
+- Update Dependency List, Optional run Ruff (#131)
+- Explicitly expose symbols via `__all__` (#129)
+- Fix the numbast_extension install instruction (#132)
+- Allow Custom Binding Name Specified via YAML (#128)
+- Add CTPSD matcher, WAR nested `RecordDecl` (#126)
+- Add ConstExpr Vardecl Matcher to Extract ConstExpr Value from VarDecl (#112)
+- Use Single Upload Job for CondaBuild (#124)
+- Build Against Clang20 (#125)
+
 # Numbast 0.3.0 (May 2025)
 
 Numbast version 0.3.0 delivers the bfloat16 static bindings to Numba-CUDA. Multiple
