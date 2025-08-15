@@ -1,3 +1,33 @@
+# Numbast 0.5.0 (Aug 2025)
+
+Numbast 0.5.0 focuses on build-system integration and cleanup, simplifies
+dependencies, and adds configurability across static binding generation and
+parsing. Highlights include removing RAPIDS and pynvjitlink requirements,
+adopting GNU extension parsing, new typing/target registry hooks, expanded
+config options (skip/prefix rules, GPU arch, module setup/teardown callbacks),
+clearer error surfacing, and numerous fixes and CI improvements.
+
+## Improvements
+- bump to version 0.5.0
+- Explicitly Pass Cmake Config Options to `cmake` Command in Build Script (#169)
+- remove dependency on RAPIDS conda channels (#167)
+- Completely Remove Pynvjitlink Requirements (#159)
+- Use GNU Extension Standard for Default Clang Parse (#165)
+- Allow creation of custom typing/target registry (#161)
+- Exclude typedefs for excluded structs (#160)
+- Support "Skip Prefix" in numbast config (#156)
+- Allow Numbast to Parse Bfloat16 (#155)
+- Explicitly Raise ClangAST Parsing Error (#150)
+- Remove Unused CI Files (#157)
+- Integration to build-tools PR 2 (#154)
+- Configure static binding CC via `GPU Arch` Entry (#152)
+- Integration PR as part of Build Systems (#149)
+- Add Config Item to Allow Module Setup/Teardown Callback Functions (#148)
+- fix benchmarks, add missing tests from CI (#147)
+- Fix a Bug where GlobalDecl is constructed mistakenly when performing name mangles (#146)
+- Add Prefix Remover for Functions in Static Binding Generator (#144)
+- Fix CI (#145)
+
 # Numbast 0.4.0 (Jun 2025)
 
 ## Improvements
