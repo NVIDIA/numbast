@@ -18,6 +18,8 @@ Method::Method(const clang::CXXMethodDecl *MD) : Function(MD) {
       kind = method_kind::copy_constructor;
     else if (CD->isMoveConstructor())
       kind = method_kind::move_constructor;
+    else if (CD->isConvertingConstructor(/* allow explicit */ false))
+      kind = method_kind::converting_constructor;
     else
       kind = method_kind::other_constructor;
   } else if (clang::dyn_cast<clang::CXXDestructorDecl>(MD)) {

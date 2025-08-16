@@ -509,3 +509,83 @@ Data Models: {{}}
     assert "Bar" in globals
 
     kernel(globals)
+
+
+@pytest.fixture
+def implicit_conversion_kernel():
+    def _lazy_kernel(globals):
+        Foo = globals["Foo"]
+        Bar = globals["Bar"]
+        useFoo = globals["useFoo"]
+        useBar = globals["useBar"]
+
+        @cuda.jit
+        def kernel():
+            # functions can be called using explicit types
+            useFoo(Foo(1))
+            useBar(Bar(2))
+
+            # call functions such that they require implicit conversion
+            useFoo(np.int32(1))
+            # useBar(2)
+
+        kernel[1, 1]()
+
+    return _lazy_kernel
+
+
+def test_implit_ctor_lowering(tmpdir, implicit_conversion_kernel, arch_str):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
+    subdir = tmpdir.mkdir("sub")
+    data = os.path.join(os.path.dirname(__file__), "data_ctor_lowering.cuh")
+
+    cfg = f"""Name: Test Data
+Version: 0.0.1
+Entry Point: {data}
+GPU Arch:
+    - {arch_str}
+File List:
+    - {data}
+Types:
+    Foo: Type
+    Bar: Type
+Data Models:
+    Foo: StructModel
+    Bar: StructModel
+"""
+
+    cfg_file = subdir / "cfg.yaml"
+    with open(cfg_file, "w") as f:
+        f.write(cfg)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        static_binding_generator,
+        [
+            "--cfg-path",
+            cfg_file,
+            "--output-dir",
+            subdir,
+        ],
+    )
+
+    assert result.exit_code == 0, f"CMD ERROR: {result.stderr}"
+
+    output = subdir / "data_ctor_lowering.py"
+    assert os.path.exists(output)
+    # assert False, output
+
+    with open(output) as f:
+        bindings = f.read()
+
+    globals = {}
+    exec(bindings, globals)
+
+    assert "Foo" in globals
+    assert "Bar" in globals
+    assert "useFoo" in globals
+    assert "useBar" in globals
+
+    implicit_conversion_kernel(globals)
