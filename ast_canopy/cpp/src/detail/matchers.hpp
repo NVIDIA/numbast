@@ -37,7 +37,7 @@ struct vardecl_matcher_payload {
   std::optional<ConstExprVar> var;
 };
 
-std::string source_filename_from_decl(const Decl *);
+std::string source_filename_from_decl(const clang::Decl *);
 
 class FunctionCallback : public MatchFinder::MatchCallback {
 public:

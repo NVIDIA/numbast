@@ -13,6 +13,6 @@
 
 namespace ast_canopy {
 ClassTemplate::ClassTemplate(const clang::ClassTemplateDecl *CTD)
-    : Template(CTD->getTemplateParameters()),
+    : Decl(CTD), Template(CTD->getTemplateParameters()),
       record(CTD->getTemplatedDecl(), RecordAncestor::ANCESTOR_IS_TEMPLATE) {}
 } // namespace ast_canopy

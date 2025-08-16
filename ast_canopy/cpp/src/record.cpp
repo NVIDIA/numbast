@@ -20,7 +20,7 @@ std::size_t constexpr INVALID_SIZE_OF = std::numeric_limits<std::size_t>::max();
 std::size_t constexpr INVALID_ALIGN_OF =
     std::numeric_limits<std::size_t>::max();
 
-Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
+Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) : Decl(RD) {
   using AS = clang::AccessSpecifier;
 
 #ifndef NDEBUG
