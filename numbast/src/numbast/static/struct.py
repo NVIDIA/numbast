@@ -336,7 +336,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         """
 
         self.Imports.add(
-            "from numba.core.typing.templates import ConcreteTemplate"
+            "from numba.cuda.typing.templates import ConcreteTemplate"
         )
         self.Imports.add("from numba.types import Function")
 
@@ -825,7 +825,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         if self._data_model == StructModel:
             self.Imports.add(
-                "from numba.core.typing.templates import AttributeTemplate"
+                "from numba.cuda.typing.templates import AttributeTemplate"
             )
             self.Imports.add(
                 "from numba.core.extending import make_attribute_wrapper"

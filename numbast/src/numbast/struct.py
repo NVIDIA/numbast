@@ -12,7 +12,7 @@ from numba.core.extending import (
     make_attribute_wrapper,
 )
 from numba.core.typing import signature as nb_signature
-from numba.core.typing.templates import ConcreteTemplate, AttributeTemplate
+from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate
 from numba.core.datamodel.models import StructModel, PrimitiveModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr

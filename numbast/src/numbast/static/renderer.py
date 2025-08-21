@@ -284,7 +284,7 @@ def registry_setup(use_separate_registry: bool) -> str:
     """
     if use_separate_registry:
         BaseRenderer.Imports.add(
-            "from numba.core.typing.templates import Registry as TypingRegistry"
+            "from numba.cuda.typing.templates import Registry as TypingRegistry"
         )
         BaseRenderer.Imports.add(
             "from numba.core.imputils import Registry as TargetRegistry"
