@@ -8,7 +8,7 @@ from numba import cuda, types
 from numba.extending import models, register_model, typeof_impl
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
-from numba.core.typing.templates import AbstractTemplate, signature
+from numba.cuda.typing.templates import AbstractTemplate, signature
 import numpy as np
 
 from llvmlite import ir

@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from numba import types as nbtypes
 from numba.core.typing import signature as nb_signature, Signature
-from numba.core.typing.templates import ConcreteTemplate
+from numba.cuda.typing.templates import ConcreteTemplate
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register
 from numba.cuda.cudaimpl import lower

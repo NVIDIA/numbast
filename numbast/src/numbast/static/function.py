@@ -616,7 +616,7 @@ class {op_typing_name}(ConcreteTemplate):
         """Render typing for all functions"""
         self.Imports.add("from numba import types")
         self.Imports.add(
-            "from numba.core.typing.templates import ConcreteTemplate"
+            "from numba.cuda.typing.templates import ConcreteTemplate"
         )
 
         self._render_func_typings()
