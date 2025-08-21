@@ -43,7 +43,8 @@ Remember, if you are unsure about anything, don't hesitate to comment on issues 
 
 The release process for Numbast involves the following steps:
 
-- Open a PR to update `VERSION` to the desired version.
+- Make sure your local main is top-of-tree.
+- Open a PR to update `VERSION` in repo root to the desired version.
 - Generate a short changelog with `git log v<PREVIOUS_VERSION>..HEAD --oneline --pretty=format:"- %s"`
 - Put the changelog in the version update PR description.
 - Once `main` is updated, tag the release:

@@ -1,3 +1,7 @@
+# Numbast 0.5.1 (Aug 2025)
+
+- Use cuda vended typing templates (#173)
+
 # Numbast 0.5.0 (Aug 2025)
 
 Numbast 0.5.0 focuses on build-system integration and cleanup, simplifies
