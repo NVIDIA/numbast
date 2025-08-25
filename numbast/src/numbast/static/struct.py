@@ -10,7 +10,7 @@ import warnings
 from numba.types import Type
 from numba.core.datamodel.models import StructModel, PrimitiveModel
 
-from pylibastcanopy import access_kind
+from pylibastcanopy import access_kind, method_kind
 from ast_canopy.decl import Struct, StructMethod
 
 from numbast.static.renderer import (
@@ -101,6 +101,17 @@ def ctor_impl(context, builder, sig, args):
         (selfptr, *argptrs),
     )
     return builder.load(selfptr, align=getattr({struct_type_name}, "alignof_", None))
+    """
+
+    struct_conversion_ctor_lowering_template = """
+@lower_cast({param_types}, {struct_type_name})
+def conversion_impl(context, builder, fromty, toty, value):
+    return ctor_impl(
+        context,
+        builder,
+        signature({struct_type_name}, fromty),
+        [value],
+    )
     """
 
     lowering_body_template = """
@@ -242,6 +253,20 @@ def {lower_scope_name}(shim_stream, shim_obj):
             pointer_wrapped_args=self._pointer_wrapped_param_types_str,
             unique_shim_name=self._deduplicated_shim_name,
         )
+
+        # When the function being lowered is a non-explicit single-arg
+        # constructor (also called a converting constructor), we generate
+        # a lower_cast from the argument type to the struct type to
+        # match the C++ behavior of implicit conversion in python
+        if self._ctor_decl.kind == method_kind.converting_constructor:
+            self._lowering_rendered += (
+                "\n"
+                + self.struct_conversion_ctor_lowering_template.format(
+                    struct_type_name=self._struct_type_name,
+                    param_types=self._nb_param_types_str,
+                    pointer_wrapped_args=self._pointer_wrapped_param_types_str,
+                )
+            )
 
     def _render(self):
         """Render FFI, lowering and C shim functions of the constructor.
