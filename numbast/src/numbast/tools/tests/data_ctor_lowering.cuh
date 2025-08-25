@@ -15,10 +15,14 @@ struct Bar {
   __device__ explicit Bar(int y) : x(y) {}
 };
 
-__device__ bool useFoo(Foo f) {
-  return true;
-}
+// Implicit conversion from Foo
+struct Baz {
+  int x;
+  __device__ Baz(Foo y) : x(y.x) {}
+};
 
-__device__ bool useBar(Bar b) {
-  return true;
-}
+__device__ bool useFoo(Foo f) { return true; }
+
+__device__ bool useBar(Bar b) { return true; }
+
+__device__ bool useBaz(Baz b) { return true; }

@@ -6,6 +6,7 @@ import os
 from click.testing import CliRunner
 
 import numpy as np
+import numba
 from numba import cuda
 import pytest
 
@@ -516,20 +517,30 @@ def implicit_conversion_kernel():
     def _lazy_kernel(globals):
         Foo = globals["Foo"]
         Bar = globals["Bar"]
+        Baz = globals["Baz"]
         useFoo = globals["useFoo"]
         useBar = globals["useBar"]
+        useBaz = globals["useBaz"]
 
         @cuda.jit
-        def kernel():
+        def kernel_pass():
             # functions can be called using explicit types
             useFoo(Foo(1))
             useBar(Bar(2))
+            useBaz(Baz(Foo(3)))
 
             # call functions such that they require implicit conversion
             useFoo(np.int32(1))
-            # useBar(2)
+            useBaz(Foo(3))
 
-        kernel[1, 1]()
+        @cuda.jit
+        def kernel_fail():
+            useBar(np.int32(2))
+
+        kernel_pass[1, 1]()
+
+        with pytest.raises(numba.core.errors.TypingError):
+            kernel_fail[1, 1]()
 
     return _lazy_kernel
 
@@ -551,9 +562,11 @@ File List:
 Types:
     Foo: Type
     Bar: Type
+    Baz: Type
 Data Models:
     Foo: StructModel
     Bar: StructModel
+    Baz: StructModel
 """
 
     cfg_file = subdir / "cfg.yaml"
@@ -575,7 +588,6 @@ Data Models:
 
     output = subdir / "data_ctor_lowering.py"
     assert os.path.exists(output)
-    # assert False, output
 
     with open(output) as f:
         bindings = f.read()

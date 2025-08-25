@@ -688,6 +688,11 @@ class {struct_type_class_name}({parent_type}):
         self.alignof_ = {struct_alignof}
         self.bitwidth = {struct_sizeof} * 8
 
+    def can_convert_from(self, typingctx, other):
+        from numba.core.typeconv import Conversion
+        if other in [{implicit_conversion_types}]:
+            return Conversion.safe
+
 {struct_type_name} = {struct_type_class_name}()
 """
 
@@ -787,6 +792,15 @@ class {struct_attr_typing_name}(AttributeTemplate):
     def _render_typing(self):
         """Render typing of the struct."""
 
+        implicit_conversion_types = ", ".join(
+            [
+                to_numba_type_str(
+                    ctor.param_types[0].unqualified_non_ref_type_name
+                )
+                for ctor in self._decl.constructors()
+                if ctor.kind == method_kind.converting_constructor
+            ]
+        )
         self._typing_rendered = self.typing_template.format(
             struct_type_class_name=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
@@ -794,6 +808,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_name=self._struct_name,
             struct_alignof=self._decl.alignof_,
             struct_sizeof=self._decl.sizeof_,
+            implicit_conversion_types=implicit_conversion_types,
         )
 
     def _render_python_api(self):
