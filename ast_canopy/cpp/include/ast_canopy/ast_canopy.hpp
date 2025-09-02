@@ -16,6 +16,7 @@
 #include <clang/AST/Type.h>
 
 #include <ast_canopy/error.hpp>
+#include <ast_canopy/source_location.hpp>
 
 namespace ast_canopy {
 
@@ -39,10 +40,17 @@ enum class template_param_kind { type, non_type, template_ };
 
 enum class access_kind { public_, protected_, private_ };
 
-struct Enum {
+struct Decl {
+  Decl();
+  Decl(const clang::Decl *decl);
+
+  SourceLocation source_location;
+};
+
+struct Enum : public Decl {
   Enum(const std::string &name, const std::vector<std::string> &enumerators,
        const std::vector<std::string> &enumerator_values)
-      : name(name), enumerators(enumerators),
+      : Decl(), name(name), enumerators(enumerators),
         enumerator_values(enumerator_values) {}
   Enum(const clang::EnumDecl *);
 
@@ -68,7 +76,7 @@ private:
   bool _is_left_reference;
 };
 
-struct ConstExprVar {
+struct ConstExprVar : public Decl {
   ConstExprVar() = default;
   ConstExprVar(const clang::VarDecl *VD);
 
@@ -77,18 +85,19 @@ struct ConstExprVar {
   std::string value;
 };
 
-struct Field {
+struct Field : public Decl {
   Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS);
   Field(const std::string &name, const Type &type, const access_kind &access)
-      : name(name), type(type), access(access) {};
+      : Decl(), name(name), type(type), access(access) {};
 
   std::string name;
   Type type;
   access_kind access;
 };
 
-struct ParamVar {
-  ParamVar(std::string name, Type type) : name(std::move(name)), type(type) {}
+struct ParamVar : public Decl {
+  ParamVar(std::string name, Type type)
+      : Decl(), name(std::move(name)), type(type) {}
   ParamVar(const clang::ParmVarDecl *PVD);
 
   std::string name;
@@ -107,9 +116,9 @@ struct Template {
   virtual ~Template() = default;
 };
 
-struct TemplateParam {
+struct TemplateParam : public Decl {
   TemplateParam(const std::string &name, template_param_kind kind, Type type)
-      : name(name), kind(kind), type(type) {}
+      : Decl(), name(name), kind(kind), type(type) {}
   TemplateParam(const clang::TemplateTypeParmDecl *);
   TemplateParam(const clang::NonTypeTemplateParmDecl *);
   TemplateParam(const clang::TemplateTemplateParmDecl *);
@@ -119,11 +128,11 @@ struct TemplateParam {
   Type type;
 };
 
-struct Function {
+struct Function : public Decl {
   Function(const std::string &name, const Type &return_type,
            const std::vector<ParamVar> &params,
            const execution_space &exec_space)
-      : name(name), return_type(return_type), params(params),
+      : Decl(), name(name), return_type(return_type), params(params),
         exec_space(exec_space) {}
   Function(const clang::FunctionDecl *);
 
@@ -135,7 +144,7 @@ struct Function {
   std::string mangled_name;
 };
 
-struct FunctionTemplate : public Template {
+struct FunctionTemplate : public Decl, public Template {
   FunctionTemplate(const std::vector<TemplateParam> &template_parameters,
                    const std::size_t &num_min_required_args,
                    const Function &function)
@@ -164,7 +173,7 @@ enum class RecordAncestor {
   ANCESTOR_IS_NOT_TEMPLATE,
 };
 
-struct Record {
+struct Record : public Decl {
   Record(const std::string &name, const std::vector<Field> &fields,
          const std::vector<Method> &methods,
          const std::vector<FunctionTemplate> &templated_methods,
@@ -172,7 +181,7 @@ struct Record {
          const std::vector<ClassTemplate> &nested_class_templates,
          const std::size_t &sizeof_, const std::size_t &alignof_,
          const std::string &source_range)
-      : name(name), fields(fields), methods(methods),
+      : Decl(), name(name), fields(fields), methods(methods),
         templated_methods(templated_methods), nested_records(nested_records),
         nested_class_templates(nested_class_templates), sizeof_(sizeof_),
         alignof_(alignof_), source_range(source_range) {}
@@ -193,14 +202,14 @@ struct Record {
   void print(int) const;
 };
 
-struct ClassTemplate : public Template {
+struct ClassTemplate : public Decl, public Template {
   ClassTemplate(const clang::ClassTemplateDecl *);
   Record record;
 };
 
-struct Typedef {
+struct Typedef : public Decl {
   Typedef(const std::string &name, const std::string &underlying_name)
-      : name(name), underlying_name(underlying_name) {}
+      : Decl(), name(name), underlying_name(underlying_name) {}
   Typedef(const clang::TypedefDecl *,
           std::unordered_map<int64_t, std::string> *);
 

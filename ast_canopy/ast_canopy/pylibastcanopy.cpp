@@ -44,7 +44,21 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .value("protected_", access_kind::protected_)
       .value("private_", access_kind::private_);
 
-  py::class_<Enum>(m, "Enum")
+  py::class_<SourceLocation>(m, "SourceLocation")
+      .def(py::init<>())
+      .def(py::init<const std::string &, const unsigned int, const unsigned int,
+                    const bool>())
+      .def_property_readonly("file_name", &SourceLocation::file_name)
+      .def_property_readonly("line", &SourceLocation::line)
+      .def_property_readonly("column", &SourceLocation::column)
+      .def_property_readonly("is_valid", &SourceLocation::is_valid);
+
+  py::class_<Decl>(m, "Decl")
+      .def(py::init())
+      .def(py::init<const clang::Decl *>())
+      .def_readwrite("source_location", &Decl::source_location);
+
+  py::class_<Enum, Decl>(m, "Enum")
       .def(py::init<const clang::EnumDecl *>())
       .def_readwrite("name", &Enum::name)
       .def_readwrite("enumerators", &Enum::enumerators)
@@ -83,13 +97,13 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[2].cast<bool>(), t[3].cast<bool>()};
           }));
 
-  py::class_<ConstExprVar>(m, "ConstExprVar")
+  py::class_<ConstExprVar, Decl>(m, "ConstExprVar")
       .def(py::init<>())
       .def_readwrite("type_", &ConstExprVar::type_)
       .def_readwrite("name", &ConstExprVar::name)
       .def_readwrite("value", &ConstExprVar::value);
 
-  py::class_<Field>(m, "Field")
+  py::class_<Field, Decl>(m, "Field")
       .def_readwrite("name", &Field::name)
       .def_readwrite("type_", &Field::type)
       .def_readwrite("access", &Field::access)
@@ -108,7 +122,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                          t[2].cast<access_kind>()};
           }));
 
-  py::class_<ParamVar>(m, "ParamVar")
+  py::class_<ParamVar, Decl>(m, "ParamVar")
       .def(py::init<std::string, Type>())
       .def_readwrite("name", &ParamVar::name)
       .def_readwrite("type_", &ParamVar::type)
@@ -125,7 +139,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
             return ParamVar{t[0].cast<std::string>(), t[1].cast<Type>()};
           }));
 
-  py::class_<TemplateParam>(m, "TemplateParam")
+  py::class_<TemplateParam, Decl>(m, "TemplateParam")
       .def_readwrite("name", &TemplateParam::name)
       .def_readwrite("type_", &TemplateParam::type)
       .def_readwrite("kind", &TemplateParam::kind)
@@ -146,7 +160,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                                  t[2].cast<Type>()};
           }));
 
-  py::class_<Function>(m, "Function")
+  py::class_<Function, Decl>(m, "Function")
       .def_readwrite("name", &Function::name)
       .def_readwrite("return_type", &Function::return_type)
       .def_readwrite("params", &Function::params)
@@ -184,7 +198,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                             t[1].cast<std::size_t>()};
           }));
 
-  py::class_<FunctionTemplate, Template>(m, "FunctionTemplate")
+  py::class_<FunctionTemplate, Decl, Template>(m, "FunctionTemplate")
       .def_readwrite("function", &FunctionTemplate::function)
       .def_readwrite("num_min_required_args",
                      &FunctionTemplate::num_min_required_args)
@@ -203,7 +217,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                                     t[1].cast<Function>()};
           }));
 
-  py::class_<ClassTemplate, Template>(m, "ClassTemplate")
+  py::class_<ClassTemplate, Decl, Template>(m, "ClassTemplate")
       .def_readwrite("num_min_required_args",
                      &ClassTemplate::num_min_required_args)
       .def_readwrite("record", &ClassTemplate::record);
@@ -225,7 +239,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                           t[1].cast<method_kind>()};
           }));
 
-  py::class_<Record>(m, "Record")
+  py::class_<Record, Decl>(m, "Record")
       .def_readwrite("name", &Record::name)
       .def_readwrite("fields", &Record::fields)
       .def_readwrite("methods", &Record::methods)
@@ -255,7 +269,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                           t[8].cast<std::string>()};
           }));
 
-  py::class_<Typedef>(m, "Typedef")
+  py::class_<Typedef, Decl>(m, "Typedef")
       .def_readwrite("name", &Typedef::name)
       .def_readwrite("underlying_name", &Typedef::underlying_name)
       .def(py::pickle(

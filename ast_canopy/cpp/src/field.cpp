@@ -12,7 +12,8 @@
 namespace ast_canopy {
 
 Field::Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS)
-    : name(FD->getNameAsString()), type(FD->getType(), FD->getASTContext()) {
+    : Decl(FD), name(FD->getNameAsString()),
+      type(FD->getType(), FD->getASTContext()) {
   if (AS == clang::AccessSpecifier::AS_public)
     access = access_kind::public_;
   else if (AS == clang::AccessSpecifier::AS_protected)

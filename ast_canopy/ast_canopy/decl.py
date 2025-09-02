@@ -58,7 +58,12 @@ CXX_TYPE_TO_PYTHON_TYPE = {
 }
 
 
-class Function:
+class Decl:
+    def __init__(self, source_location: bindings.SourceLocation):
+        self.source_location = source_location
+
+
+class Function(Decl):
     """
     Represents a C++ function.
 
@@ -75,7 +80,9 @@ class Function:
         is_constexpr: bool,
         mangled_name: str,
         parse_entry_point: str,
+        source_location: bindings.SourceLocation,
     ):
+        super().__init__(source_location)
         self.name = name
         self.return_type = return_type
         self.params = params
@@ -163,6 +170,7 @@ class Function:
             c_obj.is_constexpr,
             c_obj.mangled_name,
             parse_entry_point,
+            c_obj.source_location,
         )
 
 
@@ -172,15 +180,17 @@ class Template:
         self.num_min_required_args = num_min_required_args
 
 
-class FunctionTemplate(Template):
+class FunctionTemplate(Decl, Template):
     def __init__(
         self,
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
         function: Function,
         parse_entry_point: str,
+        source_location: bindings.SourceLocation,
     ):
-        super().__init__(template_parameters, num_min_required_args)
+        Decl.__init__(self, source_location)
+        Template.__init__(self, template_parameters, num_min_required_args)
         self.function = function
 
         self.parse_entry_point = parse_entry_point
@@ -194,6 +204,7 @@ class FunctionTemplate(Template):
             c_obj.num_min_required_args,
             Function.from_c_obj(c_obj.function, parse_entry_point),
             parse_entry_point,
+            c_obj.source_location,
         )
 
     def instantiate(self, **kwargs):
@@ -213,6 +224,7 @@ class StructMethod(Function):
         is_move_constructor: bool,
         mangled_name: str,
         parse_entry_point: str,
+        source_location: bindings.SourceLocation,
     ):
         super().__init__(
             name,
@@ -222,6 +234,7 @@ class StructMethod(Function):
             is_constexpr,
             mangled_name,
             parse_entry_point,
+            source_location,
         )
         self.kind = kind
         self.is_move_constructor = is_move_constructor
@@ -252,6 +265,7 @@ class StructMethod(Function):
             c_obj.is_move_constructor(),
             c_obj.mangled_name,
             parse_entry_point,
+            c_obj.source_location,
         )
 
 
@@ -273,7 +287,7 @@ class TemplatedStructMethod(StructMethod):
             return self.name
 
 
-class Struct:
+class Struct(Decl):
     def __init__(
         self,
         name: str,
@@ -285,7 +299,9 @@ class Struct:
         sizeof_: int,
         alignof_: int,
         parse_entry_point: str,
+        source_location: bindings.SourceLocation,
     ):
+        super().__init__(source_location)
         self.name = name
         self.fields = fields
         self.methods = methods
@@ -330,6 +346,7 @@ class Struct:
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            c_obj.source_location,
         )
 
 
@@ -354,18 +371,21 @@ class TemplatedStruct(Struct):
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            c_obj.source_location,
         )
 
 
-class ClassTemplate(Template):
+class ClassTemplate(Decl, Template):
     def __init__(
         self,
         record: TemplatedStruct,
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
         parse_entry_point: str,
+        source_location: bindings.SourceLocation,
     ):
-        super().__init__(template_parameters, num_min_required_args)
+        Decl.__init__(self, source_location)
+        Template.__init__(self, template_parameters, num_min_required_args)
         self.record = record
 
         self.parse_entry_point = parse_entry_point
@@ -377,6 +397,7 @@ class ClassTemplate(Template):
             c_obj.template_parameters,
             c_obj.num_min_required_args,
             parse_entry_point,
+            c_obj.source_location,
         )
 
     def instantiate(self, **kwargs):
@@ -384,15 +405,23 @@ class ClassTemplate(Template):
         return tstruct.instantiate(**kwargs)
 
 
-class ConstExprVar:
-    def __init__(self, name: str, type_: bindings.Type, value_serialized: str):
+class ConstExprVar(Decl):
+    def __init__(
+        self,
+        name: str,
+        type_: bindings.Type,
+        value_serialized: str,
+        source_location: bindings.SourceLocation,
+    ):
+        super().__init__(source_location)
+
         self.name = name
         self.type_ = type_
         self.value_serialized = value_serialized
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.ConstExprVar):
-        return cls(c_obj.name, c_obj.type_, c_obj.value)
+        return cls(c_obj.name, c_obj.type_, c_obj.value, c_obj.source_location)
 
     @property
     def value(self):

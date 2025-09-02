@@ -47,7 +47,7 @@ public:
       // Add source location if available
       if (Info.hasSourceManager() && Info.getLocation().isValid()) {
         const SourceManager &SM = Info.getSourceManager();
-        SourceLocation loc = Info.getLocation();
+        clang::SourceLocation loc = Info.getLocation();
         PresumedLoc PLoc = SM.getPresumedLoc(loc);
         if (PLoc.isValid()) {
           verbose_message += PLoc.getFilename();
@@ -67,7 +67,7 @@ public:
 /**
  * @brief Return the source filename of the declaration.
  */
-std::string source_filename_from_decl(const Decl *D) {
+std::string source_filename_from_decl(const clang::Decl *D) {
   const ASTContext &ast_context = D->getASTContext();
   const SourceManager &sm = ast_context.getSourceManager();
   const StringRef file_name_ref = sm.getFilename(D->getLocation());

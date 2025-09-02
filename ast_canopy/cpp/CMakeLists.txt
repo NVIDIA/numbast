@@ -15,6 +15,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Define the sources to compile for astcanopy here.
 add_library(astcanopy SHARED
             src/ast_canopy.cpp
+            src/decl.cpp
             src/enum.cpp
             src/class_template.cpp
             src/field.cpp
@@ -28,6 +29,7 @@ add_library(astcanopy SHARED
             src/type.cpp
             src/typedef.cpp
             src/constexpr_vardecl.cpp
+            src/source_location.cpp
             src/detail/matchers/function_matcher.cpp
             src/detail/matchers/record_matcher.cpp
             src/detail/matchers/typedef_matcher.cpp
@@ -44,7 +46,8 @@ target_sources(astcanopy
   TYPE HEADERS
   BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
   FILES include/ast_canopy/ast_canopy.hpp
-  include/ast_canopy/error.hpp)
+  include/ast_canopy/error.hpp
+  include/ast_canopy/source_location.hpp)
 
 # astcanopy shared lib target
 find_package(Clang REQUIRED)
