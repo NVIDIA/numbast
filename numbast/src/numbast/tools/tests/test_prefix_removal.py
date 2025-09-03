@@ -6,12 +6,12 @@ import subprocess
 import sys
 
 
-def test_prefix_removal(run_in_isolated_folder):
+def test_prefix_removal(run_in_isolated_folder, arch_str):
     """Test that API prefix removal works correctly for function names."""
     res = run_in_isolated_folder(
         "prefix_removal.yml.j2",
         "prefix_removal.cuh",
-        {},
+        {"arch_str": arch_str},
         load_symbols=True,
         ruff_format=False,
     )

@@ -13,9 +13,10 @@ from ast_canopy import parse_declarations_from_source
 from numbast.static.renderer import (
     get_rendered_imports,
     get_shim,
-    get_pynvjitlink_guard,
+    registry_setup,
 )
 from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import clear_function_apis_registry
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import StaticFunctionsRenderer
 
@@ -23,6 +24,7 @@ from numbast.static.function import StaticFunctionsRenderer
 @pytest.fixture(scope="module")
 def cuda_decls(data_folder):
     clear_base_renderer_cache()
+    clear_function_apis_registry()
 
     header = data_folder("operator.cuh")
 
@@ -34,21 +36,21 @@ def cuda_decls(data_folder):
 
     assert len(structs) == 1
 
+    registry_setup(use_separate_registry=False)
     SSR = StaticStructsRenderer(structs, specs)
     SFR = StaticFunctionsRenderer(functions, header)
 
     struct_bindings = SSR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
+        with_imports=False, with_shim_stream=False
     )
     function_bindings = SFR.render_as_str(
-        require_pynvjitlink=False, with_imports=False, with_shim_stream=False
+        with_imports=False, with_shim_stream=False
     )
 
     shim_include = f'"#include<{header}>"'
     bindings = "\n".join(
         [
             get_rendered_imports(),
-            get_pynvjitlink_guard(),
             get_shim(shim_include),
             struct_bindings,
             function_bindings,

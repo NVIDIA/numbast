@@ -8,12 +8,12 @@ import sys
 import pytest
 
 
-def test_use_cooperative(run_in_isolated_folder):
+def test_use_cooperative(run_in_isolated_folder, arch_str):
     """Test that only a limited set of symbols are exposed via __all__ imports."""
     res = run_in_isolated_folder(
         "cooperative_launch.yml.j2",
         "use_cooperative.cuh",
-        {},
+        {"arch_str": arch_str},
         load_symbols=True,
         ruff_format=False,
     )
@@ -48,12 +48,12 @@ assert kernel.overloads[()].cooperative, f"{{kernel.overloads[()].cooperative=}}
     assert res.returncode == 0, res.stdout.decode("utf-8")
 
 
-def test_use_cooperative_regex_patterns(run_in_isolated_folder):
+def test_use_cooperative_regex_patterns(run_in_isolated_folder, arch_str):
     """Test that regex patterns correctly match function names for cooperative launch."""
     res = run_in_isolated_folder(
         "cooperative_launch_regex.yml.j2",
         "use_cooperative.cuh",
-        {},
+        {"arch_str": arch_str},
         load_symbols=True,
         ruff_format=False,
     )
@@ -132,12 +132,14 @@ assert block_sync_kernel.overloads[()].cooperative, f"block_sync_threads should 
     assert res.returncode == 0, res.stdout.decode("utf-8")
 
 
-def test_use_cooperative_non_matching_functions(run_in_isolated_folder):
+def test_use_cooperative_non_matching_functions(
+    run_in_isolated_folder, arch_str
+):
     """Test that functions not matching regex patterns are not marked as cooperative."""
     res = run_in_isolated_folder(
         "cooperative_launch_regex.yml.j2",
         "use_cooperative.cuh",
-        {},
+        {"arch_str": arch_str},
         load_symbols=True,
         ruff_format=False,
     )
@@ -176,14 +178,14 @@ assert not regular_kernel.overloads[()].cooperative, f"regular_function should n
     assert res.returncode == 0, res.stdout.decode("utf-8")
 
 
-def test_use_cooperative_invalid_regex(run_in_isolated_folder):
+def test_use_cooperative_invalid_regex(run_in_isolated_folder, arch_str):
     """Test that functions not matching regex patterns are not marked as cooperative."""
 
     with pytest.raises(ValueError, match="Invalid regex pattern"):
         run_in_isolated_folder(
             "cooperative_launch_invalid_regex.yml.j2",
             "use_cooperative.cuh",
-            {},
+            {"arch_str": arch_str},
             load_symbols=True,
             ruff_format=False,
         )

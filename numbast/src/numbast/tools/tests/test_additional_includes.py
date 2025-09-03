@@ -44,7 +44,7 @@ def patch_extra_include_paths():
 
 
 def test_cli_yml_inputs_additional_includes(
-    tmpdir, kernel, patch_extra_include_paths
+    tmpdir, kernel, patch_extra_include_paths, arch_str
 ):
     name = "additional_include"
     subdir = tmpdir.mkdir("sub")
@@ -55,6 +55,8 @@ Version: 0.0.1
 Entry Point: {data}
 File List:
     - {data}
+GPU Arch:
+    - {arch_str}
 Exclude: {{}}
 Types: {{}}
 Data Models: {{}}
@@ -72,8 +74,6 @@ Clang Include Paths:
         [
             "--cfg-path",
             cfg_file,
-            "--compute-capability",
-            "sm_50",
             "--output-dir",
             subdir,
         ],

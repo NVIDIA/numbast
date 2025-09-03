@@ -17,7 +17,7 @@ _wait_on_tile(cuda::barrier<cuda::thread_scope_block> &tile) {
 extern "C" __device__ __inline__ int cta_barrier() {
   auto cta = cg::this_thread_block();
   cg::thread_block_tile<32> tile = cg::tiled_partition<32>(cta);
-  __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
+  cuda::barrier<cuda::thread_scope_block> barrier;
   if (threadIdx.x == 0) {
     init(&barrier, blockDim.x);
   }
@@ -30,7 +30,7 @@ extern "C" __device__ __inline__ int cta_barrier() {
 extern "C" __device__ __inline__ int global_barrier_sync() {
   auto cta = cg::this_thread_block();
   cg::thread_block_tile<32> tile = cg::tiled_partition<32>(cta);
-  __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
+  cuda::barrier<cuda::thread_scope_block> barrier;
   if (threadIdx.x == 0) {
     init(&barrier, blockDim.x);
   }
@@ -41,7 +41,7 @@ extern "C" __device__ __inline__ int global_barrier_sync() {
 extern "C" __device__ __inline__ int thread_barrier_wait() {
   auto cta = cg::this_thread_block();
   cg::thread_block_tile<32> tile = cg::tiled_partition<32>(cta);
-  __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
+  cuda::barrier<cuda::thread_scope_block> barrier;
   if (threadIdx.x == 0) {
     init(&barrier, blockDim.x);
   }
@@ -53,7 +53,7 @@ extern "C" __device__ __inline__ int thread_barrier_wait() {
 extern "C" __device__ __inline__ int grid_sync_all() {
   auto cta = cg::this_thread_block();
   cg::thread_block_tile<32> tile = cg::tiled_partition<32>(cta);
-  __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
+  cuda::barrier<cuda::thread_scope_block> barrier;
   if (threadIdx.x == 0) {
     init(&barrier, blockDim.x);
   }
@@ -64,7 +64,7 @@ extern "C" __device__ __inline__ int grid_sync_all() {
 extern "C" __device__ __inline__ int block_sync_threads() {
   auto cta = cg::this_thread_block();
   cg::thread_block_tile<32> tile = cg::tiled_partition<32>(cta);
-  __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
+  cuda::barrier<cuda::thread_scope_block> barrier;
   if (threadIdx.x == 0) {
     init(&barrier, blockDim.x);
   }

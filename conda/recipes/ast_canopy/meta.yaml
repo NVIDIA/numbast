@@ -38,7 +38,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - {{ stdlib('c') }}
-    - cmake >=3.28
+    - cmake >=3.29
     - ninja
   host:
     - python

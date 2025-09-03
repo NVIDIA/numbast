@@ -14,11 +14,15 @@ from ast_canopy.api import get_default_cuda_path
 
 
 class BaseRenderer:
-    Pynvjitlink_guard = """
-import importlib
-
-if not importlib.util.find_spec("pynvjitlink"):
-    raise RuntimeError("Pynvjitlink is required to run this binding.")
+    SeparateRegistrySetup = """
+typing_registry = TypingRegistry()
+register = typing_registry.register
+register_attr = typing_registry.register_attr
+register_global = typing_registry.register_global
+target_registry = TargetRegistry()
+lower = target_registry.lower
+lower_attr = target_registry.lower_getattr
+lower_constant = target_registry.lower_constant
 """
 
     KeyedStringIO = """
@@ -90,7 +94,13 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
         if typ in cls._imported_numba_types:
             return
 
-        if typ in vector_types:
+        if typ == "__nv_bfloat16":
+            cls.Imports.add(
+                "from numba.cuda._internal.cuda_bf16 import _type___nv_bfloat16"
+            )
+            cls._imported_numba_types.add(typ)
+
+        elif typ in vector_types:
             # CUDA target specific types
             cls.Imports.add("from numba.cuda.vector_types import vector_types")
             cls.Imported_VectorTypes.append(typ)
@@ -106,7 +116,6 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     def render_as_str(
         self,
         *,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ) -> str:
@@ -142,11 +151,11 @@ def get_reproducible_info(
     return "\n".join(commented) + "\n"
 
 
-def get_pynvjitlink_guard() -> str:
-    return BaseRenderer.Pynvjitlink_guard
-
-
-def get_shim(shim_include: str, predefined_macros: list[str] = []) -> str:
+def get_shim(
+    shim_include: str,
+    predefined_macros: list[str] = [],
+    module_callbacks: dict[str, str] = {},
+) -> str:
     """Render the code block for shim functions.
 
     This includes:
@@ -158,6 +167,7 @@ def get_shim(shim_include: str, predefined_macros: list[str] = []) -> str:
        per key
     4. An instance of `KeyedStringIO`, a module-level object that allows lower
        function writes shim functions to.
+    5. Module callbacks setup and teardown if provided
     """
     defines_expanded = [f"#define {define}" for define in predefined_macros]
     defines = "\\n".join(defines_expanded)
@@ -165,12 +175,29 @@ def get_shim(shim_include: str, predefined_macros: list[str] = []) -> str:
 
     shim_include = f"shim_include = {shim_include}"
 
+    shim_template = BaseRenderer.Shim
+
+    # Add callback setting if provided
+    callbacks_setup = ""
+    if module_callbacks:
+        setup_callback = module_callbacks.get("setup", "")
+        teardown_callback = module_callbacks.get("teardown", "")
+
+        if setup_callback:
+            callbacks_setup += f"shim_obj.setup_callback = {setup_callback}\n"
+        if teardown_callback:
+            callbacks_setup += (
+                f"shim_obj.teardown_callback = {teardown_callback}\n"
+            )
+
     return (
         BaseRenderer.KeyedStringIO
         + "\n"
-        + BaseRenderer.Shim.format(
+        + shim_template.format(
             shim_include=shim_include, shim_defines=defines_py
         )
+        + "\n"
+        + callbacks_setup
     )
 
 
@@ -244,3 +271,37 @@ __all__ = _NBTYPE_SYMBOLS + _RECORD_SYMBOLS + _FUNCTION_SYMBOLS
 """
 
     return all_symbols
+
+
+def registry_setup(use_separate_registry: bool) -> str:
+    """Get the registry setup code.
+
+    In Numba-CUDA, builtin registries are created a cudadecl and cudaimpl.
+    By default, Numbast bindings inject the registries into the existing
+    typing and target context. When use_separate_registry is True, Numbast
+    bindings create a new typing and target registry. User should add the
+    registries to the typing and target context manually.
+    """
+    if use_separate_registry:
+        BaseRenderer.Imports.add(
+            "from numba.cuda.typing.templates import Registry as TypingRegistry"
+        )
+        BaseRenderer.Imports.add(
+            "from numba.core.imputils import Registry as TargetRegistry, lower_cast"
+        )
+        return BaseRenderer.SeparateRegistrySetup
+    else:
+        BaseRenderer.Imports.add("from numba.cuda.cudadecl import register")
+        BaseRenderer.Imports.add(
+            "from numba.cuda.cudadecl import register_global"
+        )
+        BaseRenderer.Imports.add(
+            "from numba.cuda.cudadecl import register_attr"
+        )
+        BaseRenderer.Imports.add("from numba.cuda.cudaimpl import lower")
+        BaseRenderer.Imports.add("from numba.cuda.cudaimpl import lower_attr")
+        BaseRenderer.Imports.add(
+            "from numba.cuda.cudaimpl import lower_constant"
+        )
+        BaseRenderer.Imports.add("from numba.core.extending import lower_cast")
+        return ""

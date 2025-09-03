@@ -2,14 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 name: numbast
 channels:
-  - rapidsai
-  - rapidsai-nightly
   - numba
   - conda-forge
   - nvidia
 dependencies:
   - python>=3.10
-  - cmake>=3.28 # >=3.28 is more reliable in detecting CUDAToolkit.
+  - cmake>=3.29 # Allow overriding CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX
   - clangdev>=18
   - numba-cuda >=0.16
   - pybind11
@@ -22,7 +20,6 @@ dependencies:
   - cuda-version=12.8
   - cuda-toolkit=12.8
   - cuda-python=12.8
-  - pynvjitlink>=0.2.0
   - scikit-build-core
   - pip
   - ninja

@@ -10,10 +10,15 @@ from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
 from numbast.static.struct import StaticStructsRenderer
+from numbast.static.renderer import clear_base_renderer_cache, registry_setup
+from numbast.static.function import clear_function_apis_registry
 
 
 @pytest.fixture(scope="module")
 def decl(data_folder):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     header = data_folder("demo.cuh")
 
     specs = {"__myfloat16": (Number, PrimitiveModel, header)}
@@ -23,11 +28,10 @@ def decl(data_folder):
 
     assert len(structs) == 1
 
+    registry_setup(use_separate_registry=False)
     SSR = StaticStructsRenderer(structs, specs, header)
 
-    bindings = SSR.render_as_str(
-        require_pynvjitlink=True, with_imports=True, with_shim_stream=True
-    )
+    bindings = SSR.render_as_str(with_imports=True, with_shim_stream=True)
 
     globals = {}
     exec(bindings, globals)

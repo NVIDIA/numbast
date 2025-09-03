@@ -4,11 +4,13 @@
 Name: Test Data
 Version: 0.0.1
 Entry Point: {{ data }}
+GPU Arch:
+    - {{ arch_str }}
 File List:
     - {{ data }}
 Exclude: {}
-Types:
-    Foo: Type
-Data Models:
-    Foo: StructModel
-Require Pynvjitlink: {{ require_pynvjitlink }}
+Types: {}
+Data Models: {}
+Module Callbacks:
+    setup: "{{ setup_callback }}"
+    teardown: "{{ teardown_callback }}"

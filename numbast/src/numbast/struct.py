@@ -12,13 +12,13 @@ from numba.core.extending import (
     make_attribute_wrapper,
 )
 from numba.core.typing import signature as nb_signature
-from numba.core.typing.templates import ConcreteTemplate, AttributeTemplate
+from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate
 from numba.core.datamodel.models import StructModel, PrimitiveModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
-from pylibastcanopy import access_kind
+from pylibastcanopy import access_kind, method_kind
 from ast_canopy.decl import Struct, StructMethod
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
@@ -147,6 +147,23 @@ def bind_cxx_struct_ctor(
             (selfptr, *argptrs),
         )
         return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+
+    if ctor.kind == method_kind.converting_constructor:
+        assert len(param_types) == 1, (
+            "isConvertinConstructor in clang ensures that only one parameter is passed"
+        )
+
+        @lower_cast(*param_types, s_type)
+        def conversion_impl(context, builder, fromty, toty, value):
+            return ctor_impl(
+                context,
+                builder,
+                nb_signature(
+                    s_type,
+                    *map(nbtypes.CPointer, param_types),
+                ),
+                value,
+            )
 
     return param_types
 

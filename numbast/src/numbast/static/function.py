@@ -273,7 +273,6 @@ def {func_name}():
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
-        self.Imports.add("from numba.cuda.cudaimpl import lower")
         self.Imports.add("from numba.core.typing import signature")
 
         use_cooperative = ""
@@ -475,8 +474,9 @@ class StaticFunctionsRenderer(BaseRenderer):
         A list of function names to exclude from the generation
     skip_non_device: bool, default True
         If True, skip generating functions that are not device declared.
-    skip_prefix: str, default "__"
-        If function name is prefixed with `skip_prefix`, they are skipped. Defaults to double underscore.
+    skip_prefix: str | None
+        If function name is prefixed with `skip_prefix`, they are skipped.
+        Has no effect if `None` or empty string.
     cooperative_launch_required: list[str], default []
         A list of regular expressions. Functions whose names match any of these patterns will require cooperative launch.
     function_prefix_removal: list[str], default []
@@ -505,7 +505,7 @@ class {op_typing_name}(ConcreteTemplate):
         header_path: str,
         excludes: list[str] = [],
         skip_non_device: bool = True,
-        skip_prefix: str = "__",
+        skip_prefix: str | None = None,
         cooperative_launch_required: list[str] = [],
         function_prefix_removal: list[str] = [],
     ):
@@ -532,7 +532,7 @@ class {op_typing_name}(ConcreteTemplate):
         if decl.name in self._excludes:
             return True
 
-        if decl.name.startswith(self._skip_prefix):
+        if self._skip_prefix and decl.name.startswith(self._skip_prefix):
             return True
 
         if self._skip_non_device and decl.exec_space not in {
@@ -614,11 +614,9 @@ class {op_typing_name}(ConcreteTemplate):
 
     def _render_typings(self):
         """Render typing for all functions"""
-        self.Imports.add("from numba.cuda.cudadecl import register")
-        self.Imports.add("from numba.cuda.cudadecl import register_global")
         self.Imports.add("from numba import types")
         self.Imports.add(
-            "from numba.core.typing.templates import ConcreteTemplate"
+            "from numba.cuda.typing.templates import ConcreteTemplate"
         )
 
         self._render_func_typings()
@@ -664,7 +662,6 @@ class {op_typing_name}(ConcreteTemplate):
 
     def _render(
         self,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ):
@@ -703,9 +700,6 @@ class {op_typing_name}(ConcreteTemplate):
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
 
-        if require_pynvjitlink:
-            self._python_str += "\n" + self.Pynvjitlink_guard
-
         if with_shim_stream:
             shim_include = f'"#include<{self._header_path}>"'
             self._python_str += "\n" + get_shim(shim_include)
@@ -721,13 +715,12 @@ class {op_typing_name}(ConcreteTemplate):
     def render_as_str(
         self,
         *,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 
-        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        self._render(with_imports, with_shim_stream)
         output = self._python_str
         file_logger.debug(output)
 

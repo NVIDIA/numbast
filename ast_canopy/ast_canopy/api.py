@@ -6,7 +6,7 @@ import shutil
 import os
 import tempfile
 import logging
-from typing import Optional
+from typing import Optional, Any
 from dataclasses import dataclass
 
 from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
@@ -156,7 +156,7 @@ def parse_declarations_from_source(
     compute_capability: str,
     cccl_root: str = "",
     cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
-    cxx_standard: str = "c++17",
+    cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
     anon_filename_decl_prefix_allowlist: list[str] = [],
     defines: list[str] = [],
@@ -192,7 +192,7 @@ def parse_declarations_from_source(
         directory is used.
 
     cxx_standard : str, optional
-        The C++ standard to use. Default is "c++17".
+        The C++ standard to use. Default is "gnu++17".
 
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
@@ -224,6 +224,8 @@ def parse_declarations_from_source(
             )
         if not os.path.exists(p):
             raise FileNotFoundError(f"Additional include path not found: {p}")
+
+    _validate_compute_capability(compute_capability)
 
     if cccl_root:
         cccl_libs = [
@@ -272,27 +274,11 @@ def parse_declarations_from_source(
     if verbose:
         print(f"{command_line_options=}")
 
-    with capture_fd(STREAMFD.STDERR) as cap:
-        decls = bindings.parse_declarations_from_command_line(
-            command_line_options,
-            files_to_retain,
-            anon_filename_decl_prefix_allowlist,
-        )
-
-    werr = cap.snap()
-    if werr:
-        liblogger = logging.getLogger("libastcanopy")
-        liblogger.debug(werr)
-        if verbose:
-            print(werr)
-        if (
-            "CUDA version" in werr
-            and "is newer than the latest supported version" in werr
-        ):
-            liblogger.info(
-                "Installed cudaToolkit version is newer than the latest supported version of the clangTooling "
-                "backend. clangTooling will treat the cudaToolkit as if it is its latest supported version."
-            )
+    decls = bindings.parse_declarations_from_command_line(
+        command_line_options,
+        files_to_retain,
+        anon_filename_decl_prefix_allowlist,
+    )
 
     structs = [
         Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records
@@ -324,7 +310,7 @@ def value_from_constexpr_vardecl(
     source: str,
     vardecl_name: str,
     compute_capability: str,
-    cxx_standard: str = "c++17",
+    cxx_standard: str = "gnu++17",
     verbose: bool = False,
 ) -> bindings.ConstExprVar | None:
     """Extract the values from constexpr VarDecl of given name."""
@@ -375,3 +361,26 @@ def value_from_constexpr_vardecl(
             ConstExprVar.from_c_obj(c_result) if c_result is not None else None
         )
         return result
+
+
+def _validate_compute_capability(compute_capability: Any):
+    """Validate the compute capability string.
+
+    Parameters
+    ----------
+    compute_capability : Any
+        The compute capability string to validate.
+    """
+    if not isinstance(compute_capability, str):
+        raise TypeError(
+            f"Compute capability must be a string: {compute_capability}"
+        )
+
+    if not compute_capability.startswith("sm_"):
+        raise ValueError(
+            f"Compute capability must start with 'sm_': {compute_capability}"
+        )
+    if not compute_capability[3:].isdigit():
+        raise ValueError(
+            f"Compute capability must be in the form of 'sm_<compute_capability>': {compute_capability}"
+        )

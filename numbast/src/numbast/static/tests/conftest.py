@@ -7,6 +7,7 @@ import os
 from typing import Any
 
 from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import clear_function_apis_registry
 from numbast.tools.static_binding_generator import (
     _static_binding_generator,
     Config,
@@ -29,14 +30,18 @@ def make_binding(tmpdir, data_folder):
         cc: str = "sm_80",
     ):
         clear_base_renderer_cache()
+        clear_function_apis_registry()
+
         header_path = data_folder(header_name)
         cfg = Config.from_params(
             entry_point=header_path,
             retain_list=[header_path],
+            gpu_arch=[cc],
             types=types,
             datamodels=datamodels,
+            separate_registry=False,
         )
-        _static_binding_generator(cfg, tmpdir, cc)
+        _static_binding_generator(cfg, tmpdir)
 
         basename = header_name.split(".")[0]
         with open(tmpdir / f"{basename}.py") as f:

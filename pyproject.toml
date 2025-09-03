@@ -22,10 +22,7 @@ extend-select = ["UP"]
 fixable = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
-# Ignore E402: Module level import not at top of file. This is because
-# pynvjitlink numba patch needs to be imported and patched before the shim
-# writer imports.
-"__init__.py" = ["F401", "E402"]
+"__init__.py" = ["F401"]
 
 # Ignore unused local variables in Numba kernel, the purpose of these tests are
 # to test Numba JIT works with novel types.

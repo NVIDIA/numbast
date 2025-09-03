@@ -1,5 +1,5 @@
 // clang-format off
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
@@ -15,6 +15,8 @@
 #include <clang/AST/DeclTemplate.h>
 #include <clang/AST/Type.h>
 
+#include <ast_canopy/error.hpp>
+
 namespace ast_canopy {
 
 struct TemplateParam;
@@ -23,13 +25,14 @@ struct ClassTemplate;
 enum class execution_space { undefined, host, device, host_device, global_ };
 
 enum class method_kind {
-  default_constructor, // Default constructor (C++98)
-  copy_constructor,    // Copy constructor (C++98)
-  move_constructor,    // Move constructor (C++11)
-  other_constructor,   // Other constructors
-  destructor,          // Destructor (C++98)
-  conversion_function, // Conversion function (C++11)
-  other                // All other methods
+  default_constructor,    // Default constructor (C++98)
+  copy_constructor,       // Copy constructor (C++98)
+  move_constructor,       // Move constructor (C++11)
+  converting_constructor, // Converting constructor (C++11)
+  other_constructor,      // Other constructors
+  destructor,             // Destructor (C++98)
+  conversion_function,    // Conversion function (C++11)
+  other                   // All other methods
 };
 
 enum class template_param_kind { type, non_type, template_ };

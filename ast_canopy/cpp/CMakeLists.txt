@@ -43,7 +43,8 @@ target_sources(astcanopy
   FILE_SET public_headers
   TYPE HEADERS
   BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-  FILES include/ast_canopy/ast_canopy.hpp)
+  FILES include/ast_canopy/ast_canopy.hpp
+  include/ast_canopy/error.hpp)
 
 # Include LLVM configuration module
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/llvm.cmake)
@@ -55,6 +56,9 @@ target_include_directories(astcanopy PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SO
 
 # Configure LLVM for astcanopy target
 configure_llvm_for_target(astcanopy)
+
+# Ensure RTTI is enabled for this target
+target_compile_options(astcanopy PRIVATE -frtti)
 
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 

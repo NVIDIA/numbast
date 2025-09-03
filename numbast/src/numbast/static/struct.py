@@ -10,7 +10,7 @@ import warnings
 from numba.types import Type
 from numba.core.datamodel.models import StructModel, PrimitiveModel
 
-from pylibastcanopy import access_kind
+from pylibastcanopy import access_kind, method_kind
 from ast_canopy.decl import Struct, StructMethod
 
 from numbast.static.renderer import (
@@ -101,6 +101,17 @@ def ctor_impl(context, builder, sig, args):
         (selfptr, *argptrs),
     )
     return builder.load(selfptr, align=getattr({struct_type_name}, "alignof_", None))
+    """
+
+    struct_conversion_ctor_lowering_template = """
+@lower_cast({param_types}, {struct_type_name})
+def conversion_impl(context, builder, fromty, toty, value):
+    return ctor_impl(
+        context,
+        builder,
+        signature({struct_type_name}, fromty),
+        [value],
+    )
     """
 
     lowering_body_template = """
@@ -234,8 +245,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
-        self.Imports.add("from numba.cuda.cudaimpl import lower")
-
         self._lowering_rendered = self.struct_ctor_lowering_template.format(
             struct_name=self._struct_name,
             param_types=self._nb_param_types_str,
@@ -244,6 +253,20 @@ def {lower_scope_name}(shim_stream, shim_obj):
             pointer_wrapped_args=self._pointer_wrapped_param_types_str,
             unique_shim_name=self._deduplicated_shim_name,
         )
+
+        # When the function being lowered is a non-explicit single-arg
+        # constructor (also called a converting constructor), we generate
+        # a lower_cast from the argument type to the struct type to
+        # match the C++ behavior of implicit conversion in python
+        if self._ctor_decl.kind == method_kind.converting_constructor:
+            self._lowering_rendered += (
+                "\n"
+                + self.struct_conversion_ctor_lowering_template.format(
+                    struct_type_name=self._struct_type_name,
+                    param_types=self._nb_param_types_str,
+                    pointer_wrapped_args=self._pointer_wrapped_param_types_str,
+                )
+            )
 
     def _render(self):
         """Render FFI, lowering and C shim functions of the constructor.
@@ -337,10 +360,8 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
             the constructors.
         """
 
-        self.Imports.add("from numba.cuda.cudadecl import register")
-        self.Imports.add("from numba.cuda.cudadecl import register_global")
         self.Imports.add(
-            "from numba.core.typing.templates import ConcreteTemplate"
+            "from numba.cuda.typing.templates import ConcreteTemplate"
         )
         self.Imports.add("from numba.types import Function")
 
@@ -667,6 +688,11 @@ class {struct_type_class_name}({parent_type}):
         self.alignof_ = {struct_alignof}
         self.bitwidth = {struct_sizeof} * 8
 
+    def can_convert_from(self, typingctx, other):
+        from numba.core.typeconv import Conversion
+        if other in [{implicit_conversion_types}]:
+            return Conversion.safe
+
 {struct_type_name} = {struct_type_class_name}()
 """
 
@@ -766,6 +792,15 @@ class {struct_attr_typing_name}(AttributeTemplate):
     def _render_typing(self):
         """Render typing of the struct."""
 
+        implicit_conversion_types = ", ".join(
+            [
+                to_numba_type_str(
+                    ctor.param_types[0].unqualified_non_ref_type_name
+                )
+                for ctor in self._decl.constructors()
+                if ctor.kind == method_kind.converting_constructor
+            ]
+        )
         self._typing_rendered = self.typing_template.format(
             struct_type_class_name=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
@@ -773,6 +808,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_name=self._struct_name,
             struct_alignof=self._decl.alignof_,
             struct_sizeof=self._decl.sizeof_,
+            implicit_conversion_types=implicit_conversion_types,
         )
 
     def _render_python_api(self):
@@ -828,9 +864,8 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self._struct_attr_typing_rendered = ""
 
         if self._data_model == StructModel:
-            self.Imports.add("from numba.cuda.cudadecl import register_attr")
             self.Imports.add(
-                "from numba.core.typing.templates import AttributeTemplate"
+                "from numba.cuda.typing.templates import AttributeTemplate"
             )
             self.Imports.add(
                 "from numba.core.extending import make_attribute_wrapper"
@@ -1014,7 +1049,6 @@ class StaticStructsRenderer(BaseRenderer):
 
     def _render(
         self,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ):
@@ -1048,9 +1082,6 @@ class StaticStructsRenderer(BaseRenderer):
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
 
-        if require_pynvjitlink:
-            self._python_str += "\n" + self.Pynvjitlink_guard
-
         if with_shim_stream:
             shim_include = f'"#include<{self._default_header}>"'
             self._python_str += "\n" + get_shim(shim_include)
@@ -1062,13 +1093,12 @@ class StaticStructsRenderer(BaseRenderer):
     def render_as_str(
         self,
         *,
-        require_pynvjitlink: bool,
         with_imports: bool,
         with_shim_stream: bool,
     ) -> str:
         """Return the final assembled bindings in script. This output should be final."""
 
-        self._render(require_pynvjitlink, with_imports, with_shim_stream)
+        self._render(with_imports, with_shim_stream)
         output = self._python_str
         file_logger.debug(output)
 
