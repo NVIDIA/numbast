@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <set>
 #include <vector>
 
 #include <clang/AST/Decl.h>
@@ -133,6 +134,7 @@ struct Function {
   execution_space exec_space;
   bool is_constexpr;
   std::string mangled_name;
+  std::set<std::string> attributes;
 };
 
 struct FunctionTemplate : public Template {

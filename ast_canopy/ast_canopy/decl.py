@@ -74,6 +74,7 @@ class Function:
         exec_space: bindings.execution_space,
         is_constexpr: bool,
         mangled_name: str,
+        attributes: str,
         parse_entry_point: str,
     ):
         self.name = name
@@ -84,6 +85,7 @@ class Function:
         self.exec_space = exec_space
         self.is_constexpr = is_constexpr
         self.mangled_name = mangled_name
+        self.attributes = attributes
 
         self.parse_entry_point = parse_entry_point
 
@@ -162,6 +164,7 @@ class Function:
             c_obj.exec_space,
             c_obj.is_constexpr,
             c_obj.mangled_name,
+            c_obj.attributes,
             parse_entry_point,
         )
 
@@ -212,6 +215,7 @@ class StructMethod(Function):
         is_constexpr: bool,
         is_move_constructor: bool,
         mangled_name: str,
+        attributes: str,
         parse_entry_point: str,
     ):
         super().__init__(
@@ -221,6 +225,7 @@ class StructMethod(Function):
             exec_space,
             is_constexpr,
             mangled_name,
+            attributes,
             parse_entry_point,
         )
         self.kind = kind
@@ -251,6 +256,7 @@ class StructMethod(Function):
             c_obj.is_constexpr,
             c_obj.is_move_constructor(),
             c_obj.mangled_name,
+            c_obj.attributes,
             parse_entry_point,
         )
 
