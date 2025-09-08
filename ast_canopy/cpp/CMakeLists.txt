@@ -88,3 +88,16 @@ write_basic_package_version_file(
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
+
+# Enable CTest-based tests and add a static-linkage verification when requested
+include(CTest)
+if(BUILD_TESTING)
+  if(DEFINED LLVM_LINKAGE AND LLVM_LINKAGE STREQUAL "STATIC")
+    add_test(
+      NAME astcanopy_verify_static_llvm
+      COMMAND ${CMAKE_COMMAND}
+              -Dlib=$<TARGET_FILE:astcanopy>
+              -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/verify_static_llvm.cmake
+    )
+  endif()
+endif()
