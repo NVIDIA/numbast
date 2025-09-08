@@ -5,115 +5,173 @@
 # This module handles LLVM/Clang discovery and configures static/dynamic linking
 
 function(configure_llvm_for_target target_name)
-    # Find Clang package
-    find_package(Clang REQUIRED)
+	# Determine LLVM linkage based on user preference
+	if(NOT DEFINED LLVM_LINKAGE)
+		set(LLVM_LINKAGE "SHARED" CACHE STRING "LLVM linkage type (STATIC or SHARED)")
+	endif()
 
-    # Add path to LLVM modules
-    set(CMAKE_MODULE_PATH
-        ${CMAKE_MODULE_PATH}
-        "${LLVM_CMAKE_DIR}"
-        PARENT_SCOPE
-    )
+	if(NOT LLVM_LINKAGE MATCHES "^(STATIC|SHARED)$")
+		message(FATAL_ERROR "LLVM_LINKAGE must be either 'STATIC' or 'SHARED', got: ${LLVM_LINKAGE}")
+	endif()
 
-    # Import LLVM CMake functions
-    include(AddLLVM)
+	# Discover LLVM and Clang after flags are set
+	find_package(LLVM REQUIRED CONFIG)
+	find_package(Clang REQUIRED CONFIG)
 
-        set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
+	message(STATUS "Found LLVM: ${LLVM_DIR}")
+	message(STATUS "Found Clang: ${Clang_DIR}")
 
-    # Determine LLVM linkage based on user preference
-    if(NOT DEFINED LLVM_LINKAGE)
-        set(LLVM_LINKAGE "SHARED" CACHE STRING "LLVM linkage type (STATIC or SHARED)")
-    endif()
+	include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+	add_definitions(${LLVM_DEFINITIONS} ${CLANG_DEFINITIONS})
 
-    # Validate LLVM_LINKAGE value
-    if(NOT LLVM_LINKAGE MATCHES "^(STATIC|SHARED)$")
-        message(FATAL_ERROR "LLVM_LINKAGE must be either 'STATIC' or 'SHARED', got: ${LLVM_LINKAGE}")
-    endif()
+	# Derive library directories if not explicitly provided by the packages
+	if(NOT DEFINED CLANG_LIBRARY_DIR)
+		if(DEFINED CLANG_INSTALL_PREFIX)
+			set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
+		else()
+			# Clang_DIR typically points to <prefix>/lib/cmake/clang
+			get_filename_component(_clang_pkg_dir ${Clang_DIR} ABSOLUTE)
+			# Go three levels up to reach <prefix>
+			get_filename_component(_clang_prefix ${_clang_pkg_dir}/../../.. ABSOLUTE)
+			set(CLANG_LIBRARY_DIR ${_clang_prefix}/lib)
+		endif()
+	endif()
+	if(NOT DEFINED LLVM_LIBRARY_DIR)
+		if(DEFINED LLVM_LIBRARY_DIRS)
+			list(GET LLVM_LIBRARY_DIRS 0 LLVM_LIBRARY_DIR)
+		else()
+			# LLVM_DIR typically points to <prefix>/lib/cmake/llvm
+			get_filename_component(_llvm_pkg_dir ${LLVM_DIR} ABSOLUTE)
+			# Go three levels up to reach <prefix>
+			get_filename_component(_llvm_prefix ${_llvm_pkg_dir}/../../.. ABSOLUTE)
+			set(LLVM_LIBRARY_DIR ${_llvm_prefix}/lib)
+		endif()
+	endif()
 
-    # Check if requested linkage is available
-    set(LLVM_USE_STATIC_LIBS OFF)
-    if(LLVM_LINKAGE STREQUAL "STATIC")
-        if(EXISTS "${CLANG_LIBRARY_DIR}/libclangTooling.a")
-            message(STATUS "Using static LLVM linking as requested")
-            set(LLVM_USE_STATIC_LIBS ON)
+	# Use imported targets for correct static/shared resolution
+	if(LLVM_LINKAGE STREQUAL "STATIC")
+		# When building statically against clang, explicitly require ZLIB
+		find_package(ZLIB REQUIRED)
 
-            # When building statically against clang, explicitly require ZLIB
-            # since some clang components may depend on it
-            find_package(ZLIB REQUIRED)
+		# Validate presence of static archives; fail early with guidance
+		if(NOT EXISTS ${CLANG_LIBRARY_DIR}/libclangTooling.a)
+			message(FATAL_ERROR "Requested static LLVM/Clang linkage, but 'libclangTooling.a' was not found in ${CLANG_LIBRARY_DIR}. Install a static Clang toolchain (build LLVM/Clang from source with BUILD_SHARED_LIBS=OFF and LLVM_BUILD_LLVM_DYLIB=OFF) and set CMAKE_PREFIX_PATH/LLVM_DIR/Clang_DIR accordingly.")
+		endif()
+		# Require the monolithic libLLVM.a or a representative core archive to ensure static LLVM is available
+		find_file(_LLVM_MONO_A NAMES libLLVM.a PATHS ${LLVM_LIBRARY_DIR} NO_DEFAULT_PATH)
+		if(NOT _LLVM_MONO_A)
+			# Fallback: accept component archives, but require at least core/support
+			find_file(_LLVM_SUPPORT_A NAMES libLLVMSupport.a PATHS ${LLVM_LIBRARY_DIR} NO_DEFAULT_PATH)
+			find_file(_LLVM_CORE_A NAMES libLLVMCore.a PATHS ${LLVM_LIBRARY_DIR} NO_DEFAULT_PATH)
+			if(NOT (_LLVM_SUPPORT_A AND _LLVM_CORE_A))
+				message(FATAL_ERROR "Requested static LLVM/Clang linkage, but neither 'libLLVM.a' nor the component archives 'libLLVMSupport.a' and 'libLLVMCore.a' were found in ${LLVM_LIBRARY_DIR}. Install static LLVM libraries and set CMAKE_PREFIX_PATH/LLVM_DIR accordingly.")
+			endif()
+		endif()
 
-            # For static linking, we need to link against all required LLVM libraries
-            set(CLANG_STATIC_LIBS
-                clangTooling
-                clangFrontendTool
-                clangFrontend
-                clangDriver
-                clangSerialization
-                clangCodeGen
-                clangParse
-                clangSema
-                clangStaticAnalyzerFrontend
-                clangStaticAnalyzerCheckers
-                clangStaticAnalyzerCore
-                clangAnalysis
-                clangAST
-                clangASTMatchers
-                clangRewrite
-                clangRewriteFrontend
-                clangEdit
-                clangLex
-                clangBasic
-            )
+		# Clang components (prefer imported targets; fallback to bare library names)
+		if(TARGET Clang::clangTooling)
+			set(CLANG_STATIC_TARGETS
+				Clang::clangTooling
+				Clang::clangFrontendTool
+				Clang::clangFrontend
+				Clang::clangDriver
+				Clang::clangSerialization
+				Clang::clangCodeGen
+				Clang::clangParse
+				Clang::clangSema
+				Clang::clangStaticAnalyzerFrontend
+				Clang::clangStaticAnalyzerCheckers
+				Clang::clangStaticAnalyzerCore
+				Clang::clangAnalysis
+				Clang::clangAST
+				Clang::clangASTMatchers
+				Clang::clangRewrite
+				Clang::clangRewriteFrontend
+				Clang::clangEdit
+				Clang::clangLex
+				Clang::clangBasic
+			)
+		else()
+			set(CLANG_STATIC_TARGETS
+				clangTooling
+				clangFrontendTool
+				clangFrontend
+				clangDriver
+				clangSerialization
+				clangCodeGen
+				clangParse
+				clangSema
+				clangStaticAnalyzerFrontend
+				clangStaticAnalyzerCheckers
+				clangStaticAnalyzerCore
+				clangAnalysis
+				clangAST
+				clangASTMatchers
+				clangRewrite
+				clangRewriteFrontend
+				clangEdit
+				clangLex
+				clangBasic
+			)
+		endif()
 
-            # Find LLVM static libraries
-            find_package(LLVM REQUIRED CONFIG)
-            llvm_map_components_to_libnames(LLVM_STATIC_LIBS
-                core
-                irreader
-                codegen
-                target
-                linker
-                analysis
-                scalaropts
-                instcombine
-                transformutils
-                bitwriter
-                x86codegen
-                x86asmparser
-                x86desc
-                x86info
-                mc
-                mcparser
-                mcdisassembler
-                object
-                option
-                profiledata
-            )
-        else()
-            message(FATAL_ERROR "Static LLVM libraries not found at ${CLANG_LIBRARY_DIR}/libclangTooling.a but LLVM_LINKAGE=STATIC was requested")
-        endif()
-    else()
-        message(STATUS "Using dynamic LLVM linking as requested")
-    endif()
+		# Map LLVM components to libraries (obeys LLVM_USE_STATIC_LIBS and LLVM_LINK_LLVM_DYLIB)
+		llvm_map_components_to_libnames(LLVM_STATIC_LIBS
+			# Core IR and analysis pipeline
+			core
+			analysis
+			scalaropts
+			instcombine
+			transformutils
+			linker
+			object
+			option
+			profiledata
 
-    # Configure target include directories
-    target_include_directories(${target_name} PUBLIC ${CLANG_INCLUDE_DIRS})
+			# IR and bitcode IO
+			bitreader
+			bitstreamreader
+			bitwriter
+			irreader
 
-    # Add Clang definitions
-    target_compile_definitions(${target_name} PRIVATE ${CLANG_DEFINITIONS})
+			# Support and utilities
+			support
+			demangle
+			remarks
+			binaryformat
+			textapi
+			windowsdriver
 
-    # Configure target link directories
-    target_link_directories(${target_name} PRIVATE ${CLANG_LIBRARY_DIR})
+			# Target and MC layers
+			target
+			mc
+			mcparser
+			mcdisassembler
+			x86codegen
+			x86asmparser
+			x86desc
+			x86info
+			targetparser
 
-    # Link libraries based on static/dynamic availability
-    if(LLVM_USE_STATIC_LIBS)
-        target_link_libraries(${target_name} PRIVATE ${CLANG_STATIC_LIBS} ${LLVM_STATIC_LIBS})
-        # Static linking requires additional system libraries
-        if(UNIX AND NOT APPLE)
-            target_link_libraries(${target_name} PRIVATE dl pthread rt z)
-        elseif(APPLE)
-            target_link_libraries(${target_name} PRIVATE dl pthread z)
-        endif()
-    else()
-        target_link_libraries(${target_name} PRIVATE clangTooling)
-    endif()
+			# Debug info and OpenMP used transitively by Clang components
+			debuginfodwarf
+			frontendopenmp
+		)
+        # Link with static Clang targets and specific LLVM component libs
+        target_link_libraries(${target_name} PRIVATE ${CLANG_STATIC_TARGETS} ${LLVM_STATIC_LIBS})
+
+		# Add system libs for static linking
+		if(UNIX AND NOT APPLE)
+			target_link_libraries(${target_name} PRIVATE dl pthread rt z)
+		elseif(APPLE)
+			target_link_libraries(${target_name} PRIVATE dl pthread z)
+		endif()
+	else()
+		# Dynamic: link to high-level Clang target and let LLVM config pick the right deps
+		if(TARGET Clang::clangTooling)
+			target_link_libraries(${target_name} PRIVATE Clang::clangTooling)
+		else()
+			target_link_libraries(${target_name} PRIVATE clangTooling)
+		endif()
+	endif()
 endfunction()
