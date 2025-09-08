@@ -60,11 +60,22 @@ configure_llvm_for_target(astcanopy)
 # Ensure RTTI is enabled for this target
 target_compile_options(astcanopy PRIVATE -frtti)
 
+# Propagate LLVM/Clang headers and compile defs to consumers so they don't
+# need to rediscover LLVM/Clang to compile against ast_canopy headers
+target_include_directories(astcanopy INTERFACE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+# Also link a representative Clang target at INTERFACE scope so consumers
+# receive transitive usage requirements (include dirs, defs)
+if(TARGET Clang::clangTooling)
+  target_link_libraries(astcanopy INTERFACE Clang::clangTooling)
+else()
+  target_link_libraries(astcanopy INTERFACE clangTooling)
+endif()
+target_compile_definitions(astcanopy INTERFACE ${LLVM_DEFINITIONS} ${CLANG_DEFINITIONS})
+
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # For distro-independent install dirs
 include(GNUInstallDirs)
-
 
 # Install built library into host environment
 install(TARGETS astcanopy
@@ -74,8 +85,9 @@ install(TARGETS astcanopy
   FILE_SET public_headers
 )
 
+# Export targets separately; provide a package config that declares dependencies
 install(EXPORT astcanopy-targets
-  FILE astcanopy-config.cmake
+  FILE astcanopy-targets.cmake
   NAMESPACE astcanopy::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
 
@@ -86,7 +98,15 @@ write_basic_package_version_file(
   VERSION ${_version}
   COMPATIBILITY SameMajorVersion)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/astcanopy-config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy
+)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
 
 # Enable CTest-based tests and add a static-linkage verification when requested
