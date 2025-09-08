@@ -46,5 +46,3 @@ if(match_llvm OR match_clang)
 endif()
 
 message(STATUS "Static LLVM linkage check passed: no dynamic libLLVM/libclang dependencies in ${lib}")
-
-
