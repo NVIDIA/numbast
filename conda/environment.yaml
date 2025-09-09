@@ -8,7 +8,7 @@ channels:
 dependencies:
   - python>=3.10
   - cmake>=3.29 # Allow overriding CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX
-  - clangdev>=18
+  - clangdev >=18,<21.0
   - numba-cuda >=0.16
   - pybind11
   - pytest
