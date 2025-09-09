@@ -70,7 +70,8 @@ public:
 std::string source_filename_from_decl(const Decl *D) {
   const ASTContext &ast_context = D->getASTContext();
   const SourceManager &sm = ast_context.getSourceManager();
-  const StringRef file_name_ref = sm.getFilename(D->getLocation());
+  SourceLocation ELoc = sm.getExpansionLoc(D->getLocation());
+  const StringRef file_name_ref = sm.getFilename(ELoc);
   std::string file_name = file_name_ref.str();
   return file_name;
 }
