@@ -6,10 +6,10 @@
 #pragma once
 
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <set>
 #include <vector>
 
 #include <clang/AST/Decl.h>

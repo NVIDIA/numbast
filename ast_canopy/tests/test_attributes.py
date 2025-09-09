@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-from ast_canopy import api, parse_declarations_from_source
+from ast_canopy import parse_declarations_from_source
+
 
 def test_function_with_attributes(data_folder):
     """Confirms that attribute names can be captured for functions."""
@@ -13,8 +13,11 @@ def test_function_with_attributes(data_folder):
     nfuncs = 0
     for nfuncs, fun in enumerate(iterfunctions(decls), 1):
         expected = set() if fun.name.endswith("noattr") else ATTRS
-        assert fun.attributes == expected, f"for item {fun.name!r} in {srcstr!r}"
-    assert nfuncs == 8 # Update as needed
+        assert fun.attributes == expected, (
+            f"for item {fun.name!r} in {srcstr!r}"
+        )
+    assert nfuncs == 8  # Update as needed
+
 
 def iterfunctions(decls):
     """Iterate the functions (and function templates) in a Declarations object."""
@@ -37,4 +40,3 @@ def iterfunctions(decls):
     for ct in decls.class_templates:
         for fun in _dostruct(ct.instantiate().record):
             yield fun
-
