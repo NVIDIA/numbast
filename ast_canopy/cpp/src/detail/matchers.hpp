@@ -26,7 +26,6 @@ struct traverse_ast_payload {
   Declarations *decls;
   std::unordered_map<int64_t, std::string> *record_id_to_name;
   std::vector<std::string> *files_to_retain;
-  std::vector<std::string> *prefixes_to_whitelist;
   // The set of record IDs that has ClassTemplatePartialSpecializationDecl in
   // ancestor
   std::unordered_set<int64_t> *record_id_with_ctpsd_ancestor;

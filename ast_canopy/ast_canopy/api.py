@@ -158,7 +158,6 @@ def parse_declarations_from_source(
     cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
     cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
-    anon_filename_decl_prefix_allowlist: list[str] = [],
     defines: list[str] = [],
     verbose: bool = False,
 ) -> Declarations:
@@ -196,10 +195,6 @@ def parse_declarations_from_source(
 
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
-
-    anon_filename_decl_prefix_allowlist : list[str], optional
-        A list of prefixes to allow declarations with anonymous filename from. This is a temporary
-        workaround to allow expanded macros to be included in the AST.
 
     defines : list[str], optionsl
         A list of implicit defines that passes into clangTooling via "-D" flag.
@@ -277,7 +272,6 @@ def parse_declarations_from_source(
     decls = bindings.parse_declarations_from_command_line(
         command_line_options,
         files_to_retain,
-        anon_filename_decl_prefix_allowlist,
     )
 
     structs = [

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -133,6 +134,7 @@ struct Function {
   execution_space exec_space;
   bool is_constexpr;
   std::string mangled_name;
+  std::set<std::string> attributes;
 };
 
 struct FunctionTemplate : public Template {
@@ -217,9 +219,9 @@ struct Declarations {
   std::vector<Enum> enums;
 };
 
-Declarations parse_declarations_from_command_line(
-    std::vector<std::string> options, std::vector<std::string> files_to_retain,
-    std::vector<std::string> whitelist_prefixes);
+Declarations
+parse_declarations_from_command_line(std::vector<std::string> options,
+                                     std::vector<std::string> files_to_retain);
 
 std::optional<ConstExprVar>
 value_from_constexpr_vardecl(std::vector<std::string> clang_options,
