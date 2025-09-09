@@ -44,8 +44,6 @@ GPU Arch:
     - {arch_str}
 File List:
     - {data}
-Macro-expanded Function Prefixes:
-    - forty_two_
 """
 
     cfg_file = subdir / "cfg.yaml"

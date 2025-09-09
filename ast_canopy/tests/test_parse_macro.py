@@ -14,13 +14,10 @@ def sample_macro_source(data_folder):
 def test_macro_expansions(sample_macro_source):
     srcstr = str(sample_macro_source)
 
-    # We allow parsing macro expanded functions via an allow list for the prefixes. This is a temporary feature
-    # until we have a better solution for macro expansion.
     decls = parse_declarations_from_source(
         srcstr,
         [srcstr],
         "sm_80",
-        anon_filename_decl_prefix_allowlist=["forty_two_"],
     )
     functions = decls.functions
 
