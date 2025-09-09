@@ -77,8 +77,6 @@ class Config:
         List of struct names to exclude from the bindings.
     clang_includes_paths : list[str]
         List of additional include paths to use when parsing the header file.
-    macro_expanded_function_prefixes : list[str]
-        List of prefixes to allow for anonymous filename declarations.
     additional_imports : list[str]
         The list of additional imports to add to the binding file.
     shim_include_override : str | None
@@ -117,7 +115,6 @@ class Config:
     exclude_functions: list[str]
     exclude_structs: list[str]
     clang_includes_paths: list[str]
-    macro_expanded_function_prefixes: list[str]
     additional_imports: list[str]
     shim_include_override: str | None
     predefined_macros: list[str]
@@ -149,13 +146,6 @@ class Config:
         self.exclude_structs = self.excludes.get("Struct", [])
 
         self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
-
-        # FIXME: We are pretending that the list of macro-expanded functions is the same
-        # as the list of declarations with anonymous filenames. This is not necessarily
-        # true.
-        self.macro_expanded_function_prefixes = config_dict.get(
-            "Macro-expanded Function Prefixes", []
-        )
 
         self.additional_imports = config_dict.get("Additional Import", [])
 
@@ -229,7 +219,6 @@ class Config:
         exclude_functions: list[str] | None = None,
         exclude_structs: list[str] | None = None,
         clang_includes_paths: list[str] | None = None,
-        macro_expanded_function_prefixes: list[str] | None = None,
         additional_imports: list[str] | None = None,
         shim_include_override: str | None = None,
         predefined_macros: list[str] | None = None,
@@ -257,8 +246,6 @@ class Config:
                 "Struct": exclude_structs or [],
             },
             "Clang Include Paths": clang_includes_paths or [],
-            "Macro-expanded Function Prefixes": macro_expanded_function_prefixes
-            or [],
             "Additional Import": additional_imports or [],
             "Shim Include Override": shim_include_override,
             "Predefined Macros": predefined_macros or [],
@@ -511,7 +498,6 @@ def _static_binding_generator(
         compute_capability=compute_capability,
         cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
         additional_includes=config.clang_includes_paths,
-        anon_filename_decl_prefix_allowlist=config.macro_expanded_function_prefixes,
         defines=config.predefined_macros,
         verbose=VERBOSE,
     )
