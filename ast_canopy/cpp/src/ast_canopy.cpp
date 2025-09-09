@@ -70,7 +70,8 @@ public:
 std::string source_filename_from_decl(const Decl *D) {
   const ASTContext &ast_context = D->getASTContext();
   const SourceManager &sm = ast_context.getSourceManager();
-  const StringRef file_name_ref = sm.getFilename(D->getLocation());
+  SourceLocation ELoc = sm.getExpansionLoc(D->getLocation());
+  const StringRef file_name_ref = sm.getFilename(ELoc);
   std::string file_name = file_name_ref.str();
   return file_name;
 }
@@ -125,9 +126,9 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
 
 } // namespace detail
 
-Declarations parse_declarations_from_command_line(
-    std::vector<std::string> options, std::vector<std::string> files_to_retain,
-    std::vector<std::string> whitelist_prefixes) {
+Declarations
+parse_declarations_from_command_line(std::vector<std::string> options,
+                                     std::vector<std::string> files_to_retain) {
 
   auto ast = detail::default_ast_unit_from_command_line(options);
 
@@ -135,7 +136,7 @@ Declarations parse_declarations_from_command_line(
   std::unordered_map<int64_t, std::string> record_id_to_name;
   std::unordered_set<int64_t> record_id_with_ctpsd_ancestor;
   detail::traverse_ast_payload payload{&decls, &record_id_to_name,
-                                       &files_to_retain, &whitelist_prefixes,
+                                       &files_to_retain,
                                        &record_id_with_ctpsd_ancestor};
 
   detail::FunctionCallback func_callback(&payload);
