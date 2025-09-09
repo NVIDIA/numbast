@@ -6,6 +6,7 @@
 #pragma once
 
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -133,6 +134,7 @@ struct Function {
   execution_space exec_space;
   bool is_constexpr;
   std::string mangled_name;
+  std::set<std::string> attributes;
 };
 
 struct FunctionTemplate : public Template {

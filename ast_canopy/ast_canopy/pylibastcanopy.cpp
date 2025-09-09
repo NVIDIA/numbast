@@ -153,6 +153,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("exec_space", &Function::exec_space)
       .def_readwrite("is_constexpr", &Function::is_constexpr)
       .def_readwrite("mangled_name", &Function::mangled_name)
+      .def_readwrite("attributes", &Function::attributes)
       .def(py::pickle(
           [](const Function &f) {
             return py::make_tuple(f.name, f.return_type, f.params,

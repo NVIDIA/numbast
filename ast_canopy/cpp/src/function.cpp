@@ -38,6 +38,11 @@ Function::Function(const clang::FunctionDecl *FD)
                  [](const clang::ParmVarDecl *PVD) { return ParamVar(PVD); });
   exec_space = get_execution_space(FD);
 
+  // Get the attributes.
+  for (const clang::Attr *attr : FD->attrs()) {
+    this->attributes.insert(attr->getSpelling());
+  }
+
   // Compute itanium mangled name
   auto &context = FD->getASTContext();
   auto &diag = context.getDiagnostics();
