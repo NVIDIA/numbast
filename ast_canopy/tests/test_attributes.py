@@ -1,11 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 from ast_canopy import parse_declarations_from_source
 
 
-@pytest.mark.xfail
 def test_function_from_macro(data_folder):
     """Functions created by macro expansion should be handled properly."""
     srcstr = str(data_folder / "pp_function.cu")

@@ -3,42 +3,39 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
-// Functions.
-[[maybe_unused]] int __attribute__((noinline)) func() { return 0; }
+#define DECLARE_ATTR(Name)                                                     \
+  [[maybe_unused]] int __attribute__((noinline)) Name() { return 0; }
+#define DECLARE_NOATTR(Name)                                                   \
+  int Name##_noattr() { return 0; } // Note: name ends with "noattr"
 
-int func_noattr() { return 0; }
+// Functions.
+DECLARE_ATTR(func)
+DECLARE_NOATTR(func)
 
 // Function templates.
-template <typename> [[maybe_unused]] int __attribute__((noinline)) functempl() {
-  return 0;
-}
-
-template <typename> int functempl_noattr() { return 0; }
+template <typename>
+DECLARE_ATTR(functempl)
+template <typename>
+DECLARE_NOATTR(func)
 
 struct A {
   // Methods.
-  [[maybe_unused]] int __attribute__((noinline)) meth() { return 0; }
-
-  int meth_noattr() { return 0; }
-
+  DECLARE_ATTR(meth)
+  DECLARE_NOATTR(meth)
   // Method templates.
-  template <typename> [[maybe_unused]] int __attribute__((noinline)) tmeth() {
-    return 0;
-  }
-
-  template <typename> int tmeth_noattr() { return 0; }
+  template <typename>
+  DECLARE_ATTR(tmeth)
+  template <typename>
+  DECLARE_NOATTR(tmeth)
 };
 
 template <typename> struct B {
   // Class template methods.
-  [[maybe_unused]] int __attribute__((noinline)) meth() { return 0; }
-
-  int meth_noattr() { return 0; }
-
+  DECLARE_ATTR(meth)
+  DECLARE_NOATTR(meth)
   // Class template method templates.
-  template <typename> [[maybe_unused]] int __attribute__((noinline)) tmeth() {
-    return 0;
-  }
-
-  template <typename> int tmeth_noattr() { return 0; }
+  template <typename>
+  DECLARE_ATTR(tmeth)
+  template <typename>
+  DECLARE_NOATTR(tmeth)
 };
