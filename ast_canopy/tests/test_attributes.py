@@ -1,7 +1,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import pytest
 from ast_canopy import parse_declarations_from_source
+
+
+@pytest.mark.xfail
+def test_function_from_macro(data_folder):
+    """Functions created by macro expansion should be handled properly."""
+    srcstr = str(data_folder / "pp_function.cu")
+    decls = parse_declarations_from_source(srcstr, [srcstr], "sm_80")
+    assert len(decls.functions) > 0
 
 
 def test_function_with_attributes(data_folder):
@@ -16,7 +25,7 @@ def test_function_with_attributes(data_folder):
         assert fun.attributes == expected, (
             f"for item {fun.name!r} in {srcstr!r}"
         )
-    assert nfuncs == 8  # Update as needed
+    assert nfuncs == 12  # Update as needed
 
 
 def iterfunctions(decls):
