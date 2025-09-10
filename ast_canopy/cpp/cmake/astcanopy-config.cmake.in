@@ -1,0 +1,43 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Ensure consumers can locate the same LLVM/Clang we used by augmenting
+# CMAKE_PREFIX_PATH with their install prefixes discovered at build time.
+# LLVM_DIR typically points to <prefix>/lib/cmake/llvm and Clang_DIR to
+# <prefix>/lib/cmake/clang. Walk up to the install prefixes and append them.
+set(_astcanopy_llvm_dir "@LLVM_DIR@")
+if(_astcanopy_llvm_dir AND EXISTS "${_astcanopy_llvm_dir}")
+  get_filename_component(_astcanopy_llvm_prefix "${_astcanopy_llvm_dir}/../../.." ABSOLUTE)
+  list(APPEND CMAKE_PREFIX_PATH "${_astcanopy_llvm_prefix}")
+endif()
+
+set(_astcanopy_clang_dir "@Clang_DIR@")
+if(_astcanopy_clang_dir AND EXISTS "${_astcanopy_clang_dir}")
+  get_filename_component(_astcanopy_clang_prefix "${_astcanopy_clang_dir}/../../.." ABSOLUTE)
+  list(APPEND CMAKE_PREFIX_PATH "${_astcanopy_clang_prefix}")
+endif()
+
+list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
+
+# Ensure consumers resolve our public dependencies
+find_dependency(LLVM CONFIG REQUIRED)
+find_dependency(Clang CONFIG REQUIRED)
+
+# Import exported targets
+include("${CMAKE_CURRENT_LIST_DIR}/astcanopy-targets.cmake")
+
+# Reinforce usage requirements in case export omitted them
+if(TARGET astcanopy::astcanopy)
+  target_include_directories(astcanopy::astcanopy INTERFACE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+  target_compile_definitions(astcanopy::astcanopy INTERFACE ${LLVM_DEFINITIONS} ${CLANG_DEFINITIONS})
+  if(TARGET Clang::clangTooling)
+    target_link_libraries(astcanopy::astcanopy INTERFACE Clang::clangTooling)
+  else()
+    target_link_libraries(astcanopy::astcanopy INTERFACE clangTooling)
+  endif()
+endif()
+
+# Export convenience variables for consumers that need include paths explicitly
+set(ASTCANOPY_LLVM_INCLUDE_DIRS "${LLVM_INCLUDE_DIRS}")
+set(ASTCANOPY_CLANG_INCLUDE_DIRS "${CLANG_INCLUDE_DIRS}")

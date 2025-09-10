@@ -46,55 +46,36 @@ target_sources(astcanopy
   FILES include/ast_canopy/ast_canopy.hpp
   include/ast_canopy/error.hpp)
 
-# astcanopy shared lib target
-find_package(Clang REQUIRED)
+# Include LLVM configuration module
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/llvm.cmake)
 
-# Add path to LLVM modules
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${LLVM_CMAKE_DIR}"
-)
-
-# import LLVM CMake functions
-include(AddLLVM)
-
-set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
-
-target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
-                                      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+# Configure target include directories
+target_include_directories(astcanopy PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                       PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/detail/>
                                       INTERFACE $<INSTALL_INTERFACE:include>)
 
-add_definitions(${CLANG_DEFINITIONS})
-
-target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
+# Configure LLVM for astcanopy target
+configure_llvm_for_target(astcanopy)
 
 # Ensure RTTI is enabled for this target
 target_compile_options(astcanopy PRIVATE -frtti)
 
-# Link required clang libraries - clangTooling alone is not sufficient
-# We need additional libraries that contain AST matcher symbols with RTTI
-target_link_libraries(astcanopy PRIVATE
-    clangTooling
-    clangASTMatchers
-    clangAST
-    clangBasic
-    clangFrontend
-    clangSerialization
-    clangDriver
-    clangParse
-    clangSema
-    clangAnalysis
-    clangEdit
-    clangRewrite
-    clangLex
-)
+# Propagate LLVM/Clang headers and compile defs to consumers so they don't
+# need to rediscover LLVM/Clang to compile against ast_canopy headers
+target_include_directories(astcanopy INTERFACE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+# Also link a representative Clang target at INTERFACE scope so consumers
+# receive transitive usage requirements (include dirs, defs)
+if(TARGET Clang::clangTooling)
+  target_link_libraries(astcanopy INTERFACE Clang::clangTooling)
+else()
+  target_link_libraries(astcanopy INTERFACE clangTooling)
+endif()
+target_compile_definitions(astcanopy INTERFACE ${LLVM_DEFINITIONS} ${CLANG_DEFINITIONS})
 
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # For distro-independent install dirs
 include(GNUInstallDirs)
-
 
 # Install built library into host environment
 install(TARGETS astcanopy
@@ -104,8 +85,9 @@ install(TARGETS astcanopy
   FILE_SET public_headers
 )
 
+# Export targets separately; provide a package config that declares dependencies
 install(EXPORT astcanopy-targets
-  FILE astcanopy-config.cmake
+  FILE astcanopy-targets.cmake
   NAMESPACE astcanopy::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
 
@@ -116,5 +98,26 @@ write_basic_package_version_file(
   VERSION ${_version}
   COMPATIBILITY SameMajorVersion)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/astcanopy-config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy
+)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/astcanopy-config-version.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/astcanopy)
+
+# Enable CTest-based tests and add a static-linkage verification when requested
+include(CTest)
+if(BUILD_TESTING)
+  if(DEFINED LLVM_LINKAGE AND LLVM_LINKAGE STREQUAL "STATIC")
+    add_test(
+      NAME astcanopy_verify_static_llvm
+      COMMAND ${CMAKE_COMMAND}
+              -Dlib=$<TARGET_FILE:astcanopy>
+              -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/verify_static_llvm.cmake
+    )
+  endif()
+endif()
