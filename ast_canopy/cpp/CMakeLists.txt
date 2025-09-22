@@ -49,14 +49,14 @@ target_sources(astcanopy
 # astcanopy shared lib target
 find_package(Clang REQUIRED)
 
-# Add path to LLVM modules
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${LLVM_CMAKE_DIR}"
-)
+# Add path to LLVM modules and our own modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${LLVM_CMAKE_DIR}")
 
 # import LLVM CMake functions
 include(AddLLVM)
+
+# import our own CMake functions
+include(ast_canopy_llvm)
 
 set(CLANG_LIBRARY_DIR ${CLANG_INSTALL_PREFIX}/lib)
 
@@ -65,30 +65,16 @@ target_include_directories(astcanopy PUBLIC ${CLANG_INCLUDE_DIRS}
                                       PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/detail/>
                                       INTERFACE $<INSTALL_INTERFACE:include>)
 
-add_definitions(${CLANG_DEFINITIONS})
+# add_definitions(${CLANG_DEFINITIONS})
 
-target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
+# target_link_directories(astcanopy PRIVATE ${CLANG_LIBRARY_DIR})
 
 # Ensure RTTI is enabled for this target
 target_compile_options(astcanopy PRIVATE -frtti)
 
 # Link required clang libraries - clangTooling alone is not sufficient
 # We need additional libraries that contain AST matcher symbols with RTTI
-target_link_libraries(astcanopy PRIVATE
-    clangTooling
-    clangASTMatchers
-    clangAST
-    clangBasic
-    clangFrontend
-    clangSerialization
-    clangDriver
-    clangParse
-    clangSema
-    clangAnalysis
-    clangEdit
-    clangRewrite
-    clangLex
-)
+ast_canopy_target_link_clang(astcanopy)
 
 set_property(TARGET astcanopy PROPERTY POSITION_INDEPENDENT_CODE ON)
 
