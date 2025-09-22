@@ -46,6 +46,8 @@ function(ast_canopy_target_link_clang library_target)
     get_target_property(_clang_target_type ${_clang_target} TYPE)
     message(STATUS "Type: ${_clang_target_type}")
     if (NOT "${_clang_target_type}" STREQUAL "${LLVM_LINKAGE}_LIBRARY")
+      get_target_property(_clang_target_location ${_clang_target} LOCATION)
+      message(STATUS "Library file path: ${_clang_target_location}")
       message(FATAL_ERROR "LLVM_LINKAGE is set to ${LLVM_LINKAGE}, but "
                           "${_clang_target} is of type ${_clang_target_type}. "
                           "Please install a correctly compiled Clang/LLVM.")
