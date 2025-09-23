@@ -12,24 +12,30 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 BUILD_TYPE="Release"
 Editable_Mode="false"
+LLVM_LINKAGE="SHARED"
 
 usage() {
     echo "Usage: ./build.sh [options]"
     echo ""
     echo "Options:"
-    echo "  --develop  Install ast_canopy in editable mode"
-    echo "  --debug    Build libastcanopy in debug mode"
-    echo "  --help     Show this help message"
+    echo "  --develop           Install ast_canopy in editable mode"
+    echo "  --debug             Build libastcanopy in debug mode"
+    echo "  --llvm-linkage=TYPE Set LLVM linkage type (STATIC or SHARED, default: SHARED)"
+    echo "  --help              Show this help message"
     echo ""
     echo "Environment Variables:"
-    echo "  ASTCANOPY_INSTALL_PATH  Override the install path for libastcanopy"
-    echo "                          (default: CMAKE_INSTALL_PREFIX)"
+    echo "  ASTCANOPY_INSTALL_PATH  Install prefix for libastcanopy (sets CMAKE_INSTALL_PREFIX)"
+    echo "                          Also appended to CMAKE_PREFIX_PATH when provided"
+    echo "  CMAKE_PREFIX_PATH       Semicolon-separated list of prefixes for CMake package discovery"
+    echo "                          Can be used together with ASTCANOPY_INSTALL_PATH"
     echo ""
     echo "Example usage:"
-    echo "  ./build.sh                                    # Build and install in release mode"
+    echo "  ./build.sh                                    # Build and install in release mode with shared LLVM"
     echo "  ./build.sh --develop                          # Build and install in editable mode"
     echo "  ./build.sh --debug                            # Build and install in debug mode"
+    echo "  ./build.sh --llvm-linkage=STATIC              # Build with static LLVM linking"
     echo "  ./build.sh --develop --debug                  # Build and install in editable and debug mode"
+    echo "  ./build.sh --llvm-linkage=STATIC --debug      # Build with static LLVM and debug mode"
     echo "  ASTCANOPY_INSTALL_PATH=/custom/path ./build.sh # Install libastcanopy to custom path"
 }
 
@@ -41,6 +47,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         --debug)
             BUILD_TYPE="Debug"
+            shift
+            ;;
+        --llvm-linkage=*)
+            LLVM_LINKAGE="${1#*=}"
+            if [[ "$LLVM_LINKAGE" != "STATIC" && "$LLVM_LINKAGE" != "SHARED" ]]; then
+                echo "Error: --llvm-linkage must be either STATIC or SHARED, got: $LLVM_LINKAGE"
+                usage
+                exit 1
+            fi
             shift
             ;;
         --help)
@@ -75,38 +90,54 @@ echo "Cache cleaned. Starting fresh build..."
 env
 echo ""
 
-# Set CMAKE paths based on ASTCANOPY_INSTALL_PATH or conda environment detection
-if [ -n "$ASTCANOPY_INSTALL_PATH" ]; then
-    echo "ASTCANOPY_INSTALL_PATH is set to: $ASTCANOPY_INSTALL_PATH. Using custom install path."
-    export CMAKE_PREFIX_PATH="$ASTCANOPY_INSTALL_PATH"
-    export CMAKE_INSTALL_PREFIX="$ASTCANOPY_INSTALL_PATH"
+# Determine base CMAKE_PREFIX_PATH and default CMAKE_INSTALL_PREFIX
+if [ -n "$CMAKE_PREFIX_PATH" ]; then
+    echo "Using CMAKE_PREFIX_PATH from environment: $CMAKE_PREFIX_PATH"
 else
     echo "Detecting conda environment..."
     IS_CONDA=$($PYTHON_EXECUTABLE "${SCRIPT_DIR}/detect_conda.py")
     if [ "$IS_CONDA" = "true" ]; then
-        echo "Conda environment detected. Setting CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX to CONDA_PREFIX: $CONDA_PREFIX"
+        echo "Conda environment detected. Setting defaults from CONDA_PREFIX: $CONDA_PREFIX"
         export CMAKE_PREFIX_PATH="$CONDA_PREFIX"
         export CMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
     else
-        echo "Not in conda environment. Using default CMAKE paths."
+        echo "Not in conda environment. Leaving CMAKE_PREFIX_PATH unset unless provided."
     fi
 fi
 
-# Relative to ast_canopy/ <-- This is essential for conda build
+# Apply ASTCANOPY_INSTALL_PATH independently
+if [ -n "$ASTCANOPY_INSTALL_PATH" ]; then
+    echo "ASTCANOPY_INSTALL_PATH is set to: $ASTCANOPY_INSTALL_PATH"
+    export CMAKE_INSTALL_PREFIX="$ASTCANOPY_INSTALL_PATH"
+    if [ -n "$CMAKE_PREFIX_PATH" ]; then
+        export CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH};${ASTCANOPY_INSTALL_PATH}"
+    else
+        export CMAKE_PREFIX_PATH="${ASTCANOPY_INSTALL_PATH}"
+    fi
+fi
+
+echo "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}"
+echo "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}"
+
 echo "Entering cpp build..."
 pushd "${SCRIPT_DIR}/cpp/build"
 echo "Starting cmake config..."
+echo "Build configuration:"
+echo "  BUILD_TYPE: ${BUILD_TYPE}"
+echo "  LLVM_LINKAGE: ${LLVM_LINKAGE}"
+echo "  Editable_Mode: ${Editable_Mode}"
+echo ""
 # CMake automatically reads CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX from environment variables
 cmake ${CMAKE_ARGS} \
     -G"${CMAKE_GENERATOR}" \
     -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
     -DBUILD_SHARED_LIBS:BOOL=ON \
-    -DBUILD_STATIC_LIBS:BOOL=OFF \
     -DCMAKE_CXX_STANDARD:STRING=17 \
     -DCMAKE_CXX_FLAGS:STRING="-frtti" \
     -DCMAKE_PREFIX_PATH:STRING="$CMAKE_PREFIX_PATH" \
     -DCMAKE_INSTALL_PREFIX:STRING="$CMAKE_INSTALL_PREFIX" \
     -DLLVM_ENABLE_RTTI:BOOL=ON \
+    -DLLVM_LINKAGE:STRING="${LLVM_LINKAGE}" \
     ../
 echo "cmake build..."
 cmake --build . -j
