@@ -6,7 +6,7 @@ import os
 import cffi
 
 import numpy as np
-from numba import cuda, config
+from numba import cuda
 import pytest
 
 from click.testing import CliRunner
@@ -34,13 +34,13 @@ def kernel():
 
 @pytest.fixture
 def patch_extra_include_paths():
-    old_extra_include_paths = config.CUDA_NVRTC_EXTRA_SEARCH_PATHS
+    old_extra_include_paths = cuda.config.CUDA_NVRTC_EXTRA_SEARCH_PATHS
 
-    config.CUDA_NVRTC_EXTRA_SEARCH_PATHS = (
+    cuda.config.CUDA_NVRTC_EXTRA_SEARCH_PATHS = (
         f"{os.path.join(os.path.dirname(__file__), 'include')}"
     )
     yield
-    config.CUDA_NVRTC_EXTRA_SEARCH_PATHS = old_extra_include_paths
+    cuda.config.CUDA_NVRTC_EXTRA_SEARCH_PATHS = old_extra_include_paths
 
 
 def test_cli_yml_inputs_additional_includes(
