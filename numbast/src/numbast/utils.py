@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable
+from typing import Callable, Iterable
 from collections import defaultdict
 import re
 
@@ -66,7 +66,26 @@ def deduplicate_overloads(func_name: str) -> str:
     return func_name + f"_{OVERLOADS_CNT[func_name]}"
 
 
-def paramvar_to_str(arg: pylibastcanopy.ParamVar):
+def sanitize_param_names(params: Iterable[pylibastcanopy.ParamVar]) -> list[str]:
+    """Return stable, unique parameter identifiers for use in generated code."""
+
+    names: list[str] = []
+    seen: set[str] = set()
+
+    for index, arg in enumerate(params):
+        candidate = (arg.name or "").strip() or f"arg{index}"
+        base = candidate
+        suffix = 1
+        while candidate in seen:
+            candidate = f"{base}_{suffix}"
+            suffix += 1
+        names.append(candidate)
+        seen.add(candidate)
+
+    return names
+
+
+def paramvar_to_str(arg: pylibastcanopy.ParamVar, name: str):
     """Convert a ParamVar to a string type name.
 
     Perform necessary downcasting of array type ParamVar to a pointer type.
@@ -82,13 +101,13 @@ def paramvar_to_str(arg: pylibastcanopy.ParamVar):
             # Pointer to array type: int (*arr)[10]
             loc = base_ty.rfind("*")
             fml_arg = (
-                base_ty[: loc + 1] + f"*{arg.name}" + base_ty[loc + 1 :] + sizes
+                base_ty[: loc + 1] + f"*{name}" + base_ty[loc + 1 :] + sizes
             )
         else:
             # Regular array type: int arr[10]
-            fml_arg = base_ty + f" (*{arg.name})" + sizes
+            fml_arg = base_ty + f" (*{name})" + sizes
     else:
-        fml_arg = f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
+        fml_arg = f"{arg.type_.unqualified_non_ref_type_name}* {name}"
 
     return fml_arg
 
@@ -135,7 +154,10 @@ extern "C" __device__ int
     else:
         retval = "retval = "
 
-    formal_args = [paramvar_to_str(arg) for arg in params]
+    param_names = sanitize_param_names(params)
+    formal_args = [
+        paramvar_to_str(arg, name) for arg, name in zip(params, param_names)
+    ]
 
     formal_args_str = ", ".join(formal_args)
     if formal_args_str:
@@ -143,7 +165,7 @@ extern "C" __device__ int
         # otherwise it's an empty string.
         formal_args_str = ", " + formal_args_str
 
-    acutal_args_str = ", ".join("*" + arg.name for arg in params)
+    acutal_args_str = ", ".join("*" + name for name in param_names)
 
     include_str = "\n".join([f"#include <{include}>" for include in includes])
 
@@ -193,7 +215,10 @@ extern "C" __device__ int
 }}
     """
 
-    formal_args = [paramvar_to_str(arg) for arg in params]
+    param_names = sanitize_param_names(params)
+    formal_args = [
+        paramvar_to_str(arg, name) for arg, name in zip(params, param_names)
+    ]
 
     formal_args_str = ", ".join(formal_args)
     if formal_args_str:
@@ -201,7 +226,7 @@ extern "C" __device__ int
         # otherwise it's an empty string.
         formal_args_str = ", " + formal_args_str
 
-    acutal_args_str = ", ".join("*" + arg.name for arg in params)
+    acutal_args_str = ", ".join("*" + name for name in param_names)
 
     include_str = "\n".join([f"#include <{include}>" for include in includes])
 

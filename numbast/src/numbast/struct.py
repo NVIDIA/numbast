@@ -25,6 +25,7 @@ from numbast.types import CTYPE_MAPS as C2N, to_numba_type
 from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
+    sanitize_param_names,
 )
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
@@ -109,9 +110,10 @@ def bind_cxx_struct_ctor(
     # FIXME: All params are passed by pointers, then dereferenced in shim.
     # temporary solution for mismatching function prototype against definition.
     # See above lowering for details.
+    param_names = sanitize_param_names(ctor.params)
     arglist = ", ".join(
-        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-        for arg in ctor.params
+        f"{arg.type_.unqualified_non_ref_type_name}* {name}"
+        for name, arg in zip(param_names, ctor.params)
     )
     if arglist:
         arglist = ", " + arglist
@@ -120,7 +122,7 @@ def bind_cxx_struct_ctor(
         func_name=func_name,
         name=struct_name,
         arglist=arglist,
-        args=", ".join("*" + arg.name for arg in ctor.params),
+        args=", ".join("*" + name for name in param_names),
     )
 
     @lower(S, *param_types)
