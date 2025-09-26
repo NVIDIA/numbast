@@ -23,6 +23,7 @@ from numbast.utils import (
     deduplicate_overloads,
     make_struct_ctor_shim,
     make_struct_conversion_operator_shim,
+    sanitize_param_names,
 )
 from numbast.errors import TypeNotFoundError
 
@@ -173,10 +174,12 @@ def {lower_scope_name}(shim_stream, shim_obj):
             _pointer_wrapped_param_types
         )
 
+        self._param_names = sanitize_param_names(self._ctor_decl.params)
+
         # Cache the list of parameter types in C++ pointer types
         c_ptr_arglist = ", ".join(
-            f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-            for arg in self._ctor_decl.params
+            f"{arg.type_.unqualified_non_ref_type_name}* {name}"
+            for name, arg in zip(self._param_names, self._ctor_decl.params)
         )
         if c_ptr_arglist:
             c_ptr_arglist = ", " + c_ptr_arglist
@@ -185,7 +188,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
         # Cache the list of dereferenced arguments
         self._deref_args_str = ", ".join(
-            "*" + arg.name for arg in self._ctor_decl.params
+            "*" + name for name in self._param_names
         )
 
         # Cache the unique shim name

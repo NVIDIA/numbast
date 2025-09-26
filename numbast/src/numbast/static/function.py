@@ -16,7 +16,7 @@ from numbast.static.renderer import (
     get_shim,
 )
 from numbast.static.types import to_numba_type_str
-from numbast.utils import make_function_shim
+from numbast.utils import make_function_shim, sanitize_param_names
 from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
 
 from ast_canopy.decl import Function
@@ -193,10 +193,12 @@ def {func_name}():
 
         self._lower_scope_name = f"_lower_{self._deduplicated_shim_name}"
 
+        self._param_names = sanitize_param_names(self._decl.params)
+
         # Cache the list of parameter types in C++ pointer types
         c_ptr_arglist = ", ".join(
-            f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-            for arg in self._decl.params
+            f"{arg.type_.unqualified_non_ref_type_name}* {name}"
+            for name, arg in zip(self._param_names, self._decl.params)
         )
         if c_ptr_arglist:
             c_ptr_arglist = ", " + c_ptr_arglist
@@ -205,7 +207,7 @@ def {func_name}():
 
         # Cache the list of dereferenced arguments
         self._deref_args_str = ", ".join(
-            "*" + arg.name for arg in self._decl.params
+            "*" + name for name in self._param_names
         )
 
         # Track the public symbols from a function binding

@@ -19,6 +19,7 @@ from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
     make_function_shim,
+    sanitize_param_names,
 )
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
@@ -80,9 +81,10 @@ def bind_cxx_operator_overload_function(
     assert py_op is not None
 
     # Crossing C / C++ boundary, pass argument by pointers.
+    param_names = sanitize_param_names(func_decl.params)
     arglist = ", ".join(
-        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-        for arg in func_decl.params
+        f"{arg.type_.unqualified_non_ref_type_name}* {name}"
+        for name, arg in zip(param_names, func_decl.params)
     )
     if arglist:
         arglist = ", " + arglist
@@ -91,7 +93,7 @@ def bind_cxx_operator_overload_function(
         return_type=return_type_name,
         arglist=arglist,
         method_name=func_decl.name,
-        args=", ".join("*" + arg.name for arg in func_decl.params),
+        args=", ".join("*" + name for name in param_names),
     )
 
     # Typing
