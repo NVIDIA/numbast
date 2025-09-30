@@ -7,3 +7,5 @@ Numbast Documentation
 
    overview
    install
+   static
+   dynamic

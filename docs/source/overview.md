@@ -23,11 +23,13 @@ Numbast supports two complementary workflows.
 - Produces a standalone Python binding module that depends only on Numba CUDA.
 - The generated module can be distributed and imported without requiring Numbast at runtime.
 - Best for library authors who want to avoid adding extra build/runtime dependencies for end users.
+- See: [Static binding generation](static.md)
 
 ### 2. Dynamic binding generation
 - Runs in an environment where the CUDA C++ library and Numbast are available.
 - Numbast loads headers, generates bindings, and registers them with Numba at runtime.
 - Best for exploratory users who want quick access to a C++ library without a separate build step.
+- See: [Dynamic binding generation](dynamic.md)
 
 ## Environment assumptions
 
