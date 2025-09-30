@@ -57,3 +57,29 @@ repos:
     hooks:
       - id: validate-pyproject
         additional_dependencies: ["validate-pyproject-schema-store[all]"]
+  - repo: https://github.com/PyCQA/doc8
+    rev: v2.0.0
+    hooks:
+      - id: doc8
+        # Ignore built documentation outputs
+        exclude: |
+          (?x)^(
+              docs/build/|
+              .*_build/|
+              .*build/html/
+          )$
+  - repo: https://github.com/rstcheck/rstcheck
+    rev: v6.2.5
+    hooks:
+      - id: rstcheck
+        files: "\\.rst$"
+        # Enable Sphinx directive/role support
+        additional_dependencies:
+          - rstcheck[sphinx]
+        # Ignore built documentation outputs
+        exclude: |
+          (?x)^(
+              docs/build/|
+              .*_build/|
+              .*build/html/
+          )$

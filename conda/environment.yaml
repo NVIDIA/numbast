@@ -17,9 +17,9 @@ dependencies:
   - mypy
   - pre-commit
   - cxx-compiler
-  - cuda-version=12.8
-  - cuda-toolkit=12.8
-  - cuda-python=12.8
+  - cuda-version=12.9
+  - cuda-toolkit=12.9
+  - cuda-python=12.9
   - scikit-build-core
   - pip
   - ninja
@@ -27,3 +27,9 @@ dependencies:
   - ruff
   - click
   - jinja2
+  - sphinx
+  - furo
+  - myst-nb
+  - sphinx-copybutton
+  - pip:
+      - nvidia-sphinx-theme
