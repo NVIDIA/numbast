@@ -28,6 +28,5 @@ dependencies:
   - click
   - jinja2
   - sphinx
-  - furo
   - myst-nb
   - sphinx-copybutton

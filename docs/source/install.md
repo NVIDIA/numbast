@@ -37,7 +37,6 @@ pytest ast_canopy/ numbast/
 Use Conda to ensure consistent versions. From `conda/environment.yaml`, the doc-related dependencies are:
 
 - sphinx
-- furo
 - myst-nb
 - sphinx-copybutton
 
