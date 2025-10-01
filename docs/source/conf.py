@@ -31,10 +31,6 @@ autosummary_generate = True
 nb_execution_mode = "off"
 numfig = True
 
-# Avoid hard import requirements for external modules during docs build
-autodoc_mock_imports = [
-    "ast_canopy",
-]
 
 templates_path = ["_templates"]
 exclude_patterns: list[str] = []
