@@ -54,3 +54,11 @@ API reference
 See the full API reference for ``ast_canopy`` and ``numbast``:
 
 - :doc:`API reference <api_reference>`
+
+Key Visual
+----------
+
+The numbat (Myrmecobius fasciatus) is a small, endangered marsupial native to Western Australia.
+
+.. image:: ./_static/logo-light-mode.png
+   :alt: Australian Numbat
