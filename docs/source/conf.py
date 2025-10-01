@@ -23,15 +23,10 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
-    "myst_nb",
     "sphinx_copybutton",
 ]
 
 autosummary_generate = True
-nb_execution_mode = "off"
-numfig = True
-
-
 templates_path = ["_templates"]
 exclude_patterns: list[str] = []
 

@@ -28,7 +28,6 @@ dependencies:
   - click
   - jinja2
   - sphinx
-  - myst-nb
   - sphinx-copybutton
   - pip:
       - nvidia-sphinx-theme

@@ -36,7 +36,7 @@ repository = "https://github.com/NVIDIA/numbast"
 
 [project.optional-dependencies]
 dev = ["ruff"]
-docs = ["sphinx>=7.0", "myst-nb>=1.1.0", "sphinx-copybutton>=0.5.2"]
+docs = ["sphinx>=7.0", "sphinx-copybutton>=0.5.2"]
 
 [tool.ruff]
 # Please use pyproject.toml from the project root

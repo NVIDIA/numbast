@@ -61,6 +61,7 @@ repos:
     rev: v2.0.0
     hooks:
       - id: doc8
+        args: ["--max-line-length=100"]
         # Ignore built documentation outputs
         exclude: |
           (?x)^(

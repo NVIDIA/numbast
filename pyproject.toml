@@ -33,3 +33,7 @@ fixable = ["ALL"]
 [tool.rstcheck]
 # Sphinx directives are handled by Sphinx, not rstcheck
 ignore_directives = ["automodule", "autosummary"]
+
+[tool.doc8]
+# Allow longer lines in reStructuredText files
+max-line-length = 120
