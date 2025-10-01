@@ -94,7 +94,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
   auto DiagOpts = std::make_shared<DiagnosticOptions>();
   detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
 
-#if CLANG_VERSION_MAJOR >= 20
+#if CLANG_VERSION_MAJOR >= 20 && CLANG_VERSION_MAJOR < 21
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
   auto Diags = CompilerInstance::createDiagnostics(
       *FS, *DiagOpts, &diagnostics_consumer, false);
