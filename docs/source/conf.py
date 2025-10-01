@@ -1,4 +1,5 @@
 import os
+import sys
 
 # -- Project information -----------------------------------------------------
 
@@ -8,6 +9,12 @@ author = "NVIDIA"
 # Use environment to avoid importing the package during docs build
 release = os.environ.get("SPHINX_NUMBAST_VER", "latest")
 
+# Ensure local packages are importable for autodoc/autosummary
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+SRC_DIR = os.path.join(REPO_ROOT, "numbast", "src")
+for path in (SRC_DIR, REPO_ROOT):
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
 # -- General configuration ---------------------------------------------------
 
@@ -20,8 +27,14 @@ extensions = [
     "sphinx_copybutton",
 ]
 
+autosummary_generate = True
 nb_execution_mode = "off"
 numfig = True
+
+# Avoid hard import requirements for external modules during docs build
+autodoc_mock_imports = [
+    "ast_canopy",
+]
 
 templates_path = ["_templates"]
 exclude_patterns: list[str] = []

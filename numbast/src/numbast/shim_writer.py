@@ -44,11 +44,11 @@ class ShimWriterBase(ABC):
     def write_to_ptx_shim(self, ptx: str, id: str):
         pass
 
+    @property
     @abstractmethod
     def links(
         self,
-    ) -> Callable[[], Iterator[Union[str, cuda.CUSource, cuda.PTXSource]]]:
-        pass
+    ) -> Callable[[], Iterator[Union[str, cuda.CUSource, cuda.PTXSource]]]: ...
 
 
 class FileShimWriter(ShimWriterBase):
@@ -75,10 +75,10 @@ class FileShimWriter(ShimWriterBase):
     def write_to_ptx_shim(self, ptx: str, id: str):
         """Write ptxes to the files, each keyed by an id to avoid duplication, one file per ptx."""
         if id not in self.ptx_written:
-            f = NamedTemporaryFile(mode="w+t", suffix=".ptx", delete=False)
-            self.ptx_written[f.name] = ptx
-            with open(f.name, "w") as f:
-                f.write(ptx)
+            tmp = NamedTemporaryFile(mode="w+t", suffix=".ptx", delete=False)
+            self.ptx_written[tmp.name] = ptx
+            with open(tmp.name, "w") as fh:
+                fh.write(ptx)
 
     def __del__(self):
         if os.path.exists(self.file_name):
@@ -88,10 +88,12 @@ class FileShimWriter(ShimWriterBase):
                 os.remove(f)
 
     @property
-    def links(self) -> Callable[[], Iterator[str]]:
+    def links(
+        self,
+    ) -> Callable[[], Iterator[Union[str, cuda.CUSource, cuda.PTXSource]]]:
         """Return an iterator to the file containing shim functions and PTXes.
 
-        Usage: declare_device(..., link=[*shim_writer.links()])
+        Usage: ``declare_device(..., link=[*shim_writer.links()])``
         """
 
         def iter_shim_files() -> Iterator[str]:
@@ -130,10 +132,10 @@ class MemoryShimWriter(ShimWriterBase):
     @property
     def links(
         self,
-    ) -> Callable[[], Iterator[Union[cuda.CUSource, cuda.PTXSource]]]:
+    ) -> Callable[[], Iterator[Union[str, cuda.CUSource, cuda.PTXSource]]]:
         """Return an iterator to the memory reference containing shim functions and PTXes.
 
-        Usage: declare_device(..., link=[*shim_writer.links()])
+        Usage: ``declare_device(..., link=[*shim_writer.links()])``
         """
 
         def iter_shim_files() -> Iterator[Union[cuda.CUSource, cuda.PTXSource]]:

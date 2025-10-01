@@ -29,3 +29,7 @@ fixable = ["ALL"]
 "numbast_extensions/tests/*" = ["F841"]
 
 "ast_canopy/pylibastcanopy.pyi" = ["F821"]
+
+[tool.rstcheck]
+# Sphinx directives are handled by Sphinx, not rstcheck
+ignore_directives = ["automodule", "autosummary"]

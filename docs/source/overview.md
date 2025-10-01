@@ -39,3 +39,9 @@ Both static and dynamic workflows require a correctly configured CUDA environmen
 - Dynamic generation: generation and execution happen in the same environment; headers located at generation time should match the runtime CUDA installation.
 
 Numbast relies on `numba.cuda` (via `cuda_paths.py`) to locate the CUDA toolkit and headers.
+
+## API reference
+
+See the full API reference for `ast_canopy` and `numbast`:
+
+- [API reference](api_reference.rst)

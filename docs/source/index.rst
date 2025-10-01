@@ -9,3 +9,4 @@ Numbast Documentation
    install
    static
    dynamic
+   api_reference
