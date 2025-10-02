@@ -86,14 +86,19 @@ jobs:
       - name: Setup proxy cache
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
+      - name: Cache build dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/build-deps
+          key: build-deps-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/install-build-deps.sh') }}
+      - name: Install dependencies
+        run: ./ci/install-build-deps.sh
       - name: Cache LLVM installation
         id: cache-llvm
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/llvm-install
-          key: llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}-${{ hashFiles('.ci/llvm-build-static.sh') }}-v20
-          restore-keys: |
-            llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}-${{ hashFiles('ci/llvm-build-static.sh') }}-v20
+          key: llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/llvm-build-static.sh') }}-v20
       - name: Build LLVM (if cache misses)
         if: steps.cache-llvm.outputs.cache-hit != 'true'
         run: |
@@ -110,14 +115,10 @@ jobs:
       - name: Setup LLVM environment
         run: |
           echo "Checking LLVM..."
-          echo "CMAKE_PREFIX_PATH=${GITHWORKSPACE}/llvm-install:${CMAKE_PREFIX_PATH:-}" >> $GITHUB_ENV
-
-          # Verify LLVM installation
           echo "Verifying LLVM installation..."
-          llvm-config --version
-          ls -lh ${GITHUB_WORKSPACE}/llvm-install/lib*
+          ls -lh llvm-install/lib/
       - name: Build project with LLVM
         run: ${{ inputs.script }}
         env:
           GH_TOKEN: ${{ github.token }}
-          LLVM_PREFIX: /usr/local
+          LLVM_PREFIX: ${github.workspace}/llvm-install

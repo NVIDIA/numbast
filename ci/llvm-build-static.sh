@@ -4,7 +4,7 @@ set -euo pipefail
 # Build only static libraries of LLVM and Clang and install CMake packages
 
 ROOT_DIR="${GITHUB_WORKSPACE}"
-SRC_DIR="${ROOT_DIR}/llvm"
+SRC_DIR="${ROOT_DIR}/llvm/llvm"
 BUILD_DIR="${ROOT_DIR}/build-static"
 INSTALL_DIR="${ROOT_DIR}/llvm-install"
 
