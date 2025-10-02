@@ -71,7 +71,7 @@ jobs:
     env:
       RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
     container:
-      image: quay.io/pypa/manylinux2014_x86_64
+      image: quay.io/pypa/manylinux_2_28_x86_64
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
