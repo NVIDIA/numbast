@@ -3,10 +3,10 @@ set -euo pipefail
 
 # Build only static libraries of LLVM and Clang and install CMake packages
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${GITHUB_WORKSPACE}"
 SRC_DIR="${ROOT_DIR}/llvm"
 BUILD_DIR="${ROOT_DIR}/build-static"
-INSTALL_DIR="${GITHUB_WORKSPACE}/llvm-install"
+INSTALL_DIR="${ROOT_DIR}/llvm-install"
 
 if [[ ! -d "${SRC_DIR}" ]]; then
   echo "Error: expected to find LLVM source at ${SRC_DIR}. Run this from the llvm-project root." >&2
