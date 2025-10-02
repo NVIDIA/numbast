@@ -1,0 +1,123 @@
+on:
+  workflow_call:
+    inputs:
+      build_type:
+        required: true
+        type: string
+      branch:
+        type: string
+      sha:
+        type: string
+      repo:
+        type: string
+      node_type:
+        type: string
+        default: "cpu16"
+      script:
+        type: string
+        default: "ci/build_wheels.sh"
+      matrix_filter:
+        type: string
+        default: "."
+defaults:
+  run:
+    shell: bash
+permissions:
+  actions: read
+  checks: none
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+jobs:
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+    steps:
+      - name: Compute Build Matrix
+        id: compute-matrix
+        run: |
+          set -eo pipefail
+
+          # Please keep the matrices sorted in ascending order by the following:
+          #
+          #     [ARCH, PY_VER, CUDA_VER, LINUX_VER]
+          #
+          export MATRIX="
+          # amd64
+          - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.8.0', LINUX_VER: 'rockylinux8' }
+          "
+
+          MATRIX="$(
+            yq -n -o json 'env(MATRIX)' | \
+            jq -c '${{ inputs.matrix_filter }} | if (. | length) > 0 then {include: .} else "Error: Empty matrix\n" | halt_error(1) end'
+          )"
+
+          echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
+  build:
+    needs: compute-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: "linux-${{ matrix.ARCH }}-${{ inputs.node_type }}"
+    env:
+      RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+    container:
+      image: quay.io/pypa/manylinux2014_x86_64
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 43200 # 12h
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+      - name: Setup proxy cache
+        uses: nv-gha-runners/setup-proxy-cache@main
+        continue-on-error: true
+      - name: Cache LLVM installation
+        id: cache-llvm
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/llvm-install
+          key: llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}-${{ hashFiles('.ci/llvm-build-static.sh') }}-v20
+          restore-keys: |
+            llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}-${{ hashFiles('ci/llvm-build-static.sh') }}-v20
+      - name: Build LLVM (if cache misses)
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: |
+          LLVM_VERSION=20.1.8
+          LLVM_PREFIX=${GITHUB_WORKSPACE}/llvm
+
+          # Download and extract LLVM source
+          echo "Downloading LLVM ${LLVM_VERSION}..."
+          wget -q "https://github.com/llvm/llvm-project/archive/llvmorg-${LLVM_VERSION}.tar.gz" -O llvm.tgz
+          tar -xf llvm.tgz
+          mv "llvm-project-llvmorg-${LLVM_VERSION}" "llvm"
+
+          ./ci/llvm-build-static.sh
+      - name: Setup LLVM environment
+        run: |
+          echo "Checking LLVM..."
+          echo "CMAKE_PREFIX_PATH=${GITHWORKSPACE}/llvm-install:${CMAKE_PREFIX_PATH:-}" >> $GITHUB_ENV
+
+          # Verify LLVM installation
+          echo "Verifying LLVM installation..."
+          llvm-config --version
+          ls -lh ${GITHUB_WORKSPACE}/llvm-install/lib*
+      - name: Build project with LLVM
+        run: ${{ inputs.script }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LLVM_PREFIX: /usr/local
