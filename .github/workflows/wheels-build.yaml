@@ -102,7 +102,7 @@ jobs:
 
           # Download and extract LLVM source
           echo "Downloading LLVM ${LLVM_VERSION}..."
-          wget -q "https://github.com/llvm/llvm-project/archive/llvmorg-${LLVM_VERSION}.tar.gz" -O llvm.tgz
+          curl -sL "https://github.com/llvm/llvm-project/archive/llvmorg-${LLVM_VERSION}.tar.gz" -o llvm.tgz
           tar -xf llvm.tgz
           mv "llvm-project-llvmorg-${LLVM_VERSION}" "llvm"
 
