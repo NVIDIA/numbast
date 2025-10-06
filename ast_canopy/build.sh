@@ -93,15 +93,17 @@ echo ""
 # Determine base CMAKE_PREFIX_PATH and default CMAKE_INSTALL_PREFIX
 if [ -n "$CMAKE_PREFIX_PATH" ]; then
     echo "Using CMAKE_PREFIX_PATH from environment: $CMAKE_PREFIX_PATH"
+fi
+
+if [ -n "$CMAKE_INSTALL_PREFIX" ]; then
+    echo "Using CMAKE_INSTALL_PREFIX from environment: $CMAKE_INSTALL_PREFIX"
 else
-    echo "Detecting conda environment..."
     IS_CONDA=$($PYTHON_EXECUTABLE "${SCRIPT_DIR}/detect_conda.py")
     if [ "$IS_CONDA" = "true" ]; then
-        echo "Conda environment detected. Setting defaults from CONDA_PREFIX: $CONDA_PREFIX"
-        export CMAKE_PREFIX_PATH="$CONDA_PREFIX"
+        echo "Conda environment detected. Setting install path to CONDA_PREFIX: $CONDA_PREFIX"
         export CMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
     else
-        echo "Not in conda environment. Leaving CMAKE_PREFIX_PATH unset unless provided."
+        echo "Not in conda environment. Leaving CMAKE_INSTALL_PREFIX as default unless provided."
     fi
 fi
 
