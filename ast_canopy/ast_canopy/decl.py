@@ -376,6 +376,10 @@ class ClassTemplate(Template):
 
         self.parse_entry_point = parse_entry_point
 
+    @property
+    def name(self):
+        return self.record.name
+
     @classmethod
     def from_c_obj(cls, c_obj: bindings.ClassTemplate, parse_entry_point: str):
         return cls(
