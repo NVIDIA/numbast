@@ -54,12 +54,18 @@ Numbast can generate and use bindings at runtime:
   from numba import types, cuda
   from numba.core.datamodel.models import PrimitiveModel
 
+  from cuda.core import Device
+
   import numpy as np
+
+  # Query the compute capability of current device
+  dev = Device()
+  cc = f"sm_{dev.compute_capability.major}{dev.compute_capability.minor}"
 
   # Parse the header as AST and read all declarations
   source = os.path.join(os.path.dirname(__file__), "demo.cuh")
   # Choose a compute capability that matches your GPU
-  decls = parse_declarations_from_source(source, [source], "sm_80")
+  decls = parse_declarations_from_source(source, [source], cc)
 
   # Create a shim and generate bindings
   shim_writer = MemoryShimWriter(f'#include "{source}"')
@@ -88,7 +94,8 @@ Guidance and best practices
 ---------------------------
 
 - Ensure the CUDA toolkit found at generation time is the same as the runtime toolkit.
-- Match the compute capability (e.g., ``sm_80``) to your target GPU.
+- Match the compute capability (e.g., ``sm_80``) to your target GPU. We recommend using ``cuda.core`` to discover the
+  compute capability of the current device.
 - Keep header search paths consistent; custom include directories can be supplied to the parser if needed.
 
 Differences vs static generation
