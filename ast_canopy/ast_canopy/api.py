@@ -9,7 +9,7 @@ import logging
 from typing import Optional, Any
 from dataclasses import dataclass
 
-from numba.cuda.cuda_paths import get_nvidia_nvvm_ctk, get_cuda_home
+from numba.cuda.cuda_paths import get_cuda_paths, get_cuda_home
 
 import pylibastcanopy as bindings
 
@@ -42,9 +42,10 @@ def get_default_cuda_path() -> Optional[str]:
     if home := get_cuda_home():
         return home
 
-    if nvvm_path := get_nvidia_nvvm_ctk():
-        # In the form of $ROOT/nvvm/lib64/libnvvm.so, go up 2 levels for cuda home.
-        cuda_home = os.path.dirname(os.path.dirname(nvvm_path))
+    by, nvvm_path = get_cuda_paths()["nvvm"]
+    if nvvm_path is not None:
+        # In the form of $CUDA_HOME/nvvm/lib64/libnvvm.so, go up 3 levels for cuda home.
+        cuda_home = os.path.dirname(os.path.dirname(os.path.dirname(nvvm_path)))
 
         if os.path.exists(cuda_home):
             logger.info(f"Found CUDA home: {cuda_home}")
@@ -55,9 +56,9 @@ def get_default_cuda_path() -> Optional[str]:
 
 def get_default_nvcc_path() -> Optional[str]:
     """Return the path to the default NVCC compiler binary."""
-    nvvm_path = get_nvidia_nvvm_ctk()
+    by, nvvm_path = get_cuda_paths()["nvvm"]
 
-    if not nvvm_path:
+    if nvvm_path is None:
         return shutil.which("nvcc")
 
     root = os.path.dirname(os.path.dirname(nvvm_path))

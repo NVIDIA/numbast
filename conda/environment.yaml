@@ -8,8 +8,8 @@ channels:
 dependencies:
   - python>=3.10
   - cmake>=3.29 # Allow overriding CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX
-  - clangdev >=18,<21.0
-  - numba-cuda >=0.16
+  - clangdev >=18,<22.0
+  - numba-cuda >=0.20.0
   - pybind11
   - pytest
   - pytest-benchmark
@@ -17,9 +17,9 @@ dependencies:
   - mypy
   - pre-commit
   - cxx-compiler
-  - cuda-version=12.8
-  - cuda-toolkit=12.8
-  - cuda-python=12.8
+  - cuda-version=12.9
+  - cuda-toolkit=12.9
+  - cuda-python=12.9
   - scikit-build-core
   - pip
   - ninja

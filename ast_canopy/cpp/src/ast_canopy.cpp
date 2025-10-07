@@ -91,20 +91,30 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
   // Create a diagnostics engine that captures errors. Writes error and fatal
   // errors to the diagnostics_consumer. diagnostics_consumer stores the result
   // to a vector of strings.
-  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  auto DiagOpts = std::make_shared<DiagnosticOptions>();
   detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
 
-#if CLANG_VERSION_MAJOR >= 20
+#if CLANG_VERSION_MAJOR >= 21
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
   auto Diags = CompilerInstance::createDiagnostics(
-      *FS, &*DiagOpts, &diagnostics_consumer, false);
+      *FS, *DiagOpts, &diagnostics_consumer, false);
+#elif CLANG_VERSION_MAJOR == 20
+  IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
+  auto Diags = CompilerInstance::createDiagnostics(*FS, DiagOpts.get(),
+                                                   &diagnostics_consumer, false,
+                                                   /*CodeGenOptions*/ nullptr);
 #else
   auto Diags = CompilerInstance::createDiagnostics(
-      &*DiagOpts, &diagnostics_consumer, false);
+      DiagOpts.get(), &diagnostics_consumer, false);
 #endif
 
+#if CLANG_VERSION_MAJOR >= 21
+  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
+      argstart, argend, PCHContainerOps, DiagOpts, Diags, ""));
+#else
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, Diags, ""));
+#endif
 
   if (!ast) {
     throw std::runtime_error("Failed to create an ASTUnit pointer.");
