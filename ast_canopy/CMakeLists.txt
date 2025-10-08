@@ -11,8 +11,6 @@ project(${SKBUILD_PROJECT_NAME}
 	LANGUAGES C CXX)
 
 
-set(CMAKE_FIND_DEBUG_MODE ON)
-
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(astcanopy ${SKBUILD_PROJECT_VERSION} REQUIRED)
