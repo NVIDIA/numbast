@@ -14,7 +14,7 @@ rapids-mamba-retry create -n test \
   -c `pwd`/conda-repo \
   click \
   pytest \
-  "clangdev>=18,<21.0" \
+  "clangdev>=18,<22.0" \
   cuda-nvcc \
   cuda-version=${RAPIDS_CUDA_VERSION%.*} \
   cuda-nvrtc \
