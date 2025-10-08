@@ -115,12 +115,9 @@ echo ""
 # Determine base CMAKE_PREFIX_PATH and default CMAKE_INSTALL_PREFIX
 # FIXME: We currently rely on environment CMAKE_PREFIX_PATH, which is often
 #        colon-delimited like PATH. CMake expects semicolons. We only
-#        normalize when passing it as a CMake option below; revisit this
-#        behavior to avoid delimiter confusion in the environment.
+#        normalize when passing it as a CMake option below; really, we should
+#        always use colon-delimited paths in the environment.
 if [ -n "$CMAKE_PREFIX_PATH" ]; then
-    # If the environment variable was set with semicolons (CMake-style),
-    # normalize it back to colons for environment semantics.
-
     echo "Using CMAKE_PREFIX_PATH from environment: $CMAKE_PREFIX_PATH"
 fi
 
@@ -149,6 +146,8 @@ if [ -n "$ASTCANOPY_INSTALL_PATH" ]; then
     fi
 fi
 
+# If the environment variable was set with semicolons (CMake-style),
+# normalize it back to colons for environment semantics.
 if [[ "$CMAKE_PREFIX_PATH" == *";"* ]]; then
     # FIXME: Environment CMAKE_PREFIX_PATH should be colon-delimited; normalizing.
     export CMAKE_PREFIX_PATH="$(normalize_env_prefix_path "$CMAKE_PREFIX_PATH")"
