@@ -25,6 +25,17 @@ normalize_cmake_prefix_path() {
     fi
 }
 
+# Convert a semicolon-separated path list (CMake style) into a
+# colon-separated list (environment style)
+normalize_env_prefix_path() {
+    local input="$1"
+    if [[ -z "$input" ]]; then
+        echo ""
+    else
+        echo "${input//;/:}"
+    fi
+}
+
 usage() {
     echo "Usage: ./build.sh [options]"
     echo ""
@@ -107,6 +118,12 @@ echo ""
 #        normalize when passing it as a CMake option below; revisit this
 #        behavior to avoid delimiter confusion in the environment.
 if [ -n "$CMAKE_PREFIX_PATH" ]; then
+    # If the environment variable was set with semicolons (CMake-style),
+    # normalize it back to colons for environment semantics.
+    if [[ "$CMAKE_PREFIX_PATH" == *";"* ]]; then
+        # FIXME: Environment CMAKE_PREFIX_PATH should be colon-delimited; normalizing.
+        export CMAKE_PREFIX_PATH="$(normalize_env_prefix_path "$CMAKE_PREFIX_PATH")"
+    fi
     echo "Using CMAKE_PREFIX_PATH from environment: $CMAKE_PREFIX_PATH"
 fi
 
