@@ -290,10 +290,14 @@ class TemplatedStructMethod(StructMethod):
         """Return the declaration name without template parameters.
 
         For templated struct methods, if the name contains template parameters,
-        the declaration name is the base name without parameters. For example:
+        the declaration name is the base name without parameters.
 
-        template<typename T, int n>
-        struct Foo { Foo() {} };
+        Example:
+
+        .. code-block:: cpp
+
+            template<typename T, int n>
+            struct Foo { Foo() {} };
 
         The constructor name is ``Foo<T, n>``; the declaration name is ``Foo``.
         """
