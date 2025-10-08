@@ -1,20 +1,13 @@
 import os
-import sys
 
 # -- Project information -----------------------------------------------------
 
 project = "Numbast"
+copyright = "2023-2025, NVIDIA"
 author = "NVIDIA"
 
 # Use environment to avoid importing the package during docs build
 release = os.environ.get("SPHINX_NUMBAST_VER", "latest")
-
-# Ensure local packages are importable for autodoc/autosummary
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-SRC_DIR = os.path.join(REPO_ROOT, "numbast", "src")
-for path in (SRC_DIR, REPO_ROOT):
-    if path not in sys.path:
-        sys.path.insert(0, path)
 
 # -- General configuration ---------------------------------------------------
 
@@ -35,7 +28,13 @@ exclude_patterns: list[str] = []
 
 html_baseurl = "docs"
 html_theme = "nvidia_sphinx_theme"
-html_logo = "_static/logo-light-mode.png"
+html_theme_options = {
+    "switcher": {
+        "json_url": "https://nvidia.github.io/numbast/nv-versions.json",
+        "version_match": release,
+    },
+    "navbar_center": ["version-switcher", "navbar-nav"],
+}
 
 html_static_path = ["_static"]
 
