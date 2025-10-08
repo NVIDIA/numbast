@@ -72,9 +72,8 @@ def get_default_nvcc_path() -> Optional[str]:
 
 
 def get_default_compiler_search_paths() -> list[str]:
-    """Compile an empty file with clang++ and print logs verbosely.
-    Extract the default system header search paths from the logs and return them.
-    """
+    """Compile an empty CUDA file with clang++ in verbose mode and parse the
+    output to extract the default system header search paths."""
 
     # clang++ needs to be put in cuda mode so that it can include the proper headers.
     # The bare minimum of the cuda mode is with `-nocudainc` and `-no-cuda-version-check`
@@ -107,10 +106,10 @@ def get_default_compiler_search_paths() -> list[str]:
 
 
 def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
-    """Compile an empty file with NVCC and extract its default include path.
+    """Compile an empty CUDA file with NVCC and extract its default include path.
 
-    ast_canopy depends on a healthy cuda environment to function. If nvcc fails
-    to compile an empty CUDA file, this function will raise an error.
+    ast_canopy depends on a healthy CUDA environment to function. If NVCC fails
+    to preprocess an empty CUDA file, this function raises a RuntimeError.
     """
 
     nvcc_bin = get_default_nvcc_path()
@@ -156,17 +155,15 @@ def parse_declarations_from_source(
     files_to_retain: list[str],
     compute_capability: str,
     cccl_root: str = "",
-    cudatoolkit_include_dir: str = get_default_cuda_compiler_include(),
+    cudatoolkit_include_dir: str | None = None,
     cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
     defines: list[str] = [],
     verbose: bool = False,
 ) -> Declarations:
-    """Given a source file, parse all *top-level* declarations from it.
-    Returns a tuple that each contains a list of declaration objects for the source file.
-
-    `files_to_retain` is a required parameter to specify the declarations from which files
-    should be ratained in the result. See `Parameters` section for more details.
+    """Given a source file, parse all top-level declarations from it and return
+    a ``Declarations`` object containing lists of declaration objects found in
+    the source.
 
     Parameters
     ----------
@@ -174,18 +171,18 @@ def parse_declarations_from_source(
         The path to the source file to parse.
 
     files_to_retain : list[str]
-        A list of file paths, from which the parsed declarations that should be retained in
-        the result. A header file usually reference other header files. A semantically intact
-        AST should in theory include all referenced header files. In practice, one may not
-        need to consume all the other referenced files. To only retain the declarations from
-        `source_file_path`, one may pass [source_file_path] to this parameter.
+        A list of file paths whose parsed declarations should be retained in the
+        result. A header file usually references other headers. A semantically
+        intact AST should, in theory, include all referenced headers. In
+        practice, you may not need all of them. To retain only declarations
+        from ``source_file_path``, pass ``[source_file_path]``.
 
     compute_capability : str
         The compute capability of the target GPU. e.g. "sm_70".
 
     cccl_root : str, optional
-        The root directory of the CCCL project. If not provided, CCCL from default CTK headers
-        are used.
+        The root directory of the CCCL project. If not provided, CCCL from the
+        default CTK headers is used.
 
     cudatoolkit_include_dir : str, optional
         The path to the CUDA Toolkit include directory. If not provided, the default CUDA include
@@ -197,16 +194,21 @@ def parse_declarations_from_source(
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
 
-    defines : list[str], optionsl
-        A list of implicit defines that passes into clangTooling via "-D" flag.
+    defines : list[str], optional
+        A list of implicit defines that are passed to clangTooling via the
+        "-D" flag.
 
     verbose : bool, optional
-        If True, print the stderr from clang++ invocation.
+        If True, print stderr from the clang++ invocation.
 
     Returns
     -------
-    Declarations: See `Declarations` struct definition for detail.
+    Declarations
+        See ``Declarations`` struct definition for details.
     """
+
+    if cudatoolkit_include_dir is None:
+        cudatoolkit_include_dir = get_default_cuda_compiler_include()
 
     if not os.path.exists(source_file_path):
         raise FileNotFoundError(f"File not found: {source_file_path}")
@@ -308,7 +310,30 @@ def value_from_constexpr_vardecl(
     cxx_standard: str = "gnu++17",
     verbose: bool = False,
 ) -> bindings.ConstExprVar | None:
-    """Extract the values from constexpr VarDecl of given name."""
+    """Extract the value from a constexpr ``VarDecl`` with the given name.
+
+    Parameters
+    ----------
+    source : str
+        The source code to parse.
+
+    vardecl_name : str
+        The name of the constexpr variable declaration to extract the value from.
+
+    compute_capability : str
+        The compute capability of the target GPU. e.g. "sm_70".
+
+    cxx_standard : str, optional
+        The C++ standard to use. Default is "gnu++17".
+
+    verbose : bool, optional
+        If True, print the stderr from clang++ invocation.
+
+    Returns
+    -------
+    ConstExprVar | None
+        See ``ConstExprVar`` struct definition for details.
+    """
 
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(source)

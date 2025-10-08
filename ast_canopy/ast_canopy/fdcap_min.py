@@ -14,9 +14,10 @@ class STREAMFD(IntEnum):
 
 
 class MinFDCapture:
-    """Captures a file descriptor by redirecting it to a temporary file.
-    Note that this is a minimum implementation. Corner cases may exist.
-    for example, it currently does not handle stdin redirection.
+    """Capture a file descriptor by redirecting it to a temporary file.
+
+    This is a minimal implementation and may miss corner cases. For example,
+    stdin redirection is not currently supported.
     """
 
     def __init__(self, fd: STREAMFD):
@@ -38,11 +39,11 @@ class MinFDCapture:
             os.dup2(self.tmpfile_fd, self.fd)
 
     def stop(self):
-        """Restore the file descriptor with the saved descriptor."""
+        """Restore the file descriptor using the saved descriptor."""
         os.dup2(self.old_fd, self.fd)
 
     def snap(self) -> str:
-        """Get the captured content as a string."""
+        """Return the captured content as a string."""
         self.tmpfile.seek(0)
         return self.tmpfile.read().decode("UTF-8")
 

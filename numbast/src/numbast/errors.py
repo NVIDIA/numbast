@@ -7,13 +7,12 @@ class BaseASTError(Exception):
 
 
 class TypeNotFoundError(BaseASTError):
-    """Indicate that a type string is not found within Numbast's type cache.
+    """Indicate that a type string was not found in Numbast's type cache.
 
-    Numbast adopts an "incremental binding building" strategy. Libraries that are not
-    self-contained can have inter-operations with declarations in other libraries.
-    In these situations, if third party library decls do not pre-exist in Numbast's
-    type cache, Numbast chooses to ignore these inter-operations when doing binding
-    building.
+    Numbast adopts an incremental binding-building strategy. Libraries that are
+    not self-contained may interoperate with declarations from other libraries.
+    If third-party declarations do not exist in Numbast's type cache, these
+    interoperations are ignored when building bindings.
     """
 
     def __init__(self, type_name):
@@ -28,8 +27,8 @@ class TypeNotFoundError(BaseASTError):
 class MangledFunctionNameConflictError(BaseASTError):
     """Indicate that a mangled function name is not unique.
 
-    This error is raised when a function with the same mangled name of a previously
-    generated binding is found.
+    This error is raised when a function shares a mangled name with a previously
+    generated binding.
     """
 
     def __init__(self, mangled_name: str):

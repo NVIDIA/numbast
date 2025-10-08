@@ -52,15 +52,16 @@ def bind_cxx_struct_ctor(
     S: object,
     shim_writer: ShimWriter,
 ) -> Optional[list]:
-    """Make binding for a C++ struct constructor. Returns the list of argument types.
+    """Create bindings for a C++ struct constructor and return its argument types.
 
     Parameters
     ----------
+
     ctor : StructMethod
         Constructor declaration of struct in CXX
     struct_name : str
         The name of the struct from which this constructor belongs to
-    s_type : Numba type
+    s_type : numba.types.Type
         The Numba type of the struct
     S : object
         The Python API of the struct
@@ -70,12 +71,13 @@ def bind_cxx_struct_ctor(
     Returns
     -------
     list of argument types, optional
-        If the constructor is a move constructor, return None. Otherwise, return the list of argument types.
+        If the constructor is a move constructor, return ``None``. Otherwise,
+        return the list of argument types.
     """
 
     if ctor.is_move_constructor:
         # move constructor is trivially supported in Numba / Python, skip
-        return
+        return None
 
     param_types = [
         to_numba_type(arg.unqualified_non_ref_type_name)
@@ -174,7 +176,7 @@ def bind_cxx_struct_ctors(
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
 ):
-    """Given a CXX struct declaration, generate bindings for its constructors.
+    """Given a C++ struct declaration, generate bindings for its constructors.
 
     Parameters
     ----------
@@ -183,7 +185,7 @@ def bind_cxx_struct_ctors(
         The declaration of the struct in CXX
     S: object
         The Python API of the struct
-    s_type: numba type
+    s_type: numba.types.Type
         The Numba type of the struct
     shim_writer: ShimWriter
         The shim writer to write the shim layer code.
@@ -211,7 +213,7 @@ def bind_cxx_struct_conversion_opeartor(
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
 ):
-    """Binding CXX struct conversion oeperator to Numba.
+    """Bind a C++ struct conversion operator to Numba.
 
     Parameters
     ----------
@@ -267,7 +269,7 @@ def bind_cxx_struct_conversion_opeartor(
 def bind_cxx_struct_conversion_opeartors(
     struct_decl: Struct, s_type: nbtypes.Type, shim_writer: ShimWriter
 ):
-    """"""
+    """Bind all conversion operators for a C++ struct."""
     for conv in struct_decl.conversion_operators():
         bind_cxx_struct_conversion_opeartor(
             conv, struct_decl.name, s_type, shim_writer
@@ -284,7 +286,7 @@ def bind_cxx_struct(
     ] = {},  # XXX: this should be just a list of aliases
 ) -> object:
     """
-    Make bindings for a C++ struct.
+    Create bindings for a C++ struct.
 
     Parameters
     ----------
@@ -294,7 +296,7 @@ def bind_cxx_struct(
         Declaration of the struct type in CXX
     parent_type : nbtypes.Type, optional
         Parent type of the Python API, by default nbtypes.Type
-    data_model : DataModel, optional
+    data_model : type, optional
         Data model for the struct, by default StructModel
     aliases : dict[str, list[str]], optional
         Mappings from the name of the struct to a list of aliases.
@@ -397,7 +399,7 @@ def bind_cxx_structs(
     aliases: dict[str, list[str]] = {},
 ) -> list[object]:
     """
-    Make bindings for a list of C++ structs.
+    Create bindings for a list of C++ structs.
 
     Parameters
     ----------
@@ -407,7 +409,7 @@ def bind_cxx_structs(
         List of declarations of the struct types in CXX
     parent_type : nbtypes.Type, optional
         Parent type of the Python API, by default nbtypes.Type
-    data_model : DataModel, optional
+    data_model : type, optional
         Data model for the struct, by default StructModel
     aliases : dict[str, list[str]], optional
         Mappings from the name of the struct to a list of aliases.

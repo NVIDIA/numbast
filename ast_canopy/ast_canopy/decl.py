@@ -59,10 +59,9 @@ CXX_TYPE_TO_PYTHON_TYPE = {
 
 
 class Function:
-    """
-    Represents a C++ function.
+    """Represents a C++ function.
 
-    For C++ operators types:
+    For C++ operator types, see
     https://en.cppreference.com/w/cpp/language/operators.
     """
 
@@ -264,13 +263,15 @@ class StructMethod(Function):
 class TemplatedStructMethod(StructMethod):
     @property
     def decl_name(self):
-        """For a templated struct method, if the name contains template parameters,
-        Decl name is the name without the template parameters. e.g.
+        """Return the declaration name without template parameters.
+
+        For templated struct methods, if the name contains template parameters,
+        the declaration name is the base name without parameters. For example:
 
         template<typename T, int n>
         struct Foo { Foo() {} };
 
-        The name of the constructor is Foo<T, n>. Decl name is Foo.
+        The constructor name is ``Foo<T, n>``; the declaration name is ``Foo``.
         """
 
         if "<" in self.name:
