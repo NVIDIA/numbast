@@ -169,12 +169,24 @@ class Function:
 
 
 class Template:
+    """Base class for C++ template declarations.
+
+    Stores the list of template parameters and the minimum number of
+    required template arguments.
+    """
+
     def __init__(self, template_parameters, num_min_required_args):
         self.template_parameters = template_parameters
         self.num_min_required_args = num_min_required_args
 
 
 class FunctionTemplate(Template):
+    """Represents a C++ function template declaration.
+
+    Wraps a parsed function template and provides ``instantiate`` for
+    building a concrete instantiation.
+    """
+
     def __init__(
         self,
         template_parameters: list[bindings.TemplateParam],
@@ -204,6 +216,12 @@ class FunctionTemplate(Template):
 
 
 class StructMethod(Function):
+    """Represents a method of a C++ struct/class.
+
+    Includes constructors, conversion operators, and overloaded operators.
+    Extends ``Function`` with method-specific metadata.
+    """
+
     def __init__(
         self,
         name: str,
@@ -261,6 +279,12 @@ class StructMethod(Function):
 
 
 class TemplatedStructMethod(StructMethod):
+    """Struct/class method whose name may include template parameters.
+
+    Provides utilities for working with the declaration name without
+    template arguments.
+    """
+
     @property
     def decl_name(self):
         """Return the declaration name without template parameters.
@@ -281,6 +305,12 @@ class TemplatedStructMethod(StructMethod):
 
 
 class Struct:
+    """Represents a C++ record (struct/class) and its metadata.
+
+    Contains fields, methods, templated methods, nested records and class
+    templates, as well as size/align information and the parse entry point.
+    """
+
     def __init__(
         self,
         name: str,
@@ -341,6 +371,11 @@ class Struct:
 
 
 class TemplatedStruct(Struct):
+    """A ``Struct`` whose methods include templated methods.
+
+    Specializes method handling to use ``TemplatedStructMethod``.
+    """
+
     templated_methods: list[TemplatedStructMethod]
 
     @classmethod
@@ -365,6 +400,12 @@ class TemplatedStruct(Struct):
 
 
 class ClassTemplate(Template):
+    """Represents a C++ class template declaration.
+
+    Holds the underlying ``TemplatedStruct`` and provides ``instantiate`` for
+    building a concrete class instantiation.
+    """
+
     def __init__(
         self,
         record: TemplatedStruct,
@@ -392,6 +433,12 @@ class ClassTemplate(Template):
 
 
 class ConstExprVar:
+    """Represents a constexpr variable extracted from C++.
+
+    Stores the C++ type and serialized value; ``value`` converts it to the
+    corresponding Python value based on the type mapping.
+    """
+
     def __init__(self, name: str, type_: bindings.Type, value_serialized: str):
         self.name = name
         self.type_ = type_
