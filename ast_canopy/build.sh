@@ -120,10 +120,7 @@ echo ""
 if [ -n "$CMAKE_PREFIX_PATH" ]; then
     # If the environment variable was set with semicolons (CMake-style),
     # normalize it back to colons for environment semantics.
-    if [[ "$CMAKE_PREFIX_PATH" == *";"* ]]; then
-        # FIXME: Environment CMAKE_PREFIX_PATH should be colon-delimited; normalizing.
-        export CMAKE_PREFIX_PATH="$(normalize_env_prefix_path "$CMAKE_PREFIX_PATH")"
-    fi
+
     echo "Using CMAKE_PREFIX_PATH from environment: $CMAKE_PREFIX_PATH"
 fi
 
@@ -150,6 +147,11 @@ if [ -n "$ASTCANOPY_INSTALL_PATH" ]; then
     else
         export CMAKE_PREFIX_PATH="${ASTCANOPY_INSTALL_PATH}"
     fi
+fi
+
+if [[ "$CMAKE_PREFIX_PATH" == *";"* ]]; then
+    # FIXME: Environment CMAKE_PREFIX_PATH should be colon-delimited; normalizing.
+    export CMAKE_PREFIX_PATH="$(normalize_env_prefix_path "$CMAKE_PREFIX_PATH")"
 fi
 
 echo "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}"
