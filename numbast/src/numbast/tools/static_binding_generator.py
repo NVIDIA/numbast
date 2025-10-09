@@ -20,7 +20,7 @@ import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function, Struct
-from pylibastcanopy import Enum, Typedef
+from pylibastcanopy import Enum, Typedef, ClassTemplate
 
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
@@ -36,6 +36,7 @@ from numbast.static.function import (
 )
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
+from numbast.static.class_template import StaticClassTemplatesRenderer
 from numbast.tools.yaml_tags import string_constructor
 
 config.CUDA_USE_NVIDIA_BINDING = True
@@ -415,6 +416,15 @@ def _generate_functions(
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
+def _generate_class_templates(
+    class_template_decls: list[ClassTemplate],
+    header_path: str,
+):
+    """Create class template bindings."""
+    SCTR = StaticClassTemplatesRenderer(class_template_decls)
+    return SCTR.render_as_str(with_imports=False, with_shim_stream=False)
+
+
 def _generate_enums(enum_decls: list[Enum]):
     """Create enum bindings."""
     SER = StaticEnumsRenderer(enum_decls)
@@ -509,6 +519,7 @@ def _static_binding_generator(
         for td in decls.typedefs
         if td.underlying_name not in config.exclude_structs
     ]
+    class_templates = decls.class_templates
 
     if log_generates:
         log_files_to_generate(functions, structs, enums, typedefs)
@@ -532,6 +543,11 @@ def _static_binding_generator(
         config.cooperative_launch_required_functions_regex,
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
+    )
+
+    _ = _generate_class_templates(
+        class_templates,
+        entry_point,
     )
 
     registry_setup_str = registry_setup(config.separate_registry)
