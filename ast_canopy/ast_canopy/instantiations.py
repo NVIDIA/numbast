@@ -7,7 +7,7 @@ import ast_canopy
 # TODO: POC only, ideally this logic should be implemented in libastcanopy
 # The python binding provides python type - CXX type conversion
 class BaseInstantiation:
-    """Indicates a instantiation of a template"""
+    """Represent an instantiation of a template."""
 
     def __init__(self, template: ast_canopy.decl.Template):
         self.template_parameters = template.template_parameters
@@ -52,7 +52,7 @@ class BaseInstantiation:
 
 
 class FunctionInstantiation(BaseInstantiation):
-    """Indicates an instantiation of a function template"""
+    """Represent an instantiation of a function template."""
 
     def __init__(self, function_template: ast_canopy.decl.FunctionTemplate):
         super().__init__(function_template)
@@ -109,7 +109,7 @@ __device__ constexpr auto ast_canopy_var_value__ = {tfunc_instantiation}
 
 
 class ClassInstantiation(BaseInstantiation):
-    """Indicates an instantiation of a class template"""
+    """Represent an instantiation of a class template."""
 
     def __init__(self, class_template: ast_canopy.decl.ClassTemplate):
         super().__init__(class_template)

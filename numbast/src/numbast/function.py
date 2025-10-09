@@ -45,7 +45,7 @@ func_obj_registry: dict[str, object] = defaultdict(make_new_func_obj)
 def bind_cxx_operator_overload_function(
     shim_writer: ShimWriter, func_decl: Function
 ) -> object:
-    """Make bindings for a C++ operator overload function.
+    """Create bindings for a C++ operator-overload function.
 
     Parameters
     ----------
@@ -58,7 +58,7 @@ def bind_cxx_operator_overload_function(
     Returns
     -------
     shim_call : object
-        The Python API of the function.
+        The Numba-CUDA-callable Python API for the function.
     """
     if func_decl.is_copy_assignment_operator():
         # copy assignment operator, do not support in Numba / Python, skip
@@ -135,7 +135,7 @@ def bind_cxx_non_operator_function(
     skip_prefix: str | None,
     exclude: set[str],
 ) -> object:
-    """Make bindings for a C++ non operator function.
+    """Create bindings for a C++ non-operator function.
 
     Parameters
     ----------
@@ -155,7 +155,7 @@ def bind_cxx_non_operator_function(
     Returns
     -------
     func : object
-        The Python API of the function.
+        The Python-callable API for the function.
     """
     global overload_registry
 
@@ -228,7 +228,7 @@ def bind_cxx_function(
     skip_non_device: bool = True,
     exclude: set[str] = set(),
 ) -> object:
-    """Make bindings for a CXX function.
+    """Create bindings for a C++ function.
 
     Parameters
     ----------
@@ -250,7 +250,7 @@ def bind_cxx_function(
     Returns
     -------
     func : object
-        The Python API of the function.
+        The Numba-CUDA-callable Python API for the function.
     """
 
     if skip_non_device and func_decl.exec_space not in {
@@ -278,7 +278,7 @@ def bind_cxx_functions(
     skip_non_device: bool = True,
     exclude: set[str] = set(),
 ) -> list[object]:
-    """Make bindings for a list of CXX functions.
+    """Create bindings for a list of C++ functions.
 
     Parameters
     ----------
@@ -300,7 +300,7 @@ def bind_cxx_functions(
     Returns
     -------
     funcs : list[object]
-        A list containing the Python API of the functions.
+        A list of Numba-CUDA-callable Python APIs for the functions.
     """
 
     funcs = []

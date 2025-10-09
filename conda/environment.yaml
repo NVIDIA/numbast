@@ -27,3 +27,7 @@ dependencies:
   - ruff
   - click
   - jinja2
+  - sphinx
+  - sphinx-copybutton
+  - pip:
+      - nvidia-sphinx-theme

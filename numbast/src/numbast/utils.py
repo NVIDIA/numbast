@@ -15,7 +15,7 @@ OVERLOADS_CNT: dict[str, int] = defaultdict(int)  # overload counter
 def make_device_caller_with_nargs(
     name: str, nargs: int, wrapped: ExternFunction
 ) -> Callable:
-    """Create a wrapper for `wrapped` with `nargs` arguments.
+    """Create a Python wrapper for ``wrapped`` with ``nargs`` arguments.
 
     Parameters
     ----------
@@ -49,7 +49,7 @@ def {name}({args}):
 
 
 def deduplicate_overloads(func_name: str) -> str:
-    """Deduplicate function overloads.
+    """Deduplicate a function name across overloads.
 
     Parameters
     ----------
@@ -67,9 +67,9 @@ def deduplicate_overloads(func_name: str) -> str:
 
 
 def paramvar_to_str(arg: pylibastcanopy.ParamVar):
-    """Convert a ParamVar to a string type name.
+    """Convert a ``ParamVar`` into a C++ formal-argument declaration string.
 
-    Perform necessary downcasting of array type ParamVar to a pointer type.
+    Performs necessary downcasting of array-typed ``ParamVar`` to pointer types.
     """
     array_pattern = r"(.*)(\[\d+\]+)"
 
@@ -100,7 +100,7 @@ def make_function_shim(
     params: list[pylibastcanopy.ParamVar],
     includes: list[str] = [],
 ) -> str:
-    """Create shim function for C++ standalone function.
+    """Create a shim function for a C++ standalone function.
 
     Parameters
     ----------
@@ -118,7 +118,7 @@ def make_function_shim(
     Returns
     -------
     shim : str
-        The function shim layer shim.
+        The function shim layer source.
     """
 
     function_binding_shim_template = """{includes}
@@ -166,7 +166,7 @@ def make_struct_ctor_shim(
     params: list[pylibastcanopy.ParamVar],
     includes: list[str] = [],
 ) -> str:
-    """Create a struct ctor shim function.
+    """Create a struct constructor shim function.
 
     Parameters
     ----------
@@ -182,7 +182,7 @@ def make_struct_ctor_shim(
     Returns
     -------
     shim : str
-        The function shim layer shim.
+        The function shim layer source.
     """
 
     ctor_binding_shim = """{includes}
@@ -223,7 +223,7 @@ def make_struct_conversion_operator_shim(
     return_type: str,
     includes: list[str] = [],
 ) -> str:
-    """Create a shim function for C++ struct conversion operator.
+    """Create a shim function for a C++ struct conversion operator.
 
     Parameters
     ----------
@@ -241,7 +241,7 @@ def make_struct_conversion_operator_shim(
     Returns
     -------
     shim : str
-        The function shim layer shim.
+        The function shim layer source.
     """
 
     conv_op_shim = """{includes}

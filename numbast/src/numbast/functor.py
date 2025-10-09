@@ -39,6 +39,7 @@ class Functor:
         return Functor.reverse_functor_maps[func]
 
     def shim(self):
+        """Return the C++ shim source for invoking the functor as operator()."""
         return functor_shim.format(
             RT=N2C[self.sig.return_type],
             functor=self.name,
@@ -80,6 +81,8 @@ def constant_functortype(context, builder, ty, pyval):
 
 
 def cpp_functor(sig):
+    """Decorator that wraps a Python function as a C++-compatible functor."""
+
     def wrapper(func):
         return Functor(func, sig)
 
