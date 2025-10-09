@@ -50,7 +50,7 @@ def to_numba_type_str(ty: str):
 
     if ty == "__nv_bfloat16":
         BaseRenderer._try_import_numba_type("__nv_bfloat16")
-        return "_type___nv_bfloat16"
+        return "bfloat16"
 
     if ty.endswith("*"):
         base_ty = ty.rstrip("*").rstrip(" ")

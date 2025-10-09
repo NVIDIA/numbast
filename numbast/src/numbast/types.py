@@ -5,7 +5,7 @@ from enum import IntEnum
 import re
 
 from numba import types as nbtypes
-from numba.cuda._internal.cuda_bf16 import _type___nv_bfloat16
+from numba.cuda.types import bfloat16
 from numba.cuda.vector_types import vector_types
 from numba.misc.special import typeof
 
@@ -39,7 +39,7 @@ CTYPE_MAPS = {
     # End of stdint types
     "void": nbtypes.void,
     "__half": nbtypes.float16,
-    "__nv_bfloat16": _type___nv_bfloat16,
+    "__nv_bfloat16": bfloat16,
     "float": nbtypes.float32,
     "double": nbtypes.float64,
     "bool": nbtypes.bool_,
@@ -77,7 +77,7 @@ def register_enum_type(cxx_name: str, e: IntEnum):
 
 def to_numba_type(ty: str):
     if ty == "__nv_bfloat16":
-        return _type___nv_bfloat16
+        return bfloat16
 
     if "FunctorType" in ty:
         return FunctorType(ty[:-11])
