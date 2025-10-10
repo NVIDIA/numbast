@@ -270,11 +270,20 @@ PYBIND11_MODULE(pylibastcanopy, m) {
             return Typedef{t[0].cast<std::string>(), t[1].cast<std::string>()};
           }));
 
+  py::class_<ClassTemplateSpecialization, Record>(m,
+                                                  "ClassTemplateSpecialization")
+      .def_readwrite("class_template",
+                     &ClassTemplateSpecialization::class_template)
+      .def_readwrite("actual_template_arguments",
+                     &ClassTemplateSpecialization::actual_template_arguments);
+
   py::class_<Declarations>(m, "Declarations")
       .def_readwrite("records", &Declarations::records)
       .def_readwrite("functions", &Declarations::functions)
       .def_readwrite("function_templates", &Declarations::function_templates)
       .def_readwrite("class_templates", &Declarations::class_templates)
+      .def_readwrite("class_template_specializations",
+                     &Declarations::class_template_specializations)
       .def_readwrite("typedefs", &Declarations::typedefs)
       .def_readwrite("enums", &Declarations::enums);
 

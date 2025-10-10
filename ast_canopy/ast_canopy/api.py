@@ -19,6 +19,7 @@ from ast_canopy.decl import (
     FunctionTemplate,
     ClassTemplate,
     ConstExprVar,
+    ClassTemplateSpecialization,
 )
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
@@ -31,6 +32,7 @@ class Declarations:
     functions: list[Function]
     function_templates: list[FunctionTemplate]
     class_templates: list[ClassTemplate]
+    class_template_specializations: list[ClassTemplateSpecialization]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
 
@@ -292,12 +294,17 @@ def parse_declarations_from_source(
         ClassTemplate.from_c_obj(c_obj, source_file_path)
         for c_obj in decls.class_templates
     ]
+    class_template_specializations = [
+        ClassTemplateSpecialization.from_c_obj(c_obj, source_file_path)
+        for c_obj in decls.class_template_specializations
+    ]
 
     return Declarations(
         structs,
         functions,
         function_templates,
         class_templates,
+        class_template_specializations,
         decls.typedefs,
         decls.enums,
     )

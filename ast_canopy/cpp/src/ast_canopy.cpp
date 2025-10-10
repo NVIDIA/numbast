@@ -162,6 +162,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   detail::ClassTemplateCallback class_template_callback(&payload);
   detail::EnumCallback enum_callback(&payload);
   detail::ClassTemplatePartialSpecializationCallback ctpsd_callback(&payload);
+  detail::ClassTemplateSpecializationCallback ctsd_callback(&payload);
 
   MatchFinder finder;
 
@@ -197,6 +198,11 @@ parse_declarations_from_command_line(std::vector<std::string> options,
 
   finder.addMatcher(enumDecl().bind("enum"), &enum_callback);
 
+  finder.addMatcher(classTemplateSpecializationDecl(
+                        hasSpecializedTemplate(classTemplateDecl()))
+                        .bind("ctsd"),
+                    &ctsd_callback);
+
   finder.matchAST(ast->getASTContext());
 
 #ifndef NDEBUG
@@ -205,6 +211,8 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   std::cout << "Function templates: " << decls.function_templates.size()
             << std::endl;
   std::cout << "Class templates: " << decls.class_templates.size() << std::endl;
+  std::cout << "Class template specializations: "
+            << decls.class_template_specializations.size() << std::endl;
   std::cout << "Typedefs: " << decls.typedefs.size() << std::endl;
   std::cout << "Enums: " << decls.enums.size() << std::endl;
   std::cout << "Finished parsing declarations from AST file." << std::endl;

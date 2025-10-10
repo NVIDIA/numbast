@@ -456,3 +456,34 @@ class ConstExprVar:
     def value(self):
         cxx_type_name = self.type_.unqualified_non_ref_type_name
         return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)
+
+
+class ClassTemplateSpecialization(Struct):
+    """Represents a C++ class template specialization declaration.
+
+    Holds the underlying ``TemplatedStruct`` and provides ``instantiate`` for
+    building a concrete class instantiation.
+    """
+
+    def __init__(self, record: Struct, actual_template_arguments: list[str]):
+        super().__init__(
+            record.name,
+            record.fields,
+            record.methods,
+            record.templated_methods,
+            record.nested_records,
+            record.nested_class_templates,
+            record.sizeof_,
+            record.alignof_,
+            record.parse_entry_point,
+        )
+        self.actual_template_arguments = actual_template_arguments
+
+    @classmethod
+    def from_c_obj(
+        cls, c_obj: bindings.ClassTemplateSpecialization, parse_entry_point: str
+    ):
+        return cls(
+            Struct.from_c_obj(c_obj, parse_entry_point),
+            c_obj.actual_template_arguments,
+        )
