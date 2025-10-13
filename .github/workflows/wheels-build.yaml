@@ -13,6 +13,9 @@ on:
       node_type:
         type: string
         default: "cpu16"
+      llvm_version:
+        type: string
+        default: "20.1.8"
       script:
         type: string
         default: "ci/build_wheels.sh"
@@ -98,12 +101,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/llvm-install
-          key: llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/llvm-build-static.sh') }}-v20
+          key: llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/llvm-build-static.sh') }}-llvm-${{ inputs.llvm_version }}
       - name: Build LLVM (if cache misses)
         if: steps.cache-llvm.outputs.cache-hit != 'true'
+        env:
+          LLVM_VERSION: ${{ inputs.llvm_version }}
         run: |
-          LLVM_VERSION=20.1.8
-
           # Download and extract LLVM source
           echo "Downloading LLVM ${LLVM_VERSION}..."
           curl -sL "https://github.com/llvm/llvm-project/archive/llvmorg-${LLVM_VERSION}.tar.gz" -o llvm.tgz
