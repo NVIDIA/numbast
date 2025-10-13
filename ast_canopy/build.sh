@@ -183,12 +183,12 @@ cmake --install .
 echo "done!"
 popd
 
-if [ "$Editable_Mode" = "true" ]; then
+if [ "${Editable_Mode}" = "true" ]; then
     # If it's set, perform an editable install of ast_canopy
     echo "pip installing in editable mode..."
-    $PYTHON_EXECUTABLE -m pip install -e "${SCRIPT_DIR}/" -vv
+    ${PYTHON_EXECUTABLE} -m pip install -e "${SCRIPT_DIR}/" -vv
 else
     # If not, perform a normal install
     echo "pip installing..."
-    $PYTHON_EXECUTABLE -m pip install "${SCRIPT_DIR}/" -vv
+    ${PYTHON_EXECUTABLE} -m pip install "${SCRIPT_DIR}/" -vv
 fi
