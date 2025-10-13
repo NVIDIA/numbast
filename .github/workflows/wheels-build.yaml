@@ -124,3 +124,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           LLVM_PREFIX: ${github.workspace}/llvm-install
+      - name: Upload PyPi wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-wheels-${{ matrix.ARCH }}-llvm-${{ inputs.llvm_version }}
+          path: ast_canopy/final-dist/*.whl
