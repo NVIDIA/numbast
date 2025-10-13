@@ -103,7 +103,6 @@ jobs:
         if: steps.cache-llvm.outputs.cache-hit != 'true'
         run: |
           LLVM_VERSION=20.1.8
-          LLVM_PREFIX=${GITHUB_WORKSPACE}/llvm
 
           # Download and extract LLVM source
           echo "Downloading LLVM ${LLVM_VERSION}..."
