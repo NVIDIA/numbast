@@ -35,5 +35,5 @@ python3.12 -m pip wheel -w dist -v --disable-pip-version-check .
 python3.13 -m pip wheel -w dist -v --disable-pip-version-check .
 
 # Ensure auditwheeel can see the ast_canopy library before repairing the wheels
-export LD_LIBRARY_PATH="$(pwd)/install/lib64"
+export LD_LIBRARY_PATH="${CMAKE_INSTALL_PREFIX}/lib64"
 auditwheel repair -w final-dist dist/*.whl
