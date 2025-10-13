@@ -4,7 +4,7 @@
 import operator
 import typing
 
-import pylibastcanopy as bindings
+from ast_canopy import pylibastcanopy as bindings
 
 from ast_canopy.instantiations import FunctionInstantiation, ClassInstantiation
 

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from numba.cuda.cuda_paths import get_cuda_paths, get_cuda_home
 
-import pylibastcanopy as bindings
+from ast_canopy import pylibastcanopy as bindings
 
 from ast_canopy.decl import (
     Function,
