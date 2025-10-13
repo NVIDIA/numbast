@@ -123,7 +123,6 @@ jobs:
         run: ${{ inputs.script }}
         env:
           GH_TOKEN: ${{ github.token }}
-          LLVM_PREFIX: ${github.workspace}/llvm-install
       - name: Upload PyPi wheels
         uses: actions/upload-artifact@v4
         with:
