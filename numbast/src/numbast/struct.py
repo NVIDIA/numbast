@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Optional
+import re
 
 from llvmlite import ir
 
@@ -87,7 +88,7 @@ def bind_cxx_struct_ctor(
     # Lowering
     # Note that libclang always consider the return type of a constructor
     # is void. So we need to manually specify the return type here.
-    func_name = deduplicate_overloads(f"__{struct_name}__{ctor.mangled_name}")
+    func_name = deduplicate_overloads(f"{ctor.mangled_name}_nbst")
 
     # FIXME: temporary solution for mismatching function prototype against definition.
     # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
@@ -193,9 +194,11 @@ def bind_cxx_struct_ctors(
 
     ctor_params = []
     for ctor in struct_decl.constructors():
-        if param_types := bind_cxx_struct_ctor(
+        param_types = bind_cxx_struct_ctor(
             ctor, struct_decl.name, s_type, S, shim_writer
-        ):
+        )
+        if param_types is not None:
+            # Note: should consider no-param case, [] is also allowed.
             ctor_params.append(param_types)
 
     # Constructor typing:
@@ -374,6 +377,8 @@ def bind_cxx_struct(
                     ].type_.unqualified_non_ref_type_name
                     return to_numba_type(ty_name)
                 except KeyError:
+                    if attr == "__call__":
+                        return None
                     raise AttributeError(attr)
 
         for f in public_fields.values():
@@ -388,7 +393,7 @@ def bind_cxx_struct(
     bind_cxx_struct_conversion_opeartors(struct_decl, s_type, shim_writer)
 
     # Return the handle to the type in Numba
-    return S
+    return S, s_type
 
 
 def bind_cxx_structs(
@@ -431,17 +436,24 @@ def bind_cxx_structs(
             type_spec = parent_types[alias]
             data_model_spec = data_models[alias]
         else:
-            type_spec = parent_types[s.name]
-            data_model_spec = data_models[s.name]
+            # Determine if it is a template specialization
+            pat = re.compile(r"^(.+)<(.+)>$")
+            match = pat.match(s.name)
+            if match:
+                name = match.group(1)
+            else:
+                name = s.name
+            type_spec = parent_types[name]
+            data_model_spec = data_models[name]
 
         # Bind the struct
-        S = bind_cxx_struct(
+        S, s_type = bind_cxx_struct(
             shim_writer,
             s,
             type_spec,
             data_model_spec,
             aliases,
         )
-        python_apis.append(S)
+        python_apis.append((S, s_type))
 
     return python_apis

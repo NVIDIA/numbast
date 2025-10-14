@@ -10,6 +10,7 @@ class BaseInstantiation:
     """Represent an instantiation of a template."""
 
     def __init__(self, template: ast_canopy.decl.Template):
+        self.template = template
         self.template_parameters = template.template_parameters
         self._template_param_names = [
             tparam.name for tparam in self.template_parameters
@@ -37,7 +38,7 @@ class BaseInstantiation:
         ]
 
     def get_instantiated_c_stmt(self) -> str:
-        name = self.name
+        name = self.base_name
         param_list = self.param_list
 
         flatten = []
@@ -50,6 +51,11 @@ class BaseInstantiation:
         param_list = ", ".join(flatten)
         return f"{name}<{param_list}>"
 
+    def base_name(self):
+        raise NotImplementedError(
+            "BaseInstantiation.base_name is not implemented"
+        )
+
 
 class FunctionInstantiation(BaseInstantiation):
     """Represent an instantiation of a function template."""
@@ -59,7 +65,7 @@ class FunctionInstantiation(BaseInstantiation):
         self.function = function_template.function
 
     @property
-    def name(self):
+    def base_name(self):
         return self.function.name
 
     def evaluate_constexpr_value(self, *args, header=None):
@@ -116,5 +122,5 @@ class ClassInstantiation(BaseInstantiation):
         self.record = class_template.record
 
     @property
-    def name(self):
+    def base_name(self):
         return self.record.name
