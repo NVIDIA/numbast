@@ -36,12 +36,12 @@ python3.13 -m pip wheel -w dist -v --disable-pip-version-check .
 
 # Ensure auditwheeel can see the ast_canopy library before repairing the wheels
 export LD_LIBRARY_PATH="${CMAKE_INSTALL_PREFIX}/lib64"
-auditwheel repair -w final-dist dist/*.whl
+auditwheel repair -w ../final-dist dist/*.whl
 
 # Now build the numbast python wheels
 cd ../numbast
 python3.13 -m pip wheel -w dist -v \
   --disable-pip-version-check \
-  --find-links=../ast_canopy/final-dist \
+  --find-links=../final-dist \
   .
 cp dist/numbast*.whl ../final-dist/

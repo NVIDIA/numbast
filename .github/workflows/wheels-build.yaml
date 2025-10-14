@@ -127,4 +127,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pypi-wheels-${{ matrix.ARCH }}-llvm-${{ inputs.llvm_version }}
-          path: ast_canopy/final-dist/*.whl
+          path: final-dist/*.whl
