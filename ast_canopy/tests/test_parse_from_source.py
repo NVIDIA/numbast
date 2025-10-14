@@ -7,7 +7,11 @@ from dataclasses import astuple
 
 import pytest
 
-from ast_canopy.pylibastcanopy import template_param_kind, execution_space, access_kind
+from ast_canopy.pylibastcanopy import (
+    template_param_kind,
+    execution_space,
+    access_kind,
+)
 from ast_canopy import parse_declarations_from_source
 
 
