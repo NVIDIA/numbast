@@ -97,6 +97,8 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
   auto DiagOpts = std::make_shared<DiagnosticOptions>();
 #elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+#else
+#error Clang version not supported.
 #endif
   detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
 
@@ -112,14 +114,18 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
 #elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 20
   auto Diags = CompilerInstance::createDiagnostics(
       DiagOpts.get(), &diagnostics_consumer, false);
+#else
+#error Clang version not supported.
 #endif
 
 #if CLANG_VERSION_MAJOR == 21
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, DiagOpts, Diags, ""));
-#else
+#elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, Diags, ""));
+#else
+#error Clang version not supported.
 #endif
 
   if (!ast) {
