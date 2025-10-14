@@ -23,6 +23,8 @@
 using namespace clang;
 using namespace clang::ast_matchers;
 
+static_assert(CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR <= 21 &&
+              "ASTCanopy Only Supports Building with CLANG 18 to 21");
 namespace ast_canopy {
 
 namespace detail {
@@ -91,29 +93,39 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
   // Create a diagnostics engine that captures errors. Writes error and fatal
   // errors to the diagnostics_consumer. diagnostics_consumer stores the result
   // to a vector of strings.
+#if CLANG_VERSION_MAJOR == 21
   auto DiagOpts = std::make_shared<DiagnosticOptions>();
+#elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
+  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+#else
+#error Clang version not supported.
+#endif
   detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
 
-#if CLANG_VERSION_MAJOR >= 21
+#if CLANG_VERSION_MAJOR == 21
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
   auto Diags = CompilerInstance::createDiagnostics(
       *FS, *DiagOpts, &diagnostics_consumer, false);
 #elif CLANG_VERSION_MAJOR == 20
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
-  auto Diags = CompilerInstance::createDiagnostics(*FS, DiagOpts.get(),
+  auto Diags = CompilerInstance::createDiagnostics(*FS, &*DiagOpts,
                                                    &diagnostics_consumer, false,
                                                    /*CodeGenOptions*/ nullptr);
-#else
+#elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 20
   auto Diags = CompilerInstance::createDiagnostics(
       DiagOpts.get(), &diagnostics_consumer, false);
+#else
+#error Clang version not supported.
 #endif
 
-#if CLANG_VERSION_MAJOR >= 21
+#if CLANG_VERSION_MAJOR == 21
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, DiagOpts, Diags, ""));
-#else
+#elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, Diags, ""));
+#else
+#error Clang version not supported.
 #endif
 
   if (!ast) {
