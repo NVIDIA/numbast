@@ -8,7 +8,6 @@ import tempfile
 import logging
 from typing import Optional, Any
 from dataclasses import dataclass
-import warnings
 
 from numba.cuda.cuda_paths import get_cuda_paths, get_cuda_home
 
@@ -273,13 +272,11 @@ def parse_declarations_from_source(
     if verbose:
         print(f"{command_line_options=}")
 
-    try:
-        decls = bindings.parse_declarations_from_command_line(
-            command_line_options,
-            files_to_retain,
-        )
-    except bindings.ParseError as e:
-        warnings.warn(f"Failed to parse declarations from source file: {e}")
+    decls = bindings.parse_declarations_from_command_line(
+        command_line_options,
+        files_to_retain,
+        True,
+    )
 
     structs = [
         Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records

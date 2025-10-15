@@ -79,7 +79,8 @@ std::string source_filename_from_decl(const Decl *D) {
 }
 
 std::unique_ptr<ASTUnit>
-default_ast_unit_from_command_line(const std::vector<std::string> &options) {
+default_ast_unit_from_command_line(const std::vector<std::string> &options,
+                                   bool bypass_parse_error) {
 
   std::vector<const char *> option_ptrs;
   for (auto &opt : options) {
@@ -139,7 +140,9 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
       for (const auto &msg : diagnostics_consumer.error_messages) {
         error_message += "\n" + msg;
       }
-      throw ParseError(error_message);
+      if (!bypass_parse_error) {
+        throw ParseError(error_message);
+      }
     }
   }
 
@@ -150,9 +153,11 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options) {
 
 Declarations
 parse_declarations_from_command_line(std::vector<std::string> options,
-                                     std::vector<std::string> files_to_retain) {
+                                     std::vector<std::string> files_to_retain,
+                                     bool bypass_parse_error) {
 
-  auto ast = detail::default_ast_unit_from_command_line(options);
+  auto ast =
+      detail::default_ast_unit_from_command_line(options, bypass_parse_error);
 
   Declarations decls;
   std::unordered_map<int64_t, std::string> record_id_to_name;
@@ -223,7 +228,7 @@ std::optional<ConstExprVar>
 value_from_constexpr_vardecl(std::vector<std::string> options,
                              std::string vardecl_name) {
 
-  auto ast = detail::default_ast_unit_from_command_line(options);
+  auto ast = detail::default_ast_unit_from_command_line(options, false);
 
   detail::vardecl_matcher_payload payload{vardecl_name, std::nullopt};
 
