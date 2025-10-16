@@ -7,5 +7,5 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT="${SCRIPT_DIR}/.."
 
 pushd "${REPO_ROOT}/docs" >/dev/null
-./build_docs.sh "${1:-}"
+./build_docs.sh "$@"
 popd >/dev/null
