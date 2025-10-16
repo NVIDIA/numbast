@@ -17,9 +17,12 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         python -m pip install --upgrade pip
-        # Install Numbast and docs dependencies
+        # Build and install Numbast from Source
         ast_canopy/build.sh
         python -m pip install numbast/
+        # Minimum dependencies for Numba-CUDA to run
+        python -m pip install cuda-python cuda-core
+        # Install Sphinx dependencies
         python -m pip install sphinx nvidia-sphinx-theme sphinx-copybutton
     # Build all docs
     - name: Build all docs
