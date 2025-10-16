@@ -9,26 +9,16 @@ runs:
   using: "composite"
   steps:
     # Install required dependencies
-    - name: Install docs build dependencies
+    - name: Install build dependencies
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake ninja-build python3-venv git flex bison
-    - name: Install LLVM 20
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        sudo apt-get install -y llvm-20 clang-20 libclang-20-dev
-    # Setup Python and install Python deps needed for Sphinx build
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+        conda install -c conda-forge python=3.12 clangdev=20 cmake>=3.29 ninja flex bison git
     - name: Install Python dependencies for docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         python -m pip install --upgrade pip
         # Install Numbast and docs dependencies
-        sudo PYTHON_EXECUTABLE=$(which python) bash ast_canopy/build.sh
+        ast_canopy/build.sh
         python -m pip install numbast/
         python -m pip install sphinx nvidia-sphinx-theme sphinx-copybutton
     # Build all docs

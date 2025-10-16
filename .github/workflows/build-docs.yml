@@ -40,6 +40,8 @@ jobs:
   # Build and deploy job
   build-and-deploy:
     runs-on: ${{ github.repository == 'NVIDIA/numbast' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    container:
+      image: condaforge/miniforge3:latest
     outputs:
       preview_url: ${{ steps.set-preview-url.outputs.preview_url }}
     steps:
