@@ -14,15 +14,15 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake ninja-build python3-venv git flex bison
+    - name: Install LLVM 20
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        sudo apt-get install -y llvm-20 clang-20 libclang-20-dev
     # Setup Python and install Python deps needed for Sphinx build
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-    - name: Install LLVM
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        conda install -c conda-forge clangdev=20
     - name: Install Python dependencies for docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
