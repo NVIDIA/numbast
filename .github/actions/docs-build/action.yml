@@ -28,7 +28,7 @@ runs:
       run: |
         python -m pip install --upgrade pip
         # Install Numbast and docs dependencies
-        ast_canopy/build.sh
+        sudo PYTHON_EXECUTABLE=$(which python) bash ast_canopy/build.sh
         python -m pip install numbast/
         python -m pip install sphinx nvidia-sphinx-theme sphinx-copybutton
     # Build all docs
