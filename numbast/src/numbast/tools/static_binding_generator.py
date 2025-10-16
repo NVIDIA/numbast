@@ -455,6 +455,7 @@ def _static_binding_generator(
     log_generates: bool = False,
     cfg_file_path: str | None = None,
     sbg_params: dict[str, str] = {},
+    bypass_parse_error: bool = False,
 ) -> str:
     """
     A function to generate CUDA static bindings for CUDA C++ headers.
@@ -462,10 +463,10 @@ def _static_binding_generator(
     Parameters:
     - config (Config): Configuration object containing all binding generation settings.
     - output_dir (str): Path to the output directory where the processed files will be saved.
-    - compute_capability (str): Compute capability of the CUDA device.
     - log_generates (bool, optional): Whether to log the list of generated bindings. Defaults to False.
     - cfg_file_path (str, optional): Path to the configuration file. Defaults to None.
     - sbg_params (dict, optional): A dictionary of parameters for the static binding generator. Defaults to empty dict.
+    - bypass_parse_error (bool, optional): Whether to bypass parse error and continue generating bindings. Defaults to False.
 
     Returns:
     str
@@ -500,6 +501,7 @@ def _static_binding_generator(
         additional_includes=config.clang_includes_paths,
         defines=config.predefined_macros,
         verbose=VERBOSE,
+        bypass_parse_error=bypass_parse_error,
     )
     structs = decls.structs
     functions = decls.functions
@@ -630,11 +632,18 @@ def ruff_format_binding_file(binding_file_path: str):
     type=bool,
     default=True,
 )
+@click.option(
+    "-noraise",
+    "--bypass-parse-error",
+    type=bool,
+    default=False,
+)
 def static_binding_generator(
     ctx,
     cfg_path,
     output_dir,
     run_ruff_format,
+    bypass_parse_error,
 ):
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
@@ -642,6 +651,7 @@ def static_binding_generator(
     CFG_PATH: Path to the configuration file in YAML format.
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
+    BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
     reset_renderer()
 
@@ -652,6 +662,7 @@ def static_binding_generator(
         log_generates=True,
         cfg_file_path=cfg_path,
         sbg_params=ctx.params,
+        bypass_parse_error=bypass_parse_error,
     )
 
     if run_ruff_format:

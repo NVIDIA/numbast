@@ -43,6 +43,7 @@ def run_in_isolated_folder(tmpdir):
         ruff_format=False,
         load_symbols=False,
         show_binding=False,
+        bypass_parse_error=False,
     ):
         root = tmpdir
         config_folder = root.mkdir("config")
@@ -78,6 +79,8 @@ def run_in_isolated_folder(tmpdir):
                     output_folder,
                     "-fmt",
                     "true" if ruff_format else "false",
+                    "-noraise",
+                    "true" if bypass_parse_error else "false",
                 ],
             )
 
