@@ -1,0 +1,18 @@
+numbast.static.struct
+=====================
+
+.. automodule:: numbast.static.struct
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      StaticStructConversionOperatorRenderer
+      StaticStructConversionOperatorsRenderer
+      StaticStructCtorRenderer
+      StaticStructCtorsRenderer
+      StaticStructMethodRenderer
+      StaticStructRenderer
+      StaticStructsRenderer
+   
