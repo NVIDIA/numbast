@@ -2,6 +2,8 @@
 
 # Numbast (Python package)
 
+Auto-generates Numba CUDA-compatible bindings from ast_canopy-parsed CUDA C++ declarations.
+
 The documentation has moved. Please visit:
 
 - Quickstart: `https://nvidia.github.io/numbast/latest/quickstart.html`

@@ -2,6 +2,8 @@
 
 # Numbast
 
+An automated pipeline to parse CUDA C++ headers and generate Numba-compatible Python bindings.
+
 Please visit the documentation site to get started:
 
 - Overview: `https://nvidia.github.io/numbast/latest/overview.html`

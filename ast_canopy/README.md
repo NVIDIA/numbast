@@ -2,6 +2,8 @@
 
 # AST Canopy
 
+CUDA C++ header parser built on Clang tooling that serializes top-level declarations for downstream consumers.
+
 Please visit the documentation site for the AST Canopy overview and API:
 
 - AST Canopy overview: `https://nvidia.github.io/numbast/latest/ast_canopy_overview.html`
