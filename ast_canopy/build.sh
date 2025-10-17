@@ -191,7 +191,7 @@ fi
 echo "done!"
 popd
 
-if [ "${Editable_Mode}" = "true" && "${INSTALL}" = "true" ]; then
+if [ "${Editable_Mode}" = "true" ] && [ "${INSTALL}" = "true" ]; then
     # If it's set, perform an editable install of ast_canopy
     echo "pip installing in editable mode..."
     ${PYTHON_EXECUTABLE} -m pip install -e "${SCRIPT_DIR}/" -vv
