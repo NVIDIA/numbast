@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+
 set -euo pipefail
 
 NINJA_VERSION=1.13.1
@@ -9,7 +13,14 @@ if [[ ! -d build-deps ]]; then
   echo "Downloading build dependencies"
   mkdir -p build-deps
   cd build-deps
-  curl -sL https://github.com/ninja-build/ninja/releases/download/v${NINJA_VERSION}/ninja-linux.zip -o ninja.zip
+  if [[ "${OS_ARCH}" == "x86_64" ]]; then
+    curl -sL https://github.com/ninja-build/ninja/releases/download/v${NINJA_VERSION}/ninja-linux.zip -o ninja.zip
+  elif [[ "${OS_ARCH}" == "aarch64" ]]; then
+    curl -sL https://github.com/ninja-build/ninja/releases/download/v${NINJA_VERSION}/ninja-linux-aarch64.zip -o ninja.zip
+  else
+    echo "Unsupported architecture: ${OS_ARCH}"
+    exit 1
+  fi
   curl -sL https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-${OS_ARCH}-unknown-linux-musl.tar.gz -o sccache.tar.gz
   cd ..
 fi

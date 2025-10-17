@@ -52,11 +52,12 @@ jobs:
 
           # Please keep the matrices sorted in ascending order by the following:
           #
-          #     [ARCH, PY_VER, CUDA_VER, LINUX_VER]
+          #     [ARCH, ARCH_ML, LINUX_VER]
           #
           export MATRIX="
           # amd64
-          - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.8.0', LINUX_VER: 'rockylinux8' }
+          - { ARCH: 'amd64', ARCH_ML: 'x86_64',  LINUX_VER: 'manylinux_2_28' }
+          - { ARCH: 'arm64', ARCH_ML: 'aarch64', LINUX_VER: 'manylinux_2_28' }
           "
 
           MATRIX="$(
@@ -66,6 +67,7 @@ jobs:
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
   build:
+    name: ${{ matrix.ARCH }}, ${{ matrix.LINUX_VER }}
     needs: compute-matrix
     strategy:
       fail-fast: false
@@ -74,7 +76,7 @@ jobs:
     env:
       RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
     container:
-      image: quay.io/pypa/manylinux_2_28_x86_64
+      image: quay.io/pypa/${{ matrix.LINUX_VER }}_${{ matrix.ARCH_ML }}
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
