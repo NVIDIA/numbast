@@ -114,15 +114,22 @@ jobs:
           curl -sL "https://github.com/llvm/llvm-project/archive/llvmorg-${LLVM_VERSION}.tar.gz" -o llvm.tgz
           tar -xf llvm.tgz
           mv "llvm-project-llvmorg-${LLVM_VERSION}" "llvm"
-
+          source ci/setup_sccache.sh
+          sccache --start-server
+          sccache --zero-stats
           ./ci/llvm-build-static.sh
+          sccache --show-adv-stats
       - name: Setup LLVM environment
         run: |
           echo "Checking LLVM..."
           echo "Verifying LLVM installation..."
           ls -lh llvm-install/lib/
       - name: Build project with LLVM
-        run: ${{ inputs.script }}
+        run: |
+          source ci/setup_sccache.sh
+          sccache --zero-stats
+          ${{ inputs.script }}
+          sccache --show-adv-stats
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload PyPi wheels
