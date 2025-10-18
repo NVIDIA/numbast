@@ -14,6 +14,7 @@ jobs:
       - checks
       - build-conda
       - test-conda
+      - build-wheels
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
   checks:
@@ -33,5 +34,11 @@ jobs:
     needs: build-conda
     secrets: inherit
     uses: ./.github/workflows/conda-python-test.yaml
+    with:
+      build_type: pull-request
+  build-wheels:
+    name: Build Wheels
+    secrets: inherit
+    uses: ./.github/workflows/wheels-build.yaml
     with:
       build_type: pull-request

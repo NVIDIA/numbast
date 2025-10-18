@@ -3,7 +3,7 @@ import os
 import pytest
 
 from ast_canopy import parse_declarations_from_source
-from pylibastcanopy import template_param_kind
+from ast_canopy.pylibastcanopy import template_param_kind
 
 
 @pytest.fixture(scope="module")

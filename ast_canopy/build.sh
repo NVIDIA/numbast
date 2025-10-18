@@ -12,6 +12,7 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 BUILD_TYPE="Release"
 Editable_Mode="false"
+INSTALL="true"
 LLVM_LINKAGE="SHARED"
 
 # Convert a colon-separated path list (env style) into a
@@ -43,6 +44,7 @@ usage() {
     echo "  --develop           Install ast_canopy in editable mode"
     echo "  --debug             Build libastcanopy in debug mode"
     echo "  --llvm-linkage=TYPE Set LLVM linkage type (STATIC or SHARED, default: SHARED)"
+    echo "  --no-install        Do not run install steps"
     echo "  --help              Show this help message"
     echo ""
     echo "Environment Variables:"
@@ -78,6 +80,10 @@ while [[ $# -gt 0 ]]; do
                 usage
                 exit 1
             fi
+            shift
+            ;;
+        --no-install)
+            INSTALL="false"
             shift
             ;;
         --help)
@@ -178,17 +184,19 @@ cmake ${CMAKE_ARGS} \
     ../
 echo "cmake build..."
 cmake --build . -j
-echo "cmake install..."
-cmake --install .
+if [ "${INSTALL}" = "true" ]; then
+    echo "cmake install..."
+    cmake --install .
+fi
 echo "done!"
 popd
 
-if [ "$Editable_Mode" = "true" ]; then
+if [ "${Editable_Mode}" = "true" ] && [ "${INSTALL}" = "true" ]; then
     # If it's set, perform an editable install of ast_canopy
     echo "pip installing in editable mode..."
-    $PYTHON_EXECUTABLE -m pip install -e "${SCRIPT_DIR}/" -vv
-else
+    ${PYTHON_EXECUTABLE} -m pip install -e "${SCRIPT_DIR}/" -vv
+elif [ "${INSTALL}" = "true" ]; then
     # If not, perform a normal install
     echo "pip installing..."
-    $PYTHON_EXECUTABLE -m pip install "${SCRIPT_DIR}/" -vv
+    ${PYTHON_EXECUTABLE} -m pip install "${SCRIPT_DIR}/" -vv
 fi
