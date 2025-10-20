@@ -5,7 +5,7 @@ from logging import getLogger, FileHandler
 import tempfile
 import os
 
-from pylibastcanopy import Enum
+from ast_canopy.pylibastcanopy import Enum
 
 from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import register_enum_type_str
