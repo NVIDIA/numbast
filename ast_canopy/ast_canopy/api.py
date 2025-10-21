@@ -156,7 +156,7 @@ def parse_declarations_from_source(
     compute_capability: str,
     cccl_root: str = "",
     cudatoolkit_include_dir: str | None = None,
-    cxx_standard: str = "gnu++17",
+    cxx_standard: str = "c++17",
     additional_includes: list[str] = [],
     defines: list[str] = [],
     verbose: bool = False,
@@ -190,7 +190,7 @@ def parse_declarations_from_source(
         directory is used.
 
     cxx_standard : str, optional
-        The C++ standard to use. Default is "gnu++17".
+        The C++ standard to use. Default is "c++17".
 
     additional_includes : list[str], optional
         A list of additional include directories to search for headers.
@@ -312,7 +312,7 @@ def value_from_constexpr_vardecl(
     source: str,
     vardecl_name: str,
     compute_capability: str,
-    cxx_standard: str = "gnu++17",
+    cxx_standard: str = "c++17",
     verbose: bool = False,
 ) -> bindings.ConstExprVar | None:
     """Extract the value from a constexpr ``VarDecl`` with the given name.
@@ -329,7 +329,7 @@ def value_from_constexpr_vardecl(
         The compute capability of the target GPU. e.g. "sm_70".
 
     cxx_standard : str, optional
-        The C++ standard to use. Default is "gnu++17".
+        The C++ standard to use. Default is "c++17".
 
     verbose : bool, optional
         If True, print the stderr from clang++ invocation.
