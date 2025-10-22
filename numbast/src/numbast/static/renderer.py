@@ -10,7 +10,6 @@ from numba.cuda.vector_types import vector_types
 from numbast import __version__ as numbast_ver
 
 from ast_canopy import __version__ as ast_canopy_ver
-from ast_canopy.api import get_default_cuda_path
 
 
 class BaseRenderer:
@@ -141,7 +140,6 @@ def get_reproducible_info(
         f"Static binding generator parameters: {sbg_params}",
         f"Config file path (relative to the path of the generated binding): {config_rel_path}",
         f"Cudatoolkit version: {get_version()}",
-        f"Default CUDA_HOME path: {get_default_cuda_path()}",
     ]
 
     commented = [f"# {x}" for x in info]
