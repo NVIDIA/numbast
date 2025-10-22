@@ -9,7 +9,7 @@ import logging
 from typing import Optional, Any
 from dataclasses import dataclass
 
-from numba.cuda.cuda_paths import get_cuda_paths, get_cuda_home
+from numba.cuda.cuda_paths import get_cuda_paths
 
 from ast_canopy import pylibastcanopy as bindings
 
@@ -33,25 +33,6 @@ class Declarations:
     class_templates: list[ClassTemplate]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
-
-
-def get_default_cuda_path() -> Optional[str]:
-    """Return the path to the default CUDA home directory."""
-
-    # Allow overriding from os.environ
-    if home := get_cuda_home():
-        return home
-
-    by, nvvm_path = get_cuda_paths()["nvvm"]
-    if nvvm_path is not None:
-        # In the form of $CUDA_HOME/nvvm/lib64/libnvvm.so, go up 3 levels for cuda home.
-        cuda_home = os.path.dirname(os.path.dirname(os.path.dirname(nvvm_path)))
-
-        if os.path.exists(cuda_home):
-            logger.info(f"Found CUDA home: {cuda_home}")
-            return cuda_home
-
-    return None
 
 
 def get_default_nvcc_path() -> Optional[str]:
@@ -247,13 +228,6 @@ def parse_declarations_from_source(
 
     clang_search_paths = get_default_compiler_search_paths()
 
-    def custom_cuda_home() -> list[str]:
-        cuda_path = get_default_cuda_path()
-        if cuda_path:
-            return [f"--cuda-path={cuda_path}"]
-        else:
-            return []
-
     define_flags = [f"-D{define}" for define in defines]
 
     command_line_options = [
@@ -261,7 +235,6 @@ def parse_declarations_from_source(
         "--cuda-device-only",
         "-xcuda",
         f"--cuda-gpu-arch={compute_capability}",
-        *custom_cuda_home(),
         f"-std={cxx_standard}",
         f"-isystem{clang_resource_file}/include/",
         *[f"-I{path}" for path in clang_search_paths],
@@ -352,20 +325,12 @@ def value_from_constexpr_vardecl(
 
         clang_search_paths = get_default_compiler_search_paths()
 
-        def custom_cuda_home() -> list[str]:
-            cuda_path = get_default_cuda_path()
-            if cuda_path:
-                return [f"--cuda-path={cuda_path}"]
-            else:
-                return []
-
         cudatoolkit_include_dir: str = get_default_cuda_compiler_include()
         command_line_options = [
             "clang++",
             "--cuda-device-only",
             "-xcuda",
             f"--cuda-gpu-arch={compute_capability}",
-            *custom_cuda_home(),
             f"-std={cxx_standard}",
             f"-isystem{clang_resource_file}/include/",
             *[f"-I{path}" for path in clang_search_paths],
