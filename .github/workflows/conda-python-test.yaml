@@ -126,7 +126,7 @@ jobs:
       - uses: actions/download-artifact@v4
         name: Download conda repo
         with:
-          name: conda-repo-${{ matrix.ARCH }}-${{ matrix.PY_VER }}-${{ matrix.CUDA_VER }}
+          name: conda-repo-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
           path: conda-repo
       - name: Standardize repository information
         run: |
