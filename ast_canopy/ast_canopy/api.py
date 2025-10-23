@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import subprocess
-import shutil
 import os
 import tempfile
 import logging
-from typing import Optional, Any
+from typing import Any
 from dataclasses import dataclass
+import warnings
 
-from numba.cuda.cuda_paths import get_cuda_paths
+from cuda.pathfinder import find_nvidia_header_directory
 
 from ast_canopy import pylibastcanopy as bindings
 
@@ -35,21 +35,8 @@ class Declarations:
     enums: list[bindings.Enum]
 
 
-def get_default_nvcc_path() -> Optional[str]:
-    """Return the path to the default NVCC compiler binary."""
-    by, nvvm_path = get_cuda_paths()["nvvm"]
-
-    if nvvm_path is None:
-        return shutil.which("nvcc")
-
-    root = os.path.dirname(os.path.dirname(nvvm_path))
-    nvcc_path = os.path.join(root, "bin", "nvcc")
-
-    if os.path.exists(nvcc_path):
-        logger.info(f"Found NVCC path: {nvcc_path}")
-        return nvcc_path
-
-    return None
+def paths_to_include_flags(paths: list[str]) -> list[str]:
+    return [f"-I{path}" for path in paths]
 
 
 def get_default_compiler_search_paths() -> list[str]:
@@ -68,6 +55,7 @@ def get_default_compiler_search_paths() -> list[str]:
                 "-v",
                 "--cuda-device-only",
                 "-nocudainc",
+                "-nocudalib",
                 "--no-cuda-version-check",
                 "-xcuda",
                 "/dev/null",
@@ -86,49 +74,72 @@ def get_default_compiler_search_paths() -> list[str]:
     return search_paths
 
 
-def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
-    """Compile an empty CUDA file with NVCC and extract its default include path.
+def get_cuda_include_dir_for_clang(
+    pathfinder_fallback_default: str = "/usr/local/cuda/include",
+    verbose: bool = False,
+) -> list[str]:
+    """
+    Get all include directories for the CUDA API.
 
-    ast_canopy depends on a healthy CUDA environment to function. If NVCC fails
-    to preprocess an empty CUDA file, this function raises a RuntimeError.
+    Note
+    ----
+    This function is meant to provide the include directory for clang -xcuda
+    so that it compiles a CUDA file with the proper CUDA headers.
+
+    In pip installed CUDA Toolkit, the include directory differs under CUDA 12 and CUDA 13.
+
+    For CUDA 12, required pip packages are:
+        cuda-toolkit[cudart,nvcc,curand]
+
+        The include directory is:
+        - cuda_runtime/include/
+        - cuda_nvcc/include/
+        - nvidia/curand/include/
+
+    For CUDA 13, required pip packages are:
+        cuda-toolkit[cudart,crt,curand]
+
+        The include directory is:
+        - nvidia/include/
+
+    Parameters
+    ----------
+    pathfinder_fallback_default : str, optional
+        The default include directory to use if CUDA_HOME is not set.
+    verbose : bool, optional
+        If True, print a warning if CUDA_HOME is not set.
+    Returns
+    -------
+    str
+        The include directory for the CUDA Runtime API.
     """
 
-    nvcc_bin = get_default_nvcc_path()
-    if not nvcc_bin:
-        logger.warning(
-            "Could not find NVCC binary. AST_Canopy will attempt to "
-            "invoke `nvcc` directly in the subsequent commands."
-        )
-        nvcc_bin = "nvcc"
-
-    with tempfile.NamedTemporaryFile(suffix=".cu") as tmp_file:
-        try:
-            nvcc_compile_empty = (
-                subprocess.run(
-                    [nvcc_bin, "-E", "-v", tmp_file.name],
-                    capture_output=True,
-                    check=True,
-                )
-                .stderr.decode()
-                .strip()
-                .split("\n")
+    if "CUDA_HOME" not in os.environ:
+        if verbose:
+            warnings.warn(
+                f"CUDA_HOME is not set. CUDA Pathfinder may fallback to default: {pathfinder_fallback_default}, not CUDA_HOME"
             )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                f"NVCC failed to compile an empty cuda file. \n {e.stdout.decode('utf-8')} \n {e.stderr.decode('utf-8')}"
-            ) from e
 
-    if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
-        include_path = (
-            s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
-        )
-        logger.info(f"Found NVCC default include path, {include_path=}")
-        return include_path
-    else:
-        logger.warning(
-            f"Could not find NVCC default include path. Using default: {default=}"
-        )
-        return default
+    paths = []
+
+    if path := find_nvidia_header_directory("cudart"):
+        paths.append(path)
+
+    if path := find_nvidia_header_directory("nvcc"):
+        # Required for crt/host_defines.h in
+        paths.append(path)
+
+    if path := find_nvidia_header_directory("curand"):
+        # Required for curand_mtgp32_kernel.h in CUDA 12
+        paths.append(path)
+
+    # Remove duplicates
+    paths = list(set(paths))
+
+    if not paths:
+        paths.append(pathfinder_fallback_default)
+
+    return paths
 
 
 def parse_declarations_from_source(
@@ -136,7 +147,7 @@ def parse_declarations_from_source(
     files_to_retain: list[str],
     compute_capability: str,
     cccl_root: str = "",
-    cudatoolkit_include_dir: str | None = None,
+    cudatoolkit_include_dirs: list[str] = [],
     cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
     defines: list[str] = [],
@@ -166,9 +177,10 @@ def parse_declarations_from_source(
         The root directory of the CCCL project. If not provided, CCCL from the
         default CTK headers is used.
 
-    cudatoolkit_include_dir : str, optional
-        The path to the CUDA Toolkit include directory. If not provided, the default CUDA include
-        directory is used.
+    cudatoolkit_include_dirs : list[str], optional
+        The paths to the CUDA Toolkit include directories to override the default CUDA include
+        directories. If not provided, ast_canopy will use cuda.pathfinder to find the CUDA include
+        directories. If provided, the default CUDA include directories will be ignored.
 
     cxx_standard : str, optional
         The C++ standard to use. Default is "gnu++17".
@@ -192,8 +204,8 @@ def parse_declarations_from_source(
         See ``Declarations`` struct definition for details.
     """
 
-    if cudatoolkit_include_dir is None:
-        cudatoolkit_include_dir = get_default_cuda_compiler_include()
+    if not cudatoolkit_include_dirs:
+        cudatoolkit_include_dirs = get_cuda_include_dir_for_clang()
 
     if not os.path.exists(source_file_path):
         raise FileNotFoundError(f"File not found: {source_file_path}")
@@ -230,16 +242,21 @@ def parse_declarations_from_source(
 
     define_flags = [f"-D{define}" for define in defines]
 
+    cuda_runtime_include = find_nvidia_header_directory("cudart")
+    cuda_root = os.path.dirname(cuda_runtime_include)
+
     command_line_options = [
         "clang++",
         "--cuda-device-only",
         "-xcuda",
+        "-nocudalib",
+        f"--cuda-path={cuda_root}",
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
         f"-isystem{clang_resource_file}/include/",
         *[f"-I{path}" for path in clang_search_paths],
         *cccl_libs,
-        f"-I{cudatoolkit_include_dir}",
+        *paths_to_include_flags(cudatoolkit_include_dirs),
         *[f"-I{path}" for path in additional_includes],
         *define_flags,
         source_file_path,
@@ -325,7 +342,7 @@ def value_from_constexpr_vardecl(
 
         clang_search_paths = get_default_compiler_search_paths()
 
-        cudatoolkit_include_dir: str = get_default_cuda_compiler_include()
+        cudatoolkit_include_dirs: list[str] = get_cuda_include_dir_for_clang()
         command_line_options = [
             "clang++",
             "--cuda-device-only",
@@ -334,7 +351,7 @@ def value_from_constexpr_vardecl(
             f"-std={cxx_standard}",
             f"-isystem{clang_resource_file}/include/",
             *[f"-I{path}" for path in clang_search_paths],
-            f"-I{cudatoolkit_include_dir}",
+            *paths_to_include_flags(cudatoolkit_include_dirs),
             f.name,
         ]
 
