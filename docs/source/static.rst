@@ -15,7 +15,7 @@ Requirements
 ------------
 
 - CUDA Toolkit headers installed and discoverable.
-- ``clangdev`` available (see ``conda/environment.yaml``).
+- ``clangdev`` available (see ``conda/environment-[CUDA_VER].yaml``).
 - A header entry point and a list of headers to retain.
 
 Configuration file
