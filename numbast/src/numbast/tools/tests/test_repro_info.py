@@ -27,7 +27,6 @@ def test_repro_info(run_in_isolated_folder, arch_str):
         "Static binding generator parameters",
         "Config file path (relative to the path of the generated binding)",
         "Cudatoolkit version",
-        "Default CUDA_HOME path",
     }
 
     # Check that all expected info are present within the generated binding in

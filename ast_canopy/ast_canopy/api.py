@@ -8,6 +8,7 @@ import logging
 from typing import Any
 from dataclasses import dataclass
 import warnings
+import functools
 
 from cuda.pathfinder import find_nvidia_header_directory
 
@@ -74,19 +75,53 @@ def get_default_compiler_search_paths() -> list[str]:
     return search_paths
 
 
-def get_cuda_include_dir_for_clang(
-    pathfinder_fallback_default: str = "/usr/local/cuda/include",
-    verbose: bool = False,
-) -> list[str]:
+def get_cuda_path_for_clang() -> str | None:
+    """Get the cuda root directory for clang's `--cuda-path` flag.
+
+    `cuda-path` requires unix-like folder structure. For CUDA 12 wheel user,
+    we will instead fallback to the CUDA_HOME environment variable.
+    """
+
+    def _validate_root(root: str) -> bool:
+        if not os.path.exists(root):
+            return False
+
+        subdirs = ["include", "bin"]
+
+        for subdir in subdirs:
+            if not os.path.exists(os.path.join(root, subdir)):
+                return False
+
+        return True
+
+    cudaruntime_dir = get_cuda_include_dir_for_clang()["cudart"]
+    if cudaruntime_dir:
+        root = os.path.dirname(cudaruntime_dir)
+        if _validate_root(root):
+            return root
+
+    cuda_home = os.environ.get("CUDA_HOME", None)
+    if not cuda_home:
+        raise RuntimeError(
+            "Unable to find CUDA root directory for clang's "
+            "`--cuda-path` flag. Please set CUDA_HOME environment variable. "
+            "For CUDA 12 wheel user, please install the CUDA Toolkit via "
+            "system package manager and set CUDA_HOME environment variable."
+        )
+    return cuda_home
+
+
+@functools.lru_cache(maxsize=1)
+def get_cuda_include_dir_for_clang() -> dict[str, str]:
     """
     Get all include directories for the CUDA API.
 
     Note
     ----
-    This function is meant to provide the include directory for clang -xcuda
+    This function provides the include directory for clang -xcuda
     so that it compiles a CUDA file with the proper CUDA headers.
 
-    In pip installed CUDA Toolkit, the include directory differs under CUDA 12 and CUDA 13.
+    This function raises a warning if a specific required CUDA API is missing.
 
     For CUDA 12, required pip packages are:
         cuda-toolkit[cudart,nvcc,curand]
@@ -95,6 +130,7 @@ def get_cuda_include_dir_for_clang(
         - cuda_runtime/include/
         - cuda_nvcc/include/
         - nvidia/curand/include/
+        - cuda_cccl/include/
 
     For CUDA 13, required pip packages are:
         cuda-toolkit[cudart,crt,curand]
@@ -102,56 +138,61 @@ def get_cuda_include_dir_for_clang(
         The include directory is:
         - nvidia/include/
 
-    Parameters
-    ----------
-    pathfinder_fallback_default : str, optional
-        The default include directory to use if CUDA_HOME is not set.
-    verbose : bool, optional
-        If True, print a warning if CUDA_HOME is not set.
     Returns
     -------
-    str
-        The include directory for the CUDA Runtime API.
+    include_dirs: dict[str, str]
+        The include directories for the CUDA API. The key is the name of the CUDA API,
+        and the value is the include directory.
     """
 
-    if "CUDA_HOME" not in os.environ:
-        if verbose:
-            warnings.warn(
-                f"CUDA_HOME is not set. CUDA Pathfinder may fallback to default: {pathfinder_fallback_default}, not CUDA_HOME"
-            )
-
-    paths = []
+    paths = {}
 
     if path := find_nvidia_header_directory("cudart"):
-        paths.append(path)
+        paths["cudart"] = path
+    else:
+        warnings.warn(
+            "Missing CUDA Runtime installation. Please install the CUDA Runtime."
+        )
 
     if path := find_nvidia_header_directory("nvcc"):
         # Required for crt/host_defines.h in
-        paths.append(path)
+        paths["nvcc"] = path
+    else:
+        warnings.warn("Missing NVCC installation. Please install the NVCC.")
 
     if path := find_nvidia_header_directory("curand"):
         # Required for curand_mtgp32_kernel.h in CUDA 12
-        paths.append(path)
+        paths["curand"] = path
+    else:
+        warnings.warn("Missing CURAND installation. Please install the CURAND.")
 
-    # Remove duplicates
-    paths = list(set(paths))
-
-    if not paths:
-        paths.append(pathfinder_fallback_default)
+    if path := find_nvidia_header_directory("cccl"):
+        paths["cccl"] = path
+    else:
+        warnings.warn("Missing CCCL installation. Please install the CCCL.")
 
     return paths
+
+
+def get_clang_resource_dir():
+    clang_resource_file = (
+        subprocess.check_output(["clang++", "-print-resource-dir"])
+        .decode()
+        .strip()
+    )
+
+    return clang_resource_file
 
 
 def parse_declarations_from_source(
     source_file_path: str,
     files_to_retain: list[str],
     compute_capability: str,
-    cccl_root: str = "",
     cudatoolkit_include_dirs: list[str] = [],
     cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
     defines: list[str] = [],
-    verbose: bool = False,
+    verbose: bool = True,
     bypass_parse_error: bool = False,
 ) -> Declarations:
     """Given a source file, parse all top-level declarations from it and return
@@ -172,10 +213,6 @@ def parse_declarations_from_source(
 
     compute_capability : str
         The compute capability of the target GPU. e.g. "sm_70".
-
-    cccl_root : str, optional
-        The root directory of the CCCL project. If not provided, CCCL from the
-        default CTK headers is used.
 
     cudatoolkit_include_dirs : list[str], optional
         The paths to the CUDA Toolkit include directories to override the default CUDA include
@@ -205,7 +242,14 @@ def parse_declarations_from_source(
     """
 
     if not cudatoolkit_include_dirs:
-        cudatoolkit_include_dirs = get_cuda_include_dir_for_clang()
+        cudatoolkit_include_dirs = list(
+            set(get_cuda_include_dir_for_clang().values())
+        )
+        cudatoolkit_include_dirs = [
+            x for x in cudatoolkit_include_dirs if x is not None
+        ]
+
+    cuda_path = get_cuda_path_for_clang()
 
     if not os.path.exists(source_file_path):
         raise FileNotFoundError(f"File not found: {source_file_path}")
@@ -222,40 +266,26 @@ def parse_declarations_from_source(
 
     _validate_compute_capability(compute_capability)
 
-    if cccl_root:
-        cccl_libs = [
-            os.path.join(cccl_root, "libcudacxx", "include"),
-            os.path.join(cccl_root, "cub"),
-            os.path.join(cccl_root, "thrust"),
-        ]
-        cccl_libs = [f"-I{lib}" for lib in cccl_libs]
-    else:
-        cccl_libs = []
-
-    clang_resource_file = (
-        subprocess.check_output(["clang++", "-print-resource-dir"])
-        .decode()
-        .strip()
-    )
+    clang_resource_file = get_clang_resource_dir()
 
     clang_search_paths = get_default_compiler_search_paths()
 
     define_flags = [f"-D{define}" for define in defines]
 
-    cuda_runtime_include = find_nvidia_header_directory("cudart")
-    cuda_root = os.path.dirname(cuda_runtime_include)
-
+    # The include paths are ordered a below:
+    # 1. clang resource file include directory (via -isystem flag)
+    # 2. default compiler search paths (clang cuda wrapper headers)
+    # 3. CUDA Toolkit include directories
+    # 4. Additional include directories
     command_line_options = [
         "clang++",
         "--cuda-device-only",
         "-xcuda",
-        "-nocudalib",
-        f"--cuda-path={cuda_root}",
+        f"--cuda-path={cuda_path}",
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
         f"-isystem{clang_resource_file}/include/",
         *[f"-I{path}" for path in clang_search_paths],
-        *cccl_libs,
         *paths_to_include_flags(cudatoolkit_include_dirs),
         *[f"-I{path}" for path in additional_includes],
         *define_flags,
@@ -334,19 +364,24 @@ def value_from_constexpr_vardecl(
         f.write(source)
         f.flush()
 
-        clang_resource_file = (
-            subprocess.check_output(["clang++", "-print-resource-dir"])
-            .decode()
-            .strip()
-        )
+        clang_resource_file = get_clang_resource_dir()
 
         clang_search_paths = get_default_compiler_search_paths()
 
-        cudatoolkit_include_dirs: list[str] = get_cuda_include_dir_for_clang()
+        cudatoolkit_include_dirs = list(
+            set(get_cuda_include_dir_for_clang().values())
+        )
+        cudatoolkit_include_dirs = [
+            x for x in cudatoolkit_include_dirs if x is not None
+        ]
+
+        cuda_path = get_cuda_path_for_clang()
+
         command_line_options = [
             "clang++",
             "--cuda-device-only",
             "-xcuda",
+            f"--cuda-path={cuda_path}",
             f"--cuda-gpu-arch={compute_capability}",
             f"-std={cxx_standard}",
             f"-isystem{clang_resource_file}/include/",

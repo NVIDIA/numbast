@@ -39,7 +39,6 @@ decls = parse_declarations_from_source(
     cuda_bf16,
     [cuda_bf16, cuda_bf16_hpp],
     f"sm_{COMPUTE_CAPABILITY[0]}{COMPUTE_CAPABILITY[1]}",
-    cudatoolkit_include_dir=include_path,
 )
 structs, functions, typedefs, enums = (
     decls.structs,
