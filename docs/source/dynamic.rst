@@ -2,7 +2,7 @@ Dynamic binding generation
 ==========================
 
 Dynamic generation produces bindings at runtime in the same environment where the CUDA C++ library is available.
-Bindings are inserted into Numba’s registries on the fly, so you can immediately use them.
+Bindings are inserted into Numba's registries on the fly, so you can immediately use them.
 
 When to use
 -----------
