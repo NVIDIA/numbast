@@ -241,6 +241,8 @@ def parse_declarations_from_source(
         See ``Declarations`` struct definition for details.
     """
 
+    clang_verbose_flag = ["--verbose"] if verbose else []
+
     if not cudatoolkit_include_dirs:
         cudatoolkit_include_dirs = list(
             set(get_cuda_include_dir_for_clang().values())
@@ -279,6 +281,7 @@ def parse_declarations_from_source(
     # 4. Additional include directories
     command_line_options = [
         "clang++",
+        *clang_verbose_flag,
         "--cuda-device-only",
         "-xcuda",
         f"--cuda-path={cuda_path}",
