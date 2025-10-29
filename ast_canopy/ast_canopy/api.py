@@ -124,7 +124,7 @@ def get_cuda_include_dir_for_clang() -> dict[str, str]:
     This function raises a warning if a specific required CUDA API is missing.
 
     For CUDA 12, required pip packages are:
-        cuda-toolkit[cudart,nvcc,curand]
+        cuda-toolkit[cudart,nvcc,curand,cccl]
 
         The include directory is:
         - cuda_runtime/include/
@@ -133,7 +133,7 @@ def get_cuda_include_dir_for_clang() -> dict[str, str]:
         - cuda_cccl/include/
 
     For CUDA 13, required pip packages are:
-        cuda-toolkit[cudart,crt,curand]
+        cuda-toolkit[cudart,crt,curand,cccl]
 
         The include directory is:
         - nvidia/include/
