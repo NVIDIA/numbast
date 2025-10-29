@@ -2,14 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import subprocess
-import shutil
 import os
 import tempfile
 import logging
-from typing import Optional, Any
+from typing import Any
 from dataclasses import dataclass
+import warnings
+import functools
 
-from numba.cuda.cuda_paths import get_cuda_paths, get_cuda_home
+from cuda.pathfinder import find_nvidia_header_directory
 
 from ast_canopy import pylibastcanopy as bindings
 
@@ -35,40 +36,8 @@ class Declarations:
     enums: list[bindings.Enum]
 
 
-def get_default_cuda_path() -> Optional[str]:
-    """Return the path to the default CUDA home directory."""
-
-    # Allow overriding from os.environ
-    if home := get_cuda_home():
-        return home
-
-    by, nvvm_path = get_cuda_paths()["nvvm"]
-    if nvvm_path is not None:
-        # In the form of $CUDA_HOME/nvvm/lib64/libnvvm.so, go up 3 levels for cuda home.
-        cuda_home = os.path.dirname(os.path.dirname(os.path.dirname(nvvm_path)))
-
-        if os.path.exists(cuda_home):
-            logger.info(f"Found CUDA home: {cuda_home}")
-            return cuda_home
-
-    return None
-
-
-def get_default_nvcc_path() -> Optional[str]:
-    """Return the path to the default NVCC compiler binary."""
-    by, nvvm_path = get_cuda_paths()["nvvm"]
-
-    if nvvm_path is None:
-        return shutil.which("nvcc")
-
-    root = os.path.dirname(os.path.dirname(nvvm_path))
-    nvcc_path = os.path.join(root, "bin", "nvcc")
-
-    if os.path.exists(nvcc_path):
-        logger.info(f"Found NVCC path: {nvcc_path}")
-        return nvcc_path
-
-    return None
+def paths_to_include_flags(paths: list[str]) -> list[str]:
+    return [f"-I{path}" for path in paths]
 
 
 def get_default_compiler_search_paths() -> list[str]:
@@ -87,6 +56,7 @@ def get_default_compiler_search_paths() -> list[str]:
                 "-v",
                 "--cuda-device-only",
                 "-nocudainc",
+                "-nocudalib",
                 "--no-cuda-version-check",
                 "-xcuda",
                 "/dev/null",
@@ -105,61 +75,124 @@ def get_default_compiler_search_paths() -> list[str]:
     return search_paths
 
 
-def get_default_cuda_compiler_include(default="/usr/local/cuda/include") -> str:
-    """Compile an empty CUDA file with NVCC and extract its default include path.
+def get_cuda_path_for_clang() -> str | None:
+    """Get the cuda root directory for clang's `--cuda-path` flag.
 
-    ast_canopy depends on a healthy CUDA environment to function. If NVCC fails
-    to preprocess an empty CUDA file, this function raises a RuntimeError.
+    `cuda-path` requires unix-like folder structure. For CUDA 12 wheel user,
+    we will instead fallback to the CUDA_HOME environment variable.
     """
 
-    nvcc_bin = get_default_nvcc_path()
-    if not nvcc_bin:
-        logger.warning(
-            "Could not find NVCC binary. AST_Canopy will attempt to "
-            "invoke `nvcc` directly in the subsequent commands."
-        )
-        nvcc_bin = "nvcc"
+    def _validate_root(root: str) -> bool:
+        if not os.path.exists(root):
+            return False
 
-    with tempfile.NamedTemporaryFile(suffix=".cu") as tmp_file:
-        try:
-            nvcc_compile_empty = (
-                subprocess.run(
-                    [nvcc_bin, "-E", "-v", tmp_file.name],
-                    capture_output=True,
-                    check=True,
-                )
-                .stderr.decode()
-                .strip()
-                .split("\n")
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                f"NVCC failed to compile an empty cuda file. \n {e.stdout.decode('utf-8')} \n {e.stderr.decode('utf-8')}"
-            ) from e
+        subdirs = ["include", "bin"]
 
-    if s := [i for i in nvcc_compile_empty if "INCLUDES=" in i]:
-        include_path = (
-            s[0].lstrip("#$ INCLUDES=").strip().strip('"').lstrip("-I")
+        for subdir in subdirs:
+            if not os.path.exists(os.path.join(root, subdir)):
+                return False
+
+        return True
+
+    cudaruntime_dir = get_cuda_include_dir_for_clang()["cudart"]
+    if cudaruntime_dir:
+        root = os.path.dirname(cudaruntime_dir)
+        if _validate_root(root):
+            return root
+
+    cuda_home = os.environ.get("CUDA_HOME", None)
+    if not cuda_home:
+        raise RuntimeError(
+            "Unable to find CUDA root directory for clang's "
+            "`--cuda-path` flag. Please set CUDA_HOME environment variable. "
+            "For CUDA 12 wheel user, please install the CUDA Toolkit via "
+            "system package manager and set CUDA_HOME environment variable."
         )
-        logger.info(f"Found NVCC default include path, {include_path=}")
-        return include_path
+    return cuda_home
+
+
+@functools.lru_cache(maxsize=1)
+def get_cuda_include_dir_for_clang() -> dict[str, str]:
+    """
+    Get all include directories for the CUDA API.
+
+    Note
+    ----
+    This function provides the include directory for clang -xcuda
+    so that it compiles a CUDA file with the proper CUDA headers.
+
+    This function raises a warning if a specific required CUDA API is missing.
+
+    For CUDA 12, required pip packages are:
+        cuda-toolkit[cudart,nvcc,curand,cccl]
+
+        The include directory is:
+        - cuda_runtime/include/
+        - cuda_nvcc/include/
+        - nvidia/curand/include/
+        - cuda_cccl/include/
+
+    For CUDA 13, required pip packages are:
+        cuda-toolkit[cudart,crt,curand,cccl]
+
+        The include directory is:
+        - nvidia/include/
+
+    Returns
+    -------
+    include_dirs: dict[str, str]
+        The include directories for the CUDA API. The key is the name of the CUDA API,
+        and the value is the include directory.
+    """
+
+    paths = {}
+
+    if path := find_nvidia_header_directory("cudart"):
+        paths["cudart"] = path
     else:
-        logger.warning(
-            f"Could not find NVCC default include path. Using default: {default=}"
+        warnings.warn(
+            "Missing CUDA Runtime installation. Please install the CUDA Runtime."
         )
-        return default
+
+    if path := find_nvidia_header_directory("nvcc"):
+        # Required for crt/host_defines.h in
+        paths["nvcc"] = path
+    else:
+        warnings.warn("Missing NVCC installation. Please install the NVCC.")
+
+    if path := find_nvidia_header_directory("curand"):
+        # Required for curand_mtgp32_kernel.h in CUDA 12
+        paths["curand"] = path
+    else:
+        warnings.warn("Missing CURAND installation. Please install the CURAND.")
+
+    if path := find_nvidia_header_directory("cccl"):
+        paths["cccl"] = path
+    else:
+        warnings.warn("Missing CCCL installation. Please install the CCCL.")
+
+    return paths
+
+
+def get_clang_resource_dir():
+    clang_resource_file = (
+        subprocess.check_output(["clang++", "-print-resource-dir"])
+        .decode()
+        .strip()
+    )
+
+    return clang_resource_file
 
 
 def parse_declarations_from_source(
     source_file_path: str,
     files_to_retain: list[str],
     compute_capability: str,
-    cccl_root: str = "",
-    cudatoolkit_include_dir: str | None = None,
+    cudatoolkit_include_dirs: list[str] = [],
     cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
     defines: list[str] = [],
-    verbose: bool = False,
+    verbose: bool = True,
     bypass_parse_error: bool = False,
 ) -> Declarations:
     """Given a source file, parse all top-level declarations from it and return
@@ -181,13 +214,10 @@ def parse_declarations_from_source(
     compute_capability : str
         The compute capability of the target GPU. e.g. "sm_70".
 
-    cccl_root : str, optional
-        The root directory of the CCCL project. If not provided, CCCL from the
-        default CTK headers is used.
-
-    cudatoolkit_include_dir : str, optional
-        The path to the CUDA Toolkit include directory. If not provided, the default CUDA include
-        directory is used.
+    cudatoolkit_include_dirs : list[str], optional
+        The paths to the CUDA Toolkit include directories to override the default CUDA include
+        directories. If not provided, ast_canopy will use cuda.pathfinder to find the CUDA include
+        directories. If provided, the default CUDA include directories will be ignored.
 
     cxx_standard : str, optional
         The C++ standard to use. Default is "gnu++17".
@@ -211,8 +241,15 @@ def parse_declarations_from_source(
         See ``Declarations`` struct definition for details.
     """
 
-    if cudatoolkit_include_dir is None:
-        cudatoolkit_include_dir = get_default_cuda_compiler_include()
+    if not cudatoolkit_include_dirs:
+        cudatoolkit_include_dirs = list(
+            set(get_cuda_include_dir_for_clang().values())
+        )
+        cudatoolkit_include_dirs = [
+            x for x in cudatoolkit_include_dirs if x is not None
+        ]
+
+    cuda_path = get_cuda_path_for_clang()
 
     if not os.path.exists(source_file_path):
         raise FileNotFoundError(f"File not found: {source_file_path}")
@@ -229,44 +266,27 @@ def parse_declarations_from_source(
 
     _validate_compute_capability(compute_capability)
 
-    if cccl_root:
-        cccl_libs = [
-            os.path.join(cccl_root, "libcudacxx", "include"),
-            os.path.join(cccl_root, "cub"),
-            os.path.join(cccl_root, "thrust"),
-        ]
-        cccl_libs = [f"-I{lib}" for lib in cccl_libs]
-    else:
-        cccl_libs = []
-
-    clang_resource_file = (
-        subprocess.check_output(["clang++", "-print-resource-dir"])
-        .decode()
-        .strip()
-    )
+    clang_resource_file = get_clang_resource_dir()
 
     clang_search_paths = get_default_compiler_search_paths()
 
-    def custom_cuda_home() -> list[str]:
-        cuda_path = get_default_cuda_path()
-        if cuda_path:
-            return [f"--cuda-path={cuda_path}"]
-        else:
-            return []
-
     define_flags = [f"-D{define}" for define in defines]
 
+    # The include paths are ordered a below:
+    # 1. clang resource file include directory (via -isystem flag)
+    # 2. default compiler search paths (clang cuda wrapper headers)
+    # 3. CUDA Toolkit include directories
+    # 4. Additional include directories
     command_line_options = [
         "clang++",
         "--cuda-device-only",
         "-xcuda",
+        f"--cuda-path={cuda_path}",
         f"--cuda-gpu-arch={compute_capability}",
-        *custom_cuda_home(),
         f"-std={cxx_standard}",
         f"-isystem{clang_resource_file}/include/",
         *[f"-I{path}" for path in clang_search_paths],
-        *cccl_libs,
-        f"-I{cudatoolkit_include_dir}",
+        *paths_to_include_flags(cudatoolkit_include_dirs),
         *[f"-I{path}" for path in additional_includes],
         *define_flags,
         source_file_path,
@@ -344,32 +364,29 @@ def value_from_constexpr_vardecl(
         f.write(source)
         f.flush()
 
-        clang_resource_file = (
-            subprocess.check_output(["clang++", "-print-resource-dir"])
-            .decode()
-            .strip()
-        )
+        clang_resource_file = get_clang_resource_dir()
 
         clang_search_paths = get_default_compiler_search_paths()
 
-        def custom_cuda_home() -> list[str]:
-            cuda_path = get_default_cuda_path()
-            if cuda_path:
-                return [f"--cuda-path={cuda_path}"]
-            else:
-                return []
+        cudatoolkit_include_dirs = list(
+            set(get_cuda_include_dir_for_clang().values())
+        )
+        cudatoolkit_include_dirs = [
+            x for x in cudatoolkit_include_dirs if x is not None
+        ]
 
-        cudatoolkit_include_dir: str = get_default_cuda_compiler_include()
+        cuda_path = get_cuda_path_for_clang()
+
         command_line_options = [
             "clang++",
             "--cuda-device-only",
             "-xcuda",
+            f"--cuda-path={cuda_path}",
             f"--cuda-gpu-arch={compute_capability}",
-            *custom_cuda_home(),
             f"-std={cxx_standard}",
             f"-isystem{clang_resource_file}/include/",
             *[f"-I{path}" for path in clang_search_paths],
-            f"-I{cudatoolkit_include_dir}",
+            *paths_to_include_flags(cudatoolkit_include_dirs),
             f.name,
         ]
 
