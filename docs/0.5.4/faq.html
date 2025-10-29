@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 
 
@@ -8,7 +7,9 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Search - Numbast</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>FAQ &#8212; Numbast</title>
   
   
   
@@ -40,13 +41,12 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-
     <script src="_static/documentation_options.js?v=e1a677a5"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=35a8b989"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'faq';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
@@ -54,18 +54,12 @@
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
-
-<script src="_static/searchtools.js"></script>
-
-<script src="_static/language_data.js"></script>
-
-<script src="searchindex.js"></script>
-
-
-    <link rel="canonical" href="docs/search.html" />
+    <link rel="canonical" href="docs/faq.html" />
     <link rel="icon" href="_static/favicon.png"/>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API reference" href="api_reference.html" />
+    <link rel="prev" title="AST Canopy overview" href="ast_canopy_overview.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -90,7 +84,7 @@
   <dialog id="pst-search-dialog">
     
 <form class="bd-search d-flex align-items-center"
-      action="#"
+      action="search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -233,8 +227,8 @@
 </li>
 
 
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="faq.html">
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
     FAQ
   </a>
 </li>
@@ -291,6 +285,10 @@
     </div>
   
 
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
   
 </div>
 
@@ -418,8 +416,8 @@
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="faq.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
     FAQ
   </a>
 </li>
@@ -462,7 +460,7 @@
      aria-label="Table of Contents">
   <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents</span></p>
-<ul class="nav bd-sidenav">
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
@@ -470,7 +468,7 @@
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -508,45 +506,101 @@
           <div class="bd-content">
             <div class="bd-article-container">
               
-              <div class="bd-header-article d-print-none"></div>
-              
-              
-  <div class="bd-search-container">
-    <h1>Search</h1>
-    <noscript>
-      <div class="admonition error">
-        <p class="admonition-title">Error</p>
-        <p>Please activate JavaScript to enable the search functionality.</p>
-      </div>
-    </noscript>
-    
-<form class="bd-search d-flex align-items-center"
-      action="#"
-      method="get">
-  <i class="fa-solid fa-magnifying-glass"></i>
-  <input type="search"
-         class="form-control"
-         name="q"
-         placeholder="Search the docs ..."
-         aria-label="Search the docs ..."
-         autocomplete="off"
-         autocorrect="off"
-         autocapitalize="off"
-         spellcheck="false"/>
-  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form>
-    <div id="search-results"></div>
-  </div>
-  <script>
-    // Activate the search field on page load
-    let searchInput = document.querySelector("form.bd-search input");
-    if (searchInput) {
-        searchInput.focus();
-        searchInput.select();
-        console.log("[PST]: Set focus on search field.");
-    }
-  </script>
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">FAQ</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="faq">
+<h1>FAQ<a class="headerlink" href="#faq" title="Link to this heading">#</a></h1>
+<section id="cuda-headers-and-include-paths">
+<h2>CUDA headers and include paths<a class="headerlink" href="#cuda-headers-and-include-paths" title="Link to this heading">#</a></h2>
+<p><strong>Why does AST Canopy need to find CUDA C/C++ headers?</strong></p>
+<p>AST Canopy uses Clang’s CUDA mode to parse the CUDA C++ header. This mode requires the CUDA directory passed
+via the <cite>–cuda-path</cite> flag, and the CUDA include directories passed via the <cite>-I</cite> flag.</p>
+<p><strong>How does AST Canopy find CUDA C/C++ headers?</strong></p>
+<p>AST Canopy relies on <a class="reference external" href="https://nvidia.github.io/cuda-python/cuda-pathfinder/latest/">cuda.pathfinder</a> to
+locate the CUDA Toolkit header directory (e.g., the folder containing <code class="docutils literal notranslate"><span class="pre">cuda.h</span></code>). Internally this uses
+<code class="docutils literal notranslate"><span class="pre">cuda.pathfinder.find_nvidia_header_directory()</span></code>, which probes several common locations and environment
+variables so you usually don’t need to configure anything.</p>
+<section id="what-is-searched-high-level">
+<h3>What is searched (high level)<a class="headerlink" href="#what-is-searched-high-level" title="Link to this heading">#</a></h3>
+<p>This is a high level overview of the search paths, for more details, please refer to the <a class="reference external" href="https://nvidia.github.io/cuda-python/cuda-pathfinder/latest/">cuda.pathfinder documentation</a>.</p>
+<ul class="simple">
+<li><p><strong>Pip installed CUDA Toolkit</strong>: If you installed the CUDA Toolkit via pip (e.g., <code class="docutils literal notranslate"><span class="pre">cuda-toolkit[cudart,nvcc]</span></code>),
+headers are typically in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/</span></code>.</p></li>
+<li><p><strong>Conda environments</strong>: If you installed the Toolkit via Conda (e.g., <code class="docutils literal notranslate"><span class="pre">cudatoolkit</span></code>), headers are typically in
+<code class="docutils literal notranslate"><span class="pre">$CONDA_PREFIX/include</span></code>.</p></li>
+<li><p><strong>Explicit environment variables</strong>: If <code class="docutils literal notranslate"><span class="pre">CUDA_HOME</span></code> or <code class="docutils literal notranslate"><span class="pre">CUDA_PATH</span></code> is set, their <code class="docutils literal notranslate"><span class="pre">include</span></code> subdirectory is
+used (e.g., <code class="docutils literal notranslate"><span class="pre">$CUDA_HOME/include</span></code>).</p></li>
+</ul>
+</section>
+<section id="conda-vs-pip-nuances">
+<h3>Conda vs. pip nuances<a class="headerlink" href="#conda-vs-pip-nuances" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>pip (runtime-focused)</strong>: Packages like <code class="docutils literal notranslate"><span class="pre">cuda-toolkit[cudart,nvcc]</span></code> ship the CUDA headers. But they have different
+layouts in either CUDA 12 or CUDA 13. See the next section for more details.</p></li>
+<li><p><strong>Conda (recommended for headers)</strong>: The <code class="docutils literal notranslate"><span class="pre">cuda-toolkit</span></code> package commonly includes header files, so
+<code class="docutils literal notranslate"><span class="pre">cuda.pathfinder</span></code> will find them in <code class="docutils literal notranslate"><span class="pre">$CONDA_PREFIX/include</span></code>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We recommend using only one package management system for a single CUDA installation.</p>
+</div>
+</section>
+<section id="cuda-12-vs-cuda-13-considerations">
+<h3>CUDA 12 vs. CUDA 13 considerations<a class="headerlink" href="#cuda-12-vs-cuda-13-considerations" title="Link to this heading">#</a></h3>
+<p>Main difference between CUDA 12 and CUDA 13 is the layout of headers in pip installed CUDA Toolkit.</p>
+<p><strong>Runtime headers</strong>:</p>
+<ul class="simple">
+<li><p><strong>CUDA 12</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cuda_runtime/include</span></code></p></li>
+<li><p><strong>CUDA 13</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cu13/include</span></code></p></li>
+</ul>
+<p><strong>CCCL headers</strong>:</p>
+<ul class="simple">
+<li><p><strong>CUDA 12</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cuda_cccl/include</span></code></p></li>
+<li><p><strong>CUDA 13</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cu13/include/cccl</span></code></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For CUDA 12, since the site-package directory is non-standard, clang++ is unable to use the site-package directory
+as <cite>–cuda-path</cite>. Instead, please install the system-wide CUDA Toolkit to corresponding version and set
+<code class="docutils literal notranslate"><span class="pre">CUDA_HOME</span></code> to the system-wide Toolkit root.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
               
               
               
@@ -554,6 +608,24 @@
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="ast_canopy_overview.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">AST Canopy overview</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="api_reference.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
@@ -561,9 +633,30 @@
             
             
 
-<div class="bd-sidebar-secondary"></div>
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda-headers-and-include-paths">CUDA headers and include paths</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-searched-high-level">What is searched (high level)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conda-vs-pip-nuances">Conda vs. pip nuances</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda-12-vs-cuda-13-considerations">CUDA 12 vs. CUDA 13 considerations</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
 
