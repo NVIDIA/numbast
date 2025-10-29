@@ -103,8 +103,9 @@ jobs:
           apt install --no-install-recommends --quiet -y libclang-common-20-dev
       - name: Install Python dependencies
         run: |
+          # FIXME: Hardcoded versions right now, will use parameters later
           python -m pip install --upgrade pip
-          python -m pip install pytest
+          python -m pip install pytest numba-cuda[cu13]
           python -m pip install wheels/ast_canopy*-cp313-*.whl
           python -m pip install wheels/numbast*.whl
       - name: Test ast_canopy wheels
