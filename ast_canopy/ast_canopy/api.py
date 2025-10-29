@@ -136,7 +136,7 @@ def get_cuda_include_dir_for_clang() -> dict[str, str]:
         cuda-toolkit[cudart,crt,curand,cccl]
 
         The include directory is:
-        - nvidia/include/
+        - nvidia/cu13/include/
 
     Returns
     -------
