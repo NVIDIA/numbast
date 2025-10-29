@@ -60,7 +60,7 @@ jobs:
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
   build:
-    name: ${{ matrix.ARCH }}, ${{ matrix.LINUX_VER }}
+    name: ${{ matrix.ARCH }}, ${{ matrix.LINUX_VER }}, ${{ matrix.CUDA_VER }}, ${{ matrix.GPU }}
     needs: compute-matrix
     strategy:
       fail-fast: false
@@ -80,7 +80,7 @@ jobs:
           ref: ${{ inputs.sha }}
           fetch-depth: 0
       - uses: actions/download-artifact@v4
-        name: Download conda repo
+        name: Download binary wheels
         with:
           name: pypi-wheels-${{ matrix.ARCH }}
           path: wheels
@@ -105,7 +105,7 @@ jobs:
         run: |
           # FIXME: Hardcoded versions right now, will use parameters later
           python -m pip install --upgrade pip
-          python -m pip install pytest numba-cuda[cu13]
+          python -m pip install pytest numba-cuda[cu13] cuda-toolkit[cudart,crt,curand,cccl]
           python -m pip install wheels/ast_canopy*-cp313-*.whl
           python -m pip install wheels/numbast*.whl
       - name: Test ast_canopy wheels
