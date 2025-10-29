@@ -38,6 +38,8 @@ Validate the installation (optional)
 
   pytest ast_canopy/ numbast/
 
+.. note::
+  If you see errors like "cannot find header 'cuda.h'", please refer to :doc:`FAQ <faq>` for more details.
 
 Building Documentation
 ----------------------
