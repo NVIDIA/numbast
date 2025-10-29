@@ -135,5 +135,5 @@ jobs:
       - name: Upload PyPi wheels
         uses: actions/upload-artifact@v4
         with:
-          name: pypi-wheels-${{ matrix.ARCH }}-llvm-${{ inputs.llvm_version }}
+          name: pypi-wheels-${{ matrix.ARCH }}
           path: final-dist/*.whl
