@@ -34,7 +34,7 @@ Conda vs. pip nuances
 
 - **pip (runtime-focused)**: Packages like ``cuda-toolkit[cudart,nvcc]`` ship the CUDA headers. But they have different
   layouts in either CUDA 12 or CUDA 13. See the next section for more details.
-- **Conda (recommended for headers)**: The ``cudatoolkit`` package commonly includes header files, so
+- **Conda (recommended for headers)**: The ``cuda-toolkit`` package commonly includes header files, so
   ``cuda.pathfinder`` will find them in ``$CONDA_PREFIX/include``.
 
 .. note::
