@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import warnings
 import functools
 
+
 from cuda.pathfinder import find_nvidia_header_directory
 
 from ast_canopy import pylibastcanopy as bindings
@@ -40,9 +41,23 @@ def paths_to_include_flags(paths: list[str]) -> list[str]:
     return [f"-I{path}" for path in paths]
 
 
-def get_default_compiler_search_paths() -> list[str]:
-    """Compile an empty CUDA file with clang++ in verbose mode and parse the
-    output to extract the default system header search paths."""
+def get_default_compiler_search_paths(clang_binary: str | None) -> list[str]:
+    """Compile an empty CUDA file with the given clang binary in verbose mode and parse the
+    output to extract the default system header search paths.
+
+    Parameters
+    ----------
+    clang_binary : str | None
+        The path to the clang binary. If None, the function will fallback to the clang binary in the system path.
+
+    Returns
+    -------
+    list[str]
+        The default compiler search paths.
+    """
+
+    if clang_binary is None:
+        return libstdcxx_include_dirs_fallback()
 
     # clang++ needs to be put in cuda mode so that it can include the proper headers.
     # The bare minimum of the cuda mode is with `-nocudainc` and `-no-cuda-version-check`
@@ -51,7 +66,7 @@ def get_default_compiler_search_paths() -> list[str]:
     clang_compile_empty = (
         subprocess.check_output(
             [
-                "clang++",
+                clang_binary,
                 "-fsyntax-only",
                 "-v",
                 "--cuda-device-only",
@@ -73,6 +88,59 @@ def get_default_compiler_search_paths() -> list[str]:
     search_paths = [x.strip() for x in clang_system_header_search_paths]
     logger.info(f"Default compiler search paths: {search_paths=}")
     return search_paths
+
+
+def _semantic_version_key(version_string: str) -> tuple:
+    parts: list[int] = []
+    for part in version_string.split("."):
+        try:
+            parts.append(int(part))
+        except ValueError:
+            parts.append(-1)
+    return tuple(parts)
+
+
+def libstdcxx_include_dirs_fallback(verbose: bool = False) -> list[str]:
+    """Locate libstdc++ include directory from system path only.
+
+    This is a minimal fallback that scans "/usr/include/c++/<ver>" and returns
+    the newest version directory if present.
+
+    Returns
+    -------
+    list[str]
+        A list with the selected libstdc++ include directory, or an empty list
+        if none is found.
+    """
+
+    dirs: list[str] = []
+    if libstdcxx_include_dirs := os.environ.get(
+        "ASTCANOPY_LIBSTDCXX_INCLUDE_DIRS", None
+    ):
+        include_dirs = libstdcxx_include_dirs.split(":")
+        dirs = [path for path in include_dirs if os.path.isdir(path)]
+
+    base = "/usr/include/c++"
+    if not os.path.isdir(base):
+        dirs = []
+    try:
+        versions = [
+            v for v in os.listdir(base) if os.path.isdir(os.path.join(base, v))
+        ]
+        versions.sort(key=_semantic_version_key, reverse=True)
+        if not versions:
+            dirs = []
+        newest = versions[0]
+        selected = os.path.join(base, newest)
+        if os.path.isdir(selected):
+            dirs = [selected]
+    except Exception:
+        dirs = []
+
+    if verbose:
+        print(f"Selected libstdc++ include dir: {dirs}")
+
+    return dirs
 
 
 def get_cuda_path_for_clang() -> str | None:
@@ -174,14 +242,48 @@ def get_cuda_include_dir_for_clang() -> dict[str, str]:
     return paths
 
 
-def get_clang_resource_dir():
-    clang_resource_file = (
-        subprocess.check_output(["clang++", "-print-resource-dir"])
-        .decode()
-        .strip()
+def check_clang_binary() -> str | None:
+    """Check if clang++ is installed in the system."""
+    output = subprocess.run(
+        ["which", "clang++"], capture_output=True, text=True
     )
+    if output.returncode != 0:
+        return None
 
-    return clang_resource_file
+    return output.stdout.strip()
+
+
+def get_clang_resource_dir(clang_binary: str | None) -> str:
+    """Get clang resource directory from environment variable or clang binary.
+
+    Parameters
+    ----------
+    clang_binary : str | None
+        The path to the clang binary. If None, the resource directory will fallback to "/lib/clang/20/".
+
+    Returns
+    -------
+    str
+        The path to the clang resource directory.
+    """
+    if custom_resource_dir := os.environ.get(
+        "ASTCANOPY_CLANG_RESOURCE_DIR", None
+    ):
+        if os.path.exists(custom_resource_dir):
+            return custom_resource_dir
+        else:
+            warnings.warn(
+                f"Custom resource directory {custom_resource_dir=} not found. Checking with clang++ -print-resource-dir."
+            )
+
+    if clang_binary is None:
+        return "/lib/clang/20/"
+
+    clang_resource_dir = subprocess.run(
+        [clang_binary, "-print-resource-dir"], capture_output=True, text=True
+    ).stdout.strip()
+
+    return clang_resource_dir
 
 
 def parse_declarations_from_source(
@@ -268,9 +370,11 @@ def parse_declarations_from_source(
 
     _validate_compute_capability(compute_capability)
 
-    clang_resource_file = get_clang_resource_dir()
+    clang_binary = check_clang_binary()
 
-    clang_search_paths = get_default_compiler_search_paths()
+    clang_resource_dir = get_clang_resource_dir(clang_binary)
+
+    clang_search_paths = get_default_compiler_search_paths(clang_binary)
 
     define_flags = [f"-D{define}" for define in defines]
 
@@ -287,7 +391,7 @@ def parse_declarations_from_source(
         f"--cuda-path={cuda_path}",
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
-        f"-isystem{clang_resource_file}/include/",
+        f"-resource-dir={clang_resource_dir}",
         *[f"-I{path}" for path in clang_search_paths],
         *paths_to_include_flags(cudatoolkit_include_dirs),
         *[f"-I{path}" for path in additional_includes],
@@ -367,9 +471,11 @@ def value_from_constexpr_vardecl(
         f.write(source)
         f.flush()
 
-        clang_resource_file = get_clang_resource_dir()
+        clang_binary = check_clang_binary()
 
-        clang_search_paths = get_default_compiler_search_paths()
+        clang_resource_dir = get_clang_resource_dir(clang_binary)
+
+        clang_search_paths = get_default_compiler_search_paths(clang_binary)
 
         cudatoolkit_include_dirs = list(
             set(get_cuda_include_dir_for_clang().values())
@@ -387,7 +493,7 @@ def value_from_constexpr_vardecl(
             f"--cuda-path={cuda_path}",
             f"--cuda-gpu-arch={compute_capability}",
             f"-std={cxx_standard}",
-            f"-isystem{clang_resource_file}/include/",
+            f"-resource-dir={clang_resource_dir}",
             *[f"-I{path}" for path in clang_search_paths],
             *paths_to_include_flags(cudatoolkit_include_dirs),
             f.name,
