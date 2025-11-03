@@ -40,7 +40,7 @@ docs = ["sphinx>=7.0", "sphinx-copybutton>=0.5.2"]
 test-cu13 = [
   "pytest",
   "cffi",
-  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==13.*",
+  "cuda-toolkit[cudart,crt,curand,cccl,nvcc]==13.*",
   "numba-cuda[cu13]>=0.20.0",
 ]
 
