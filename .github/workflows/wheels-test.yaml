@@ -107,9 +107,8 @@ jobs:
         run: |
           # FIXME: Hardcoded versions right now, will use parameters later
           python -m pip install --upgrade pip
-          python -m pip install pytest numba-cuda[cu13] cuda-toolkit[cudart,crt,curand,cccl,nvcc]
           python -m pip install wheels/ast_canopy*-cp313-*.whl
-          python -m pip install wheels/numbast*.whl
+          python -m pip install wheels/numbast*.whl[test-cu13]
       - name: Test ast_canopy wheels
         run: |
           python -m pytest ast_canopy/tests
