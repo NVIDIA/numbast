@@ -12,4 +12,5 @@ Numbast Documentation
    dynamic
    supported_declarations
    ast_canopy_overview
+   faq
    api_reference

@@ -46,7 +46,8 @@ The assumption is enforced at different times:
 - Dynamic generation: generation and execution happen in the same environment; headers located at generation time should
   match the runtime CUDA installation.
 
-Numbast relies on ``numba.cuda`` (via ``cuda_paths.py``) to locate the CUDA toolkit and headers.
+Numbast relies on `cuda-pathfinder <https://nvidia.github.io/cuda-python/cuda-pathfinder/latest/>`_ to locate the CUDA
+toolkit and headers.
 
 API reference
 -------------
