@@ -46,7 +46,7 @@ jobs:
 
           # Please keep the matrices sorted in ascending order by the following:
           #
-          #     [ARCH, ARCH_ML, LINUX_VER]
+          #     [ARCH, PY_VER, CUDA_VER, LINUX_VER, GPU, DRIVER]
           #
           export MATRIX="
           # amd64
@@ -60,7 +60,7 @@ jobs:
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
   build:
-    name: ${{ matrix.ARCH }}, ${{ matrix.LINUX_VER }}, ${{ matrix.CUDA_VER }}, ${{ matrix.GPU }}
+    name: ${{ matrix.ARCH }}, ${{ matrix.PY_VER }}, ${{ matrix.CUDA_VER }}, ${{ matrix.LINUX_VER }}, ${{ matrix.GPU }}
     needs: compute-matrix
     strategy:
       fail-fast: false
@@ -105,7 +105,7 @@ jobs:
         run: |
           # FIXME: Hardcoded versions right now, will use parameters later
           python -m pip install --upgrade pip
-          python -m pip install pytest numba-cuda[cu13] cuda-toolkit[cudart,crt,curand,cccl]
+          python -m pip install pytest numba-cuda[cu13] cuda-toolkit[cudart,crt,curand,cccl,nvcc]
           python -m pip install wheels/ast_canopy*-cp313-*.whl
           python -m pip install wheels/numbast*.whl
       - name: Test ast_canopy wheels
