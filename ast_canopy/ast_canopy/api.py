@@ -27,6 +27,13 @@ from ast_canopy.fdcap_min import capture_fd, STREAMFD
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
 
 
+def _get_shim_include_dir() -> str | None:
+    """Return the absolute path to the local shim include directory, if present."""
+    here = os.path.dirname(__file__)
+    shim_dir = os.path.join(here, "shim_include")
+    return shim_dir if os.path.isdir(shim_dir) else None
+
+
 @dataclass
 class Declarations:
     structs: list[Struct]
@@ -392,6 +399,8 @@ def parse_declarations_from_source(
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
         f"-resource-dir={clang_resource_dir}",
+        # Place shim include dir early so it can intercept vendor headers.
+        *([f"-I{_get_shim_include_dir()}"] if _get_shim_include_dir() else []),
         *[f"-isystem{path}" for path in clang_search_paths],
         *paths_to_include_flags(cudatoolkit_include_dirs),
         *[f"-I{path}" for path in additional_includes],
@@ -494,6 +503,12 @@ def value_from_constexpr_vardecl(
             f"--cuda-gpu-arch={compute_capability}",
             f"-std={cxx_standard}",
             f"-resource-dir={clang_resource_dir}",
+            # Place shim include dir early so it can intercept vendor headers.
+            *(
+                [f"-I{_get_shim_include_dir()}"]
+                if _get_shim_include_dir()
+                else []
+            ),
             *[f"-I{path}" for path in clang_search_paths],
             *paths_to_include_flags(cudatoolkit_include_dirs),
             f.name,
