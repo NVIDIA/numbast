@@ -100,7 +100,9 @@ jobs:
       - name: Install C++ dependencies (LLVM)
         run: |
           apt update
-          apt install --no-install-recommends --quiet -y libclang-common-20-dev
+          apt install --no-install-recommends --quiet -y \
+            libclang-common-20-dev \
+            libstdc++-14-dev
       - name: Install Python dependencies
         run: |
           # FIXME: Hardcoded versions right now, will use parameters later
