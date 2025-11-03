@@ -596,6 +596,62 @@ as <cite>–cuda-path</cite>. Instead, please install the system-wide CUDA Toolk
 </div>
 </section>
 </section>
+<section id="clang-requirements-host-headers-and-resources">
+<h2>Clang requirements (host headers and resources)<a class="headerlink" href="#clang-requirements-host-headers-and-resources" title="Link to this heading">#</a></h2>
+<p><strong>What are the minimum host-side requirements to parse CUDA headers?</strong></p>
+<p>AST Canopy drives Clang in CUDA mode. Even for device-only parsing, Clang needs two host-side components:</p>
+<ul class="simple">
+<li><p>libstdc++ C++ headers (for headers like <code class="docutils literal notranslate"><span class="pre">&lt;cstdlib&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;cmath&gt;</span></code> used via CUDA wrappers). In principle,
+use the supported libstdc++ versions listed by clang.</p></li>
+<li><p>Clang “resource directory” headers (<code class="docutils literal notranslate"><span class="pre">&lt;resource&gt;/include</span></code> and <code class="docutils literal notranslate"><span class="pre">include/cuda_wrappers</span></code> containing
+<code class="docutils literal notranslate"><span class="pre">__clang_cuda_runtime_wrapper.h</span></code> and friends).</p></li>
+</ul>
+<p>You do not need to link libstdc++ for device-only parsing, but their headers must be discoverable.</p>
+<section id="environment-specific-discovery">
+<h3>Environment-specific discovery<a class="headerlink" href="#environment-specific-discovery" title="Link to this heading">#</a></h3>
+<p>We use Clang’s driver logic (in-process) to compute the same include search paths that <code class="docutils literal notranslate"><span class="pre">clang++</span></code> would pass to
+<code class="docutils literal notranslate"><span class="pre">cc1</span></code>. How the headers are found depends on your environment:</p>
+<section id="pip-wheel-bare-metal-system-toolchain">
+<h4>1. Pip wheel/bare-metal (system toolchain)<a class="headerlink" href="#pip-wheel-bare-metal-system-toolchain" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Install system C++ headers (e.g., <code class="docutils literal notranslate"><span class="pre">libstdc++-dev</span></code> on Debian/Ubuntu) and Clang resource headers
+(e.g., <code class="docutils literal notranslate"><span class="pre">libclang-common-20-dev</span></code>).</p></li>
+<li><p>AST Canopy invokes Clang’s driver API with your host triple to discover C++ standard library include dirs and system
+C headers. On Linux this is typically libstdc++ by default (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/include/c++/&lt;ver&gt;</span></code>, multiarch dirs,
+<code class="docutils literal notranslate"><span class="pre">/usr/include</span></code>) along with the resource includes.</p></li>
+</ul>
+</section>
+<section id="conda-environments-conda-forge-toolchains">
+<h4>2. Conda environments (conda-forge toolchains)<a class="headerlink" href="#conda-environments-conda-forge-toolchains" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Conda packages (e.g., <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> + <code class="docutils literal notranslate"><span class="pre">cxx-compiler</span></code>) may include a GCC with its own libstdc++ headers.</p></li>
+<li><p>We point the driver to the Conda <code class="docutils literal notranslate"><span class="pre">clang++</span></code> (via program path/InstalledDir) so it reads the adjacent config and
+discovers sibling GCC/libstdc++ directories automatically. This reproduces the same include list you see from
+running <code class="docutils literal notranslate"><span class="pre">clang++</span> <span class="pre">-###</span></code> inside the environment.</p></li>
+</ul>
+</section>
+<section id="custom-clang-binary">
+<h4>3. Custom Clang binary<a class="headerlink" href="#custom-clang-binary" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">clang++</span></code> binary location usually includes Clang config file to instruct the driver to discover host resources. User
+may also specify a custom clang++ binary path to driver discovery explicitly.</p>
+<ul class="simple">
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">ASTCANOPY_CLANG_BIN</span></code> to a specific <code class="docutils literal notranslate"><span class="pre">clang++</span></code> path if you want to direct discovery through a custom
+installation.</p></li>
+</ul>
+</section>
+</section>
+<section id="notes">
+<h3>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-resource-dir</span></code> only affects Clang’s builtin headers (including <code class="docutils literal notranslate"><span class="pre">cuda_wrappers</span></code>); it does not provide C++
+standard library headers.</p></li>
+<li><p>AST Canopy does not enforce a specific standard library: the driver chooses based on the toolchain and flags. To use
+libc++, ensure its headers are installed (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/include/c++/v1</span></code> or Conda <code class="docutils literal notranslate"><span class="pre">libcxx-devel</span></code>) and pass
+<code class="docutils literal notranslate"><span class="pre">-stdlib=libc++</span></code>; otherwise libstdc++ is typically selected by default on Linux.</p></li>
+<li><p>AST Canopy is linked against Clang 20. For host resources, please use corresponding Clang version.</p></li>
+</ul>
+</section>
+</section>
 </section>
 
 
@@ -651,6 +707,16 @@ as <cite>–cuda-path</cite>. Instead, please install the system-wide CUDA Toolk
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-searched-high-level">What is searched (high level)</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conda-vs-pip-nuances">Conda vs. pip nuances</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda-12-vs-cuda-13-considerations">CUDA 12 vs. CUDA 13 considerations</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#clang-requirements-host-headers-and-resources">Clang requirements (host headers and resources)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-specific-discovery">Environment-specific discovery</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pip-wheel-bare-metal-system-toolchain">1. Pip wheel/bare-metal (system toolchain)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#conda-environments-conda-forge-toolchains">2. Conda environments (conda-forge toolchains)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#custom-clang-binary">3. Custom Clang binary</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
 </ul>
 </li>
 </ul>

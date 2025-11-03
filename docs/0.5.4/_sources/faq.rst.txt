@@ -59,3 +59,60 @@ Main difference between CUDA 12 and CUDA 13 is the layout of headers in pip inst
     For CUDA 12, since the site-package directory is non-standard, clang++ is unable to use the site-package directory
     as `--cuda-path`. Instead, please install the system-wide CUDA Toolkit to corresponding version and set
     ``CUDA_HOME`` to the system-wide Toolkit root.
+
+
+Clang requirements (host headers and resources)
+-----------------------------------------------
+
+**What are the minimum host-side requirements to parse CUDA headers?**
+
+AST Canopy drives Clang in CUDA mode. Even for device-only parsing, Clang needs two host-side components:
+
+- libstdc++ C++ headers (for headers like ``<cstdlib>``, ``<cmath>`` used via CUDA wrappers). In principle,
+  use the supported libstdc++ versions listed by clang.
+- Clang "resource directory" headers (``<resource>/include`` and ``include/cuda_wrappers`` containing
+  ``__clang_cuda_runtime_wrapper.h`` and friends).
+
+You do not need to link libstdc++ for device-only parsing, but their headers must be discoverable.
+
+Environment-specific discovery
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We use Clang's driver logic (in-process) to compute the same include search paths that ``clang++`` would pass to
+``cc1``. How the headers are found depends on your environment:
+
+1. Pip wheel/bare-metal (system toolchain)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Install system C++ headers (e.g., ``libstdc++-dev`` on Debian/Ubuntu) and Clang resource headers
+  (e.g., ``libclang-common-20-dev``).
+- AST Canopy invokes Clang's driver API with your host triple to discover C++ standard library include dirs and system
+  C headers. On Linux this is typically libstdc++ by default (e.g., ``/usr/include/c++/<ver>``, multiarch dirs,
+  ``/usr/include``) along with the resource includes.
+
+2. Conda environments (conda-forge toolchains)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Conda packages (e.g., ``clangdev`` + ``cxx-compiler``) may include a GCC with its own libstdc++ headers.
+- We point the driver to the Conda ``clang++`` (via program path/InstalledDir) so it reads the adjacent config and
+  discovers sibling GCC/libstdc++ directories automatically. This reproduces the same include list you see from
+  running ``clang++ -###`` inside the environment.
+
+3. Custom Clang binary
+~~~~~~~~~~~~~~~~~~~~~~
+
+``clang++`` binary location usually includes Clang config file to instruct the driver to discover host resources. User
+may also specify a custom clang++ binary path to driver discovery explicitly.
+
+- Set ``ASTCANOPY_CLANG_BIN`` to a specific ``clang++`` path if you want to direct discovery through a custom
+  installation.
+
+Notes
+^^^^^
+
+- ``-resource-dir`` only affects Clang's builtin headers (including ``cuda_wrappers``); it does not provide C++
+  standard library headers.
+- AST Canopy does not enforce a specific standard library: the driver chooses based on the toolchain and flags. To use
+  libc++, ensure its headers are installed (e.g., ``/usr/include/c++/v1`` or Conda ``libcxx-devel``) and pass
+  ``-stdlib=libc++``; otherwise libstdc++ is typically selected by default on Linux.
+- AST Canopy is linked against Clang 20. For host resources, please use corresponding Clang version.
