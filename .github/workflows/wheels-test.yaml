@@ -106,7 +106,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           # FIXME: Hardcoded versions right now, will use parameters later
-          python -m pip install --upgrade pip"
+          python -m pip install --upgrade pip
           python -m pip install wheels/ast_canopy*-cp313-*.whl
           for wheel in wheels/numbast*.whl; do
             python -m pip install "$wheel[test-cu13]"
