@@ -115,4 +115,4 @@ jobs:
           python -m pytest ast_canopy/tests
       - name: Test numbast wheels
         run: |
-          python -m pytest numbast/tests
+          python -m pytest numbast/
