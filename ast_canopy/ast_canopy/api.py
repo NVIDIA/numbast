@@ -154,7 +154,7 @@ def get_cuda_path_for_clang() -> str | None:
         if not os.path.exists(root):
             return False
 
-        subdirs = ["include", "bin"]
+        subdirs = ["include", "bin", "nvvm"]
 
         for subdir in subdirs:
             if not os.path.exists(os.path.join(root, subdir)):
@@ -392,7 +392,7 @@ def parse_declarations_from_source(
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
         f"-resource-dir={clang_resource_dir}",
-        *[f"-I{path}" for path in clang_search_paths],
+        *[f"-isystem{path}" for path in clang_search_paths],
         *paths_to_include_flags(cudatoolkit_include_dirs),
         *[f"-I{path}" for path in additional_includes],
         *define_flags,
