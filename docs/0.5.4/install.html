@@ -550,10 +550,11 @@
 <section id="from-source-recommended-for-development">
 <h2>From source (recommended for development)<a class="headerlink" href="#from-source-recommended-for-development" title="Link to this heading">#</a></h2>
 <p>Numbast depends on LLVM’s libClangTooling. For an easy development setup, we recommend
-installing <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> via Conda. A recommended <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> entry is already included in <code class="docutils literal notranslate"><span class="pre">conda/environment.yaml</span></code>,
-so developing inside this Conda environment saves you from installing LLVM manually.</p>
+installing <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> via Conda. A recommended <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> entry is already included in
+<code class="docutils literal notranslate"><span class="pre">conda/environment-[CUDA_VER].yaml</span></code>, so developing inside this Conda environment saves
+you from installing LLVM manually.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># from repo root</span>
-conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>conda/environment.yaml
+conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>conda/environment-<span class="o">[</span>CUDA_VER<span class="o">]</span>.yaml
 conda<span class="w"> </span>activate<span class="w"> </span>numbast
 
 <span class="c1"># build the C++ header parser</span>
@@ -578,7 +579,7 @@ pip<span class="w"> </span>install<span class="w"> </span>numbast/
 <h2>Building Documentation<a class="headerlink" href="#building-documentation" title="Link to this heading">#</a></h2>
 <section id="dependencies">
 <h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">#</a></h3>
-<p>Use Conda to ensure consistent versions. From <code class="docutils literal notranslate"><span class="pre">conda/environment.yaml</span></code>, the doc-related dependencies are:</p>
+<p>Use Conda to ensure consistent versions. From <code class="docutils literal notranslate"><span class="pre">conda/environment-[CUDA_VER].yaml</span></code>, the doc-related dependencies are:</p>
 <ul class="simple">
 <li><p>sphinx</p></li>
 <li><p>sphinx-copybutton</p></li>

@@ -594,6 +594,13 @@ layouts in either CUDA 12 or CUDA 13. See the next section for more details.</p>
 as <cite>–cuda-path</cite>. Instead, please install the system-wide CUDA Toolkit to corresponding version and set
 <code class="docutils literal notranslate"><span class="pre">CUDA_HOME</span></code> to the system-wide Toolkit root.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">texture_fetch_functions.h</span></code> was removed in CUDA 13. Upstream Clang 22 adds a guard in
+<code class="docutils literal notranslate"><span class="pre">__clang_cuda_runtime_wrapper.h</span></code> to avoid including it when compiling against CUDA 13+. Until that
+change lands in your host Clang, AST Canopy ships a small shim header that conditionally forwards to
+<code class="docutils literal notranslate"><span class="pre">texture_fetch_functions.h</span></code> only for CUDA &lt; 13. This avoids errors when using Clang 20/21 with CUDA 13.</p>
+</div>
 </section>
 </section>
 <section id="clang-requirements-host-headers-and-resources">
@@ -614,7 +621,7 @@ use the supported libstdc++ versions listed by clang.</p></li>
 <section id="pip-wheel-bare-metal-system-toolchain">
 <h4>1. Pip wheel/bare-metal (system toolchain)<a class="headerlink" href="#pip-wheel-bare-metal-system-toolchain" title="Link to this heading">#</a></h4>
 <ul class="simple">
-<li><p>Install system C++ headers (e.g., <code class="docutils literal notranslate"><span class="pre">libstdc++-dev</span></code> on Debian/Ubuntu) and Clang resource headers
+<li><p>Install system C++ headers (e.g., <code class="docutils literal notranslate"><span class="pre">libstdc++-&lt;version&gt;-dev</span></code> on Debian/Ubuntu) and Clang resource headers
 (e.g., <code class="docutils literal notranslate"><span class="pre">libclang-common-20-dev</span></code>).</p></li>
 <li><p>AST Canopy invokes Clang’s driver API with your host triple to discover C++ standard library include dirs and system
 C headers. On Linux this is typically libstdc++ by default (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/include/c++/&lt;ver&gt;</span></code>, multiarch dirs,

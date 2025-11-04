@@ -60,6 +60,12 @@ Main difference between CUDA 12 and CUDA 13 is the layout of headers in pip inst
     as `--cuda-path`. Instead, please install the system-wide CUDA Toolkit to corresponding version and set
     ``CUDA_HOME`` to the system-wide Toolkit root.
 
+.. note::
+    ``texture_fetch_functions.h`` was removed in CUDA 13. Upstream Clang 22 adds a guard in
+    ``__clang_cuda_runtime_wrapper.h`` to avoid including it when compiling against CUDA 13+. Until that
+    change lands in your host Clang, AST Canopy ships a small shim header that conditionally forwards to
+    ``texture_fetch_functions.h`` only for CUDA < 13. This avoids errors when using Clang 20/21 with CUDA 13.
+
 
 Clang requirements (host headers and resources)
 -----------------------------------------------
@@ -84,7 +90,7 @@ We use Clang's driver logic (in-process) to compute the same include search path
 1. Pip wheel/bare-metal (system toolchain)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Install system C++ headers (e.g., ``libstdc++-dev`` on Debian/Ubuntu) and Clang resource headers
+- Install system C++ headers (e.g., ``libstdc++-<version>-dev`` on Debian/Ubuntu) and Clang resource headers
   (e.g., ``libclang-common-20-dev``).
 - AST Canopy invokes Clang's driver API with your host triple to discover C++ standard library include dirs and system
   C headers. On Linux this is typically libstdc++ by default (e.g., ``/usr/include/c++/<ver>``, multiarch dirs,

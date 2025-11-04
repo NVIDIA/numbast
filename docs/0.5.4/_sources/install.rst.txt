@@ -15,13 +15,14 @@ From source (recommended for development)
 -----------------------------------------
 
 Numbast depends on LLVM's libClangTooling. For an easy development setup, we recommend
-installing ``clangdev`` via Conda. A recommended ``clangdev`` entry is already included in ``conda/environment.yaml``,
-so developing inside this Conda environment saves you from installing LLVM manually.
+installing ``clangdev`` via Conda. A recommended ``clangdev`` entry is already included in
+``conda/environment-[CUDA_VER].yaml``, so developing inside this Conda environment saves
+you from installing LLVM manually.
 
 .. code-block:: bash
 
   # from repo root
-  conda env create -f conda/environment.yaml
+  conda env create -f conda/environment-[CUDA_VER].yaml
   conda activate numbast
 
   # build the C++ header parser
@@ -47,7 +48,7 @@ Building Documentation
 Dependencies
 ^^^^^^^^^^^^
 
-Use Conda to ensure consistent versions. From ``conda/environment.yaml``, the doc-related dependencies are:
+Use Conda to ensure consistent versions. From ``conda/environment-[CUDA_VER].yaml``, the doc-related dependencies are:
 
 - sphinx
 - sphinx-copybutton
