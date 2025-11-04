@@ -98,13 +98,16 @@ jobs:
         env:
           # Self-hosted runners where setup-python behaves weirdly...
           AGENT_TOOLSDIRECTORY: "/opt/hostedtoolcache"
-      - name: Set CUDA major version
+      - name: Set environment variables
         env:
           CUDA_VER: ${{ matrix.CUDA_VER }}
           PY_VER: ${{ matrix.PY_VER }}
         run: |
           CUDA_MAJOR=${CUDA_VER%%.*}
           PY_VER_NO_DOT=${PY_VER//./}
+          if [[ "${CUDA_MAJOR}" == "12" ]]; then
+            echo "CUDA_HOME=/usr/local/cuda" >> $GITHUB_ENV
+          fi
           echo "CUDA_MAJOR=${CUDA_MAJOR}" >> $GITHUB_ENV
           echo "PY_VER_NO_DOT=${PY_VER_NO_DOT}" >> $GITHUB_ENV
       - name: Install C++ dependencies (LLVM)
