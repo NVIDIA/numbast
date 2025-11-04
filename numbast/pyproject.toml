@@ -37,6 +37,7 @@ repository = "https://github.com/NVIDIA/numbast"
 [project.optional-dependencies]
 dev = ["ruff"]
 docs = ["sphinx>=7.0", "sphinx-copybutton>=0.5.2"]
+test-cu12 = ["pytest", "cffi", "numba-cuda[cu12]>=0.20.0"]
 test-cu13 = [
   "pytest",
   "cffi",
