@@ -29,10 +29,9 @@ echo "Build completed successfully!"
 
 # Now build the python wheels
 export CMAKE_PREFIX_PATH="${CMAKE_INSTALL_PREFIX}:${CMAKE_PREFIX_PATH}"
-python3.10 -m pip wheel -w dist -v --disable-pip-version-check .
-python3.11 -m pip wheel -w dist -v --disable-pip-version-check .
-python3.12 -m pip wheel -w dist -v --disable-pip-version-check .
-python3.13 -m pip wheel -w dist -v --disable-pip-version-check .
+for py_ver in 3.10 3.11 3.12 3.13; do
+  python"${py_ver}" -m pip wheel -w dist -v --disable-pip-version-check .
+done
 
 # Ensure auditwheeel can see the ast_canopy library before repairing the wheels
 export LD_LIBRARY_PATH="${CMAKE_INSTALL_PREFIX}/lib64"
