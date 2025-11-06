@@ -4,8 +4,8 @@
 import pytest
 
 from numba import cuda
-from numba.types import Type, Number
-from numba.core.datamodel import StructModel, PrimitiveModel
+from numba.cuda.types import Type, Number
+from numba.cuda.datamodel import StructModel, PrimitiveModel
 
 from ast_canopy import parse_declarations_from_source
 from numbast.static.renderer import clear_base_renderer_cache, registry_setup
