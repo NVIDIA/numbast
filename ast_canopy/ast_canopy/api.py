@@ -293,6 +293,37 @@ def get_clang_resource_dir(clang_binary: str | None) -> str:
     return clang_resource_dir
 
 
+def get_cuda_wrappers_include_dir(clang_resource_dir: str) -> str:
+    """Return the path to Clang's CUDA wrapper headers directory.
+
+    Parameters
+    ----------
+    clang_resource_dir : str
+        Path to Clang's resource directory (e.g., output of
+        ``clang++ -print-resource-dir``). The CUDA wrapper headers are expected
+        under ``<resource_dir>/include/cuda_wrappers``.
+
+    Returns
+    -------
+    str
+        Absolute path to the ``cuda_wrappers`` include directory. If the
+        directory does not exist, a warning is emitted and a best-effort
+        fallback of ``/lib/clang/20/include/cuda_wrappers`` is returned.
+    """
+    cuda_wrappers_dir_path = os.path.join(
+        clang_resource_dir, "include", "cuda_wrappers"
+    )
+
+    if os.path.exists(cuda_wrappers_dir_path):
+        return cuda_wrappers_dir_path
+    else:
+        warnings.warn(
+            "Unable to find cuda wrappers directory from clang resource directory."
+        )
+
+    return "/lib/clang/20/include/cuda_wrappers"
+
+
 def parse_declarations_from_source(
     source_file_path: str,
     files_to_retain: list[str],
@@ -383,6 +414,8 @@ def parse_declarations_from_source(
 
     clang_search_paths = get_default_compiler_search_paths(clang_binary)
 
+    cuda_wrappers_dir = get_cuda_wrappers_include_dir(clang_resource_dir)
+
     define_flags = [f"-D{define}" for define in defines]
 
     # The include paths are ordered a below:
@@ -401,6 +434,9 @@ def parse_declarations_from_source(
         f"-resource-dir={clang_resource_dir}",
         # Place shim include dir early so it can intercept vendor headers.
         *([f"-I{_get_shim_include_dir()}"] if _get_shim_include_dir() else []),
+        # cuda_wrappers_dir precede libstdc++ search includes to shadow certain
+        # libstdc++ headers
+        f"-isystem{cuda_wrappers_dir}",
         *[f"-isystem{path}" for path in clang_search_paths],
         *paths_to_include_flags(cudatoolkit_include_dirs),
         *[f"-I{path}" for path in additional_includes],
