@@ -4,7 +4,7 @@
 import os
 
 from numba import types
-from numba.core.datamodel import StructModel
+from numba.cuda.datamodel import StructModel
 
 from llvmlite import ir
 

@@ -6,8 +6,8 @@ import re
 
 from numba import types as nbtypes
 from numba.cuda.types import bfloat16
+from numba.cuda.typing.typeof import typeof
 from numba.cuda.vector_types import vector_types
-from numba.misc.special import typeof
 
 
 class FunctorType(nbtypes.Type):
