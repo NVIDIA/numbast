@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+from inspect import Signature, signature
 from typing import Any, Optional
 
 from llvmlite import ir
@@ -277,6 +278,37 @@ def bind_cxx_struct_conversion_opeartors(
         )
 
 
+def bind_cxx_struct_method(method_decl: StructMethod, S: object, s_type: nbtypes.Type, shim_writer: ShimWriter) -> Signature:
+
+    # Typing for the method
+    class MethodDecl(ConcreteTemplate):
+        key = f"{S.__qualname__}.{method_decl.name}"
+        cases = []
+
+    @register_attr
+    class MethodTemplate(AttributeTemplate):
+        key = s_type
+        
+        def resolve_name(self, cls):
+            return nbtypes.BoundFunction(MethodDecl, s_type)
+    
+
+    return Signature()
+
+def bind_cxx_struct_methods(struct_decl: Struct, S: object, s_type: nbtypes.Type, shim_writer: ShimWriter) -> dict[str, list[Signature]]:
+    """
+
+    Return
+    ------
+
+    Mapping from function names to list of signatures.
+    """
+    for method in struct_decl:
+        bind_cxx_struct_method(method, S, s_type, shim_writer)
+
+
+    return {}
+
 def bind_cxx_struct(
     shim_writer: ShimWriter,
     struct_decl: Struct,
@@ -356,29 +388,39 @@ def bind_cxx_struct(
                 super().__init__(dmm, fe_type, members)
 
     # ----------------------------------------------------------------------------------
+    # Methods Typing and Lowering
+
+    # method_overload_maps = bind_cxx_struct_methods(struct_decl, S, s_type, shim_writer)
+
+    # ----------------------------------------------------------------------------------
     # Attributes Typing and Lowering:
     if data_model == StructModel:
-        public_fields = {
-            f.name: f
-            for f in struct_decl.fields
-            if f.access == access_kind.public_
-        }
+        public_fields_tys = {f.name: f.type_ for f in struct_decl.public_fields()}
 
         @register_attr
         class S_attr(AttributeTemplate):
             key = s_type
 
+            def _field_ty(self, attr: str) -> str | None:
+                field_ty = public_fields_tys.get(attr, None)
+                if field_ty is not None:
+                    return field_ty.unqualified_non_ref_type_name
+
+                return None
+
             def generic_resolve(self, typ, attr):
                 try:
-                    ty_name = public_fields[
-                        attr
-                    ].type_.unqualified_non_ref_type_name
+                    ty_name = self._field_ty(attr)
+                    if ty_name is None:
+                        raise KeyError
                     return to_numba_type(ty_name)
                 except KeyError:
                     raise AttributeError(attr)
 
-        for f in public_fields.values():
-            make_attribute_wrapper(S_type, f.name, f.name)
+        for field_name in public_fields_tys.keys():
+            make_attribute_wrapper(S_type, field_name, field_name)
+
+
 
     # ----------------------------------------------------------------------------------
     # Constructors:
