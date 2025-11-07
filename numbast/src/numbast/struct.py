@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional
+from typing import Any, Optional
 
 from llvmlite import ir
 
@@ -191,11 +191,12 @@ def bind_cxx_struct_ctors(
         The shim writer to write the shim layer code.
     """
 
-    ctor_params = []
+    ctor_params: list[list[Any]] = []
     for ctor in struct_decl.constructors():
-        if param_types := bind_cxx_struct_ctor(
+        param_types = bind_cxx_struct_ctor(
             ctor, struct_decl.name, s_type, S, shim_writer
-        ):
+        )
+        if param_types is not None:
             ctor_params.append(param_types)
 
     # Constructor typing:
