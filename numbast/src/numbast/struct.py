@@ -311,7 +311,11 @@ def bind_cxx_struct_regular_method(
     # Lowering
     func_name = deduplicate_overloads(f"__{method_decl.mangled_name}_nbst")
 
-    shim_decl = declare_device(func_name, return_type(nbtypes.CPointer(s_type)))
+    c_sig = return_type(
+        nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
+    )
+
+    shim_decl = declare_device(func_name, c_sig)
 
     shim_call = make_device_caller_with_nargs(
         func_name + "_shim", 1 + len(param_types), shim_decl
@@ -332,7 +336,7 @@ def bind_cxx_struct_regular_method(
 
     qualname = f"{s_type}.{method_decl.name}"
 
-    @lower(qualname, s_type)
+    @lower(qualname, s_type, *param_types)
     def _method_impl(context, builder, sig, args):
         shim_writer.write_to_shim(shim, func_name)
 
@@ -343,15 +347,10 @@ def bind_cxx_struct_regular_method(
         for ptr, ty, arg in zip(argptrs, sig.args, args):
             builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
-        print(f"{[ptr.type for ptr in argptrs]=}")
         return context.compile_internal(
             builder,
             shim_call,
-            nb_signature(
-                return_type,
-                nbtypes.CPointer(s_type),
-                *map(nbtypes.CPointer, param_types),
-            ),
+            c_sig,
             argptrs,
         )
 
@@ -383,6 +382,7 @@ def bind_cxx_struct_regular_methods(
     method_templates: dict[str, ConcreteTemplate] = {}
 
     for name, sigs in method_overloads.items():
+        print(f"{name=}, {sigs=}")
 
         class MethodDecl(ConcreteTemplate):
             key = f"{s_type}.{name}"

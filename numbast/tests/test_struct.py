@@ -5,7 +5,7 @@ import os
 
 import numpy as np
 
-from numba import types, cuda
+from numba import types, cuda, float32
 from numba.core.datamodel import StructModel
 
 from llvmlite import ir
@@ -71,3 +71,17 @@ def test_struct_methods_simple(sample_structs, shim_writer):
     kernel[1, 1](arr)
 
     assert arr == [42]
+
+
+def test_struct_methods_argument(sample_structs, shim_writer):
+    Foo = sample_structs[0]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.add_one(float32(42.0))
+
+    arr = np.zeros(1, dtype="float32")
+    kernel[1, 1](arr)
+
+    assert arr == [43]

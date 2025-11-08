@@ -11,6 +11,8 @@ public:
 
   __device__ int get_x() { return x; }
 
+  __device__ float add_one(float x) { return x + 1; }
+
 private:
   int y;
 
