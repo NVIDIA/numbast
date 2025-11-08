@@ -13,6 +13,8 @@ public:
 
   __device__ float add_one(float x) { return x + 1; }
 
+  __device__ void set_x(int x) { this->x = x; }
+
 private:
   int y;
 

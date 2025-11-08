@@ -52,7 +52,7 @@ def test_struct_binding_has_correct_LLVM_type(sample_structs):
     nbty = s._nbtype
     # Get the LLVM type of this front-end type
     target_ctx = cuda_target.target_context
-    llvm_ty = target_ctx.get_value_type(nbty)
+    llvm_ty = target_ctx.get_value_type(nbty._layout_type)
 
     assert len(llvm_ty.elements) == 3
     assert all(ty == ir.IntType(32) for ty in llvm_ty.elements)
@@ -85,3 +85,32 @@ def test_struct_methods_argument(sample_structs, shim_writer):
     kernel[1, 1](arr)
 
     assert arr == [43]
+
+
+def test_struct_methods_void_return_mutable(sample_structs, shim_writer):
+    Foo = sample_structs[0]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(arr):
+        foo = Foo()
+        foo.set_x(128)
+        arr[0] = foo.get_x()
+
+    arr = np.zeros(1, dtype="int32")
+    kernel[1, 1](arr)
+
+    assert arr == [128]
+
+
+def test_struct_attribute_access(sample_structs, shim_writer):
+    Foo = sample_structs[0]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.x
+
+    arr = np.zeros(1, dtype="int32")
+    kernel[1, 1](arr)
+
+    assert arr == [42]

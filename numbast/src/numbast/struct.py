@@ -10,14 +10,13 @@ from numba import types as nbtypes
 from numba.core.extending import (
     register_model,
     lower_cast,
-    make_attribute_wrapper,
 )
 from numba.core.typing import signature as nb_signature
 from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate
 from numba.core.datamodel.models import StructModel, PrimitiveModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
-from numba.cuda.cudaimpl import lower
+from numba.cuda.cudaimpl import lower, lower_attr
 
 from ast_canopy.pylibastcanopy import method_kind, ParamVar
 from ast_canopy.decl import Struct, StructMethod
@@ -26,6 +25,7 @@ from numbast.types import CTYPE_MAPS as C2N, to_numba_type
 from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
+    make_struct_regular_method_shim,
 )
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
@@ -118,7 +118,8 @@ def bind_cxx_struct_ctor(
     ctor_shim_decl = declare_device(
         func_name,
         nbtypes.int32(
-            nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
+            nbtypes.CPointer(s_type._layout_type),
+            *map(nbtypes.CPointer, param_types),
         ),
     )
 
@@ -147,24 +148,27 @@ def bind_cxx_struct_ctor(
         # shim functions from the parsed header that's unused in kernels.
         shim_writer.write_to_shim(shim, func_name)
 
-        selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
+        # Allocate layout storage and pass its pointer to the ctor shim
+        layout_be = context.get_value_type(s_type._layout_type)
+        selfptr = builder.alloca(layout_be, name="selfptr")
+        argptrs = []
+        for ty, arg in zip(sig.args, args):
+            ptr = builder.alloca(context.get_value_type(ty))
             builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+            argptrs.append(ptr)
 
         context.compile_internal(
             builder,
             ctor_shim_call,
             nb_signature(
                 nbtypes.int32,
-                nbtypes.CPointer(s_type),
+                nbtypes.CPointer(s_type._layout_type),
                 *map(nbtypes.CPointer, param_types),
             ),
             (selfptr, *argptrs),
         )
-        return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+        # Return API handle as integer pointer to layout
+        return builder.ptrtoint(selfptr, ir.IntType(64))
 
     if ctor.kind == method_kind.converting_constructor:
         assert len(param_types) == 1, (
@@ -249,8 +253,10 @@ def bind_cxx_struct_conversion_opeartor(
     # Lowering:
     func_name = deduplicate_overloads(f"__{struct_name}__{conv.mangled_name}")
 
-    shim_decl = declare_device(func_name, casted_type(nbtypes.CPointer(s_type)))
-    # Types cast shims always has 1 parameter: self*.
+    shim_decl = declare_device(
+        func_name, casted_type(nbtypes.CPointer(s_type._layout_type))
+    )
+    # Types cast shims always has 1 parameter: self* (layout ptr).
     shim_call = make_device_caller_with_nargs(func_name + "_shim", 1, shim_decl)
 
     # Conversion operators has no arguments
@@ -272,12 +278,12 @@ def bind_cxx_struct_conversion_opeartor(
         value,
     ):
         shim_writer.write_to_shim(shim, func_name)
-        ptr = builder.alloca(context.get_value_type(s_type))
-        builder.store(value, ptr, align=getattr(s_type, "alignof_", None))
+        layout_ptr_ty = context.get_value_type(s_type._layout_type).as_pointer()
+        ptr = builder.inttoptr(value, layout_ptr_ty)
         result = context.compile_internal(
             builder,
             shim_call,
-            nb_signature(casted_type, nbtypes.CPointer(s_type)),
+            nb_signature(casted_type, nbtypes.CPointer(s_type._layout_type)),
             (ptr,),
         )
         return result
@@ -312,7 +318,8 @@ def bind_cxx_struct_regular_method(
     func_name = deduplicate_overloads(f"__{method_decl.mangled_name}_nbst")
 
     c_sig = return_type(
-        nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
+        nbtypes.CPointer(s_type._layout_type),
+        *map(nbtypes.CPointer, param_types),
     )
 
     shim_decl = declare_device(func_name, c_sig)
@@ -321,17 +328,12 @@ def bind_cxx_struct_regular_method(
         func_name + "_shim", 1 + len(param_types), shim_decl
     )
 
-    arglist = assemble_arglist_string(method_decl.params)
-    dereferenced_args = assemble_dereferenced_params_string(method_decl.params)
-
-    # Conversion operators has no arguments
-    shim = struct_method_shim_layer_template.format(
-        func_name=func_name,
-        return_type=method_decl.return_type.unqualified_non_ref_type_name,
-        name=struct_decl.name,
-        arglist=arglist,
+    shim = make_struct_regular_method_shim(
+        shim_name=func_name,
+        struct_name=struct_decl.name,
         method_name=method_decl.name,
-        args=dereferenced_args,
+        return_type=method_decl.return_type.unqualified_non_ref_type_name,
+        params=method_decl.params,
     )
 
     qualname = f"{s_type}.{method_decl.name}"
@@ -340,18 +342,22 @@ def bind_cxx_struct_regular_method(
     def _method_impl(context, builder, sig, args):
         shim_writer.write_to_shim(shim, func_name)
 
-        # The first argument in argptrs is self, no need to extra allocate.
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
+        # Convert API handle (int) to layout* for self
+        layout_ptr_ty = context.get_value_type(s_type._layout_type).as_pointer()
+        self_ptr = builder.inttoptr(args[0], layout_ptr_ty)
+
+        # Handle the rest of the parameters by passing pointers to temporaries.
+        other_ptrs = []
+        for ty, arg in zip(sig.args[1:], args[1:]):
+            ptr = builder.alloca(context.get_value_type(ty))
             builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+            other_ptrs.append(ptr)
 
         return context.compile_internal(
             builder,
             shim_call,
             c_sig,
-            argptrs,
+            (self_ptr, *other_ptrs),
         )
 
     return nb_signature(return_type, *param_types, recvr=s_type)
@@ -382,7 +388,6 @@ def bind_cxx_struct_regular_methods(
     method_templates: dict[str, ConcreteTemplate] = {}
 
     for name, sigs in method_overloads.items():
-        print(f"{name=}, {sigs=}")
 
         class MethodDecl(ConcreteTemplate):
             key = f"{s_type}.{name}"
@@ -429,13 +434,24 @@ def bind_cxx_struct(
     """
 
     # Typing
-    class S_type(parent_type):
+    # Introduce a distinct layout type that matches the C++ aggregate
+    class S_layout_type(nbtypes.Type):
         def __init__(self, decl):
             super().__init__(name=f"{struct_decl.name}")
             self.alignof_ = struct_decl.alignof_
             self.bitwidth = struct_decl.sizeof_ * 8
 
-    s_type = S_type(struct_decl)
+    layout_type = S_layout_type(struct_decl)
+
+    # API type is pointer-backed: store layout* as a 64-bit integer
+    class S_type(parent_type):
+        def __init__(self, decl, layout):
+            super().__init__(name=f"{struct_decl.name}")
+            self.alignof_ = struct_decl.alignof_
+            self.bitwidth = struct_decl.sizeof_ * 8
+            self._layout_type = layout
+
+    s_type = S_type(struct_decl, layout_type)
 
     # Python API
     S = type(struct_decl.name, (), {"_nbtype": s_type})
@@ -448,63 +464,67 @@ def bind_cxx_struct(
         for alias in aliases[struct_decl.name]:
             C2N[alias] = s_type
 
-    # Data Model
-    if data_model == PrimitiveModel:
+    # Data Models:
+    # - layout type: StructModel with actual fields
+    # - API type: PrimitiveModel int64 as pointer handle
+    @register_model(S_layout_type)
+    class S_layout_model(StructModel):
+        def __init__(self, dmm, fe_type, struct_decl=struct_decl):
+            members = [
+                (
+                    f.name,
+                    to_numba_type(f.type_.unqualified_non_ref_type_name),
+                )
+                for f in struct_decl.fields
+            ]
+            super().__init__(dmm, fe_type, members)
 
-        @register_model(S_type)
-        class S_model(data_model):
-            def __init__(self, dmm, fe_type):
-                be_type = ir.IntType(fe_type.bitwidth)
-                super().__init__(dmm, fe_type, be_type)
+    @register_model(S_type)
+    class S_model(PrimitiveModel):
+        def __init__(self, dmm, fe_type):
+            be_type = ir.IntType(64)
+            super().__init__(dmm, fe_type, be_type)
 
-    elif data_model == StructModel:
+    # ----------------------------------------------------------------------------------
+    # Methods typing
+    method_templates = bind_cxx_struct_regular_methods(
+        struct_decl, S, s_type, shim_writer
+    )
 
-        @register_model(S_type)
-        class S_model(data_model):
-            def __init__(self, dmm, fe_type, struct_decl=struct_decl):
-                members = [
-                    (
-                        f.name,
-                        to_numba_type(f.type_.unqualified_non_ref_type_name),
-                    )
-                    for f in struct_decl.fields
-                ]
-                super().__init__(dmm, fe_type, members)
+    # Attribute typing: expose fields and methods on the API type
+    public_fields_tys = {f.name: f.type_ for f in struct_decl.public_fields()}
 
-    if data_model == StructModel:
-        # ----------------------------------------------------------------------------------
-        # Method, Attributes Typing and Lowering:
+    @register_attr
+    class S_attr(AttributeTemplate):
+        key = s_type
 
-        method_templates = bind_cxx_struct_regular_methods(
-            struct_decl, S, s_type, shim_writer
-        )
-
-        public_fields_tys = {
-            f.name: f.type_ for f in struct_decl.public_fields()
-        }
-
-        @register_attr
-        class S_attr(AttributeTemplate):
-            key = s_type
-
-            def _field_ty(self, attr: str) -> nbtypes.Type:
+        def generic_resolve(self, typ, attr):
+            if attr in public_fields_tys:
                 field_ty = public_fields_tys[attr]
                 return to_numba_type(field_ty.unqualified_non_ref_type_name)
+            if attr in method_templates:
+                return nbtypes.BoundFunction(method_templates[attr], typ)
+            raise AttributeError(attr)
 
-            def _method_ty(self, typ, attr: str) -> nbtypes.BoundFunction:
-                template = method_templates[attr]
-                return nbtypes.BoundFunction(template, typ)
+    # Attribute lowering: load field from layout pointer
+    layout_llvm_ty_cache = None
+    for idx, f in enumerate(struct_decl.public_fields()):
+        field_name = f.name
 
-            def generic_resolve(self, typ, attr):
-                if attr in public_fields_tys:
-                    return self._field_ty(attr)
-                elif attr in method_templates:
-                    return self._method_ty(typ, attr)
-                else:
-                    raise AttributeError(attr)
-
-        for field_name in public_fields_tys.keys():
-            make_attribute_wrapper(S_type, field_name, field_name)
+        @lower_attr(s_type, field_name)  # type: ignore[misc]
+        def _lower_field(context, builder, sig, args, _idx=idx):
+            nonlocal layout_llvm_ty_cache
+            if layout_llvm_ty_cache is None:
+                layout_llvm_ty_cache = context.get_value_type(
+                    s_type._layout_type
+                )
+            layout_ptr_ty = layout_llvm_ty_cache.as_pointer()
+            self_int = args
+            self_ptr = builder.inttoptr(self_int, layout_ptr_ty)
+            zero = ir.Constant(ir.IntType(32), 0)
+            i = ir.Constant(ir.IntType(32), _idx)
+            field_ptr = builder.gep(self_ptr, [zero, i])
+            return builder.load(field_ptr)
 
     # ----------------------------------------------------------------------------------
     # Constructors:
