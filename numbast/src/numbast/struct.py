@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from inspect import Signature, signature
 from typing import Any, Optional
+from collections import defaultdict
 
 from llvmlite import ir
 
@@ -19,7 +19,7 @@ from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
-from ast_canopy.pylibastcanopy import access_kind, method_kind
+from ast_canopy.pylibastcanopy import method_kind, ParamVar
 from ast_canopy.decl import Struct, StructMethod
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
@@ -44,6 +44,26 @@ extern "C" __device__ int
     return 0;
 }}
 """
+
+
+def assemble_arglist_string(params: list[ParamVar]) -> str:
+    """Assemble comma separated arg string prefixed by a single comma.
+
+    If parameter list is empty, return empty string.
+    """
+    if not params:
+        return ""
+
+    arglist = ", ".join(
+        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
+        for arg in params
+    )
+    return ", " + arglist
+
+
+def assemble_dereferenced_params_string(params: list[ParamVar]) -> str:
+    """Assemble comma separated dereferenced param string."""
+    return ", ".join(f"*{p.name}" for p in params)
 
 
 def bind_cxx_struct_ctor(
@@ -88,7 +108,7 @@ def bind_cxx_struct_ctor(
     # Lowering
     # Note that libclang always consider the return type of a constructor
     # is void. So we need to manually specify the return type here.
-    func_name = deduplicate_overloads(f"__{struct_name}__{ctor.mangled_name}")
+    func_name = deduplicate_overloads(f"{ctor.mangled_name}_nbst")
 
     # FIXME: temporary solution for mismatching function prototype against definition.
     # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
@@ -112,18 +132,13 @@ def bind_cxx_struct_ctor(
     # FIXME: All params are passed by pointers, then dereferenced in shim.
     # temporary solution for mismatching function prototype against definition.
     # See above lowering for details.
-    arglist = ", ".join(
-        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-        for arg in ctor.params
-    )
-    if arglist:
-        arglist = ", " + arglist
+    arglist = assemble_arglist_string(ctor.params)
 
     shim = struct_ctor_shim_layer_template.format(
         func_name=func_name,
         name=struct_name,
         arglist=arglist,
-        args=", ".join("*" + arg.name for arg in ctor.params),
+        args=assemble_dereferenced_params_string(ctor.params),
     )
 
     @lower(S, *param_types)
@@ -278,24 +293,77 @@ def bind_cxx_struct_conversion_opeartors(
         )
 
 
-def bind_cxx_struct_method(method_decl: StructMethod, S: object, s_type: nbtypes.Type, shim_writer: ShimWriter) -> Signature:
+def bind_cxx_struct_regular_method(
+    struct_decl: Struct,
+    method_decl: StructMethod,
+    S: object,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriter,
+) -> nb_signature:
+    param_types = [
+        to_numba_type(arg.unqualified_non_ref_type_name)
+        for arg in method_decl.param_types
+    ]
+    return_type = to_numba_type(
+        method_decl.return_type.unqualified_non_ref_type_name
+    )
 
-    # Typing for the method
-    class MethodDecl(ConcreteTemplate):
-        key = f"{S.__qualname__}.{method_decl.name}"
-        cases = []
+    # Lowering
+    func_name = deduplicate_overloads(f"__{method_decl.mangled_name}_nbst")
 
-    @register_attr
-    class MethodTemplate(AttributeTemplate):
-        key = s_type
-        
-        def resolve_name(self, cls):
-            return nbtypes.BoundFunction(MethodDecl, s_type)
-    
+    shim_decl = declare_device(func_name, return_type(nbtypes.CPointer(s_type)))
 
-    return Signature()
+    shim_call = make_device_caller_with_nargs(
+        func_name + "_shim", 1 + len(param_types), shim_decl
+    )
 
-def bind_cxx_struct_methods(struct_decl: Struct, S: object, s_type: nbtypes.Type, shim_writer: ShimWriter) -> dict[str, list[Signature]]:
+    arglist = assemble_arglist_string(method_decl.params)
+    dereferenced_args = assemble_dereferenced_params_string(method_decl.params)
+
+    # Conversion operators has no arguments
+    shim = struct_method_shim_layer_template.format(
+        func_name=func_name,
+        return_type=method_decl.return_type.unqualified_non_ref_type_name,
+        name=struct_decl.name,
+        arglist=arglist,
+        method_name=method_decl.name,
+        args=dereferenced_args,
+    )
+
+    qualname = f"{s_type}.{method_decl.name}"
+
+    @lower(qualname, s_type)
+    def _method_impl(context, builder, sig, args):
+        shim_writer.write_to_shim(shim, func_name)
+
+        # The first argument in argptrs is self, no need to extra allocate.
+        argptrs = [
+            builder.alloca(context.get_value_type(arg)) for arg in sig.args
+        ]
+        for ptr, ty, arg in zip(argptrs, sig.args, args):
+            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+
+        print(f"{[ptr.type for ptr in argptrs]=}")
+        return context.compile_internal(
+            builder,
+            shim_call,
+            nb_signature(
+                return_type,
+                nbtypes.CPointer(s_type),
+                *map(nbtypes.CPointer, param_types),
+            ),
+            argptrs,
+        )
+
+    return nb_signature(return_type, *param_types, recvr=s_type)
+
+
+def bind_cxx_struct_regular_methods(
+    struct_decl: Struct,
+    S: object,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriter,
+) -> dict[str, ConcreteTemplate]:
     """
 
     Return
@@ -303,11 +371,27 @@ def bind_cxx_struct_methods(struct_decl: Struct, S: object, s_type: nbtypes.Type
 
     Mapping from function names to list of signatures.
     """
-    for method in struct_decl:
-        bind_cxx_struct_method(method, S, s_type, shim_writer)
 
+    method_overloads: dict[str, list[nb_signature]] = defaultdict(list)
 
-    return {}
+    for method in struct_decl.regular_member_functions():
+        sig = bind_cxx_struct_regular_method(
+            struct_decl, method, S, s_type, shim_writer
+        )
+        method_overloads[method.name].append(sig)
+
+    method_templates: dict[str, ConcreteTemplate] = {}
+
+    for name, sigs in method_overloads.items():
+
+        class MethodDecl(ConcreteTemplate):
+            key = f"{s_type}.{name}"
+            cases = sigs
+
+        method_templates[name] = MethodDecl
+
+    return method_templates
+
 
 def bind_cxx_struct(
     shim_writer: ShimWriter,
@@ -387,40 +471,40 @@ def bind_cxx_struct(
                 ]
                 super().__init__(dmm, fe_type, members)
 
-    # ----------------------------------------------------------------------------------
-    # Methods Typing and Lowering
-
-    # method_overload_maps = bind_cxx_struct_methods(struct_decl, S, s_type, shim_writer)
-
-    # ----------------------------------------------------------------------------------
-    # Attributes Typing and Lowering:
     if data_model == StructModel:
-        public_fields_tys = {f.name: f.type_ for f in struct_decl.public_fields()}
+        # ----------------------------------------------------------------------------------
+        # Method, Attributes Typing and Lowering:
+
+        method_templates = bind_cxx_struct_regular_methods(
+            struct_decl, S, s_type, shim_writer
+        )
+
+        public_fields_tys = {
+            f.name: f.type_ for f in struct_decl.public_fields()
+        }
 
         @register_attr
         class S_attr(AttributeTemplate):
             key = s_type
 
-            def _field_ty(self, attr: str) -> str | None:
-                field_ty = public_fields_tys.get(attr, None)
-                if field_ty is not None:
-                    return field_ty.unqualified_non_ref_type_name
+            def _field_ty(self, attr: str) -> nbtypes.Type:
+                field_ty = public_fields_tys[attr]
+                return to_numba_type(field_ty.unqualified_non_ref_type_name)
 
-                return None
+            def _method_ty(self, typ, attr: str) -> nbtypes.BoundFunction:
+                template = method_templates[attr]
+                return nbtypes.BoundFunction(template, typ)
 
             def generic_resolve(self, typ, attr):
-                try:
-                    ty_name = self._field_ty(attr)
-                    if ty_name is None:
-                        raise KeyError
-                    return to_numba_type(ty_name)
-                except KeyError:
+                if attr in public_fields_tys:
+                    return self._field_ty(attr)
+                elif attr in method_templates:
+                    return self._method_ty(typ, attr)
+                else:
                     raise AttributeError(attr)
 
         for field_name in public_fields_tys.keys():
             make_attribute_wrapper(S_type, field_name, field_name)
-
-
 
     # ----------------------------------------------------------------------------------
     # Constructors:

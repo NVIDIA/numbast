@@ -7,6 +7,10 @@ struct Foo {
 public:
   int x;
 
+  __device__ Foo() : x(42) {}
+
+  __device__ int get_x() { return x; }
+
 private:
   int y;
 

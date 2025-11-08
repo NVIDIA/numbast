@@ -3,7 +3,9 @@
 
 import os
 
-from numba import types
+import numpy as np
+
+from numba import types, cuda
 from numba.core.datamodel import StructModel
 
 from llvmlite import ir
@@ -20,9 +22,9 @@ import pytest
 def _sample_structs():
     DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
     p = os.path.join(DATA_FOLDER, "sample_struct.cuh")
-    decls = parse_declarations_from_source(p, [p], "sm_80")
+    decls = parse_declarations_from_source(p, [p], "sm_80", verbose=True)
     structs = decls.structs
-    shim_writer = MemoryShimWriter(f"#include {p}")
+    shim_writer = MemoryShimWriter(f'#include "{p}"')
 
     parent_types = {"Foo": types.Type}
     datamodels = {"Foo": StructModel}
@@ -55,3 +57,17 @@ def test_struct_binding_has_correct_LLVM_type(sample_structs):
     assert len(llvm_ty.elements) == 3
     assert all(ty == ir.IntType(32) for ty in llvm_ty.elements)
     assert not llvm_ty._packed
+
+
+def test_struct_methods_simple(sample_structs, shim_writer):
+    Foo = sample_structs[0]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.get_x()
+
+    arr = np.zeros(1, dtype="int32")
+    kernel[1, 1](arr)
+
+    assert arr == [42]
