@@ -168,7 +168,7 @@ def bind_cxx_struct_ctor(
             (selfptr, *argptrs),
         )
         # Return API handle as integer pointer to layout
-        return builder.ptrtoint(selfptr, ir.IntType(64))
+        return builder.ptrtoint(selfptr, ir.IntType(s_type.bitwidth))
 
     if ctor.kind == method_kind.converting_constructor:
         assert len(param_types) == 1, (
@@ -482,7 +482,7 @@ def bind_cxx_struct(
     @register_model(S_type)
     class S_model(PrimitiveModel):
         def __init__(self, dmm, fe_type):
-            be_type = ir.IntType(64)
+            be_type = ir.IntType(fe_type.bitwidth)
             super().__init__(dmm, fe_type, be_type)
 
     # ----------------------------------------------------------------------------------
