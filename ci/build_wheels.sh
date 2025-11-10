@@ -42,5 +42,6 @@ cd ../numbast
 python3.13 -m pip wheel -w dist -v \
   --disable-pip-version-check \
   --find-links=../final-dist \
+  --pre \
   .
 cp dist/numbast*.whl ../final-dist/
