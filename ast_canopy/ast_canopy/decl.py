@@ -338,6 +338,11 @@ class Struct:
 
         self.parse_entry_point = parse_entry_point
 
+    def public_fields(self) -> list[bindings.Field]:
+        return [
+            f for f in self.fields if f.access == bindings.access_kind.public_
+        ]
+
     def constructors(self):
         for m in self.methods:
             if m.name == self.name:
@@ -351,6 +356,16 @@ class Struct:
     def conversion_operators(self):
         for m in self.methods:
             if m.is_conversion_operator():
+                yield m
+
+    def regular_member_functions(self):
+        """Generator for methods that are not constructors, overload operators and conversion operators."""
+        for m in self.methods:
+            if (
+                m.name != self.name
+                and (not m.is_overloaded_operator())
+                and (not m.is_conversion_operator())
+            ):
                 yield m
 
     @classmethod

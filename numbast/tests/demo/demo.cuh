@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // clang-format on
 
+#pragma once
+
 #include <cuda_fp16.h>
 
 // demo.cuh
@@ -16,6 +18,8 @@ public:
   __host__ __device__ __myfloat16(double val);
 
   __host__ __device__ operator double() const;
+
+  __host__ __device__ void print();
 };
 
 __host__ __device__ __myfloat16 operator+(const __myfloat16 &lh,
@@ -40,4 +44,8 @@ __host__ __device__ __myfloat16 operator+(const __myfloat16 &lh,
 
 __device__ __myfloat16 hsqrt(const __myfloat16 a) {
   return __myfloat16(sqrt(static_cast<double>(a)));
+}
+
+__host__ __device__ void __myfloat16::print() {
+  printf("__myfloat16: %f\n", static_cast<double>(data));
 }
