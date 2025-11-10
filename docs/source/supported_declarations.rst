@@ -55,7 +55,7 @@ Example mapping
      - ``__myfloat16 neg() const``
      - ``auto r = f.neg()``
      - ``r = f.neg()``
-     - Instance method typing/lowering
+     - Instance method typing/lowering (non-mutative methods only; mutative methods are not supported)
    * - Function
      - ``__myfloat16 hsqrt(__myfloat16 a)``
      - ``auto r = hsqrt(f)``
