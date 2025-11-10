@@ -85,3 +85,14 @@ def test_struct_methods_argument(sample_structs, shim_writer):
     kernel[1, 1](arr)
 
     assert arr == [43]
+
+
+def test_struct_methods_void_return(sample_structs, shim_writer):
+    Foo = sample_structs[0]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel():
+        foo = Foo()
+        foo.print()
+
+    kernel[1, 1]()

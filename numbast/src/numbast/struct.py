@@ -19,13 +19,16 @@ from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
-from ast_canopy.pylibastcanopy import method_kind, ParamVar
+from ast_canopy.pylibastcanopy import method_kind
 from ast_canopy.decl import Struct, StructMethod
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
 from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
+    make_struct_regular_method_shim,
+    assemble_arglist_string,
+    assemble_dereferenced_params_string,
 )
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
@@ -44,26 +47,6 @@ extern "C" __device__ int
     return 0;
 }}
 """
-
-
-def assemble_arglist_string(params: list[ParamVar]) -> str:
-    """Assemble comma separated arg string prefixed by a single comma.
-
-    If parameter list is empty, return empty string.
-    """
-    if not params:
-        return ""
-
-    arglist = ", ".join(
-        f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-        for arg in params
-    )
-    return ", " + arglist
-
-
-def assemble_dereferenced_params_string(params: list[ParamVar]) -> str:
-    """Assemble comma separated dereferenced param string."""
-    return ", ".join(f"*{p.name}" for p in params)
 
 
 def bind_cxx_struct_ctor(
@@ -321,17 +304,12 @@ def bind_cxx_struct_regular_method(
         func_name + "_shim", 1 + len(param_types), shim_decl
     )
 
-    arglist = assemble_arglist_string(method_decl.params)
-    dereferenced_args = assemble_dereferenced_params_string(method_decl.params)
-
-    # Conversion operators has no arguments
-    shim = struct_method_shim_layer_template.format(
-        func_name=func_name,
-        return_type=method_decl.return_type.unqualified_non_ref_type_name,
-        name=struct_decl.name,
-        arglist=arglist,
+    shim = make_struct_regular_method_shim(
+        shim_name=func_name,
+        struct_name=struct_decl.name,
         method_name=method_decl.name,
-        args=dereferenced_args,
+        return_type=method_decl.return_type.unqualified_non_ref_type_name,
+        params=method_decl.params,
     )
 
     qualname = f"{s_type}.{method_decl.name}"
