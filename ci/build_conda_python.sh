@@ -12,7 +12,7 @@ export CMAKE_GENERATOR=Ninja
 
 # Generate package version from git tags.
 GIT_DESCRIBE_TAG=$(git describe --abbrev=0)
-export PROJECT_VERSION=${GIT_DESCRIBE_TAG}
+export PROJECT_VERSION=${GIT_DESCRIBE_TAG:1}
 export GIT_DESCRIBE_NUMBER=$(git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count)
 export GIT_DESCRIBE_HASH=$(git rev-parse --short HEAD)
 
