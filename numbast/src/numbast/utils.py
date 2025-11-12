@@ -1,13 +1,13 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable
+from typing import Callable, Tuple
 from collections import defaultdict
 import re
 
 from numba.cuda.compiler import ExternFunction
 
-import pylibastcanopy
+from ast_canopy import pylibastcanopy
 
 OVERLOADS_CNT: dict[str, int] = defaultdict(int)  # overload counter
 
@@ -93,6 +93,35 @@ def paramvar_to_str(arg: pylibastcanopy.ParamVar):
     return fml_arg
 
 
+def assemble_arglist_string(params: list[pylibastcanopy.ParamVar]) -> str:
+    """Assemble comma separated arg string prefixed by a single comma.
+    If parameter list is empty, return empty string.
+    """
+    if not params:
+        return ""
+
+    arglist = ", ".join(paramvar_to_str(arg) for arg in params)
+    return ", " + arglist
+
+
+def assemble_dereferenced_params_string(
+    params: list[pylibastcanopy.ParamVar],
+) -> str:
+    """Assemble comma separated dereferenced param string."""
+    return ", ".join(f"*{p.name}" for p in params)
+
+
+def get_return_type_strings(return_type: str) -> Tuple[str, str]:
+    """Get the return type string for a C++ type."""
+    if return_type == "void":
+        retval = ""
+        return_type = "int"
+    else:
+        retval = "retval = "
+
+    return retval, return_type
+
+
 def make_function_shim(
     shim_name: str,
     func_name: str,
@@ -129,24 +158,12 @@ extern "C" __device__ int
 }}
     """
 
-    if return_type == "void":
-        retval = ""
-        return_type = "int"
-    else:
-        retval = "retval = "
+    retval, return_type = get_return_type_strings(return_type)
 
-    formal_args = [paramvar_to_str(arg) for arg in params]
-
-    formal_args_str = ", ".join(formal_args)
-    if formal_args_str:
-        # If there are formal arguments, add a comma before them
-        # otherwise it's an empty string.
-        formal_args_str = ", " + formal_args_str
-
-    acutal_args_str = ", ".join("*" + arg.name for arg in params)
+    formal_args_str = assemble_arglist_string(params)
+    acutal_args_str = assemble_dereferenced_params_string(params)
 
     include_str = "\n".join([f"#include <{include}>" for include in includes])
-
     shim = function_binding_shim_template.format(
         includes=include_str,
         shim_name=shim_name,
@@ -211,6 +228,42 @@ extern "C" __device__ int
         struct_name=struct_name,
         formal_args=formal_args_str,
         actual_args=acutal_args_str,
+    )
+
+    return shim
+
+
+def make_struct_regular_method_shim(
+    shim_name: str,
+    struct_name: str,
+    method_name: str,
+    return_type: str,
+    params: list[pylibastcanopy.ParamVar],
+    includes: list[str] = [],
+) -> str:
+    struct_method_shim_layer_template = """{includes}
+    extern "C" __device__ int
+    {shim_name}({return_type} &retval, {struct_name}* self {arglist}) {{
+        {retval}self->{method_name}({args});
+        return 0;
+    }}
+    """
+
+    retval, return_type = get_return_type_strings(return_type)
+
+    formal_args_str = assemble_arglist_string(params)
+    acutal_args_str = assemble_dereferenced_params_string(params)
+
+    include_str = "\n".join([f"#include <{include}>" for include in includes])
+    shim = struct_method_shim_layer_template.format(
+        retval=retval,
+        return_type=return_type,
+        struct_name=struct_name,
+        method_name=method_name,
+        arglist=formal_args_str,
+        shim_name=shim_name,
+        args=acutal_args_str,
+        includes=include_str,
     )
 
     return shim

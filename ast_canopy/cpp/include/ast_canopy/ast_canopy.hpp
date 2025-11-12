@@ -229,7 +229,8 @@ struct Declarations {
 
 Declarations
 parse_declarations_from_command_line(std::vector<std::string> options,
-                                     std::vector<std::string> files_to_retain);
+                                     std::vector<std::string> files_to_retain,
+                                     bool bypass_parse_error);
 
 std::optional<ConstExprVar>
 value_from_constexpr_vardecl(std::vector<std::string> clang_options,

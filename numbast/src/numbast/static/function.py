@@ -20,7 +20,7 @@ from numbast.utils import make_function_shim
 from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
 
 from ast_canopy.decl import Function
-from pylibastcanopy import execution_space
+from ast_canopy.pylibastcanopy import execution_space
 
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "numbast_function.log")

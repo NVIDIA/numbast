@@ -8,11 +8,10 @@ import tempfile
 import logging
 from typing import Optional, Any
 from dataclasses import dataclass
-import warnings
 
 from numba.cuda.cuda_paths import get_cuda_paths, get_cuda_home
 
-import pylibastcanopy as bindings
+from ast_canopy import pylibastcanopy as bindings
 
 from ast_canopy.decl import (
     Function,
@@ -163,6 +162,7 @@ def parse_declarations_from_source(
     additional_includes: list[str] = [],
     defines: list[str] = [],
     verbose: bool = False,
+    bypass_parse_error: bool = False,
 ) -> Declarations:
     """Given a source file, parse all top-level declarations from it and return
     a ``Declarations`` object containing lists of declaration objects found in
@@ -203,6 +203,9 @@ def parse_declarations_from_source(
 
     verbose : bool, optional
         If True, print stderr from the clang++ invocation.
+
+    bypass_parse_error : bool, optional
+        If True, bypass parse error and continue generating bindings.
 
     Returns
     -------
@@ -275,13 +278,11 @@ def parse_declarations_from_source(
     if verbose:
         print(f"{command_line_options=}")
 
-    try:
-        decls = bindings.parse_declarations_from_command_line(
-            command_line_options,
-            files_to_retain,
-        )
-    except bindings.ParseError as e:
-        warnings.warn(f"Failed to parse declarations from source file: {e}")
+    decls = bindings.parse_declarations_from_command_line(
+        command_line_options,
+        files_to_retain,
+        bypass_parse_error,
+    )
 
     structs = [
         Struct.from_c_obj(c_obj, source_file_path) for c_obj in decls.records

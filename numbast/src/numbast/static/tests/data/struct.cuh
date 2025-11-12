@@ -11,6 +11,9 @@ public:
 
   __device__ Foo();
   __device__ Foo(int x);
+  __device__ int get_x();
+  __device__ float add_one(float x);
+  __device__ void print();
 
 private:
   int y;

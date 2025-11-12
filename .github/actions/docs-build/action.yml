@@ -1,0 +1,45 @@
+name: "Numbast Docs Build/Upload"
+description: "Builds the Numbast docs and uploads them as workflow artifacts."
+inputs:
+  upload_workflow_artifact:
+    description: "Uploads the built docs as a workflow artifact (actions/upload-artifact)."
+    required: false
+    default: "true"
+runs:
+  using: "composite"
+  steps:
+    # Install required dependencies
+    - name: Install build dependencies
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        conda install -c conda-forge python=3.12 clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make
+    - name: Install Python dependencies for docs
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        python -m pip install --upgrade pip
+        # Build and install Numbast from Source
+        ast_canopy/build.sh
+        python -m pip install numbast/
+        # Minimum dependencies for Numba-CUDA to run
+        python -m pip install cuda-python cuda-core
+        # Install Sphinx dependencies
+        python -m pip install sphinx nvidia-sphinx-theme sphinx-copybutton
+    # Build all docs
+    - name: Build all docs
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: ci/build_docs.sh
+    # Copy all docs to the right folder
+    - name: Move docs to right folder
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        mkdir -p _site
+        cp -rf ./docs/build/html/* _site/
+        touch _site/.nojekyll
+    # Update docs as workflow artifact:
+    - name: Upload artifact
+      if: ${{ inputs.upload_workflow_artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: docs
+        path: _site/
+        compression-level: 0

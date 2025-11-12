@@ -20,3 +20,6 @@ def test_bindings_from_bf16(make_binding):
     kernel[1, 1](arr)
 
     assert pytest.approx(arr[0], 1e-2) == 6.28
+
+    # Check that bfloat16 is imported
+    assert "from numba.cuda.types import bfloat16" in res1["src"]

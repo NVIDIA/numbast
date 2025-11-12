@@ -1,0 +1,139 @@
+on:
+  workflow_call:
+    inputs:
+      build_type:
+        required: true
+        type: string
+      branch:
+        type: string
+      sha:
+        type: string
+      repo:
+        type: string
+      node_type:
+        type: string
+        default: "cpu16"
+      llvm_version:
+        type: string
+        default: "20.1.8"
+      script:
+        type: string
+        default: "ci/build_wheels.sh"
+      matrix_filter:
+        type: string
+        default: "."
+defaults:
+  run:
+    shell: bash
+permissions:
+  actions: read
+  checks: none
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+jobs:
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+    steps:
+      - name: Compute Build Matrix
+        id: compute-matrix
+        run: |
+          set -eo pipefail
+
+          # Please keep the matrices sorted in ascending order by the following:
+          #
+          #     [ARCH, ARCH_ML, LINUX_VER]
+          #
+          export MATRIX="
+          # amd64
+          - { ARCH: 'amd64', ARCH_ML: 'x86_64',  LINUX_VER: 'manylinux_2_28' }
+          - { ARCH: 'arm64', ARCH_ML: 'aarch64', LINUX_VER: 'manylinux_2_28' }
+          "
+
+          MATRIX="$(
+            yq -n -o json 'env(MATRIX)' | \
+            jq -c '${{ inputs.matrix_filter }} | if (. | length) > 0 then {include: .} else "Error: Empty matrix\n" | halt_error(1) end'
+          )"
+
+          echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
+  build:
+    name: ${{ matrix.ARCH }}, ${{ matrix.LINUX_VER }}
+    needs: compute-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: "linux-${{ matrix.ARCH }}-${{ inputs.node_type }}"
+    env:
+      RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+    container:
+      image: quay.io/pypa/${{ matrix.LINUX_VER }}_${{ matrix.ARCH_ML }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 43200 # 12h
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+      - name: Setup proxy cache
+        uses: nv-gha-runners/setup-proxy-cache@main
+        continue-on-error: true
+      - name: Cache build dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/build-deps
+          key: build-deps-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/install-build-deps.sh') }}
+      - name: Install dependencies
+        run: ./ci/install-build-deps.sh
+      - name: Cache LLVM installation
+        id: cache-llvm
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/llvm-install
+          key: llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/llvm-build-static.sh') }}-llvm-${{ inputs.llvm_version }}
+      - name: Build LLVM (if cache misses)
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        env:
+          LLVM_VERSION: ${{ inputs.llvm_version }}
+        run: |
+          # Download and extract LLVM source
+          echo "Downloading LLVM ${LLVM_VERSION}..."
+          curl -sL "https://github.com/llvm/llvm-project/archive/llvmorg-${LLVM_VERSION}.tar.gz" -o llvm.tgz
+          tar -xf llvm.tgz
+          mv "llvm-project-llvmorg-${LLVM_VERSION}" "llvm"
+          source ci/setup_sccache.sh
+          sccache --start-server
+          sccache --zero-stats
+          ./ci/llvm-build-static.sh
+          sccache --show-adv-stats
+      - name: Setup LLVM environment
+        run: |
+          echo "Checking LLVM..."
+          echo "Verifying LLVM installation..."
+          ls -lh llvm-install/lib/
+      - name: Build project with LLVM
+        run: |
+          source ci/setup_sccache.sh
+          sccache --zero-stats
+          ${{ inputs.script }}
+          sccache --show-adv-stats
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Upload PyPi wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-wheels-${{ matrix.ARCH }}-llvm-${{ inputs.llvm_version }}
+          path: final-dist/*.whl
