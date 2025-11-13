@@ -3,6 +3,7 @@
 
 from typing import Any, Optional
 from collections import defaultdict
+from tempfile import NamedTemporaryFile
 
 from llvmlite import ir
 
@@ -10,16 +11,21 @@ from numba import types as nbtypes
 from numba.core.extending import (
     register_model,
     make_attribute_wrapper,
+    lower_builtin,
 )
 from numba.core.typing import signature as nb_signature
-from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate
-from numba.core.datamodel.models import StructModel, PrimitiveModel
+from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate, CallableTemplate
+from numba.core.datamodel.models import StructModel, PrimitiveModel, OpaqueModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 from numba.core.imputils import numba_typeref_ctor
+from numba.core.typing.npydecl import parse_dtype
+from numba.core.errors import RequireLiteralValue
 
-from ast_canopy.decl import ClassTemplateSpecialization, StructMethod
+from ast_canopy.api import parse_declarations_from_source
+from ast_canopy.decl import ClassTemplateSpecialization, StructMethod, ClassTemplate
+from ast_canopy.instantiations import ClassInstantiation
 
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
 from numbast.utils import (
@@ -29,7 +35,11 @@ from numbast.utils import (
     assemble_dereferenced_params_string,
     make_struct_regular_method_shim,
 )
-from numbast.shim_writer import MemoryShimWriter as ShimWriter
+from numbast.shim_writer import ShimWriterBase
+
+ConcreteTypeCache : dict[str, nbtypes.Type] = {}
+
+ConcreteTypeCache2 : dict[str, nbtypes.Type] = {}
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int
@@ -47,12 +57,17 @@ extern "C" __device__ int
 }}
 """
 
+class MetaType(nbtypes.Type):
+    def __init__(self, template_name):
+        super().__init__(name=template_name + "MetaType")
+        self.template_name = template_name
+
 
 def bind_cxx_struct_ctor(
     ctor: StructMethod,
     struct_name: str,
     s_type_ref: nbtypes.TypeRef,
-    shim_writer: ShimWriter,
+    shim_writer: ShimWriterBase,
 ) -> Optional[list]:
     """Create bindings for a C++ struct constructor and return its argument types.
 
@@ -67,7 +82,7 @@ def bind_cxx_struct_ctor(
         The Numba type of the struct
     S : object
         The Python API of the struct
-    shim_writer : ShimWriter
+    shim_writer : ShimWriterBase
         The shim writer to write the shim layer code.
 
     Returns
@@ -155,7 +170,7 @@ def bind_cxx_struct_ctor(
 def bind_cxx_ctsd_ctors(
     struct_decl: ClassTemplateSpecialization,
     s_type_ref: nbtypes.TypeRef,
-    shim_writer: ShimWriter,
+    shim_writer: ShimWriterBase,
 ):
     """Given a C++ struct declaration, generate bindings for its constructors.
 
@@ -168,7 +183,7 @@ def bind_cxx_ctsd_ctors(
         The Python API of the struct
     s_type: numba.types.Type
         The Numba type of the struct
-    shim_writer: ShimWriter
+    shim_writer: ShimWriterBase
         The shim writer to write the shim layer code.
     """
 
@@ -203,7 +218,7 @@ def bind_cxx_struct_regular_method(
     struct_decl: ClassTemplateSpecialization,
     method_decl: StructMethod,
     s_type: nbtypes.Type,
-    shim_writer: ShimWriter,
+    shim_writer: ShimWriterBase,
 ) -> nb_signature:
     param_types = [
         to_numba_type(arg.unqualified_non_ref_type_name)
@@ -260,7 +275,7 @@ def bind_cxx_struct_regular_method(
 def bind_cxx_struct_regular_methods(
     struct_decl: ClassTemplateSpecialization,
     s_type: nbtypes.Type,
-    shim_writer: ShimWriter,
+    shim_writer: ShimWriterBase,
 ) -> dict[str, ConcreteTemplate]:
     """
 
@@ -292,7 +307,7 @@ def bind_cxx_struct_regular_methods(
 
 
 def bind_cxx_class_template_specialization(
-    shim_writer: ShimWriter,
+    shim_writer: ShimWriterBase,
     struct_decl: ClassTemplateSpecialization,
     instance_type_ref: nbtypes.Type,
     parent_type: type = nbtypes.Type,
@@ -306,7 +321,7 @@ def bind_cxx_class_template_specialization(
 
     Parameters
     ----------
-    shim_writer : ShimWriter
+    shim_writer : ShimWriterBase
         The shim writer to write the shim layer code.
     struct_decl : Struct
         Declaration of the struct type in CXX
@@ -407,6 +422,149 @@ def bind_cxx_class_template_specialization(
     # Return the handle to the type in Numba
     return s_type
 
+
+def make_or_get_concrete_type(instantiated_type_name: str):
+    """Guarantee type uniqueness by caching"""
+
+    if instantiated_type_name in ConcreteTypeCache:
+        return ConcreteTypeCache[instantiated_type_name]
+
+
+    class ConcreteType(nbtypes.Type):
+        def __init__(self, meta_type, **targs):
+            self.meta_type = meta_type
+            self.targs = targs
+            super().__init__(name=meta_type.template_name + f"<{self.angled_targs_str()}>")
+        
+        def angled_targs_str(self):
+            return c_instantiate(self.meta_type, **self.targs)
+        
+        def angled_targs_str_as_c(self):
+            return self.meta_type.template_name + f"<{', '.join([f"{targ}" for targ in self.targs_dict_as_c().values()])}>"
+        
+        def targs_dict_as_c(self):
+            def to_c_str(obj: nbtypes.Type | int | float) -> str:
+                if isinstance(obj, nbtypes.Type):
+                    if obj == nbtypes.int32:
+                        return "int"
+                    
+                    return "<unknown type>"
+                
+                if isinstance(obj, (int, float)):
+                    return str(obj)
+                
+                raise ValueError(f"Unknown object to use in C shim function: {obj}")
+            return {tparam_name: to_c_str(targ) for tparam_name, targ in self.targs.items()}
+
+    ConcreteTypeCache[instantiated_type_name] = ConcreteType
+    return ConcreteType
+
+
+def c_instantiate(meta_type: MetaType, **targs) -> str:
+    return meta_type.template_name + f"<{', '.join([f'{tparam_name}={targ}' for tparam_name, targ in targs.items()])}>"
+
+
+def struct_type_from_instantiation(instantiated_type_name: str, instance: nbtypes.Type, shim_writer: ShimWriterBase, header_path: str):
+    if instantiated_type_name in ConcreteTypeCache2:
+        return ConcreteTypeCache2[instantiated_type_name]
+    
+    src = f"""\n
+#include "{header_path}"
+void __device__ foo() {{
+{instance.angled_targs_str_as_c()} __internal_decl__;
+}}
+"""
+    # path = "/tmp/_dummy.cuh"
+    # with open(path, "w") as f:
+    #     f.write(src)
+
+    with NamedTemporaryFile("w") as f:
+        f.write(src)
+        f.flush()
+        decls = parse_declarations_from_source(f.name, [header_path], compute_capability="sm_86")
+
+    specializations = decls.class_template_specializations
+    decl = specializations[0]
+
+    instance_type_ref = nbtypes.TypeRef(instance)
+    _block_scan_type = bind_cxx_class_template_specialization(shim_writer, decl, instance_type_ref, nbtypes.Type, StructModel)
+
+    return instance_type_ref
+
+def _register_meta_type(stub: object, meta_type: nbtypes.Type, ctd: ClassTemplate, shim_writer: ShimWriterBase, header_path: str):
+
+    @register
+    class MetaType_template_decl(CallableTemplate):
+        key = stub
+
+        def generic(self, stub=stub, meta_type=meta_type, shim_writer=shim_writer, header_path=header_path):
+            # typer needs to be generated (explict number of arguments required.)
+            def typer(T, BLOCK_DIM_X):
+
+                if not isinstance(BLOCK_DIM_X, nbtypes.IntegerLiteral):
+                    raise RequireLiteralValue(BLOCK_DIM_X)
+
+                # Step 1: Create a new Numba type for specialized class
+                targs = {
+                    "T": parse_dtype(T),
+                    "BLOCK_DIM_X": BLOCK_DIM_X.literal_value,
+                }
+
+                # Can be replaced by ast_canopy.instantiation class
+                CI = ClassInstantiation(ctd)
+                instantiated = CI.instantiate(T=targs["T"], BLOCK_DIM_X=targs["BLOCK_DIM_X"])
+
+                instantiated_type_name = instantiated.get_instantiated_c_stmt()
+
+                old = c_instantiate(meta_type, **targs)
+                print(f"{instantiated_type_name=}, {old=}")
+
+                ConcreteType = make_or_get_concrete_type(instantiated_type_name)
+                instance = ConcreteType(meta_type, **targs)
+                instance_type_ref = struct_type_from_instantiation(instantiated_type_name, instance, shim_writer, header_path)
+
+                ConcreteTypeCache2[instantiated_type_name] = instance_type_ref
+
+                self.context.refresh()
+                return instance_type_ref
+
+            return typer
+
+
+    register_global(stub, nbtypes.Function(MetaType_template_decl))
+
+
+
+def bind_cxx_class_template(
+    class_template_decl: ClassTemplate,
+    shim_writer: ShimWriterBase,
+    header_path: str
+):
+    # Stub class
+    class TC:
+        pass
+
+    # Typing
+    TC_templated_type = MetaType(class_template_decl.record.name)
+
+    # Data model
+    @register_model(MetaType)
+    class BlockScan_Template_model(OpaqueModel):
+        def __init__(self, dmm, fe_type):
+            OpaqueModel.__init__(self, dmm, fe_type)
+
+    n_min_args = class_template_decl.num_min_required_args
+    
+    argstp = (nbtypes.Any,) * n_min_args
+
+    # MetaType Lowering, NO-OP
+    @lower_builtin(TC, *argstp)
+    def lower_BlockScan(context, builder, sig, args):
+        return context.get_constant(nbtypes.int32, 0)
+
+    _register_meta_type(TC, TC_templated_type, class_template_decl, shim_writer, header_path)
+
+    return TC
 
 # def bind_cxx_class_templates(
 #     shim_writer: ShimWriter,
