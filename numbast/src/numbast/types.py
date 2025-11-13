@@ -15,7 +15,7 @@ class FunctorType(nbtypes.Type):
         super().__init__(name=name + "FunctorType")
 
 
-CTYPE_MAPS = {
+INTEGER_TYPE_MAPS = {
     "char": nbtypes.int8,
     "signed char": nbtypes.int8,
     "unsigned char": nbtypes.uint8,
@@ -26,7 +26,7 @@ CTYPE_MAPS = {
     "long": nbtypes.int64,
     "unsigned long": nbtypes.uint64,
     "long long": nbtypes.int64,
-    "unsigned long long": nbtypes.uint64,
+    "unsigned long long": nbtypes.uint,
     # Begin of stdint types
     "int8_t": nbtypes.int8,
     "uint8_t": nbtypes.uint8,
@@ -36,12 +36,19 @@ CTYPE_MAPS = {
     "uint32_t": nbtypes.uint32,
     "int64_t": nbtypes.int64,
     "uint64_t": nbtypes.uint64,
-    # End of stdint types
-    "void": nbtypes.void,
+}
+
+FLOATING_TYPE_MAPS = {
     "__half": nbtypes.float16,
     "__nv_bfloat16": bfloat16,
     "float": nbtypes.float32,
     "double": nbtypes.float64,
+}
+
+CTYPE_MAPS = {
+    **INTEGER_TYPE_MAPS,
+    **FLOATING_TYPE_MAPS,
+    "void": nbtypes.void,
     "bool": nbtypes.bool_,
     "uint4": vector_types["uint32x4"],
     "uint2": vector_types["uint32x2"],
@@ -99,3 +106,24 @@ def to_numba_type(ty: str):
         return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
 
     return CTYPE_MAPS[ty]
+
+
+def is_c_integral_type(typ_str: str) -> bool:
+    return typ_str in INTEGER_TYPE_MAPS
+
+
+def is_c_floating_type(typ_str: str) -> bool:
+    return typ_str in FLOATING_TYPE_MAPS
+
+
+def get_literal_type_cls(c_typ_: str) -> nbtypes.Literal:
+    """Get the corresbonding Numba literal type based on C type string.
+
+    Fall back to Literal if unknown.
+    """
+    if is_c_integral_type(c_typ_):
+        return nbtypes.IntegerLiteral
+    elif is_c_floating_type(c_typ_):
+        return nbtypes.FloatLiteral
+    else:
+        return nbtypes.Literal

@@ -3,6 +3,7 @@
 
 import operator
 import typing
+from functools import cached_property
 
 from ast_canopy import pylibastcanopy as bindings
 
@@ -175,9 +176,20 @@ class Template:
     required template arguments.
     """
 
-    def __init__(self, template_parameters, num_min_required_args):
+    def __init__(
+        self,
+        template_parameters: list[bindings.TemplateParam],
+        num_min_required_args: int,
+    ):
         self.template_parameters = template_parameters
         self.num_min_required_args = num_min_required_args
+
+    @cached_property
+    def tparam_dict(self):
+        res = {}
+        for tparam in self.template_parameters:
+            res[tparam.name] = tparam
+        return res
 
 
 class FunctionTemplate(Template):

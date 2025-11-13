@@ -4,7 +4,9 @@
 from typing import Any, Optional
 from collections import defaultdict
 from tempfile import NamedTemporaryFile
+import inspect
 
+from ast_canopy import pylibastcanopy
 from llvmlite import ir
 
 from numba import types as nbtypes
@@ -25,7 +27,7 @@ from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 from numba.core.imputils import numba_typeref_ctor
 from numba.core.typing.npydecl import parse_dtype
-from numba.core.errors import RequireLiteralValue
+from numba.core.errors import RequireLiteralValue, TypingError
 
 from ast_canopy.api import parse_declarations_from_source
 from ast_canopy.decl import (
@@ -35,7 +37,12 @@ from ast_canopy.decl import (
 )
 from ast_canopy.instantiations import ClassInstantiation
 
-from numbast.types import CTYPE_MAPS as C2N, to_numba_type
+from numbast.types import (
+    CTYPE_MAPS as C2N,
+    to_numba_type,
+    is_c_floating_type,
+    is_c_integral_type,
+)
 from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
@@ -523,6 +530,56 @@ void __device__ foo() {{
     return instance_type_ref
 
 
+def _bind_tparams(
+    decl: ClassTemplate, *args, **kwargs
+) -> dict[str, nbtypes.Type]:
+    def _get_literal_type_cls(c_typ_: str) -> nbtypes.Literal:
+        """Get the corresbonding Numba literal type based on C type string.
+        Fall back to Literal if unknown.
+        """
+        if is_c_integral_type(c_typ_):
+            return nbtypes.IntegerLiteral
+        elif is_c_floating_type(c_typ_):
+            return nbtypes.FloatLiteral
+        else:
+            return nbtypes.Literal
+
+    if args:
+        raise TypingError(
+            "Template parameter error message is only configurable via keyword argument, not positional argument."
+        )
+
+    res: dict[str, nbtypes.Type] = {}
+
+    targs = decl.tparam_dict
+    for tparam_name, type_ in kwargs.items():
+        param_decl = targs.get(tparam_name, None)
+        if param_decl:
+            # If it's a non-type template parameter
+            if param_decl.kind == pylibastcanopy.template_param_kind.non_type:
+                literal_type = _get_literal_type_cls(param_decl.type_)
+                if not isinstance(type_, literal_type):
+                    # Require the input to be a literal value
+                    raise RequireLiteralValue(kwargs[tparam_name])
+
+                res[tparam_name] = type_.literal_value
+            else:
+                res[tparam_name] = parse_dtype(type_)
+
+    return res
+
+
+def _rewrite_typer_signature(decl: ClassTemplate, typer):
+    """Rewrites the typer signature to match class template arglist"""
+    param_names = list(decl.tparam_dict.keys())
+    params = [
+        inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        for name in param_names
+    ]
+    pubsig = inspect.Signature(params)
+    typer.__signature__ = pubsig
+
+
 def _register_meta_type(
     stub: object,
     meta_type: nbtypes.Type,
@@ -538,30 +595,17 @@ def _register_meta_type(
             self,
             stub=stub,
             meta_type=meta_type,
+            decl=ctd,
             shim_writer=shim_writer,
             header_path=header_path,
         ):
-            # typer needs to be generated (explict number of arguments required.)
-            def typer(T, BLOCK_DIM_X):
-                if not isinstance(BLOCK_DIM_X, nbtypes.IntegerLiteral):
-                    raise RequireLiteralValue(BLOCK_DIM_X)
-
-                # Step 1: Create a new Numba type for specialized class
-                targs = {
-                    "T": parse_dtype(T),
-                    "BLOCK_DIM_X": BLOCK_DIM_X.literal_value,
-                }
+            def typer(*args, **kwargs):
+                targs = _bind_tparams(decl, *args, **kwargs)
 
                 # Can be replaced by ast_canopy.instantiation class
                 CI = ClassInstantiation(ctd)
-                instantiated = CI.instantiate(
-                    T=targs["T"], BLOCK_DIM_X=targs["BLOCK_DIM_X"]
-                )
-
+                instantiated = CI.instantiate(**targs)
                 instantiated_type_name = instantiated.get_instantiated_c_stmt()
-
-                old = c_instantiate(meta_type, **targs)
-                print(f"{instantiated_type_name=}, {old=}")
 
                 ConcreteType = make_or_get_concrete_type(instantiated_type_name)
                 instance = ConcreteType(meta_type, **targs)
@@ -574,6 +618,7 @@ def _register_meta_type(
                 self.context.refresh()
                 return instance_type_ref
 
+            _rewrite_typer_signature(decl, typer)
             return typer
 
     register_global(stub, nbtypes.Function(MetaType_template_decl))

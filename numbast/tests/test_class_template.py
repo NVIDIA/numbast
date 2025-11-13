@@ -5,8 +5,7 @@ import os
 
 import numpy as np
 
-from numba import types, cuda
-from numba.core.datamodel import StructModel
+from numba import cuda
 
 import cffi
 
@@ -29,9 +28,6 @@ def _sample_class_templates():
     BlockScanDecl = ct[0]
 
     shim_writer = MemoryShimWriter(f'#include "{p}"')
-
-    parent_types = {"BlockScan": types.Type}
-    datamodels = {"BlockScan": StructModel}
 
     api = bind_cxx_class_template(BlockScanDecl, shim_writer, p)
 
