@@ -129,9 +129,9 @@ def bind_cxx_struct_ctor(
 
         selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
         argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
+            builder.alloca(context.get_value_type(arg)) for arg in sig.args[1:]
         ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
+        for ptr, ty, arg in zip(argptrs[1:], sig.args[1:], args[1:]):
             builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
         context.compile_internal(
