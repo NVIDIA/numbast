@@ -5,21 +5,20 @@ import os
 
 import numpy as np
 
-from numba import types, cuda, float32
+from numba import types, cuda
 from numba.core.datamodel import StructModel
 
 import cffi
 
-from llvmlite import ir
 
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_class_template, MemoryShimWriter
 
-from numba.cuda.descriptor import cuda_target
 
 import pytest
 
 ffi = cffi.FFI()
+
 
 @pytest.fixture
 def _sample_class_templates():
@@ -64,7 +63,6 @@ def test_sample_class_template_simple(decl, shim_writer):
 
         ptr_out = ffi.from_buffer(arr_out[i:])
         block_scan.InclusiveSum(arr_in[i], ptr_out)
-
 
     arrin = np.arange(1024, dtype=T)
     out = np.zeros_like(arrin)

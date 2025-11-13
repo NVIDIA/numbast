@@ -4,7 +4,10 @@
 import numba
 
 from numbast.struct import bind_cxx_struct, bind_cxx_structs
-from numbast.class_template import bind_cxx_class_template_specialization, bind_cxx_class_template
+from numbast.class_template import (
+    bind_cxx_class_template_specialization,
+    bind_cxx_class_template,
+)
 from numbast.function import bind_cxx_function, bind_cxx_functions
 from numbast.enum import bind_cxx_enum
 from numbast.shim_writer import MemoryShimWriter, FileShimWriter
