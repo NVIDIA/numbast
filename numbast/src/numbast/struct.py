@@ -360,7 +360,6 @@ def bind_cxx_struct_regular_methods(
     method_templates: dict[str, ConcreteTemplate] = {}
 
     for name, sigs in method_overloads.items():
-        print(f"{name=}, {sigs=}")
 
         class MethodDecl(ConcreteTemplate):
             key = f"{s_type}.{name}"
