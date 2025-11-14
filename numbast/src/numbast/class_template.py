@@ -493,19 +493,25 @@ def struct_type_from_instantiation(
     shim_writer: ShimWriterBase,
     header_path: str,
 ):
+    # Clang determines to populate all members of an instantiated class based
+    # on whether an explicit instantitation definition exists. The following
+    # code snippet creates such instantiation.
     src = f"""\n
 #include "{header_path}"
-void __device__ foo() {{
-{instance.angled_targs_str_as_c()} __internal_decl__;
-}}
+template class {instance.angled_targs_str_as_c()};
 """
 
     with NamedTemporaryFile("w") as f:
         f.write(src)
         f.flush()
-        decls = parse_declarations_from_source(
-            f.name, [header_path], compute_capability="sm_86"
-        )
+
+        try:
+            decls = parse_declarations_from_source(
+                f.name, [header_path, f.name], compute_capability="sm_86"
+            )
+        except pylibastcanopy.ParseError as e:
+            e.add_note(f"Error when parsing string: {src}")
+            raise
 
     specializations = decls.class_template_specializations
     decl = specializations[0]
@@ -554,6 +560,8 @@ def _bind_tparams(
             else:
                 res[tparam_name] = parse_dtype(type_)
 
+    # Reorder the result dict to the same key order as C++
+    res = {k: res[k] for k in targs if k in res}
     return res
 
 

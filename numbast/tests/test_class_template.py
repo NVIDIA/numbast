@@ -62,3 +62,23 @@ def test_sample_class_template_simple(decl, shim_writer):
     arrin = np.arange(1024, dtype=T)
     out = np.zeros_like(arrin)
     kern[1, 1](arrin, out)
+
+
+def test_sample_class_template_with_fields(decl, shim_writer):
+    T = np.int32
+    Foo = decl[1]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(out):
+        foo_t = Foo(T=T, N=128)
+
+        foo = foo_t(256)
+
+        out[0] = foo.t
+        out[1] = foo.get_t()
+        out[2] = foo.get_t2()
+
+    out = np.zeros((3,), dtype="int32")
+    kernel[1, 1](out)
+
+    assert (out == [128, 128, 256]).all()

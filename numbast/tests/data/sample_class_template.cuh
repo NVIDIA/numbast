@@ -7,3 +7,15 @@ template <typename T, int BLOCK_DIM_X> struct BlockScan {
     printf("BlockScan InclusiveSum called\n");
   }
 };
+
+template <int N, typename T> class Foo {
+public:
+  T t;
+  __device__ Foo(T t) : t(t), t2(static_cast<T>(N)) {}
+
+  __device__ T get_t() { return t; }
+  __device__ T get_t2() { return t2; }
+
+private:
+  T t2;
+};
