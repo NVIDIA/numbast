@@ -37,6 +37,14 @@ repository = "https://github.com/NVIDIA/numbast"
 [project.optional-dependencies]
 dev = ["ruff"]
 docs = ["sphinx>=7.0", "sphinx-copybutton>=0.5.2"]
+test-cu12 = ["pytest", "cffi", "numba-cuda[cu12]>=0.20.0"]
+test-cu13 = [
+  "pytest",
+  "cffi",
+  "cuda-toolkit[cudart,crt,curand,cccl,nvcc]==13.*",
+  "numba-cuda[cu13]>=0.20.0",
+]
+
 
 [tool.ruff]
 # Please use pyproject.toml from the project root

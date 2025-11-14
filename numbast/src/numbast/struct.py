@@ -279,7 +279,6 @@ def bind_cxx_struct_conversion_opeartors(
 def bind_cxx_struct_regular_method(
     struct_decl: Struct,
     method_decl: StructMethod,
-    S: object,
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
 ) -> nb_signature:
@@ -337,7 +336,6 @@ def bind_cxx_struct_regular_method(
 
 def bind_cxx_struct_regular_methods(
     struct_decl: Struct,
-    S: object,
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
 ) -> dict[str, ConcreteTemplate]:
@@ -353,14 +351,13 @@ def bind_cxx_struct_regular_methods(
 
     for method in struct_decl.regular_member_functions():
         sig = bind_cxx_struct_regular_method(
-            struct_decl, method, S, s_type, shim_writer
+            struct_decl, method, s_type, shim_writer
         )
         method_overloads[method.name].append(sig)
 
     method_templates: dict[str, ConcreteTemplate] = {}
 
     for name, sigs in method_overloads.items():
-        print(f"{name=}, {sigs=}")
 
         class MethodDecl(ConcreteTemplate):
             key = f"{s_type}.{name}"
@@ -454,7 +451,7 @@ def bind_cxx_struct(
         # Method, Attributes Typing and Lowering:
 
         method_templates = bind_cxx_struct_regular_methods(
-            struct_decl, S, s_type, shim_writer
+            struct_decl, s_type, shim_writer
         )
 
         public_fields_tys = {

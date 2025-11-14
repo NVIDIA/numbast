@@ -14,7 +14,6 @@ import re
 import yaml
 
 from numba import config
-from numba.cuda import cuda_paths
 import numba.types
 import numba.core.datamodel.models
 
@@ -41,11 +40,6 @@ from numbast.tools.yaml_tags import string_constructor
 config.CUDA_USE_NVIDIA_BINDING = True
 
 VERBOSE = True
-
-include_dir = cuda_paths.get_cuda_paths()["include_dir"]
-if include_dir is None:
-    raise ValueError("Unable to find CUDAToolkit include directory")
-CUDA_INCLUDE_PATH = include_dir.info
 
 # Register custom YAML constructor for !join tag
 yaml.add_constructor("!numbast_join", string_constructor)
@@ -497,7 +491,6 @@ def _static_binding_generator(
         entry_point,
         retain_list,
         compute_capability=compute_capability,
-        cudatoolkit_include_dir=CUDA_INCLUDE_PATH,
         additional_includes=config.clang_includes_paths,
         defines=config.predefined_macros,
         verbose=VERBOSE,

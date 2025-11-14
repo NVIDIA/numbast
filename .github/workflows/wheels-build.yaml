@@ -55,7 +55,6 @@ jobs:
           #     [ARCH, ARCH_ML, LINUX_VER]
           #
           export MATRIX="
-          # amd64
           - { ARCH: 'amd64', ARCH_ML: 'x86_64',  LINUX_VER: 'manylinux_2_28' }
           - { ARCH: 'arm64', ARCH_ML: 'aarch64', LINUX_VER: 'manylinux_2_28' }
           "
@@ -135,5 +134,5 @@ jobs:
       - name: Upload PyPi wheels
         uses: actions/upload-artifact@v4
         with:
-          name: pypi-wheels-${{ matrix.ARCH }}-llvm-${{ inputs.llvm_version }}
+          name: pypi-wheels-${{ matrix.ARCH }}
           path: final-dist/*.whl
