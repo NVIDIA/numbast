@@ -8,6 +8,10 @@ set -euo pipefail
 
 rapids-logger "Starting Conda Package Test"
 
+GIT_DESCRIBE_TAG=$(git describe --abbrev=0)
+PROJECT_VERSION=${GIT_DESCRIBE_TAG:1}
+GIT_DESCRIBE_HASH=$(git rev-parse --short HEAD)
+
 rapids-logger "Creating Test Environment"
 # TODO: replace this with rapids-dependency-file-generator
 rapids-mamba-retry create -n test \
@@ -23,9 +27,9 @@ rapids-mamba-retry create -n test \
   cuda-cudart-dev \
   python=${RAPIDS_PY_VERSION} \
   cffi \
-  ast_canopy \
-  numbast \
-  numbast-extensions
+  ast_canopy="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*" \
+  numbast="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*" \
+  numbast-extensions="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*"
 
 # Temporarily allow unbound variables for conda activation.
 set +u
