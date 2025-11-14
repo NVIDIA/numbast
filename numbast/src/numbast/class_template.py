@@ -632,13 +632,9 @@ def bind_cxx_class_template(
         def __init__(self, dmm, fe_type):
             OpaqueModel.__init__(self, dmm, fe_type)
 
-    # TODO: iterate over n_min_args -> max_n_args, all should lower to no-op
-    n_min_args = class_template_decl.num_min_required_args
-    argstp = (nbtypes.Any,) * n_min_args
-
     # MetaType Lowering, NO-OP
-    @lower_builtin(TC, *argstp)
-    def lower_BlockScan(context, builder, sig, args):
+    @lower_builtin(TC, nbtypes.VarArg(nbtypes.Any))
+    def lower_noop(context, builder, sig, args):
         return context.get_constant(nbtypes.int32, 0)
 
     _register_meta_type(
