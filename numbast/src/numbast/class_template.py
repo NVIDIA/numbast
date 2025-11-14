@@ -499,9 +499,6 @@ void __device__ foo() {{
 {instance.angled_targs_str_as_c()} __internal_decl__;
 }}
 """
-    # path = "/tmp/_dummy.cuh"
-    # with open(path, "w") as f:
-    #     f.write(src)
 
     with NamedTemporaryFile("w") as f:
         f.write(src)
