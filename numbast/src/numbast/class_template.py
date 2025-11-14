@@ -640,64 +640,37 @@ def bind_cxx_class_template(
     return TC
 
 
-# def bind_cxx_class_templates(
-#     shim_writer: ShimWriter,
-#     structs: list[Struct],
-#     parent_types: dict[str, type] = {},
-#     data_models: dict[str, type] = {},
-#     aliases: dict[str, list[str]] = {},
-# ) -> list[object]:
-#     """
-#     Create bindings for a list of C++ structs.
+def bind_cxx_class_templates(
+    class_templates: list[ClassTemplate],
+    header_path: str,
+    shim_writer: ShimWriterBase,
+) -> list[object]:
+    """
+    Create bindings for a list of C++ class templates.
 
-#     Parameters
-#     ----------
-#     shim_writer : ShimWriter
-#         The shim writer to write the shim layer code.
-#     structs : list[Struct]
-#         List of declarations of the struct types in CXX
-#     parent_type : nbtypes.Type, optional
-#         Parent type of the Python API, by default nbtypes.Type
-#     data_model : type, optional
-#         Data model for the struct, by default StructModel
-#     aliases : dict[str, list[str]], optional
-#         Mappings from the name of the struct to a list of aliases.
-#         For example in C++: typedef A B; typedef A C; then
-#         aliases = {"A": ["B", "C"]}
+    Parameters
+    ----------
+    shim_writer : ShimWriter
+        The shim writer to write the shim layer code.
+    class_templates : list[ClassTemplate]
+        List of declarations of the class template types in CXX
+    header_path : str
+        The path to the header file containing the class template declarations.
 
-#     Returns
-#     -------
-#     list[object]
-#         The Python APIs of the structs.
-#     """
+    Returns
+    -------
+    list[object]
+        The Python APIs of the class templates.
+    """
 
-#     python_apis = []
-#     for s in structs:
-#         # Determine the type specialization and data model specialization
-#         if s.name.startswith("unnamed"):
-#             # Any alias for the unnamed object should suffice.
-#             alias = aliases[s.name][0]
-#             type_spec = parent_types[alias]
-#             data_model_spec = data_models[alias]
-#         else:
-#             # Determine if it is a template specialization
-#             pat = re.compile(r"^(.+)<(.+)>$")
-#             match = pat.match(s.name)
-#             if match:
-#                 name = match.group(1)
-#             else:
-#                 name = s.name
-#             type_spec = parent_types[name]
-#             data_model_spec = data_models[name]
+    python_apis = []
+    for ct in class_templates:
+        # Bind the cxx class template
+        TC = bind_cxx_class_template(
+            class_template_decl=ct,
+            shim_writer=shim_writer,
+            header_path=header_path,
+        )
+        python_apis.append(TC)
 
-#         # Bind the struct
-#         S, s_type = bind_cxx_struct(
-#             shim_writer,
-#             s,
-#             type_spec,
-#             data_model_spec,
-#             aliases,
-#         )
-#         python_apis.append((S, s_type))
-
-#     return python_apis
+    return python_apis

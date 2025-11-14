@@ -7,6 +7,7 @@ from numbast.struct import bind_cxx_struct, bind_cxx_structs
 from numbast.class_template import (
     bind_cxx_class_template_specialization,
     bind_cxx_class_template,
+    bind_cxx_class_templates,
 )
 from numbast.function import bind_cxx_function, bind_cxx_functions
 from numbast.enum import bind_cxx_enum
@@ -29,6 +30,7 @@ __all__ = [
     "bind_cxx_structs",
     "bind_cxx_class_template_specialization",
     "bind_cxx_class_template",
+    "bind_cxx_class_templates",
     "MemoryShimWriter",
     "FileShimWriter",
 ]
