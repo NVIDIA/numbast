@@ -581,7 +581,6 @@ def _register_meta_type(
 
         def generic(
             self,
-            stub=stub,
             meta_type=meta_type,
             decl=ctd,
             shim_writer=shim_writer,
