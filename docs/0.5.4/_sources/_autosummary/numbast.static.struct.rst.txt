@@ -13,6 +13,7 @@ numbast.static.struct
       StaticStructCtorRenderer
       StaticStructCtorsRenderer
       StaticStructMethodRenderer
+      StaticStructRegularMethodsRenderer
       StaticStructRenderer
       StaticStructsRenderer
    

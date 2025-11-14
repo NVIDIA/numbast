@@ -32,7 +32,7 @@
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=df3ac72c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
   
   <!-- So that users can add custom icons -->
@@ -40,6 +40,8 @@
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
 
     <script src="_static/documentation_options.js?v=e1a677a5"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
@@ -54,12 +56,15 @@
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
+
     <link rel="canonical" href="docs/supported_declarations.html" />
     <link rel="icon" href="_static/favicon.png"/>
+
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="AST Canopy overview" href="ast_canopy_overview.html" />
     <link rel="prev" title="Dynamic binding generation" href="dynamic.html" />
+
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -67,6 +72,7 @@
 
 
   </head>
+
   
   
   <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
@@ -74,6 +80,8 @@
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
@@ -596,25 +604,31 @@ and signatures so consumers can materialize concrete overloads.</p></li>
 <td><p><code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">=</span> <span class="pre">f.data</span></code></p></td>
 <td><p>Read-only access</p></td>
 </tr>
-<tr class="row-odd"><td><p>Function</p></td>
+<tr class="row-odd"><td><p>Regular Struct Method</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__myfloat16</span> <span class="pre">neg()</span> <span class="pre">const</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">r</span> <span class="pre">=</span> <span class="pre">f.neg()</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">=</span> <span class="pre">f.neg()</span></code></p></td>
+<td><p>Instance method typing/lowering (non-mutative methods only; mutative methods are not supported)</p></td>
+</tr>
+<tr class="row-even"><td><p>Function</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">__myfloat16</span> <span class="pre">hsqrt(__myfloat16</span> <span class="pre">a)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">r</span> <span class="pre">=</span> <span class="pre">hsqrt(f)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">=</span> <span class="pre">hsqrt(f)</span></code></p></td>
 <td><p>Typing/lowering for overloads</p></td>
 </tr>
-<tr class="row-even"><td><p>Operator overload</p></td>
+<tr class="row-odd"><td><p>Operator overload</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">__myfloat16</span> <span class="pre">operator+(...)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">twof</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">+</span> <span class="pre">f</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">twof</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">+</span> <span class="pre">f</span></code></p></td>
 <td><p>Mapped to appropriate Python operator</p></td>
 </tr>
-<tr class="row-odd"><td><p>Class template</p></td>
+<tr class="row-even"><td><p>Class template</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">template&lt;class</span> <span class="pre">T&gt;</span> <span class="pre">struct</span> <span class="pre">Vec</span> <span class="pre">{</span> <span class="pre">T</span> <span class="pre">x;</span> <span class="pre">T</span> <span class="pre">y;</span> <span class="pre">};</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">Vec&lt;float&gt;</span> <span class="pre">v;</span> <span class="pre">v.x</span> <span class="pre">=</span> <span class="pre">1.0f;</span></code></p></td>
 <td><p>N/A (serialization only)</p></td>
 <td><p>Template parameters and body captured for downstream specialization</p></td>
 </tr>
-<tr class="row-even"><td><p>Function template</p></td>
+<tr class="row-odd"><td><p>Function template</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">template&lt;typename</span> <span class="pre">T&gt;</span> <span class="pre">T</span> <span class="pre">add(T</span> <span class="pre">a,</span> <span class="pre">T</span> <span class="pre">b);</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">r</span> <span class="pre">=</span> <span class="pre">add(1,</span> <span class="pre">2);</span></code></p></td>
 <td><p>N/A (serialization only)</p></td>
@@ -704,9 +718,11 @@ and signatures so consumers can materialize concrete overloads.</p></li>
     </div>
   </div>
   
+
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
   <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
 <script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -729,12 +745,7 @@ and signatures so consumers can materialize concrete overloads.</p></li>
   
   
   
-  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/">Manage My Privacy</a>
-   | 
-  
-  
-  
-  <a class="external" href="https://www.nvidia.com/en-us/preferences/start/">Do Not Sell or Share My Data</a>
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/">Your Privacy Choices</a>
    | 
   
   

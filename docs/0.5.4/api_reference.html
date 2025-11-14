@@ -32,7 +32,7 @@
 <link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=df3ac72c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
   
   <!-- So that users can add custom icons -->
@@ -40,6 +40,8 @@
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
 
     <script src="_static/documentation_options.js?v=e1a677a5"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
@@ -54,12 +56,15 @@
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
+
     <link rel="canonical" href="docs/api_reference.html" />
     <link rel="icon" href="_static/favicon.png"/>
+
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="ast_canopy.decl" href="_autosummary/ast_canopy.decl.html" />
     <link rel="prev" title="FAQ" href="faq.html" />
+
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -67,6 +72,7 @@
 
 
   </head>
+
   
   
   <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
@@ -74,6 +80,8 @@
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
@@ -867,6 +875,17 @@ templates, as well as size/align information and the parse entry point.</p>
 <span class="sig-name descname"><span class="pre">overloaded_operators</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.Struct.overloaded_operators" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="ast_canopy.decl.Struct.public_fields">
+<span class="sig-name descname"><span class="pre">public_fields</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Field</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ast_canopy.decl.Struct.public_fields" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ast_canopy.decl.Struct.regular_member_functions">
+<span class="sig-name descname"><span class="pre">regular_member_functions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.Struct.regular_member_functions" title="Link to this definition">#</a></dt>
+<dd><p>Generator for methods that are not constructors, overload operators and conversion operators.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1306,6 +1325,8 @@ a clean state.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.conversion_operators"><code class="docutils literal notranslate"><span class="pre">conversion_operators()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.from_c_obj"><code class="docutils literal notranslate"><span class="pre">from_c_obj()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.overloaded_operators"><code class="docutils literal notranslate"><span class="pre">overloaded_operators()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.public_fields"><code class="docutils literal notranslate"><span class="pre">public_fields()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.regular_member_functions"><code class="docutils literal notranslate"><span class="pre">regular_member_functions()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.StructMethod"><code class="docutils literal notranslate"><span class="pre">StructMethod</span></code></a><ul class="nav section-nav flex-column">
@@ -1346,9 +1367,11 @@ a clean state.</p>
     </div>
   </div>
   
+
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
   <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
 <script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1371,12 +1394,7 @@ a clean state.</p>
   
   
   
-  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/">Manage My Privacy</a>
-   | 
-  
-  
-  
-  <a class="external" href="https://www.nvidia.com/en-us/preferences/start/">Do Not Sell or Share My Data</a>
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/">Your Privacy Choices</a>
    | 
   
   

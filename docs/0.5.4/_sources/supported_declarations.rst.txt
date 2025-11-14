@@ -51,6 +51,11 @@ Example mapping
      - ``auto d = f.data``
      - ``d = f.data``
      - Read-only access
+   * - Regular Struct Method
+     - ``__myfloat16 neg() const``
+     - ``auto r = f.neg()``
+     - ``r = f.neg()``
+     - Instance method typing/lowering (non-mutative methods only; mutative methods are not supported)
    * - Function
      - ``__myfloat16 hsqrt(__myfloat16 a)``
      - ``auto r = hsqrt(f)``
