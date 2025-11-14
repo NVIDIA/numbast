@@ -625,7 +625,7 @@ def bind_cxx_class_template(
 
     # Data model
     @register_model(MetaType)
-    class BlockScan_Template_model(OpaqueModel):
+    class TC_Template_model(OpaqueModel):
         def __init__(self, dmm, fe_type):
             OpaqueModel.__init__(self, dmm, fe_type)
 
