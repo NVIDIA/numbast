@@ -3,35 +3,58 @@
 
 from typing import Any, Optional
 from collections import defaultdict
-import re
+from tempfile import NamedTemporaryFile
+import inspect
 
+from ast_canopy import pylibastcanopy
 from llvmlite import ir
 
 from numba import types as nbtypes
 from numba.core.extending import (
     register_model,
-    lower_cast,
     make_attribute_wrapper,
+    lower_builtin,
 )
 from numba.core.typing import signature as nb_signature
-from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate
-from numba.core.datamodel.models import StructModel, PrimitiveModel
+from numba.cuda.typing.templates import (
+    ConcreteTemplate,
+    AttributeTemplate,
+    CallableTemplate,
+)
+from numba.core.datamodel.models import StructModel, PrimitiveModel, OpaqueModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
+from numba.core.imputils import numba_typeref_ctor
+from numba.core.typing.npydecl import parse_dtype
+from numba.core.errors import RequireLiteralValue, TypingError
 
-from ast_canopy.pylibastcanopy import method_kind
-from ast_canopy.decl import Struct, StructMethod
+from ast_canopy.api import parse_declarations_from_source
+from ast_canopy.decl import (
+    ClassTemplateSpecialization,
+    StructMethod,
+    ClassTemplate,
+)
 
-from numbast.types import CTYPE_MAPS as C2N, to_numba_type
+from numbast.types import (
+    CTYPE_MAPS as C2N,
+    to_numba_type,
+    is_c_floating_type,
+    is_c_integral_type,
+    to_c_type_str,
+)
 from numbast.utils import (
     deduplicate_overloads,
     make_device_caller_with_nargs,
-    make_struct_regular_method_shim,
     assemble_arglist_string,
     assemble_dereferenced_params_string,
+    make_struct_regular_method_shim,
 )
-from numbast.shim_writer import MemoryShimWriter as ShimWriter
+from numbast.shim_writer import ShimWriterBase
+
+ConcreteTypeCache: dict[str, nbtypes.Type] = {}
+
+ConcreteTypeCache2: dict[str, nbtypes.Type] = {}
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int
@@ -41,21 +64,18 @@ extern "C" __device__ int
 }}
 """
 
-struct_method_shim_layer_template = """
-extern "C" __device__ int
-{func_name}({return_type} &retval, {name}* self {arglist}) {{
-    retval =  self->{method_name}({args});
-    return 0;
-}}
-"""
+
+class MetaType(nbtypes.Type):
+    def __init__(self, template_name):
+        super().__init__(name=template_name + "MetaType")
+        self.template_name = template_name
 
 
 def bind_cxx_struct_ctor(
     ctor: StructMethod,
     struct_name: str,
-    s_type: nbtypes.Type,
-    S: object,
-    shim_writer: ShimWriter,
+    s_type_ref: nbtypes.TypeRef,
+    shim_writer: ShimWriterBase,
 ) -> Optional[list]:
     """Create bindings for a C++ struct constructor and return its argument types.
 
@@ -70,7 +90,7 @@ def bind_cxx_struct_ctor(
         The Numba type of the struct
     S : object
         The Python API of the struct
-    shim_writer : ShimWriter
+    shim_writer : ShimWriterBase
         The shim writer to write the shim layer code.
 
     Returns
@@ -102,7 +122,8 @@ def bind_cxx_struct_ctor(
     ctor_shim_decl = declare_device(
         func_name,
         nbtypes.int32(
-            nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
+            nbtypes.CPointer(s_type_ref.instance_type),
+            *map(nbtypes.CPointer, param_types),
         ),
     )
 
@@ -125,17 +146,18 @@ def bind_cxx_struct_ctor(
         args=assemble_dereferenced_params_string(ctor.params),
     )
 
-    @lower(S, *param_types)
+    @lower(numba_typeref_ctor, s_type_ref, *param_types)
     def ctor_impl(context, builder, sig, args):
+        s_type = s_type_ref.instance_type
         # Delay writing the shim function at lowering time. This avoids writing
         # shim functions from the parsed header that's unused in kernels.
         shim_writer.write_to_shim(shim, func_name)
 
         selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
         argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
+            builder.alloca(context.get_value_type(arg)) for arg in sig.args[1:]
         ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
+        for ptr, ty, arg in zip(argptrs, sig.args[1:], args[1:]):
             builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
         context.compile_internal(
@@ -150,31 +172,13 @@ def bind_cxx_struct_ctor(
         )
         return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
 
-    if ctor.kind == method_kind.converting_constructor:
-        assert len(param_types) == 1, (
-            "isConvertinConstructor in clang ensures that only one parameter is passed"
-        )
-
-        @lower_cast(*param_types, s_type)
-        def conversion_impl(context, builder, fromty, toty, value):
-            return ctor_impl(
-                context,
-                builder,
-                nb_signature(
-                    s_type,
-                    *map(nbtypes.CPointer, param_types),
-                ),
-                value,
-            )
-
     return param_types
 
 
-def bind_cxx_struct_ctors(
-    struct_decl: Struct,
-    S: object,
-    s_type: nbtypes.Type,
-    shim_writer: ShimWriter,
+def bind_cxx_ctsd_ctors(
+    struct_decl: ClassTemplateSpecialization,
+    s_type_ref: nbtypes.TypeRef,
+    shim_writer: ShimWriterBase,
 ):
     """Given a C++ struct declaration, generate bindings for its constructors.
 
@@ -187,101 +191,42 @@ def bind_cxx_struct_ctors(
         The Python API of the struct
     s_type: numba.types.Type
         The Numba type of the struct
-    shim_writer: ShimWriter
+    shim_writer: ShimWriterBase
         The shim writer to write the shim layer code.
     """
+
+    s_type = s_type_ref.instance_type
 
     ctor_params: list[list[Any]] = []
     for ctor in struct_decl.constructors():
         param_types = bind_cxx_struct_ctor(
-            ctor, struct_decl.name, s_type, S, shim_writer
+            ctor, struct_decl.name, s_type_ref, shim_writer
         )
         if param_types is not None:
             ctor_params.append(param_types)
 
     # Constructor typing:
     @register
+    class TypeRefCallTemplate(ConcreteTemplate):
+        key = numba_typeref_ctor
+        cases = [
+            nb_signature(s_type, s_type_ref, *arglist)
+            for arglist in ctor_params
+        ]
+
+    register_global(numba_typeref_ctor, nbtypes.Function(TypeRefCallTemplate))
+
+    @register
     class CtorTemplate(ConcreteTemplate):
-        key = S
+        key = s_type
         cases = [nb_signature(s_type, *arglist) for arglist in ctor_params]
-
-    register_global(S, nbtypes.Function(CtorTemplate))
-
-
-def bind_cxx_struct_conversion_opeartor(
-    conv: StructMethod,
-    struct_name: str,
-    s_type: nbtypes.Type,
-    shim_writer: ShimWriter,
-):
-    """Bind a C++ struct conversion operator to Numba.
-
-    Parameters
-    ----------
-
-    conv : StructMethod
-        The conversion operator declaration of the struct in CXX
-    struct_name : str
-        The name of the struct to which this conversion operator belongs
-    s_type : nbtypes.Type
-        The Numba type of the struct
-    shim_writer : ShimWriter
-        The shim writer to write the shim layer code.
-    """
-    casted_type = to_numba_type(conv.return_type.unqualified_non_ref_type_name)
-
-    # Lowering:
-    func_name = deduplicate_overloads(f"__{struct_name}__{conv.mangled_name}")
-
-    shim_decl = declare_device(func_name, casted_type(nbtypes.CPointer(s_type)))
-    # Types cast shims always has 1 parameter: self*.
-    shim_call = make_device_caller_with_nargs(func_name + "_shim", 1, shim_decl)
-
-    # Conversion operators has no arguments
-    shim = struct_method_shim_layer_template.format(
-        func_name=func_name,
-        return_type=conv.return_type.unqualified_non_ref_type_name,
-        name=struct_name,
-        arglist="",
-        method_name=conv.name,
-        args="",
-    )
-
-    @lower_cast(s_type, casted_type)
-    def impl(
-        context,
-        builder,
-        fromty,
-        toty,
-        value,
-    ):
-        shim_writer.write_to_shim(shim, func_name)
-        ptr = builder.alloca(context.get_value_type(s_type))
-        builder.store(value, ptr, align=getattr(s_type, "alignof_", None))
-        result = context.compile_internal(
-            builder,
-            shim_call,
-            nb_signature(casted_type, nbtypes.CPointer(s_type)),
-            (ptr,),
-        )
-        return result
-
-
-def bind_cxx_struct_conversion_opeartors(
-    struct_decl: Struct, s_type: nbtypes.Type, shim_writer: ShimWriter
-):
-    """Bind all conversion operators for a C++ struct."""
-    for conv in struct_decl.conversion_operators():
-        bind_cxx_struct_conversion_opeartor(
-            conv, struct_decl.name, s_type, shim_writer
-        )
 
 
 def bind_cxx_struct_regular_method(
-    struct_decl: Struct,
+    struct_decl: ClassTemplateSpecialization,
     method_decl: StructMethod,
     s_type: nbtypes.Type,
-    shim_writer: ShimWriter,
+    shim_writer: ShimWriterBase,
 ) -> nb_signature:
     param_types = [
         to_numba_type(arg.unqualified_non_ref_type_name)
@@ -336,9 +281,9 @@ def bind_cxx_struct_regular_method(
 
 
 def bind_cxx_struct_regular_methods(
-    struct_decl: Struct,
+    struct_decl: ClassTemplateSpecialization,
     s_type: nbtypes.Type,
-    shim_writer: ShimWriter,
+    shim_writer: ShimWriterBase,
 ) -> dict[str, ConcreteTemplate]:
     """
 
@@ -369,9 +314,10 @@ def bind_cxx_struct_regular_methods(
     return method_templates
 
 
-def bind_cxx_struct(
-    shim_writer: ShimWriter,
-    struct_decl: Struct,
+def bind_cxx_class_template_specialization(
+    shim_writer: ShimWriterBase,
+    struct_decl: ClassTemplateSpecialization,
+    instance_type_ref: nbtypes.Type,
     parent_type: type = nbtypes.Type,
     data_model: type = StructModel,
     aliases: dict[
@@ -383,7 +329,7 @@ def bind_cxx_struct(
 
     Parameters
     ----------
-    shim_writer : ShimWriter
+    shim_writer : ShimWriterBase
         The shim writer to write the shim layer code.
     struct_decl : Struct
         Declaration of the struct type in CXX
@@ -404,17 +350,8 @@ def bind_cxx_struct(
         The generated shim layer code for struct methods.
     """
 
-    # Typing
-    class S_type(parent_type):
-        def __init__(self, decl):
-            super().__init__(name=f"{struct_decl.name}")
-            self.alignof_ = struct_decl.alignof_
-            self.bitwidth = struct_decl.sizeof_ * 8
-
-    s_type = S_type(struct_decl)
-
-    # Python API
-    S = type(struct_decl.name, (), {"_nbtype": s_type})
+    s_type = instance_type_ref.instance_type
+    S_type = type(s_type)
 
     # Any type that was parsed from C++ should be added to type record:
     # It also needs to happen before method typings - because copy constructors
@@ -476,6 +413,10 @@ def bind_cxx_struct(
                     return self._field_ty(attr)
                 elif attr in method_templates:
                     return self._method_ty(typ, attr)
+                elif attr == "__call__":
+                    # Special case when invoking tranpoline typing of numba_typeref_ctor
+                    # Reject to look for internal typing.
+                    pass
                 else:
                     raise AttributeError(attr)
 
@@ -484,74 +425,252 @@ def bind_cxx_struct(
 
     # ----------------------------------------------------------------------------------
     # Constructors:
-    bind_cxx_struct_ctors(struct_decl, S, s_type, shim_writer)
-
-    # ----------------------------------------------------------------------------------
-    # Conversion operators:
-    bind_cxx_struct_conversion_opeartors(struct_decl, s_type, shim_writer)
+    bind_cxx_ctsd_ctors(struct_decl, instance_type_ref, shim_writer)
 
     # Return the handle to the type in Numba
-    return S, s_type
+    return s_type
 
 
-def bind_cxx_structs(
-    shim_writer: ShimWriter,
-    structs: list[Struct],
-    parent_types: dict[str, type] = {},
-    data_models: dict[str, type] = {},
-    aliases: dict[str, list[str]] = {},
+def concrete_typing():
+    """Create a new concrete type object"""
+
+    class ConcreteType(nbtypes.Type):
+        def __init__(self, meta_type, **targs):
+            self.meta_type = meta_type
+            self.targs = targs
+            super().__init__(name=self.angled_targs_str())
+
+        def angled_targs_str(self) -> str:
+            """Return type name with `key=value` Numba type format surrounded by angle brackets.
+            Example: BlockScan<T=int32, BLOCK_DIM_X=128>
+            Mostly used for debugging purposes.
+            """
+            return (
+                self.meta_type.template_name
+                + f"<{', '.join([f'{tparam_name}={targ}' for tparam_name, targ in self.targs.items()])}>"
+            )
+
+        def angled_targs_str_as_c(self) -> str:
+            """Return C++ style template instantiation string.
+            Example: BlockScan<int, 128>
+            Used to format shim function strings.
+            """
+            return (
+                self.meta_type.template_name
+                + f"<{', '.join([f'{targ}' for targ in self.targs_dict_as_c().values()])}>"
+            )
+
+        def targs_dict_as_c(self):
+            def to_c_str(obj: nbtypes.Type | int | float) -> str:
+                if isinstance(obj, nbtypes.Type):
+                    return to_c_type_str(obj)
+
+                if isinstance(obj, (int, float)):
+                    return str(obj)
+
+                raise ValueError(
+                    f"Unknown object to use in C shim function: {obj}"
+                )
+
+            return {
+                tparam_name: to_c_str(targ)
+                for tparam_name, targ in self.targs.items()
+            }
+
+    return ConcreteType
+
+
+def struct_type_from_instantiation(
+    instance: nbtypes.Type,
+    shim_writer: ShimWriterBase,
+    header_path: str,
+):
+    # Clang determines to populate all members of an instantiated class based
+    # on whether an explicit instantitation definition exists. The following
+    # code snippet creates such instantiation.
+    src = f"""\n
+#include "{header_path}"
+template class {instance.angled_targs_str_as_c()};
+"""
+
+    with NamedTemporaryFile("w") as f:
+        f.write(src)
+        f.flush()
+
+        try:
+            decls = parse_declarations_from_source(
+                f.name, [header_path, f.name], compute_capability="sm_86"
+            )
+        except pylibastcanopy.ParseError as e:
+            e.add_note(f"Error when parsing string: {src}")
+            raise
+
+    specializations = decls.class_template_specializations
+    decl = specializations[0]
+
+    instance_type_ref = nbtypes.TypeRef(instance)
+    _block_scan_type = bind_cxx_class_template_specialization(
+        shim_writer, decl, instance_type_ref, nbtypes.Type, StructModel
+    )
+
+    return instance_type_ref
+
+
+def _bind_tparams(
+    decl: ClassTemplate, *args, **kwargs
+) -> dict[str, nbtypes.Type]:
+    def _get_literal_type_cls(c_typ_: str) -> nbtypes.Literal:
+        """Get the corresbonding Numba literal type based on C type string.
+        Fall back to Literal if unknown.
+        """
+        if is_c_integral_type(c_typ_):
+            return nbtypes.IntegerLiteral
+        elif is_c_floating_type(c_typ_):
+            return nbtypes.FloatLiteral
+        else:
+            return nbtypes.Literal
+
+    if args:
+        raise TypingError(
+            "Template parameter error message is only configurable via keyword argument, not positional argument."
+        )
+
+    res: dict[str, nbtypes.Type] = {}
+
+    targs = decl.tparam_dict
+    for tparam_name, type_ in kwargs.items():
+        param_decl = targs.get(tparam_name, None)
+        if param_decl:
+            # If it's a non-type template parameter
+            if param_decl.kind == pylibastcanopy.template_param_kind.non_type:
+                literal_type = _get_literal_type_cls(param_decl.type_)
+                if not isinstance(type_, literal_type):
+                    # Require the input to be a literal value
+                    raise RequireLiteralValue(kwargs[tparam_name])
+
+                res[tparam_name] = type_.literal_value
+            else:
+                res[tparam_name] = parse_dtype(type_)
+
+    # Reorder the result dict to the same key order as C++
+    res = {k: res[k] for k in targs if k in res}
+    return res
+
+
+def _rewrite_typer_signature(decl: ClassTemplate, typer):
+    """Rewrites the typer signature to match class template arglist"""
+    param_names = list(decl.tparam_dict.keys())
+    params = [
+        inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        for name in param_names
+    ]
+    pubsig = inspect.Signature(params)
+    typer.__signature__ = pubsig
+
+
+def _register_meta_type(
+    stub: object,
+    meta_type: nbtypes.Type,
+    ctd: ClassTemplate,
+    shim_writer: ShimWriterBase,
+    header_path: str,
+):
+    @register
+    class MetaType_template_decl(CallableTemplate):
+        key = stub
+
+        def generic(
+            self,
+            meta_type=meta_type,
+            decl=ctd,
+            shim_writer=shim_writer,
+            header_path=header_path,
+        ):
+            def typer(*args, **kwargs):
+                targs = _bind_tparams(decl, *args, **kwargs)
+                ConcreteType = concrete_typing()
+                instance = ConcreteType(meta_type, **targs)
+                unique_id = instance.name
+
+                if unique_id in ConcreteTypeCache:
+                    return ConcreteTypeCache[unique_id]
+
+                instance_type_ref = struct_type_from_instantiation(
+                    instance, shim_writer, header_path
+                )
+
+                ConcreteTypeCache[unique_id] = instance_type_ref
+
+                self.context.refresh()
+                return instance_type_ref
+
+            _rewrite_typer_signature(decl, typer)
+            return typer
+
+    register_global(stub, nbtypes.Function(MetaType_template_decl))
+
+
+def bind_cxx_class_template(
+    class_template_decl: ClassTemplate,
+    shim_writer: ShimWriterBase,
+    header_path: str,
+):
+    # Stub class
+    class TC:
+        pass
+
+    # Typing
+    TC_templated_type = MetaType(class_template_decl.record.name)
+
+    # Data model
+    @register_model(MetaType)
+    class TC_Template_model(OpaqueModel):
+        def __init__(self, dmm, fe_type):
+            OpaqueModel.__init__(self, dmm, fe_type)
+
+    # MetaType Lowering, NO-OP
+    @lower_builtin(TC, nbtypes.VarArg(nbtypes.Any))
+    def lower_noop(context, builder, sig, args):
+        return context.get_constant(nbtypes.int32, 0)
+
+    _register_meta_type(
+        TC, TC_templated_type, class_template_decl, shim_writer, header_path
+    )
+
+    return TC
+
+
+def bind_cxx_class_templates(
+    class_templates: list[ClassTemplate],
+    header_path: str,
+    shim_writer: ShimWriterBase,
 ) -> list[object]:
     """
-    Create bindings for a list of C++ structs.
+    Create bindings for a list of C++ class templates.
 
     Parameters
     ----------
     shim_writer : ShimWriter
         The shim writer to write the shim layer code.
-    structs : list[Struct]
-        List of declarations of the struct types in CXX
-    parent_type : nbtypes.Type, optional
-        Parent type of the Python API, by default nbtypes.Type
-    data_model : type, optional
-        Data model for the struct, by default StructModel
-    aliases : dict[str, list[str]], optional
-        Mappings from the name of the struct to a list of aliases.
-        For example in C++: typedef A B; typedef A C; then
-        aliases = {"A": ["B", "C"]}
+    class_templates : list[ClassTemplate]
+        List of declarations of the class template types in CXX
+    header_path : str
+        The path to the header file containing the class template declarations.
 
     Returns
     -------
     list[object]
-        The Python APIs of the structs.
+        The Python APIs of the class templates.
     """
 
     python_apis = []
-    for s in structs:
-        # Determine the type specialization and data model specialization
-        if s.name.startswith("unnamed"):
-            # Any alias for the unnamed object should suffice.
-            alias = aliases[s.name][0]
-            type_spec = parent_types[alias]
-            data_model_spec = data_models[alias]
-        else:
-            # Determine if it is a template specialization
-            pat = re.compile(r"^(.+)<(.+)>$")
-            match = pat.match(s.name)
-            if match:
-                name = match.group(1)
-            else:
-                name = s.name
-            type_spec = parent_types[name]
-            data_model_spec = data_models[name]
-
-        # Bind the struct
-        S, s_type = bind_cxx_struct(
-            shim_writer,
-            s,
-            type_spec,
-            data_model_spec,
-            aliases,
+    for ct in class_templates:
+        # Bind the cxx class template
+        TC = bind_cxx_class_template(
+            class_template_decl=ct,
+            shim_writer=shim_writer,
+            header_path=header_path,
         )
-        python_apis.append((S, s_type))
+        python_apis.append(TC)
 
     return python_apis

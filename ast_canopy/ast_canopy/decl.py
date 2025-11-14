@@ -3,6 +3,7 @@
 
 import operator
 import typing
+from functools import cached_property
 
 from ast_canopy import pylibastcanopy as bindings
 
@@ -175,9 +176,20 @@ class Template:
     required template arguments.
     """
 
-    def __init__(self, template_parameters, num_min_required_args):
+    def __init__(
+        self,
+        template_parameters: list[bindings.TemplateParam],
+        num_min_required_args: int,
+    ):
         self.template_parameters = template_parameters
         self.num_min_required_args = num_min_required_args
+
+    @cached_property
+    def tparam_dict(self):
+        res = {}
+        for tparam in self.template_parameters:
+            res[tparam.name] = tparam
+        return res
 
 
 class FunctionTemplate(Template):
@@ -327,7 +339,7 @@ class Struct:
         alignof_: int,
         parse_entry_point: str,
     ):
-        self.name = name
+        self._name = name
         self.fields = fields
         self.methods = methods
         self.templated_methods = templated_methods
@@ -387,6 +399,10 @@ class Struct:
             c_obj.alignof_,
             parse_entry_point,
         )
+
+    @property
+    def name(self):
+        return self._name
 
 
 class TemplatedStruct(Struct):
@@ -471,3 +487,65 @@ class ConstExprVar:
     def value(self):
         cxx_type_name = self.type_.unqualified_non_ref_type_name
         return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)
+
+
+class ClassTemplateSpecialization(Struct, ClassInstantiation):
+    """Represents a C++ class template specialization declaration.
+
+    Holds the underlying ``TemplatedStruct`` and provides ``instantiate`` for
+    building a concrete class instantiation.
+    """
+
+    def __init__(
+        self,
+        record: Struct,
+        class_template: ClassTemplate,
+        actual_template_arguments: list[str],
+    ):
+        Struct.__init__(
+            self,
+            record.name,
+            record.fields,
+            record.methods,
+            record.templated_methods,
+            record.nested_records,
+            record.nested_class_templates,
+            record.sizeof_,
+            record.alignof_,
+            record.parse_entry_point,
+        )
+        ClassInstantiation.__init__(self, class_template)
+
+        targ_names: list[str] = [
+            tp.name for tp in class_template.template_parameters
+        ]
+        targ_values: list[str] = actual_template_arguments
+
+        kwargs = dict(zip(targ_names, targ_values))
+
+        self.instantiate(**kwargs)
+
+        self.actual_template_arguments = actual_template_arguments
+
+    @classmethod
+    def from_c_obj(
+        cls, c_obj: bindings.ClassTemplateSpecialization, parse_entry_point: str
+    ):
+        return cls(
+            Struct.from_c_obj(c_obj, parse_entry_point),
+            ClassTemplate.from_c_obj(c_obj.class_template, parse_entry_point),
+            c_obj.actual_template_arguments,
+        )
+
+    @property
+    def name(self):
+        return self.get_instantiated_c_stmt()
+
+    @property
+    def base_name(self):
+        return self.record.name
+
+    def constructors(self):
+        for m in self.methods:
+            if m.name == self.base_name:
+                yield m

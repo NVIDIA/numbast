@@ -210,11 +210,19 @@ struct Typedef {
   std::string underlying_name;
 };
 
+struct ClassTemplateSpecialization : public Record {
+  ClassTemplateSpecialization(const clang::ClassTemplateSpecializationDecl *);
+
+  ClassTemplate class_template;
+  std::vector<std::string> actual_template_arguments;
+};
+
 struct Declarations {
   std::vector<Record> records;
   std::vector<Function> functions;
   std::vector<FunctionTemplate> function_templates;
   std::vector<ClassTemplate> class_templates;
+  std::vector<ClassTemplateSpecialization> class_template_specializations;
   std::vector<Typedef> typedefs;
   std::vector<Enum> enums;
 };
