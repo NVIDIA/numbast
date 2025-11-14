@@ -108,22 +108,18 @@ def to_numba_type(ty: str):
     return CTYPE_MAPS[ty]
 
 
+def to_c_type_str(nbty: nbtypes.Type) -> str:
+    if nbty not in NUMBA_TO_CTYPE_MAPS:
+        raise ValueError(
+            f"Unknown numba type attempted to converted into ctype: {nbty}"
+        )
+
+    return NUMBA_TO_CTYPE_MAPS[nbty]
+
+
 def is_c_integral_type(typ_str: str) -> bool:
     return typ_str in INTEGER_TYPE_MAPS
 
 
 def is_c_floating_type(typ_str: str) -> bool:
     return typ_str in FLOATING_TYPE_MAPS
-
-
-def get_literal_type_cls(c_typ_: str) -> nbtypes.Literal:
-    """Get the corresbonding Numba literal type based on C type string.
-
-    Fall back to Literal if unknown.
-    """
-    if is_c_integral_type(c_typ_):
-        return nbtypes.IntegerLiteral
-    elif is_c_floating_type(c_typ_):
-        return nbtypes.FloatLiteral
-    else:
-        return nbtypes.Literal

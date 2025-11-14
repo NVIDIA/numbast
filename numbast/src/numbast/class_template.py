@@ -35,13 +35,13 @@ from ast_canopy.decl import (
     StructMethod,
     ClassTemplate,
 )
-from ast_canopy.instantiations import ClassInstantiation
 
 from numbast.types import (
     CTYPE_MAPS as C2N,
     to_numba_type,
     is_c_floating_type,
     is_c_integral_type,
+    to_c_type_str,
 )
 from numbast.utils import (
     deduplicate_overloads,
@@ -439,24 +439,30 @@ def bind_cxx_class_template_specialization(
     return s_type
 
 
-def make_or_get_concrete_type(instantiated_type_name: str):
-    """Guarantee type uniqueness by caching"""
-
-    if instantiated_type_name in ConcreteTypeCache:
-        return ConcreteTypeCache[instantiated_type_name]
+def concrete_typing():
+    """Create a new concrete type object"""
 
     class ConcreteType(nbtypes.Type):
         def __init__(self, meta_type, **targs):
             self.meta_type = meta_type
             self.targs = targs
-            super().__init__(
-                name=meta_type.template_name + f"<{self.angled_targs_str()}>"
+            super().__init__(name=self.angled_targs_str())
+
+        def angled_targs_str(self) -> str:
+            """Return type name with `key=value` Numba type format surrounded by angle brackets.
+            Example: BlockScan<T=int32, BLOCK_DIM_X=128>
+            Mostly used for debugging purposes.
+            """
+            return (
+                self.meta_type.template_name
+                + f"<{', '.join([f'{tparam_name}={targ}' for tparam_name, targ in self.targs.items()])}>"
             )
 
-        def angled_targs_str(self):
-            return c_instantiate(self.meta_type, **self.targs)
-
-        def angled_targs_str_as_c(self):
+        def angled_targs_str_as_c(self) -> str:
+            """Return C++ style template instantiation string.
+            Example: BlockScan<int, 128>
+            Used to format shim function strings.
+            """
             return (
                 self.meta_type.template_name
                 + f"<{', '.join([f'{targ}' for targ in self.targs_dict_as_c().values()])}>"
@@ -465,10 +471,7 @@ def make_or_get_concrete_type(instantiated_type_name: str):
         def targs_dict_as_c(self):
             def to_c_str(obj: nbtypes.Type | int | float) -> str:
                 if isinstance(obj, nbtypes.Type):
-                    if obj == nbtypes.int32:
-                        return "int"
-
-                    return "<unknown type>"
+                    return to_c_type_str(obj)
 
                 if isinstance(obj, (int, float)):
                     return str(obj)
@@ -482,26 +485,14 @@ def make_or_get_concrete_type(instantiated_type_name: str):
                 for tparam_name, targ in self.targs.items()
             }
 
-    ConcreteTypeCache[instantiated_type_name] = ConcreteType
     return ConcreteType
 
 
-def c_instantiate(meta_type: MetaType, **targs) -> str:
-    return (
-        meta_type.template_name
-        + f"<{', '.join([f'{tparam_name}={targ}' for tparam_name, targ in targs.items()])}>"
-    )
-
-
 def struct_type_from_instantiation(
-    instantiated_type_name: str,
     instance: nbtypes.Type,
     shim_writer: ShimWriterBase,
     header_path: str,
 ):
-    if instantiated_type_name in ConcreteTypeCache2:
-        return ConcreteTypeCache2[instantiated_type_name]
-
     src = f"""\n
 #include "{header_path}"
 void __device__ foo() {{
@@ -601,19 +592,18 @@ def _register_meta_type(
         ):
             def typer(*args, **kwargs):
                 targs = _bind_tparams(decl, *args, **kwargs)
-
-                # Can be replaced by ast_canopy.instantiation class
-                CI = ClassInstantiation(ctd)
-                instantiated = CI.instantiate(**targs)
-                instantiated_type_name = instantiated.get_instantiated_c_stmt()
-
-                ConcreteType = make_or_get_concrete_type(instantiated_type_name)
+                ConcreteType = concrete_typing()
                 instance = ConcreteType(meta_type, **targs)
+                unique_id = instance.name
+
+                if unique_id in ConcreteTypeCache:
+                    return ConcreteTypeCache[unique_id]
+
                 instance_type_ref = struct_type_from_instantiation(
-                    instantiated_type_name, instance, shim_writer, header_path
+                    instance, shim_writer, header_path
                 )
 
-                ConcreteTypeCache2[instantiated_type_name] = instance_type_ref
+                ConcreteTypeCache[unique_id] = instance_type_ref
 
                 self.context.refresh()
                 return instance_type_ref
@@ -642,8 +632,8 @@ def bind_cxx_class_template(
         def __init__(self, dmm, fe_type):
             OpaqueModel.__init__(self, dmm, fe_type)
 
+    # TODO: iterate over n_min_args -> max_n_args, all should lower to no-op
     n_min_args = class_template_decl.num_min_required_args
-
     argstp = (nbtypes.Any,) * n_min_args
 
     # MetaType Lowering, NO-OP
