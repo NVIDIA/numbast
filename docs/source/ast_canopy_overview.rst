@@ -37,6 +37,9 @@ See :doc:`install` for environment setup. To build and test from the repository 
    bash ast_canopy/build.sh
    pytest ast_canopy/
 
+.. note::
+  If you see errors like "cannot find header 'cuda.h'", please refer to :doc:`FAQ <faq>` for more details.
+
 Folder structure
 ----------------
 
