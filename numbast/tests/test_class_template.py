@@ -81,4 +81,4 @@ def test_sample_class_template_with_fields(decl, shim_writer):
     out = np.zeros((3,), dtype="int32")
     kernel[1, 1](out)
 
-    assert (out == [128, 128, 256]).all()
+    assert (out == [256, 256, 128]).all()

@@ -64,14 +64,6 @@ extern "C" __device__ int
 }}
 """
 
-struct_method_shim_layer_template = """
-extern "C" __device__ int
-{func_name}({return_type} &retval, {name}* self {arglist}) {{
-    retval =  self->{method_name}({args});
-    return 0;
-}}
-"""
-
 
 class MetaType(nbtypes.Type):
     def __init__(self, template_name):
@@ -165,7 +157,7 @@ def bind_cxx_struct_ctor(
         argptrs = [
             builder.alloca(context.get_value_type(arg)) for arg in sig.args[1:]
         ]
-        for ptr, ty, arg in zip(argptrs[1:], sig.args[1:], args[1:]):
+        for ptr, ty, arg in zip(argptrs, sig.args[1:], args[1:]):
             builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
         context.compile_internal(
