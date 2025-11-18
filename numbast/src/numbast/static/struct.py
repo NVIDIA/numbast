@@ -198,8 +198,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
         # lower scope name
         self._lower_scope_name = f"_lower_{ctor_decl.mangled_name}"
 
-        self.Imports.add("from numba.cuda.cudaimpl import lower")
-
     def _render_decl_device(self):
         """Render codes that declares a foreign function for this constructor in Numba."""
 
@@ -352,9 +350,6 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         self._c_rendered = ""
 
         self._struct_ctor_template_name = f"_ctor_template_{struct_name}"
-
-        self.Imports.add("from numba.cuda.cudadecl import register")
-        self.Imports.add("from numba.cuda.cudadecl import register_global")
 
     def _render_typing(self, signature_strs: list[str]):
         """Renders the typing of the constructors.
@@ -1066,7 +1061,6 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self.Imports.add(
             f"from numba.core.datamodel import {self._data_model.__qualname__}"
         )
-        self.Imports.add("from numba.cuda.cudadecl import register_attr")
         self._data_model_str = self._data_model.__qualname__
 
         # We use a prefix here to identify internal objects so that C object names

@@ -3,7 +3,6 @@
 
 from typing import Any, Optional
 from collections import defaultdict
-import re
 
 from llvmlite import ir
 
@@ -491,7 +490,7 @@ def bind_cxx_struct(
     bind_cxx_struct_conversion_opeartors(struct_decl, s_type, shim_writer)
 
     # Return the handle to the type in Numba
-    return S, s_type
+    return S
 
 
 def bind_cxx_structs(
@@ -534,24 +533,17 @@ def bind_cxx_structs(
             type_spec = parent_types[alias]
             data_model_spec = data_models[alias]
         else:
-            # Determine if it is a template specialization
-            pat = re.compile(r"^(.+)<(.+)>$")
-            match = pat.match(s.name)
-            if match:
-                name = match.group(1)
-            else:
-                name = s.name
-            type_spec = parent_types[name]
-            data_model_spec = data_models[name]
+            type_spec = parent_types[s.name]
+            data_model_spec = data_models[s.name]
 
         # Bind the struct
-        S, s_type = bind_cxx_struct(
+        S = bind_cxx_struct(
             shim_writer,
             s,
             type_spec,
             data_model_spec,
             aliases,
         )
-        python_apis.append((S, s_type))
+        python_apis.append(S)
 
     return python_apis
