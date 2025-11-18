@@ -28,6 +28,12 @@ void ClassTemplateSpecializationCallback::run(
   const ClassTemplateSpecializationDecl *CTSD =
       Result.Nodes.getNodeAs<clang::ClassTemplateSpecializationDecl>("ctsd");
 
+  if (llvm::isa<clang::ClassTemplatePartialSpecializationDecl>(CTSD)) {
+    // Notice that CTPSD is-a CTSD, we cannot materialize it, otherwise infinite
+    // recursion will happen with getTypeInfo().
+    return;
+  }
+
   std::string file_name = source_filename_from_decl(CTSD);
 
   if (std::any_of(payload->files_to_retain->begin(),
