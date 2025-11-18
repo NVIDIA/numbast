@@ -13,11 +13,11 @@ ClassTemplateSpecialization::ClassTemplateSpecialization(
       class_template(CTSD->getSpecializedTemplate()) {
 
   // Get the actual template arguments
-  auto &tparam_list = CTSD->getTemplateArgs();
+  const auto &tparam_list = CTSD->getTemplateArgs();
   actual_template_arguments.reserve(tparam_list.size());
 
   for (auto i = 0; i < tparam_list.size(); i++) {
-    auto targ = tparam_list[i];
+    const auto &targ = tparam_list[i];
     clang::TemplateArgument::ArgKind kind = targ.getKind();
     switch (kind) {
     case clang::TemplateArgument::ArgKind::Type:
