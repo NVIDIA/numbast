@@ -67,6 +67,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Build docs
         if: ${{ !inputs.remove_pr_preview }}
         uses: ./.github/actions/docs-build
