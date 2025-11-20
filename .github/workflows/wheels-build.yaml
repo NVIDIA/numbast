@@ -16,6 +16,9 @@ on:
       llvm_version:
         type: string
         default: "20.1.8"
+      upload_to_pypi:
+        type: boolean
+        default: false
       script:
         type: string
         default: "ci/build_wheels.sh"
@@ -131,8 +134,14 @@ jobs:
           sccache --show-adv-stats
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Upload PyPi wheels
+      - name: Upload PyPi wheels artifact
         uses: actions/upload-artifact@v4
         with:
           name: pypi-wheels-${{ matrix.ARCH }}
           path: final-dist/*.whl
+      - name: Publish packages to TestPyPI
+        if: inputs.upload_to_pypi
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # v1.13.0
+        with:
+          package-directory: final-dist
+          repository-url: https://test.pypi.org/legacy/
