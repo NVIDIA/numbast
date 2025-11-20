@@ -373,7 +373,14 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     return aliases
 
 
-def _generate_structs(struct_decls, header_path, types, data_models, excludes):
+def _generate_structs(
+    struct_decls,
+    header_path,
+    types,
+    data_models,
+    struct_prefix_removal,
+    excludes,
+):
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
     specs = {}
     for struct_decl in struct_decls:
@@ -382,7 +389,12 @@ def _generate_structs(struct_decls, header_path, types, data_models, excludes):
         this_data_model = data_models.get(struct_name, None)
         specs[struct_name] = (this_type, this_data_model, header_path)
 
-    SSR = StaticStructsRenderer(struct_decls, specs, excludes=excludes)
+    SSR = StaticStructsRenderer(
+        struct_decls,
+        specs,
+        struct_prefix_removal=struct_prefix_removal,
+        excludes=excludes,
+    )
 
     return SSR.render_as_str(with_imports=False, with_shim_stream=False)
 
@@ -517,6 +529,7 @@ def _static_binding_generator(
         entry_point,
         config.types,
         config.datamodels,
+        config.api_prefix_removal.get("Struct", []),
         config.exclude_structs,
     )
 

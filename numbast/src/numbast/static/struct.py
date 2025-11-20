@@ -24,6 +24,7 @@ from numbast.utils import (
     make_struct_ctor_shim,
     make_struct_conversion_operator_shim,
     make_struct_regular_method_shim,
+    _apply_prefix_removal,
 )
 from numbast.errors import TypeNotFoundError
 
@@ -142,12 +143,14 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def __init__(
         self,
         struct_name: str,
+        python_struct_name: str,
         struct_type_class: str,
         struct_type_name: str,
         header_path: str,
         ctor_decl: StructMethod,
     ):
         self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
         self._header_path = header_path
@@ -247,7 +250,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
         """Render lowering codes for this struct constructor."""
 
         self._lowering_rendered = self.struct_ctor_lowering_template.format(
-            struct_name=self._struct_name,
+            struct_name=self._python_struct_name,
             param_types=self._nb_param_types_str,
             struct_type_name=self._struct_type_name,
             struct_device_caller_name=self._device_caller_name,
@@ -336,12 +339,14 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         self,
         ctor_decls: list[StructMethod],
         struct_name,
+        python_struct_name,
         struct_type_class,
         struct_type_name,
         header_path,
     ):
         self._ctor_decls = ctor_decls
         self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
         self._struct_type_class = struct_type_class
         self._struct_type_name = struct_type_name
         self._header_path = header_path
@@ -371,7 +376,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         self._struct_ctor_typing_rendered = (
             self.struct_ctor_template_typing_template.format(
                 struct_ctor_template_name=self._struct_ctor_template_name,
-                struct_name=self._struct_name,
+                struct_name=self._python_struct_name,
                 signatures=signatures_str,
             )
         )
@@ -384,6 +389,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
             try:
                 renderer = StaticStructCtorRenderer(
                     struct_name=self._struct_name,
+                    python_struct_name=self._python_struct_name,
                     struct_type_class=self._struct_type_class,
                     struct_type_name=self._struct_type_name,
                     header_path=self._header_path,
@@ -663,16 +669,14 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
         return self._c_rendered
 
 
-class StaticStructRegularMethodsRenderer(BaseRenderer):
-    """Renderer for all regular (non-operator) member functions of a struct."""
+class StaticStructRegularMethodRenderer(BaseRenderer):
+    """Renderer for a single regular method of a struct."""
 
-    # ---- Single method renderer -------------------------------------------------
-    class _MethodRenderer(BaseRenderer):
-        c_ext_shim_var_template = """
+    c_ext_shim_var_template = """
 shim_raw_str = \"\"\"{shim_rendered}\"\"\"
 """
 
-        struct_method_device_decl_template = """
+    struct_method_device_decl_template = """
 {device_decl_name} = declare_device(
     '{unique_shim_name}',
     {return_type}(
@@ -682,12 +686,12 @@ shim_raw_str = \"\"\"{shim_rendered}\"\"\"
 )
 """
 
-        struct_method_device_caller_template = """
+    struct_method_device_caller_template = """
 def {device_caller_name}({nargs}):
     return {device_decl_name}({nargs})
 """
 
-        struct_method_lowering_template = """
+    struct_method_lowering_template = """
 @lower("{struct_name}.{method_name}", {struct_type_name}, {param_types})
 def _{lower_fn_suffix}(context, builder, sig, args):
     context.active_code_library.add_linking_file(shim_obj)
@@ -709,159 +713,162 @@ def _{lower_fn_suffix}(context, builder, sig, args):
     )
 """
 
-        lowering_body_template = """
+    lowering_body_template = """
 {shim_var}
 {decl_device}
 {lowering}
 """
 
-        lower_scope_template = """
+    lower_scope_template = """
 def {lower_scope_name}(shim_stream, shim_obj):
 {body}
 
 {lower_scope_name}(shim_stream, shim_obj)
 """
 
-        def __init__(
-            self,
-            struct_name: str,
-            struct_type_name: str,
-            header_path: str,
-            method_decl: StructMethod,
-        ):
-            super().__init__(method_decl)
-            self._struct_name = struct_name
-            self._struct_type_name = struct_type_name
-            self._header_path = header_path
-            self._method_decl = method_decl
+    def __init__(
+        self,
+        struct_name: str,
+        python_struct_name: str,
+        struct_type_name: str,
+        header_path: str,
+        method_decl: StructMethod,
+    ):
+        super().__init__(method_decl)
+        self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
+        self._struct_type_name = struct_type_name
+        self._header_path = header_path
+        self._method_decl = method_decl
 
-            # Cache Numba param and return types (as strings)
-            self._nb_param_types = [
-                to_numba_type_str(arg.unqualified_non_ref_type_name)
-                for arg in self._method_decl.param_types
-            ]
-            self._nb_param_types_str = (
-                ", ".join(map(str, self._nb_param_types)) or ""
+        # Cache Numba param and return types (as strings)
+        self._nb_param_types = [
+            to_numba_type_str(arg.unqualified_non_ref_type_name)
+            for arg in self._method_decl.param_types
+        ]
+        self._nb_param_types_str = (
+            ", ".join(map(str, self._nb_param_types)) or ""
+        )
+        self._nb_return_type = to_numba_type_str(
+            self._method_decl.return_type.unqualified_non_ref_type_name
+        )
+        self._nb_return_type_str = str(self._nb_return_type)
+
+        # Pointers for interop
+        def wrap_pointer(typ):
+            return f"CPointer({typ})"
+
+        _pointer_wrapped_param_types = [
+            wrap_pointer(typ) for typ in self._nb_param_types
+        ]
+        self._pointer_wrapped_param_types_str = ", ".join(
+            _pointer_wrapped_param_types
+        )
+
+        # Unique shim name and helpers
+        self._unique_shim_name = deduplicate_overloads(
+            f"__{self._method_decl.mangled_name}_nbst"
+        )
+        self._device_decl_name = (
+            f"_method_decl_{self._method_decl.mangled_name}"
+        )
+        self._device_caller_name = (
+            f"_device_caller_{self._method_decl.mangled_name}"
+        )
+        self._lower_fn_suffix = f"lower_{self._method_decl.mangled_name}"
+        self._lower_scope_name = f"_lower_{self._method_decl.mangled_name}"
+
+    @property
+    def signature_str(self) -> str:
+        """signature string for typing with recvr specified"""
+        recvr = self._struct_type_name
+        if self._nb_param_types_str:
+            return (
+                f"signature({self._nb_return_type_str}, "
+                f"{self._nb_param_types_str}, recvr={recvr})"
             )
-            self._nb_return_type = to_numba_type_str(
-                self._method_decl.return_type.unqualified_non_ref_type_name
-            )
-            self._nb_return_type_str = str(self._nb_return_type)
+        else:
+            return f"signature({self._nb_return_type_str}, recvr={recvr})"
 
-            # Pointers for interop
-            def wrap_pointer(typ):
-                return f"CPointer({typ})"
+    def _render_decl_device(self):
+        self.Imports.add("from numba.cuda import declare_device")
+        self.Imports.add("from numba.core.typing import signature")
+        self.Imports.add("from numba.types import CPointer")
 
-            _pointer_wrapped_param_types = [
-                wrap_pointer(typ) for typ in self._nb_param_types
-            ]
-            self._pointer_wrapped_param_types_str = ", ".join(
-                _pointer_wrapped_param_types
-            )
+        decl_device_rendered = self.struct_method_device_decl_template.format(
+            device_decl_name=self._device_decl_name,
+            unique_shim_name=self._unique_shim_name,
+            return_type=self._nb_return_type_str,
+            struct_type_name=self._struct_type_name,
+            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
+        )
 
-            # Unique shim name and helpers
-            self._unique_shim_name = deduplicate_overloads(
-                f"__{self._method_decl.mangled_name}_nbst"
-            )
-            self._device_decl_name = (
-                f"_method_decl_{self._method_decl.mangled_name}"
-            )
-            self._device_caller_name = (
-                f"_device_caller_{self._method_decl.mangled_name}"
-            )
-            self._lower_fn_suffix = f"lower_{self._method_decl.mangled_name}"
-            self._lower_scope_name = f"_lower_{self._method_decl.mangled_name}"
-
-        @property
-        def signature_str(self) -> str:
-            """signature string for typing with recvr specified"""
-            recvr = self._struct_type_name
-            if self._nb_param_types_str:
-                return (
-                    f"signature({self._nb_return_type_str}, "
-                    f"{self._nb_param_types_str}, recvr={recvr})"
-                )
-            else:
-                return f"signature({self._nb_return_type_str}, recvr={recvr})"
-
-        def _render_decl_device(self):
-            self.Imports.add("from numba.cuda import declare_device")
-            self.Imports.add("from numba.core.typing import signature")
-            self.Imports.add("from numba.types import CPointer")
-
-            decl_device_rendered = self.struct_method_device_decl_template.format(
-                device_decl_name=self._device_decl_name,
-                unique_shim_name=self._unique_shim_name,
-                return_type=self._nb_return_type_str,
-                struct_type_name=self._struct_type_name,
-                pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
-            )
-
-            nargs = [
-                f"arg_{i}" for i in range(len(self._method_decl.params) + 1)
-            ]
-            nargs_str = ", ".join(nargs)
-            device_caller_rendered = (
-                self.struct_method_device_caller_template.format(
-                    device_caller_name=self._device_caller_name,
-                    nargs=nargs_str,
-                    device_decl_name=self._device_decl_name,
-                )
-            )
-
-            self._decl_device_rendered = (
-                decl_device_rendered + "\n" + device_caller_rendered
-            )
-
-        def _render_shim_function(self):
-            self._c_ext_shim_rendered = make_struct_regular_method_shim(
-                shim_name=self._unique_shim_name,
-                struct_name=self._struct_name,
-                method_name=self._method_decl.name,
-                return_type=self._method_decl.return_type.unqualified_non_ref_type_name,
-                params=self._method_decl.params,
-            )
-            self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
-                shim_rendered=self._c_ext_shim_rendered
-            )
-            self.ShimFunctions.append(self._c_ext_shim_rendered)
-
-        def _render_lowering(self):
-            self.Imports.add("from numba.cuda.cudaimpl import lower")
-
-            param_types = self._nb_param_types_str or ""
-            lowering_rendered = self.struct_method_lowering_template.format(
-                struct_name=self._struct_name,
-                method_name=self._method_decl.name,
-                struct_type_name=self._struct_type_name,
-                param_types=param_types,
+        nargs = [f"arg_{i}" for i in range(len(self._method_decl.params) + 1)]
+        nargs_str = ", ".join(nargs)
+        device_caller_rendered = (
+            self.struct_method_device_caller_template.format(
                 device_caller_name=self._device_caller_name,
-                return_type=self._nb_return_type_str,
-                pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
-                lower_fn_suffix=self._lower_fn_suffix,
-                unique_shim_name=self._unique_shim_name,
+                nargs=nargs_str,
+                device_decl_name=self._device_decl_name,
             )
-            self._lowering_rendered = lowering_rendered
+        )
 
-        def _render(self):
-            self._render_decl_device()
-            self._render_shim_function()
-            self._render_lowering()
+        self._decl_device_rendered = (
+            decl_device_rendered + "\n" + device_caller_rendered
+        )
 
-            lower_body = self.lowering_body_template.format(
-                shim_var=self._c_ext_shim_var_rendered,
-                decl_device=self._decl_device_rendered,
-                lowering=self._lowering_rendered,
-            )
-            lower_body = indent(lower_body, " " * 4)
+    def _render_shim_function(self):
+        self._c_ext_shim_rendered = make_struct_regular_method_shim(
+            shim_name=self._unique_shim_name,
+            struct_name=self._struct_name,
+            method_name=self._method_decl.name,
+            return_type=self._method_decl.return_type.unqualified_non_ref_type_name,
+            params=self._method_decl.params,
+        )
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_rendered=self._c_ext_shim_rendered
+        )
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
 
-            self._python_rendered = self.lower_scope_template.format(
-                lower_scope_name=self._lower_scope_name,
-                body=lower_body,
-            )
-            self._c_rendered = self._c_ext_shim_rendered
+    def _render_lowering(self):
+        self.Imports.add("from numba.cuda.cudaimpl import lower")
 
-    # ---- All methods renderer ---------------------------------------------------
+        param_types = self._nb_param_types_str or ""
+        lowering_rendered = self.struct_method_lowering_template.format(
+            struct_name=self._python_struct_name,
+            method_name=self._method_decl.name,
+            struct_type_name=self._struct_type_name,
+            param_types=param_types,
+            device_caller_name=self._device_caller_name,
+            return_type=self._nb_return_type_str,
+            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
+            lower_fn_suffix=self._lower_fn_suffix,
+            unique_shim_name=self._unique_shim_name,
+        )
+        self._lowering_rendered = lowering_rendered
+
+    def _render(self):
+        self._render_decl_device()
+        self._render_shim_function()
+        self._render_lowering()
+
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            decl_device=self._decl_device_rendered,
+            lowering=self._lowering_rendered,
+        )
+        lower_body = indent(lower_body, " " * 4)
+
+        self._python_rendered = self.lower_scope_template.format(
+            lower_scope_name=self._lower_scope_name,
+            body=lower_body,
+        )
+        self._c_rendered = self._c_ext_shim_rendered
+
+
+class StaticStructRegularMethodsRenderer(BaseRenderer):
+    """Renderer for all regular (non-operator) member functions of a struct."""
+
     method_template_typing_template = """
 @register
 class {method_template_name}(ConcreteTemplate):
@@ -872,12 +879,14 @@ class {method_template_name}(ConcreteTemplate):
     def __init__(
         self,
         struct_name: str,
+        python_struct_name: str,
         struct_type_name: str,
         header_path: str,
         method_decls: list[StructMethod],
     ):
         super().__init__(method_decls)
         self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
         self._struct_type_name = struct_type_name
         self._header_path = header_path
         self._method_decls = method_decls
@@ -897,8 +906,9 @@ class {method_template_name}(ConcreteTemplate):
         # Render per-overload lowering and collect signatures
         for m in self._method_decls:
             try:
-                mr = self._MethodRenderer(
+                mr = StaticStructRegularMethodRenderer(
                     struct_name=self._struct_name,
+                    python_struct_name=self._python_struct_name,
                     struct_type_name=self._struct_type_name,
                     header_path=self._header_path,
                     method_decl=m,
@@ -1037,9 +1047,13 @@ class {struct_attr_typing_name}(AttributeTemplate):
         parent_type: type | None,
         data_model: type | None,
         header_path: os.PathLike | str,
+        struct_prefix_removal: list[str] = [],
         aliases: list[str] = [],
     ):
         super().__init__(decl)
+        self._python_struct_name = _apply_prefix_removal(
+            decl.name, struct_prefix_removal
+        )
         self._struct_name = decl.name
         self._aliases = aliases
 
@@ -1065,19 +1079,21 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         # We use a prefix here to identify internal objects so that C object names
         # does not interfere with python's name mangling mechanism.
-        self._struct_type_class_name = f"_type_class_{self._struct_name}"
-        self._struct_type_name = f"_type_{self._struct_name}"
-        self._struct_model_name = f"_model_{self._struct_name}"
-        self._struct_attr_typing_name = f"_attr_typing_{self._struct_name}"
+        self._struct_type_class_name = f"_type_class_{self._python_struct_name}"
+        self._struct_type_name = f"_type_{self._python_struct_name}"
+        self._struct_model_name = f"_model_{self._python_struct_name}"
+        self._struct_attr_typing_name = (
+            f"_attr_typing_{self._python_struct_name}"
+        )
 
         self._header_path = header_path
 
-        CTYPE_TO_NBTYPE_STR[decl.name] = self._struct_type_name
+        CTYPE_TO_NBTYPE_STR[self._struct_name] = self._struct_type_name
 
         # Track the public symbols that should be exposed via a
         # struct creation
         self._nbtype_symbols.append(self._struct_type_name)
-        self._record_symbols.append(self._struct_name)
+        self._record_symbols.append(self._python_struct_name)
 
     def _render_typing(self):
         """Render typing of the struct."""
@@ -1095,7 +1111,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_type_class_name=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
             parent_type=self._parent_type_str,
-            struct_name=self._struct_name,
+            struct_name=self._python_struct_name,
             struct_alignof=self._decl.alignof_,
             struct_sizeof=self._decl.sizeof_,
             implicit_conversion_types=implicit_conversion_types,
@@ -1110,7 +1126,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         self._python_api_rendered = self.python_api_template.format(
             struct_type_name=self._struct_type_name,
-            struct_name=self._struct_name,
+            struct_name=self._python_struct_name,
         )
 
     def _render_data_model(self):
@@ -1211,6 +1227,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
         """Render regular member functions of the struct."""
         static_methods_renderer = StaticStructRegularMethodsRenderer(
             struct_name=self._struct_name,
+            python_struct_name=self._python_struct_name,
             struct_type_name=self._struct_type_name,
             header_path=self._header_path,
             method_decls=self._decl.regular_member_functions(),
@@ -1228,6 +1245,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
         """Render constructors of the struct."""
         static_ctors_renderer = StaticStructCtorsRenderer(
             struct_name=self._struct_name,
+            python_struct_name=self._python_struct_name,
             struct_type_class=self._struct_type_class_name,
             struct_type_name=self._struct_type_name,
             header_path=self._header_path,
@@ -1389,7 +1407,13 @@ class StaticStructsRenderer(BaseRenderer):
                     f"CUDA struct {name} does not provide a header path."
                 )
 
-            SSR = StaticStructRenderer(decl, nb_ty, nb_datamodel, header_path)
+            SSR = StaticStructRenderer(
+                decl,
+                nb_ty,
+                nb_datamodel,
+                header_path,
+                self._struct_prefix_removal,
+            )
 
             self._python_rendered.append(SSR.render_python())
             self._c_rendered.append(SSR.render_c())
