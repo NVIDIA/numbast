@@ -16,9 +16,6 @@ on:
       llvm_version:
         type: string
         default: "20.1.8"
-      upload_to_pypi:
-        type: boolean
-        default: false
       script:
         type: string
         default: "ci/build_wheels.sh"

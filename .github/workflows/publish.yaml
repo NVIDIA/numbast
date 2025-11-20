@@ -22,8 +22,9 @@ jobs:
     secrets: inherit
     with:
       build_type: release
-      upload_to_pypi: true
   upload-to-testpypi:
+    permissions:
+      id-token: write
     needs: build-wheels
     runs-on: ubuntu-latest
     steps:
