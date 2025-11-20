@@ -1377,11 +1377,13 @@ class StaticStructsRenderer(BaseRenderer):
         decls: list[Struct],
         specs: dict[str, tuple[type | None, type | None, os.PathLike]],
         default_header: os.PathLike | str | None = None,
+        struct_prefix_removal: list[str] = [],
         excludes: list[str] = [],
     ):
         self._decls = decls
         self._specs = specs
         self._default_header = default_header
+        self._struct_prefix_removal = struct_prefix_removal
 
         self._python_rendered = []
         self._c_rendered = []
