@@ -316,3 +316,23 @@ extern "C" __device__ int
     )
 
     return shim
+
+
+def _apply_prefix_removal(name: str, prefix_to_remove: list[str]) -> str:
+    """Apply prefix removal to a function name based on the configuration.
+
+    Parameters
+    ----------
+    name : str
+        The original function name
+
+    Returns
+    -------
+    str
+        The function name with prefixes removed
+    """
+    for prefix in prefix_to_remove:
+        if name.startswith(prefix):
+            return name[len(prefix) :]
+
+    return name
