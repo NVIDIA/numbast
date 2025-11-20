@@ -9,8 +9,12 @@ GPU Arch:
 File List:
     - {{ data }}
 Exclude: {}
-Types: {}
-Data Models: {}
+Types:
+    __internal__Foo: Type
+Data Models:
+    __internal__Foo: StructModel
 API Prefix Removal:
     Function:
         - prefix_
+    Struct:
+        - __internal__
