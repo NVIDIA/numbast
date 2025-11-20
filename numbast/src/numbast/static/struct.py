@@ -640,13 +640,20 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
         """Render all struct constructors."""
 
         for convop_decl in self._convop_decls:
-            renderer = StaticStructConversionOperatorRenderer(
-                struct_name=self._struct_name,
-                struct_type_class=self._struct_type_class,
-                struct_type_name=self._struct_type_name,
-                header_path=self._header_path,
-                convop_decl=convop_decl,
-            )
+            try:
+                renderer = StaticStructConversionOperatorRenderer(
+                    struct_name=self._struct_name,
+                    struct_type_class=self._struct_type_class,
+                    struct_type_name=self._struct_type_name,
+                    header_path=self._header_path,
+                    convop_decl=convop_decl,
+                )
+            except TypeNotFoundError as e:
+                warnings.warn(
+                    f"{e._type_name} is not known to Numbast. Skipping "
+                    f"binding for {str(convop_decl)}"
+                )
+                continue
             renderer._render()
 
             self._python_rendered += renderer._python_rendered
@@ -1359,11 +1366,13 @@ class StaticStructsRenderer(BaseRenderer):
         decls: list[Struct],
         specs: dict[str, tuple[type | None, type | None, os.PathLike]],
         default_header: os.PathLike | str | None = None,
+        struct_prefix_removal: list[str] = [],
         excludes: list[str] = [],
     ):
         self._decls = decls
         self._specs = specs
         self._default_header = default_header
+        self._struct_prefix_removal = struct_prefix_removal
 
         self._python_rendered = []
         self._c_rendered = []
