@@ -3,38 +3,15 @@
 
 import pytest
 
-
-from ast_canopy import parse_declarations_from_source
-from numbast.static.renderer import clear_base_renderer_cache, registry_setup
-from numbast.static.function import clear_function_apis_registry
-from numbast.static.enum import StaticEnumsRenderer
+from numba import cuda
+import numpy as np
+import cffi
 
 
-@pytest.fixture(scope="module")
-def cuda_enum(data_folder):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
-    header = data_folder("enum.cuh")
-
-    decls = parse_declarations_from_source(header, [header], "sm_50")
-    enums = decls.enums
-
-    assert len(enums) == 2
-
-    registry_setup(use_separate_registry=False)
-    SER = StaticEnumsRenderer(enums)
-
-    bindings = SER.render_as_str(with_imports=True, with_shim_stream=False)
-
-    globals = {}
-
-    exec(bindings, globals)
-
-    public_apis = ["Fruit", "Animal"]
-    assert all(public_api in globals for public_api in public_apis)
-
-    return {k: globals[k] for k in public_apis}
+@pytest.fixture(scope="function")
+def cuda_enum(make_binding):
+    res = make_binding("enum.cuh", {}, {}, "sm_50")
+    return res["bindings"]
 
 
 def test_enum(cuda_enum):
@@ -59,3 +36,18 @@ def test_enum_class(cuda_enum):
     assert Animal(0) == Animal.Cat
     assert Animal(1) == Animal.Dog
     assert Animal(2) == Animal.Horse
+
+
+def test_enum_used_in_function_argument(cuda_enum):
+    ffi = cffi.FFI()
+    feed = cuda_enum["feed"]
+    Animal = cuda_enum["Animal"]
+
+    @cuda.jit
+    def kernel(out):
+        slot = ffi.from_buffer(out[0:1])
+        feed(Animal.Cat, slot)
+
+    out = np.zeros(1, dtype=np.int32)
+    kernel[1, 1](out)
+    assert np.array_equal(out, [1])
