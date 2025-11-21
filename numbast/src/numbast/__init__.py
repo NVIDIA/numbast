@@ -5,7 +5,7 @@ import numba
 
 from numbast.struct import bind_cxx_struct, bind_cxx_structs
 from numbast.function import bind_cxx_function, bind_cxx_functions
-from numbast.enum import bind_cxx_enum
+from numbast.enum import bind_cxx_enum, bind_cxx_enums
 from numbast.shim_writer import MemoryShimWriter, FileShimWriter
 
 import importlib.metadata
@@ -19,6 +19,7 @@ if int(minor) < 59:
 __all__ = [
     "__version__",
     "bind_cxx_enum",
+    "bind_cxx_enums",
     "bind_cxx_function",
     "bind_cxx_functions",
     "bind_cxx_struct",
