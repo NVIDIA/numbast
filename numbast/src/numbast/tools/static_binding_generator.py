@@ -421,9 +421,11 @@ def _generate_functions(
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
-def _generate_enums(enum_decls: list[Enum]):
+def _generate_enums(
+    enum_decls: list[Enum], enum_prefix_removal: list[str] = []
+):
     """Create enum bindings."""
-    SER = StaticEnumsRenderer(enum_decls)
+    SER = StaticEnumsRenderer(enum_decls, enum_prefix_removal)
     return SER.render_as_str(with_imports=False, with_shim_stream=False)
 
 
@@ -523,7 +525,9 @@ def _static_binding_generator(
     aliases = _typedef_to_aliases(typedefs)
     rendered_aliases = render_aliases(aliases)
 
-    enum_bindings = _generate_enums(enums)
+    enum_bindings = _generate_enums(
+        enums, config.api_prefix_removal.get("Enum", [])
+    )
     struct_bindings = _generate_structs(
         structs,
         entry_point,

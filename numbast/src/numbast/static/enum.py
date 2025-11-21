@@ -9,6 +9,7 @@ from ast_canopy.pylibastcanopy import Enum
 
 from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import register_enum_type_str
+from numbast.utils import _apply_prefix_removal
 
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "test.py")
@@ -28,13 +29,19 @@ class {enum_name}(IntEnum):
 """
     enumerator_template = "    {enumerator} = {value}"
 
-    def __init__(self, decl: Enum):
+    def __init__(self, decl: Enum, enum_prefix_removal: list[str] = []):
         self._decl = decl
+
+        self._enum_name = _apply_prefix_removal(
+            self._decl.name, enum_prefix_removal
+        )
+
+        self._enum_symbols.append(self._enum_name)
 
     def _render(self):
         self.Imports.add("from enum import IntEnum")
 
-        register_enum_type_str(self._decl.name)
+        register_enum_type_str(self._enum_name)
 
         enumerators = []
         for enumerator, value in zip(
@@ -47,7 +54,7 @@ class {enum_name}(IntEnum):
             )
 
         self._python_rendered = self.enum_template.format(
-            enum_name=self._decl.name, enumerators="\n".join(enumerators)
+            enum_name=self._enum_name, enumerators="\n".join(enumerators)
         )
 
 
@@ -57,18 +64,19 @@ class StaticEnumsRenderer(BaseRenderer):
     Since enums creates a new C++ type. It should be invoked before making struct / function bindings.
     """
 
-    def __init__(self, decls: list[Enum]):
+    def __init__(self, decls: list[Enum], enum_prefix_removal: list[str] = []):
         super().__init__(decls)
         self._decls = decls
+        self._enum_prefix_removal = enum_prefix_removal
 
-        self._python_rendered = []
+        self._python_rendered: list[tuple[set[str], str]] = []
 
     def _render(self, with_imports):
         """Render python bindings for enums."""
         self._python_str = ""
 
         for decl in self._decls:
-            SER = StaticEnumRenderer(decl)
+            SER = StaticEnumRenderer(decl, self._enum_prefix_removal)
             SER._render()
             self._python_rendered.append(SER._python_rendered)
 
