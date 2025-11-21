@@ -263,7 +263,6 @@ def bind_cxx_struct_regular_method(
     def _method_impl(context, builder, sig, args):
         shim_writer.write_to_shim(shim, func_name)
 
-        # The first argument in argptrs is self, no need to extra allocate.
         argptrs = [
             builder.alloca(context.get_value_type(arg)) for arg in sig.args
         ]
