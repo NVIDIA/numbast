@@ -34,7 +34,7 @@ class {enum_name}(IntEnum):
     def _render(self):
         self.Imports.add("from enum import IntEnum")
 
-        register_enum_type_str(self._decl.name)
+        register_enum_type_str(self._decl.name, self._enum_name)
 
         enumerators = []
         for enumerator, value in zip(
