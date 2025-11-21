@@ -16,7 +16,7 @@ jobs:
     with:
       build_type: release
       script: "ci/build_conda_python.sh"
-      upload_to_conda: false
+      upload_to_conda: true
   build-wheels:
     uses: ./.github/workflows/wheels-build.yaml
     secrets: inherit
