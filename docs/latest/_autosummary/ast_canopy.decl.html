@@ -553,28 +553,31 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClassTemplate</span></code></a>(record, template_parameters, ...)</p></td>
 <td><p>Represents a C++ class template declaration.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.ConstExprVar" title="ast_canopy.decl.ConstExprVar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConstExprVar</span></code></a>(name, type_, value_serialized)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.ClassTemplateSpecialization" title="ast_canopy.decl.ClassTemplateSpecialization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClassTemplateSpecialization</span></code></a>(record, ...)</p></td>
+<td><p>Represents a C++ class template specialization declaration.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.ConstExprVar" title="ast_canopy.decl.ConstExprVar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConstExprVar</span></code></a>(name, type_, value_serialized)</p></td>
 <td><p>Represents a constexpr variable extracted from C++.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Function" title="ast_canopy.decl.Function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Function</span></code></a>(name, return_type, params, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Function" title="ast_canopy.decl.Function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Function</span></code></a>(name, return_type, params, ...)</p></td>
 <td><p>Represents a C++ function.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.FunctionTemplate" title="ast_canopy.decl.FunctionTemplate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FunctionTemplate</span></code></a>(template_parameters, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.FunctionTemplate" title="ast_canopy.decl.FunctionTemplate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FunctionTemplate</span></code></a>(template_parameters, ...)</p></td>
 <td><p>Represents a C++ function template declaration.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Struct</span></code></a>(name, fields, methods, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Struct</span></code></a>(name, fields, methods, ...)</p></td>
 <td><p>Represents a C++ record (struct/class) and its metadata.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.StructMethod" title="ast_canopy.decl.StructMethod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StructMethod</span></code></a>(name, return_type, params, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.StructMethod" title="ast_canopy.decl.StructMethod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StructMethod</span></code></a>(name, return_type, params, ...)</p></td>
 <td><p>Represents a method of a C++ struct/class.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Template" title="ast_canopy.decl.Template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Template</span></code></a>(template_parameters, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Template" title="ast_canopy.decl.Template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Template</span></code></a>(template_parameters, ...)</p></td>
 <td><p>Base class for C++ template declarations.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.TemplatedStruct" title="ast_canopy.decl.TemplatedStruct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemplatedStruct</span></code></a>(name, fields, methods, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.TemplatedStruct" title="ast_canopy.decl.TemplatedStruct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemplatedStruct</span></code></a>(name, fields, methods, ...)</p></td>
 <td><p>A <code class="docutils literal notranslate"><span class="pre">Struct</span></code> whose methods include templated methods.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.TemplatedStructMethod" title="ast_canopy.decl.TemplatedStructMethod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemplatedStructMethod</span></code></a>(name, return_type, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.TemplatedStructMethod" title="ast_canopy.decl.TemplatedStructMethod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemplatedStructMethod</span></code></a>(name, return_type, ...)</p></td>
 <td><p>Struct/class method whose name may include template parameters.</p></td>
 </tr>
 </tbody>

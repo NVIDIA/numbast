@@ -681,6 +681,50 @@ building a concrete class instantiation.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="ast_canopy.decl.ClassTemplateSpecialization">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ast_canopy.decl.</span></span><span class="sig-name descname"><span class="pre">ClassTemplateSpecialization</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><span class="pre">Struct</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">class_template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><span class="pre">ClassTemplate</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">actual_template_arguments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.ClassTemplateSpecialization" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><code class="xref py py-class docutils literal notranslate"><span class="pre">Struct</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ClassInstantiation</span></code></p>
+<p>Represents a C++ class template specialization declaration.</p>
+<p>Holds the underlying <code class="docutils literal notranslate"><span class="pre">TemplatedStruct</span></code> and provides <code class="docutils literal notranslate"><span class="pre">instantiate</span></code> for
+building a concrete class instantiation.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="ast_canopy.decl.ClassTemplateSpecialization.base_name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_name</span></span><a class="headerlink" href="#ast_canopy.decl.ClassTemplateSpecialization.base_name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ast_canopy.decl.ClassTemplateSpecialization.constructors">
+<span class="sig-name descname"><span class="pre">constructors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.ClassTemplateSpecialization.constructors" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ast_canopy.decl.ClassTemplateSpecialization.from_c_obj">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_c_obj</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">c_obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ClassTemplateSpecialization</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">parse_entry_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.ClassTemplateSpecialization.from_c_obj" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ast_canopy.decl.ClassTemplateSpecialization.name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#ast_canopy.decl.ClassTemplateSpecialization.name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="ast_canopy.decl.ConstExprVar">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ast_canopy.decl.</span></span><span class="sig-name descname"><span class="pre">ConstExprVar</span></span><span class="sig-paren">(</span>
 
@@ -870,6 +914,11 @@ templates, as well as size/align information and the parse entry point.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.Struct.from_c_obj" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="ast_canopy.decl.Struct.name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#ast_canopy.decl.Struct.name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="ast_canopy.decl.Struct.overloaded_operators">
 <span class="sig-name descname"><span class="pre">overloaded_operators</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.Struct.overloaded_operators" title="Link to this definition">#</a></dt>
@@ -931,11 +980,23 @@ Extends <code class="docutils literal notranslate"><span class="pre">Function</s
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ast_canopy.decl.Template">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ast_canopy.decl.</span></span><span class="sig-name descname"><span class="pre">Template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_min_required_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.Template" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ast_canopy.decl.</span></span><span class="sig-name descname"><span class="pre">Template</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">template_parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">TemplateParam</span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">num_min_required_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.Template" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Base class for C++ template declarations.</p>
 <p>Stores the list of template parameters and the minimum number of
 required template arguments.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="ast_canopy.decl.Template.tparam_dict">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tparam_dict</span></span><a class="headerlink" href="#ast_canopy.decl.Template.tparam_dict" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1070,6 +1131,83 @@ For each PTX, a separate cuda.PTXSource object is created.</p>
 <dd><p>Write a shim function into the in-memory CUSource, keyed by <code class="docutils literal notranslate"><span class="pre">id</span></code> to avoid duplication.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">numbast.</span></span><span class="sig-name descname"><span class="pre">bind_cxx_class_template</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">class_template_decl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><span class="pre">ClassTemplate</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">shim_writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ShimWriterBase</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">header_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">numbast.</span></span><span class="sig-name descname"><span class="pre">bind_cxx_class_template_specialization</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">shim_writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ShimWriterBase</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">struct_decl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ast_canopy.decl.ClassTemplateSpecialization" title="ast_canopy.decl.ClassTemplateSpecialization"><span class="pre">ClassTemplateSpecialization</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">instance_type_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">aliases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></span></dt>
+<dd><p>Create bindings for a C++ struct.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shim_writer</strong> (<em>ShimWriterBase</em>) – The shim writer to write the shim layer code.</p></li>
+<li><p><strong>struct_decl</strong> (<a class="reference internal" href="#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><em>Struct</em></a>) – Declaration of the struct type in CXX</p></li>
+<li><p><strong>parent_type</strong> (<em>nbtypes.Type</em><em>, </em><em>optional</em>) – Parent type of the Python API, by default nbtypes.Type</p></li>
+<li><p><strong>data_model</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – Data model for the struct, by default StructModel</p></li>
+<li><p><strong>aliases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>]</em><em>, </em><em>optional</em>) – Mappings from the name of the struct to a list of aliases.
+For example in C++: typedef A B; typedef A C; then
+aliases = {“A”: [“B”, “C”]}</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>S</strong> (<em>object</em>) – The Python API of the struct.</p></li>
+<li><p><strong>shim</strong> (<em>str</em>) – The generated shim layer code for struct methods.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">numbast.</span></span><span class="sig-name descname"><span class="pre">bind_cxx_class_templates</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">class_templates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><span class="pre">ClassTemplate</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">header_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">shim_writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ShimWriterBase</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a><span class="p"><span class="pre">]</span></span></span></span></dt>
+<dd><p>Create bindings for a list of C++ class templates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shim_writer</strong> (<em>ShimWriter</em>) – The shim writer to write the shim layer code.</p></li>
+<li><p><strong>class_templates</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference internal" href="#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><em>ClassTemplate</em></a><em>]</em>) – List of declarations of the class template types in CXX</p></li>
+<li><p><strong>header_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The path to the header file containing the class template declarations.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Python APIs of the class templates.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a>]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -1297,6 +1435,13 @@ a clean state.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ClassTemplate.instantiate"><code class="docutils literal notranslate"><span class="pre">instantiate()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ClassTemplateSpecialization"><code class="docutils literal notranslate"><span class="pre">ClassTemplateSpecialization</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ClassTemplateSpecialization.base_name"><code class="docutils literal notranslate"><span class="pre">base_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ClassTemplateSpecialization.constructors"><code class="docutils literal notranslate"><span class="pre">constructors()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ClassTemplateSpecialization.from_c_obj"><code class="docutils literal notranslate"><span class="pre">from_c_obj()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ClassTemplateSpecialization.name"><code class="docutils literal notranslate"><span class="pre">name</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ConstExprVar"><code class="docutils literal notranslate"><span class="pre">ConstExprVar</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ConstExprVar.from_c_obj"><code class="docutils literal notranslate"><span class="pre">from_c_obj()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.ConstExprVar.value"><code class="docutils literal notranslate"><span class="pre">value</span></code></a></li>
@@ -1324,6 +1469,7 @@ a clean state.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.constructors"><code class="docutils literal notranslate"><span class="pre">constructors()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.conversion_operators"><code class="docutils literal notranslate"><span class="pre">conversion_operators()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.from_c_obj"><code class="docutils literal notranslate"><span class="pre">from_c_obj()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.name"><code class="docutils literal notranslate"><span class="pre">name</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.overloaded_operators"><code class="docutils literal notranslate"><span class="pre">overloaded_operators()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.public_fields"><code class="docutils literal notranslate"><span class="pre">public_fields()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct.regular_member_functions"><code class="docutils literal notranslate"><span class="pre">regular_member_functions()</span></code></a></li>
@@ -1334,7 +1480,10 @@ a clean state.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.StructMethod.overloaded_operator_to_python_operator"><code class="docutils literal notranslate"><span class="pre">overloaded_operator_to_python_operator</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Template"><code class="docutils literal notranslate"><span class="pre">Template</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Template"><code class="docutils literal notranslate"><span class="pre">Template</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Template.tparam_dict"><code class="docutils literal notranslate"><span class="pre">tparam_dict</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.TemplatedStruct"><code class="docutils literal notranslate"><span class="pre">TemplatedStruct</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.TemplatedStruct.from_c_obj"><code class="docutils literal notranslate"><span class="pre">from_c_obj()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.TemplatedStruct.templated_methods"><code class="docutils literal notranslate"><span class="pre">templated_methods</span></code></a></li>

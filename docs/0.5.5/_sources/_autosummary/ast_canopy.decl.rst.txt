@@ -9,6 +9,7 @@
    .. autosummary::
    
       ClassTemplate
+      ClassTemplateSpecialization
       ConstExprVar
       Function
       FunctionTemplate
