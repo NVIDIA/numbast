@@ -7,7 +7,6 @@ from tempfile import NamedTemporaryFile
 import inspect
 
 from ast_canopy import pylibastcanopy
-from llvmlite import ir
 
 from numba import types as nbtypes
 from numba.core.extending import (
@@ -21,7 +20,7 @@ from numba.cuda.typing.templates import (
     AttributeTemplate,
     CallableTemplate,
 )
-from numba.core.datamodel.models import StructModel, PrimitiveModel, OpaqueModel
+from numba.core.datamodel.models import StructModel, OpaqueModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
@@ -317,8 +316,6 @@ def bind_cxx_class_template_specialization(
     shim_writer: ShimWriterBase,
     struct_decl: ClassTemplateSpecialization,
     instance_type_ref: nbtypes.Type,
-    parent_type: type = nbtypes.Type,
-    data_model: type = StructModel,
     aliases: dict[
         str, list[str]
     ] = {},  # XXX: this should be just a list of aliases
@@ -361,63 +358,50 @@ def bind_cxx_class_template_specialization(
             C2N[alias] = s_type
 
     # Data Model
-    if data_model == PrimitiveModel:
+    @register_model(S_type)
+    class S_model(StructModel):
+        def __init__(self, dmm, fe_type, struct_decl=struct_decl):
+            members = [
+                (
+                    f.name,
+                    to_numba_type(f.type_.unqualified_non_ref_type_name),
+                )
+                for f in struct_decl.fields
+            ]
+            super().__init__(dmm, fe_type, members)
 
-        @register_model(S_type)
-        class S_model(data_model):
-            def __init__(self, dmm, fe_type):
-                be_type = ir.IntType(fe_type.bitwidth)
-                super().__init__(dmm, fe_type, be_type)
+    # ----------------------------------------------------------------------------------
+    # Method, Attributes Typing and Lowering:
 
-    elif data_model == StructModel:
+    method_templates = bind_cxx_struct_regular_methods(
+        struct_decl, s_type, shim_writer
+    )
 
-        @register_model(S_type)
-        class S_model(data_model):
-            def __init__(self, dmm, fe_type, struct_decl=struct_decl):
-                members = [
-                    (
-                        f.name,
-                        to_numba_type(f.type_.unqualified_non_ref_type_name),
-                    )
-                    for f in struct_decl.fields
-                ]
-                super().__init__(dmm, fe_type, members)
+    public_fields_tys = {f.name: f.type_ for f in struct_decl.public_fields()}
 
-    if data_model == StructModel:
-        # ----------------------------------------------------------------------------------
-        # Method, Attributes Typing and Lowering:
+    @register_attr
+    class S_attr(AttributeTemplate):
+        key = s_type
 
-        method_templates = bind_cxx_struct_regular_methods(
-            struct_decl, s_type, shim_writer
-        )
+        def _field_ty(self, attr: str) -> nbtypes.Type:
+            field_ty = public_fields_tys[attr]
+            return to_numba_type(field_ty.unqualified_non_ref_type_name)
 
-        public_fields_tys = {
-            f.name: f.type_ for f in struct_decl.public_fields()
-        }
+        def _method_ty(self, typ, attr: str) -> nbtypes.BoundFunction:
+            template = method_templates[attr]
+            return nbtypes.BoundFunction(template, typ)
 
-        @register_attr
-        class S_attr(AttributeTemplate):
-            key = s_type
-
-            def _field_ty(self, attr: str) -> nbtypes.Type:
-                field_ty = public_fields_tys[attr]
-                return to_numba_type(field_ty.unqualified_non_ref_type_name)
-
-            def _method_ty(self, typ, attr: str) -> nbtypes.BoundFunction:
-                template = method_templates[attr]
-                return nbtypes.BoundFunction(template, typ)
-
-            def generic_resolve(self, typ, attr):
-                if attr in public_fields_tys:
-                    return self._field_ty(attr)
-                elif attr in method_templates:
-                    return self._method_ty(typ, attr)
-                elif attr == "__call__":
-                    # Special case when invoking tranpoline typing of numba_typeref_ctor
-                    # Reject to look for internal typing.
-                    pass
-                else:
-                    raise AttributeError(attr)
+        def generic_resolve(self, typ, attr):
+            if attr in public_fields_tys:
+                return self._field_ty(attr)
+            elif attr in method_templates:
+                return self._method_ty(typ, attr)
+            elif attr == "__call__":
+                # Special case when invoking tranpoline typing of numba_typeref_ctor
+                # Reject to look for internal typing.
+                pass
+            else:
+                raise AttributeError(attr)
 
         for field_name in public_fields_tys.keys():
             make_attribute_wrapper(S_type, field_name, field_name)
@@ -509,7 +493,7 @@ template class {instance.angled_targs_str_as_c()};
 
     instance_type_ref = nbtypes.TypeRef(instance)
     _block_scan_type = bind_cxx_class_template_specialization(
-        shim_writer, decl, instance_type_ref, nbtypes.Type, StructModel
+        shim_writer, decl, instance_type_ref
     )
 
     return instance_type_ref
