@@ -131,7 +131,7 @@ jobs:
           sccache --show-adv-stats
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Upload PyPi wheels
+      - name: Upload PyPi wheels artifact
         uses: actions/upload-artifact@v4
         with:
           name: pypi-wheels-${{ matrix.ARCH }}
