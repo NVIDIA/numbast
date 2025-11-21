@@ -18,25 +18,25 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/conda-python-build.yaml
     with:
-      build_type: main
+      build_type: branch
   test-conda:
     name: Test Conda Python
     needs: build-conda
     secrets: inherit
     uses: ./.github/workflows/conda-python-test.yaml
     with:
-      build_type: main
+      build_type: branch
   build-wheels:
     name: Build Wheels
     needs: checks
     secrets: inherit
     uses: ./.github/workflows/wheels-build.yaml
     with:
-      build_type: main
+      build_type: branch
   test-wheels:
     name: Test Wheels
     needs: build-wheels
     secrets: inherit
     uses: ./.github/workflows/wheels-test.yaml
     with:
-      build_type: main
+      build_type: branch
