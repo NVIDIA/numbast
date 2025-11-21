@@ -10,3 +10,8 @@ struct __internal__Foo {
   __device__ __internal__Foo() : x(0) {}
   __device__ int get_x() { return x; }
 };
+
+enum __internal__Bar {
+  BAR_A,
+  BAR_B,
+};

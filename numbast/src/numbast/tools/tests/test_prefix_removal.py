@@ -37,6 +37,7 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
 
     foo = symbols["foo"]
     Foo = symbols["Foo"]
+    Bar = symbols["Bar"]
 
     @cuda.jit
     def kernel():
@@ -44,5 +45,8 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
         foo_obj = Foo()
         x = foo_obj.get_x()  # noqa: F841
         x2 = foo_obj.x  # noqa: F841
+
+        bar = Bar.BAR_A  # noqa: F841
+        bar2 = Bar.BAR_B  # noqa: F841
 
     kernel[1, 1]()
