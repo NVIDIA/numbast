@@ -19,7 +19,7 @@ CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 def register_enum_type_str(ctype_enum_name: str, enum_name: str):
     global CTYPE_TO_NBTYPE_STR
 
-    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = enum_name
+    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
 
 
 def reset_types():
