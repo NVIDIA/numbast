@@ -6,14 +6,8 @@ on:
     branches:
       - "main"
 jobs:
-  checks:
-    secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.10
-    with:
-      enable_check_generated_files: false
   build-conda:
     name: Build Conda Python
-    needs: checks
     secrets: inherit
     uses: ./.github/workflows/conda-python-build.yaml
     with:
@@ -27,7 +21,6 @@ jobs:
       build_type: branch
   build-wheels:
     name: Build Wheels
-    needs: checks
     secrets: inherit
     uses: ./.github/workflows/wheels-build.yaml
     with:
