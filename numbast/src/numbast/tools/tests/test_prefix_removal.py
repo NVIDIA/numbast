@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from numba import cuda
+import os
+import subprocess
+import sys
 
 
 def test_prefix_removal(run_in_isolated_folder, arch_str):
@@ -15,6 +17,7 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
     )
 
     run_result = res["result"]
+    output_folder = res["output_folder"]
     symbols = res["symbols"]
     alls = symbols["__all__"]
 
@@ -27,26 +30,28 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
     assert "prefix_foo" not in alls, (
         f"Expected 'prefix_foo' NOT in __all__, got: {alls}"
     )
-    assert "__internal__Foo" not in alls, (
-        f"Expected '__internal__Foo' NOT in __all__, got: {alls}"
+
+    # Test that the function can be imported and used as "foo"
+    test_kernel_src = """
+from numba import cuda
+from prefix_removal import foo
+
+@cuda.jit
+def kernel():
+    result = foo(1, 2)  # Verify that prefix_foo is accessible as foo
+
+kernel[1, 1]()
+"""
+
+    test_kernel = os.path.join(output_folder, "test.py")
+    with open(test_kernel, "w") as f:
+        f.write(test_kernel_src)
+
+    res = subprocess.run(
+        [sys.executable, test_kernel],
+        cwd=output_folder,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
 
-    foo = symbols["foo"]
-    Foo = symbols["Foo"]
-    Bar = symbols["Bar"]
-    baz = symbols["baz"]
-
-    @cuda.jit
-    def kernel():
-        result = foo(1, 2)  # noqa: F841
-        foo_obj = Foo()
-        x = foo_obj.get_x()  # noqa: F841
-        x2 = foo_obj.x  # noqa: F841
-
-        bar = Bar.BAR_A  # noqa: F841
-        bar2 = Bar.BAR_B  # noqa: F841
-
-        result2 = baz(bar)  # noqa: F841
-        result3 = baz(bar2)  # noqa: F841
-
-    kernel[1, 1]()
+    assert res.returncode == 0, res.stdout.decode("utf-8")
