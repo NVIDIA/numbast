@@ -11,10 +11,6 @@ import cffi
 @pytest.fixture(scope="function")
 def cuda_enum(make_binding):
     res = make_binding("enum.cuh", {}, {}, "sm_50")
-
-    with open("/tmp/bindings.py", "w") as f:
-        f.write(res["src"])
-
     return res["bindings"]
 
 
