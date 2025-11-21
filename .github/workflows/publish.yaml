@@ -22,7 +22,7 @@ jobs:
     secrets: inherit
     with:
       build_type: release
-  upload-to-testpypi:
+  upload-to-pypi:
     permissions:
       id-token: write
     needs: build-wheels
@@ -34,8 +34,7 @@ jobs:
           pattern: pypi-wheels-*
           path: dist/
           merge-multiple: true
-      - name: Publish packages to TestPyPI
+      - name: Publish packages to PyPi
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
-          repository-url: https://test.pypi.org/legacy/
           verbose: true
