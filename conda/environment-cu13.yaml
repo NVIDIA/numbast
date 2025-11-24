@@ -9,7 +9,7 @@ dependencies:
   - python>=3.10
   - cmake>=3.29 # Allow overriding CMAKE_PREFIX_PATH and CMAKE_INSTALL_PREFIX
   - clangdev >=18,<22.0
-  - numba-cuda[cu13] >=0.20.0
+  - numba-cuda[cu13] >=0.20.1,<0.21.0
   - pybind11
   - pytest
   - pytest-benchmark
