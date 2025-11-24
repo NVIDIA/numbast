@@ -10,4 +10,8 @@ nv_bfloat16 inline __device__ add(nv_bfloat16 a, nv_bfloat16 b) {
   return a + b;
 }
 
+__nv_bfloat16 inline __device__ add2(__nv_bfloat16 a, __nv_bfloat16 b) {
+  return a + b;
+}
+
 #endif

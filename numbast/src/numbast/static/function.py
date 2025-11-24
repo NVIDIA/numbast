@@ -16,7 +16,7 @@ from numbast.static.renderer import (
     get_shim,
 )
 from numbast.static.types import to_numba_type_str
-from numbast.utils import make_function_shim
+from numbast.utils import make_function_shim, _apply_prefix_removal
 from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
 
 from ast_canopy.decl import Function
@@ -413,8 +413,9 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
         function_prefix_removal: list[str] = [],
     ):
         super().__init__(decl, header_path, use_cooperative)
-        self._function_prefix_removal = function_prefix_removal
-        self._python_func_name = self._apply_prefix_removal(self._decl.name)
+        self._python_func_name = _apply_prefix_removal(
+            decl.name, function_prefix_removal
+        )
 
         # Override the base class symbol tracking to use the Python function name
         # Remove the original name that was added by the base class
@@ -422,25 +423,6 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
             self._function_symbols.remove(self._decl.name)
         # Add the Python function name (with prefix removal applied)
         self._function_symbols.append(self._python_func_name)
-
-    def _apply_prefix_removal(self, name: str) -> str:
-        """Apply prefix removal to a function name based on the configuration.
-
-        Parameters
-        ----------
-        name : str
-            The original function name
-
-        Returns
-        -------
-        str
-            The function name with prefixes removed
-        """
-        for prefix in self._function_prefix_removal:
-            if name.startswith(prefix):
-                return name[len(prefix) :]
-
-        return name
 
     @property
     def func_name_python(self):
