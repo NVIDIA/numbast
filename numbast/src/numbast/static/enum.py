@@ -33,8 +33,10 @@ class {enum_name}(IntEnum):
 
     def _render(self):
         self.Imports.add("from enum import IntEnum")
+        self.Imports.add("from numba.types import IntEnumMember")
+        self.Imports.add("from numba.types import int64")
 
-        register_enum_type_str(self._decl.name)
+        register_enum_type_str(self._decl.name, self._decl.name)
 
         enumerators = []
         for enumerator, value in zip(
