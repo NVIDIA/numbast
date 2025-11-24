@@ -13,6 +13,8 @@ project(${SKBUILD_PROJECT_NAME}
         VERSION ${SKBUILD_PROJECT_VERSION}
 	LANGUAGES C CXX)
 
+# Prevent C++ modules from being scanned (not used in this project).
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
