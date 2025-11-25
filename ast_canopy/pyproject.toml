@@ -8,6 +8,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "ast_canopy"
 dynamic = ["version"]
+readme = { file = "README.md", content-type = "text/markdown" }
 
 [tool.scikit-build]
 cmake.targets = ["pylibastcanopy"]

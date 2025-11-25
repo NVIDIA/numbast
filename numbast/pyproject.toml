@@ -8,6 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "numbast"
 dynamic = ["version"]
+readme = { file = "README.md", content-type = "text/markdown" }
 description = "Numbast - auto Numba binding generation tool for CUDA C++."
 requires-python = ">=3.7"
 classifiers = [
