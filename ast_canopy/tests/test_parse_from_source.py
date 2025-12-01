@@ -3,7 +3,6 @@
 
 import os
 import pickle
-from dataclasses import astuple
 
 import pytest
 
@@ -91,7 +90,7 @@ def test_load_ast_structs(sample_struct_source, test_pickle):
         sample_struct_source, [sample_struct_source], "sm_80"
     )
 
-    structs, _, _, _, _, _ = astuple(decls)
+    structs = decls.structs
 
     if test_pickle:
         pickled = [pickle.dumps(s) for s in structs]
@@ -207,7 +206,7 @@ def test_load_ast_functions(sample_function_source, test_pickle):
         sample_function_source, [sample_function_source], "sm_80"
     )
 
-    _, functions, _, _, _, _ = astuple(decls)
+    functions = decls.functions
 
     if test_pickle:
         pickled = [pickle.dumps(f) for f in functions]
@@ -266,7 +265,8 @@ def test_load_ast_typedefs(sample_typedef_source, test_pickle):
         sample_typedef_source, [sample_typedef_source], "sm_80"
     )
 
-    structs, _, _, _, typedefs, _ = astuple(decls)
+    structs = decls.structs
+    typedefs = decls.typedefs
 
     if test_pickle:
         pickled = [pickle.dumps(t) for t in typedefs]
@@ -301,7 +301,7 @@ def test_load_ast_function_templates(
         "sm_80",
     )
 
-    _, _, ft, _, _, _ = astuple(decls)
+    ft = decls.function_templates
 
     if test_pickle:
         pickled = [pickle.dumps(f) for f in ft]
@@ -343,7 +343,7 @@ def test_load_ast_class_templates(sample_class_template_source, test_pickle):
         sample_class_template_source, [sample_class_template_source], "sm_80"
     )
 
-    _, _, _, ct, _, _ = astuple(decls)
+    ct = decls.class_templates
 
     if test_pickle:
         pickled = [pickle.dumps(c) for c in ct]
@@ -402,7 +402,7 @@ def test_load_ast_nested_structs(sample_nested_structs_source, test_pickle):
         sample_nested_structs_source, [sample_nested_structs_source], "sm_80"
     )
 
-    structs, _, _, _, _, _ = astuple(decls)
+    structs = decls.structs
 
     if test_pickle:
         pickled = [pickle.dumps(s) for s in structs]
@@ -426,7 +426,7 @@ def test_load_ast_access_specifiers(
         "sm_80",
     )
 
-    structs, _, _, _, _, _ = astuple(decls)
+    structs = decls.structs
 
     if test_pickle:
         pickled = [pickle.dumps(s) for s in structs]
@@ -461,7 +461,7 @@ def test_load_enum(sample_enum_source, test_pickle):
         sample_enum_source, [sample_enum_source], "sm_80"
     )
 
-    _, _, _, _, _, enums = astuple(decls)
+    enums = decls.enums
 
     if test_pickle:
         pickled = [pickle.dumps(e) for e in enums]
@@ -502,7 +502,8 @@ def test_load_struct_function_execution_space(
         sample_execution_space_source, [sample_execution_space_source], "sm_80"
     )
 
-    structs, functions, _, _, _, _ = astuple(decls)
+    structs = decls.structs
+    functions = decls.functions
 
     if test_pickle:
         pickled = [pickle.dumps(s) for s in structs]
@@ -579,7 +580,8 @@ def test_load_by_cc(cc, answer, sample_load_by_cc_source):
         sample_load_by_cc_source, [sample_load_by_cc_source], cc
     )
 
-    structs, functions, _, _, _, _ = astuple(decls)
+    structs = decls.structs
+    functions = decls.functions
 
     assert len(structs) == len(answer["structs"])
     assert len(functions) == len(answer["functions"])

@@ -101,6 +101,15 @@ private:
   vardecl_matcher_payload *payload;
 };
 
+class ClassTemplateSpecializationCallback : public MatchFinder::MatchCallback {
+public:
+  ClassTemplateSpecializationCallback(traverse_ast_payload *);
+  void run(const MatchFinder::MatchResult &) override;
+
+private:
+  traverse_ast_payload *payload;
+};
+
 class ClassTemplatePartialSpecializationCallback
     : public MatchFinder::MatchCallback {
 public:
