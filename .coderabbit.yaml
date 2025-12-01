@@ -3,4 +3,4 @@
 reviews:
   profile: assertive # assertive / chill profile
   auto_review:
-    enabled: true # Disable auto-review for this repository
+    enabled: true # Enable auto-review for this repository
