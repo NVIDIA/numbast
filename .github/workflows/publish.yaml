@@ -4,6 +4,8 @@ name: Publish CONDA PKG
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "pull-request/[0-9]+"
     tags:
       - 'v*'
 concurrency:
