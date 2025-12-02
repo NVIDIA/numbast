@@ -316,3 +316,21 @@ extern "C" __device__ int
     )
 
     return shim
+
+
+def _apply_prefix_removal(name: str, prefix_to_remove: list[str]) -> str:
+    """
+    Remove the first matching prefix from a name.
+    
+    Parameters:
+        name (str): The original identifier (e.g., struct, function, or enum name).
+        prefix_to_remove (list[str]): Ordered list of prefixes to try; the first prefix that matches the start of `name` will be removed.
+    
+    Returns:
+        str: The name with the first matching prefix removed, or the original name if no prefixes match.
+    """
+    for prefix in prefix_to_remove:
+        if name.startswith(prefix):
+            return name[len(prefix) :]
+
+    return name

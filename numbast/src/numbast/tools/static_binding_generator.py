@@ -88,6 +88,8 @@ class Config:
     api_prefix_removal : dict[str, list[str]]
         Dictionary mapping declaration types to lists of prefixes to remove from names.
         For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+        Acceptable keywords: ["Struct", "Function", "Enum"]. Value types are lists of prefix
+        strings. Specifically, prefixes in enums are also applicable to enum values.
     module_callbacks : dict[str, str]
         Dictionary containing setup and teardown callbacks for the module.
         Expected keys: "setup", "teardown". Each value is a string callback function.
@@ -348,23 +350,14 @@ numba_datamodel_dict = NumbaDataModelDictType()
 
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
-    """Convert C++ typedef declarations into aliases.
-
-    `typedef` declarations contains a 1-1 mapping from "name" to "underlying name".
-    There can be multiple typedefs of the same underlying name.
-
-    This function aggregates them so that each "underlying name" maps to all names,
-    aka, its aliases.
-
-    Parameter
-    ---------
-    typedef_decls: list[Typedef]
-        A list of C++ typedef declarations
-
-    Return
-    ------
-    aliases: dict[str, list[str]]
-        Dictionary mapping underlying names to a list of aliases.
+    """
+    Group C++ typedef declarations by their underlying type name.
+    
+    Parameters:
+        typedef_decls (list[Typedef]): Typedef declarations to process.
+    
+    Returns:
+        dict[str, list[str]]: Mapping from an underlying type name to a list of alias names (typedef names).
     """
     aliases = defaultdict(list)
     for typedef in typedef_decls:
@@ -373,8 +366,28 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     return aliases
 
 
-def _generate_structs(struct_decls, header_path, types, data_models, excludes):
-    """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
+def _generate_structs(
+    struct_decls,
+    header_path,
+    types,
+    data_models,
+    struct_prefix_removal,
+    excludes,
+):
+    """
+    Render struct declarations into the Python source for struct bindings.
+    
+    Parameters:
+        struct_decls (list): List of struct declaration objects to render.
+        header_path (str): Path to the original header file associated with the declarations.
+        types (dict): Mapping from struct name to corresponding numba type object (or None).
+        data_models (dict): Mapping from struct name to corresponding numba datamodel object (or None).
+        struct_prefix_removal (list): List of name prefixes to remove from struct identifiers when rendering.
+        excludes (list): List of struct names to exclude from rendering.
+    
+    Returns:
+        str: Rendered source code for the struct bindings.
+    """
     specs = {}
     for struct_decl in struct_decls:
         struct_name = struct_decl.name
@@ -382,7 +395,12 @@ def _generate_structs(struct_decls, header_path, types, data_models, excludes):
         this_data_model = data_models.get(struct_name, None)
         specs[struct_name] = (this_type, this_data_model, header_path)
 
-    SSR = StaticStructsRenderer(struct_decls, specs, excludes=excludes)
+    SSR = StaticStructsRenderer(
+        struct_decls,
+        specs,
+        struct_prefix_removal=struct_prefix_removal,
+        excludes=excludes,
+    )
 
     return SSR.render_as_str(with_imports=False, with_shim_stream=False)
 
@@ -395,7 +413,20 @@ def _generate_functions(
     function_prefix_removal: list[str],
     skip_prefix: str | None,
 ) -> str:
-    """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
+    """
+    Render Python bindings for the provided function declarations.
+    
+    Parameters:
+        func_decls (list[Function]): Parsed function declarations to render.
+        header_path (str): Path to the original header file used for the shim stream.
+        excludes (list[str]): Function names to exclude from rendering.
+        cooperative_launch_functions (list[str]): Regex patterns or exact names identifying functions that require cooperative launch handling.
+        function_prefix_removal (list[str]): List of prefixes to strip from function names when generating bindings.
+        skip_prefix (str | None): If provided, skip generating bindings for functions whose names start with this prefix.
+    
+    Returns:
+        binding_source (str): Generated source code for the functions section (imports and shim stream are omitted).
+    """
 
     SFR = StaticFunctionsRenderer(
         func_decls,
@@ -409,9 +440,20 @@ def _generate_functions(
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
-def _generate_enums(enum_decls: list[Enum]):
-    """Create enum bindings."""
-    SER = StaticEnumsRenderer(enum_decls)
+def _generate_enums(
+    enum_decls: list[Enum], enum_prefix_removal: list[str] = []
+):
+    """
+    Render enum declarations into binding source code.
+    
+    Parameters:
+        enum_decls (list[Enum]): Parsed enum declarations to render.
+        enum_prefix_removal (list[str]): Prefixes to remove from enum names before rendering.
+    
+    Returns:
+        str: The rendered enum bindings as a source string.
+    """
+    SER = StaticEnumsRenderer(enum_decls, enum_prefix_removal)
     return SER.render_as_str(with_imports=False, with_shim_stream=False)
 
 
@@ -452,19 +494,18 @@ def _static_binding_generator(
     bypass_parse_error: bool = False,
 ) -> str:
     """
-    A function to generate CUDA static bindings for CUDA C++ headers.
-
+    Generate static Python bindings for a CUDA C++ header using the provided configuration.
+    
     Parameters:
-    - config (Config): Configuration object containing all binding generation settings.
-    - output_dir (str): Path to the output directory where the processed files will be saved.
-    - log_generates (bool, optional): Whether to log the list of generated bindings. Defaults to False.
-    - cfg_file_path (str, optional): Path to the configuration file. Defaults to None.
-    - sbg_params (dict, optional): A dictionary of parameters for the static binding generator. Defaults to empty dict.
-    - bypass_parse_error (bool, optional): Whether to bypass parse error and continue generating bindings. Defaults to False.
-
+        config (Config): Configuration containing entry point, parsing and rendering options.
+        output_dir (str): Directory where the generated binding file will be written.
+        log_generates (bool): If True, print counts and lists of declarations that will be generated.
+        cfg_file_path (str | None): Path to the config file used to produce these bindings (used for reproducible metadata); may be None.
+        sbg_params (dict[str, str]): Extra parameters to include in the generator metadata.
+        bypass_parse_error (bool): If True, continue generation when source parsing reports recoverable errors.
+    
     Returns:
-    str
-        Path to the generated binding file
+        str: Absolute path to the generated binding file.
     """
     try:
         basename = os.path.basename(config.entry_point)
@@ -511,12 +552,15 @@ def _static_binding_generator(
     aliases = _typedef_to_aliases(typedefs)
     rendered_aliases = render_aliases(aliases)
 
-    enum_bindings = _generate_enums(enums)
+    enum_bindings = _generate_enums(
+        enums, config.api_prefix_removal.get("Enum", [])
+    )
     struct_bindings = _generate_structs(
         structs,
         entry_point,
         config.types,
         config.datamodels,
+        config.api_prefix_removal.get("Struct", []),
         config.exclude_structs,
     )
 
