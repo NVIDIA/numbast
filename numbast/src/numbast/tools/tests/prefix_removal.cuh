@@ -12,6 +12,6 @@ struct __internal__Foo {
 };
 
 enum __internal__Bar {
-  BAR_A,
-  BAR_B,
+  __nv__BAR_A,
+  __nv__BAR_B,
 };

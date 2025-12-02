@@ -31,6 +31,7 @@ class {enum_name}(IntEnum):
 
     def __init__(self, decl: Enum, enum_prefix_removal: list[str] = []):
         self._decl = decl
+        self._enum_prefix_removal = enum_prefix_removal
 
         self._enum_name = _apply_prefix_removal(
             self._decl.name, enum_prefix_removal
@@ -49,10 +50,11 @@ class {enum_name}(IntEnum):
         for enumerator, value in zip(
             self._decl.enumerators, self._decl.enumerator_values
         ):
+            py_name = _apply_prefix_removal(
+                enumerator, self._enum_prefix_removal
+            )
             enumerators.append(
-                self.enumerator_template.format(
-                    enumerator=enumerator, value=value
-                )
+                self.enumerator_template.format(enumerator=py_name, value=value)
             )
 
         self._python_rendered = self.enum_template.format(
