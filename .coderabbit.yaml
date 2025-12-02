@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+reviews:
+  profile: assertive # assertive / chill profile
+  auto_review:
+    enabled: true # Enable auto-review for this repository
