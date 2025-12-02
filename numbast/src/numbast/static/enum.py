@@ -43,7 +43,7 @@ class {enum_name}(IntEnum):
         self.Imports.add("from numba.types import IntEnumMember")
         self.Imports.add("from numba.types import int64")
 
-        register_enum_type_str(self._enum_name, self._enum_name)
+        register_enum_type_str(self._decl.name, self._enum_name)
 
         enumerators = []
         for enumerator, value in zip(
