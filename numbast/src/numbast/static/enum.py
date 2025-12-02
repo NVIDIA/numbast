@@ -29,12 +29,14 @@ class {enum_name}(IntEnum):
 """
     enumerator_template = "    {enumerator} = {value}"
 
-    def __init__(self, decl: Enum, enum_prefix_removal: list[str] = []):
+    def __init__(
+        self, decl: Enum, enum_prefix_removal: list[str] | None = None
+    ):
         self._decl = decl
-        self._enum_prefix_removal = enum_prefix_removal
+        self._enum_prefix_removal = enum_prefix_removal or []
 
         self._enum_name = _apply_prefix_removal(
-            self._decl.name, enum_prefix_removal
+            self._decl.name, self._enum_prefix_removal
         )
 
         self._enum_symbols.append(self._enum_name)
