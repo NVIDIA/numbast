@@ -73,7 +73,7 @@ class StaticEnumsRenderer(BaseRenderer):
         self._decls = decls
         self._enum_prefix_removal = enum_prefix_removal
 
-        self._python_rendered: list[tuple[set[str], str]] = []
+        self._python_rendered: list[str] = []
 
     def _render(self, with_imports):
         """Render python bindings for enums."""
