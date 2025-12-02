@@ -1047,12 +1047,14 @@ class {struct_attr_typing_name}(AttributeTemplate):
         parent_type: type | None,
         data_model: type | None,
         header_path: os.PathLike | str,
-        struct_prefix_removal: list[str] = [],
+        struct_prefix_removal: list[str] | None = None,
         aliases: list[str] = [],
     ):
         super().__init__(decl)
+        self._struct_prefix_removal = struct_prefix_removal or []
+
         self._python_struct_name = _apply_prefix_removal(
-            decl.name, struct_prefix_removal
+            decl.name, self._struct_prefix_removal
         )
         self._struct_name = decl.name
         self._aliases = aliases
@@ -1377,13 +1379,13 @@ class StaticStructsRenderer(BaseRenderer):
         decls: list[Struct],
         specs: dict[str, tuple[type | None, type | None, os.PathLike]],
         default_header: os.PathLike | str | None = None,
-        struct_prefix_removal: list[str] = [],
+        struct_prefix_removal: list[str] | None = None,
         excludes: list[str] = [],
     ):
         self._decls = decls
         self._specs = specs
         self._default_header = default_header
-        self._struct_prefix_removal = struct_prefix_removal
+        self._struct_prefix_removal = struct_prefix_removal or []
 
         self._python_rendered = []
         self._c_rendered = []
