@@ -88,6 +88,8 @@ class Config:
     api_prefix_removal : dict[str, list[str]]
         Dictionary mapping declaration types to lists of prefixes to remove from names.
         For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+        Acceptable keywords: ["Struct", "Function", "Enum"]. Value types are lists of prefix
+        strings. Specifically, prefixes in enums are also applicable to enum values.
     module_callbacks : dict[str, str]
         Dictionary containing setup and teardown callbacks for the module.
         Expected keys: "setup", "teardown". Each value is a string callback function.
