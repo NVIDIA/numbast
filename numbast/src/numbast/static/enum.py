@@ -70,10 +70,12 @@ class StaticEnumsRenderer(BaseRenderer):
     Since enums creates a new C++ type. It should be invoked before making struct / function bindings.
     """
 
-    def __init__(self, decls: list[Enum], enum_prefix_removal: list[str] = []):
+    def __init__(
+        self, decls: list[Enum], enum_prefix_removal: list[str] | None = None
+    ):
         super().__init__(decls)
         self._decls = decls
-        self._enum_prefix_removal = enum_prefix_removal
+        self._enum_prefix_removal = enum_prefix_removal or []
 
         self._python_rendered: list[str] = []
 
