@@ -131,6 +131,7 @@ def clear_base_renderer_cache():
     BaseRenderer._nbtype_symbols.clear()
     BaseRenderer._record_symbols.clear()
     BaseRenderer._function_symbols.clear()
+    BaseRenderer._enum_symbols.clear()
 
 
 def get_reproducible_info(
