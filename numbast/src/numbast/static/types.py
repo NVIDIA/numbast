@@ -19,7 +19,7 @@ CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 def register_enum_type_str(ctype_enum_name: str, enum_name: str):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
-    
+
     Parameters:
         ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
         enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).

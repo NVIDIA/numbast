@@ -34,11 +34,11 @@ class {enum_name}(IntEnum):
     ):
         """
         Initialize the renderer for a single C++ enum and derive its Python enum name.
-        
+
         Parameters:
             decl (Enum): The parsed C++ enum declaration to render.
             enum_prefix_removal (list[str] | None): Prefix strings to remove from the C++ enum and enumerator names when deriving Python identifiers; empty list if None.
-        
+
         Description:
             Stores the declaration and prefix-removal configuration, computes the Python enum name from the C++ name using the provided prefixes, and appends that Python name to the renderer's symbol list.
         """
@@ -54,7 +54,7 @@ class {enum_name}(IntEnum):
     def _render(self):
         """
         Render the stored C++ enum declaration into a Python IntEnum class and store the generated source.
-        
+
         This method:
         - Ensures required imports for `IntEnum`, `IntEnumMember`, and `int64` are added to the renderer's import set.
         - Registers the mapping from the original C++ enum name to the computed Python enum name.
@@ -94,11 +94,11 @@ class StaticEnumsRenderer(BaseRenderer):
     ):
         """
         Initialize the renderer for a collection of C++ enum declarations.
-        
+
         Parameters:
             decls (list[Enum]): The list of enum declarations to render.
             enum_prefix_removal (list[str] | None): Optional list of prefixes to remove from enum and enumerator names when generating Python bindings; defaults to an empty list.
-        
+
         Notes:
             Initializes internal state and a list to accumulate per-enum rendered Python strings.
         """
@@ -111,11 +111,11 @@ class StaticEnumsRenderer(BaseRenderer):
     def _render(self, with_imports):
         """
         Render all stored C++ enum declarations into Python binding source and store the result on the renderer instance.
-        
+
         This populates self._python_rendered with each enum's rendered string and assembles the combined output into self._python_str. If with_imports is True, the module import block is included at the top of the assembled output.
-        
+
         Parameters:
-        	with_imports (bool): If True, prepend the rendered import block to the assembled Python output.
+                with_imports (bool): If True, prepend the rendered import block to the assembled Python output.
         """
         self._python_str = ""
 

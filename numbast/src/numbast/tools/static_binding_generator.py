@@ -352,10 +352,10 @@ numba_datamodel_dict = NumbaDataModelDictType()
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
     Group C++ typedef declarations by their underlying type name.
-    
+
     Parameters:
         typedef_decls (list[Typedef]): Typedef declarations to process.
-    
+
     Returns:
         dict[str, list[str]]: Mapping from an underlying type name to a list of alias names (typedef names).
     """
@@ -376,7 +376,7 @@ def _generate_structs(
 ):
     """
     Render struct declarations into the Python source for struct bindings.
-    
+
     Parameters:
         struct_decls (list): List of struct declaration objects to render.
         header_path (str): Path to the original header file associated with the declarations.
@@ -384,7 +384,7 @@ def _generate_structs(
         data_models (dict): Mapping from struct name to corresponding numba datamodel object (or None).
         struct_prefix_removal (list): List of name prefixes to remove from struct identifiers when rendering.
         excludes (list): List of struct names to exclude from rendering.
-    
+
     Returns:
         str: Rendered source code for the struct bindings.
     """
@@ -415,7 +415,7 @@ def _generate_functions(
 ) -> str:
     """
     Render Python bindings for the provided function declarations.
-    
+
     Parameters:
         func_decls (list[Function]): Parsed function declarations to render.
         header_path (str): Path to the original header file used for the shim stream.
@@ -423,7 +423,7 @@ def _generate_functions(
         cooperative_launch_functions (list[str]): Regex patterns or exact names identifying functions that require cooperative launch handling.
         function_prefix_removal (list[str]): List of prefixes to strip from function names when generating bindings.
         skip_prefix (str | None): If provided, skip generating bindings for functions whose names start with this prefix.
-    
+
     Returns:
         binding_source (str): Generated source code for the functions section (imports and shim stream are omitted).
     """
@@ -445,11 +445,11 @@ def _generate_enums(
 ):
     """
     Render enum declarations into binding source code.
-    
+
     Parameters:
         enum_decls (list[Enum]): Parsed enum declarations to render.
         enum_prefix_removal (list[str]): Prefixes to remove from enum names before rendering.
-    
+
     Returns:
         str: The rendered enum bindings as a source string.
     """
@@ -495,7 +495,7 @@ def _static_binding_generator(
 ) -> str:
     """
     Generate static Python bindings for a CUDA C++ header using the provided configuration.
-    
+
     Parameters:
         config (Config): Configuration containing entry point, parsing and rendering options.
         output_dir (str): Directory where the generated binding file will be written.
@@ -503,7 +503,7 @@ def _static_binding_generator(
         cfg_file_path (str | None): Path to the config file used to produce these bindings (used for reproducible metadata); may be None.
         sbg_params (dict[str, str]): Extra parameters to include in the generator metadata.
         bypass_parse_error (bool): If True, continue generation when source parsing reports recoverable errors.
-    
+
     Returns:
         str: Absolute path to the generated binding file.
     """

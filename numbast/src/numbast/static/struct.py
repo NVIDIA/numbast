@@ -151,7 +151,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
     ):
         """
         Initialize a renderer for a single struct constructor and prepare cached type/name representations used during code generation.
-        
+
         Parameters:
             struct_name (str): Original C/C++ struct identifier.
             python_struct_name (str): Python-facing name to use in generated bindings and typing.
@@ -260,7 +260,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_lowering(self):
         """
         Generate and store the Numba lowering code for this struct constructor.
-        
+
         Formats the constructor lowering from the renderer's templates and writes the result to
         self._lowering_rendered. If the constructor is a converting (non-explicit single-argument)
         constructor, also append a `lower_cast` lowering that enables implicit conversion from the
@@ -364,7 +364,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
     ):
         """
         Initialize the renderer for all constructors of a CUDA struct, storing inputs and preparing Python/C output accumulators.
-        
+
         Parameters:
             ctor_decls (list[StructMethod]): List of constructor declarations to render.
             struct_name (str): Original struct name from the declaration.
@@ -388,9 +388,9 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
     def _render_typing(self, signature_strs: list[str]):
         """
         Render the ConcreteTemplate typing class for the struct's constructors using provided overload signatures.
-        
+
         Parameters:
-        	signature_strs (list[str]): Numba `signature` strings for each constructor overload to include in the generated typing template.
+                signature_strs (list[str]): Numba `signature` strings for each constructor overload to include in the generated typing template.
         """
 
         self.Imports.add(
@@ -411,7 +411,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
     def _render(self):
         """
         Render all constructors for the struct and assemble their Python and C outputs.
-        
+
         Iterates over the stored constructor declarations, instantiates a StaticStructCtorRenderer
         for each, and invokes its rendering. Accumulates each renderer's Python and C fragments
         into this renderer's outputs and collects constructor typing signatures.
@@ -771,14 +771,15 @@ def {lower_scope_name}(shim_stream, shim_obj):
         method_decl: StructMethod,
     ):
         """
-        Initialize a renderer for a single struct regular method and cache derived naming and type info used during code generation.
-        
+        Initialize a renderer for a single struct regular method and cache derived naming and type info used during code
+        generation.
+
         Parameters:
-        	struct_name (str): Original C/C++ struct name from the header.
-        	python_struct_name (str): Python-facing struct name used for generated Numba/typing symbols.
-        	struct_type_name (str): Fully-qualified Numba type identifier for the struct.
-        	header_path (str): Path to the C/C++ header that declares the struct.
-        	method_decl (StructMethod): Parsed method declaration; used to derive parameter/return types, mangled names, and signatures.
+            struct_name (str): Original C/C++ struct name from the header.
+            python_struct_name (str): Python-facing struct name used for generated Numba/typing symbols.
+            struct_type_name (str): Fully-qualified Numba type identifier for the struct.
+            header_path (str): Path to the C/C++ header that declares the struct.
+            method_decl (StructMethod): Parsed method declaration; used to derive parameter/return types, mangled names, and signatures.
         """
         super().__init__(method_decl)
         self._struct_name = struct_name
@@ -804,12 +805,12 @@ def {lower_scope_name}(shim_stream, shim_obj):
         def wrap_pointer(typ):
             """
             Construct a CPointer wrapper string for the given type.
-            
+
             Parameters:
-            	typ (str): The underlying type name or type-string to wrap.
-            
+                typ (str): The underlying type name or type-string to wrap.
+
             Returns:
-            	str: A string representing the CPointer-wrapped type, e.g. "CPointer(int32)".
+                str: A string representing the CPointer-wrapped type, e.g. "CPointer(int32)".
             """
             return f"CPointer({typ})"
 
@@ -837,7 +838,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def signature_str(self) -> str:
         """
         Builds the typing signature string for this method including the receiver.
-        
+
         Returns:
             signature_str (str): A string formatted as
             "signature(<return_type>, <param_types>, recvr=<receiver_type>)" or
@@ -854,12 +855,15 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
     def _render_decl_device(self):
         """
-        Render the CUDA device declaration and its Python-facing device-caller for this struct method and store the combined source.
-        
+        Render the CUDA device declaration and its Python-facing device-caller for this struct method and store the
+        combined source.
+
         This method:
         - Ensures required imports are registered on self.Imports.
-        - Formats the device declaration and a small Python device-caller using the renderer's template fields (device/caller names, return type, struct type, pointer-wrapped parameter types).
-        - Builds a positional argument list based on the method's parameters and concatenates the declaration and caller into self._decl_device_rendered.
+        - Formats the device declaration and a small Python device-caller using the renderer's template fields
+          (device/caller names, return type, struct type, pointer-wrapped parameter types).
+        - Builds a positional argument list based on the method's parameters and concatenates the declaration and caller
+          into self._decl_device_rendered.
         """
         self.Imports.add("from numba.cuda import declare_device")
         self.Imports.add("from numba.core.typing import signature")
@@ -890,8 +894,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_shim_function(self):
         """
         Generate and register the C-extension shim for this struct method.
-        
-        Stores the generated C shim text in _c_ext_shim_rendered, creates a variable-wrapped string in _c_ext_shim_var_rendered, and appends the shim to the ShimFunctions list.
+
+        Stores the generated C shim text in _c_ext_shim_rendered, creates a variable-wrapped string in
+        _c_ext_shim_var_rendered, and appends the shim to the ShimFunctions list.
         """
         self._c_ext_shim_rendered = make_struct_regular_method_shim(
             shim_name=self._unique_shim_name,
@@ -908,8 +913,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_lowering(self):
         """
         Render and store the Numba lowering code for the struct method.
-        
-        Generates the CUDA lowering function for this method using the renderer's lowering template, registers the required `lower` import, and assigns the resulting source string to `self._lowering_rendered`.
+
+        Generates the CUDA lowering function for this method using the renderer's lowering template, registers the
+        required `lower` import, and assigns the resulting source string to `self._lowering_rendered`.
         """
         self.Imports.add("from numba.cuda.cudaimpl import lower")
 
@@ -929,9 +935,12 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
     def _render(self):
         """
-        Orchestrates rendering of a single struct conversion/operator: produces the Python lowering scope and the C shim.
-        
-        Calls the device declaration, C shim generation, and lowering renderers, then combines their template outputs into the final Python lowering body (stored on self._python_rendered) and the final C shim string (stored on self._c_rendered).
+        Orchestrates rendering of a single struct conversion/operator: produces the Python lowering scope and the C
+        shim.
+
+        Calls the device declaration, C shim generation, and lowering renderers, then combines their template outputs
+        into the final Python lowering body (stored on self._python_rendered) and the final C shim string (stored on
+        self._c_rendered).
         """
         self._render_decl_device()
         self._render_shim_function()
@@ -971,14 +980,14 @@ class {method_template_name}(ConcreteTemplate):
     ):
         """
         Initialize the renderer for a struct's regular member methods.
-        
+
         Parameters:
             struct_name (str): Original C/C++ struct name.
             python_struct_name (str): Public Python-facing name used in generated typing and symbols.
             struct_type_name (str): Internal Numba type name for the struct.
             header_path (str): Path to the C/C++ header that declares the struct.
             method_decls (list[StructMethod]): Declarations of the struct's member functions to render.
-        
+
         Initializes internal containers for accumulated Python and C output, and maps for per-method typing templates and collected signatures.
         """
         super().__init__(method_decls)
@@ -996,9 +1005,9 @@ class {method_template_name}(ConcreteTemplate):
     def _render(self):
         """
         Render lowering, C shims, and typing templates for all regular methods of the struct.
-        
+
         This populates the renderer's imports and appends per-overload lowering/python bindings and C shim code to self._python_rendered and self._c_rendered. For each method declaration it collects a typing signature (stored in self._method_signatures) and, after processing overloads, emits a ConcreteTemplate typing class for each method name and records the template name in self._method_templates.
-        
+
         Side effects:
         - Adds required imports to self.Imports.
         - Appends generated Python lowering/typing code to self._python_rendered.
@@ -1162,7 +1171,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
     ):
         """
         Initialize renderer state for a CUDA struct binding and register related symbols and imports.
-        
+
         Parameters:
             decl (Struct): Parsed struct declaration to render.
             parent_type (type | None): Numba parent type to inherit from; defaults to `Type` when None.
@@ -1170,7 +1179,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             header_path (os.PathLike | str): Path to the C/C++ header that declares the struct.
             struct_prefix_removal (list[str] | None): Optional list of prefixes to remove from the struct's name for Python-facing identifiers.
             aliases (list[str]): Optional additional public names to expose for the struct.
-        
+
         Side effects:
             - Registers required numba type and datamodel imports.
             - Computes and stores python-facing and internal identifier names.
@@ -1227,7 +1236,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
     def _render_typing(self):
         """
         Render the Numba typing block for this struct.
-        
+
         Derives implicit conversion types from any converting constructors and formats the typing template, storing the result on self._typing_rendered.
         """
 
@@ -1265,12 +1274,12 @@ class {struct_attr_typing_name}(AttributeTemplate):
     def _render_data_model(self):
         """
         Render and store the Numba data model representation for this struct.
-        
+
         If the configured data model is PrimitiveModel, add the required IR import and populate
         self._data_model_rendered with the primitive model template. If the data model is StructModel,
         collect the struct fields' Numba type strings, format them into a member tuple list, and
         populate self._data_model_rendered with the struct model template.
-        
+
         Side effects:
         - Adds imports to self.Imports as needed.
         - Sets self._data_model_rendered.
@@ -1388,7 +1397,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
     def _render_struct_ctors(self):
         """
         Render all constructors for the struct and store their rendered outputs.
-        
+
         Populates self._struct_ctors_python_rendered with the combined Python typing and lowering code for the struct's constructors, and self._struct_ctors_c_rendered with the combined C shim implementations.
         """
         static_ctors_renderer = StaticStructCtorsRenderer(
@@ -1530,16 +1539,16 @@ class StaticStructsRenderer(BaseRenderer):
     ):
         """
         Initialize the renderer for multiple CUDA struct declarations.
-        
+
         Create an instance that will render Python bindings and C shim code for the provided struct declarations and track rendering results.
-        
+
         Parameters:
             decls (list[Struct]): List of parsed struct declarations to render.
             specs (dict[str, tuple[type | None, type | None, os.PathLike]]): Per-struct rendering specifications mapping struct name to a tuple of (parent Numba type or None, data model type or None, header path).
             default_header (os.PathLike | str | None): Fallback header path to use when a struct's header is not provided in `specs`.
             struct_prefix_removal (list[str] | None): Optional list of name prefixes to remove from struct names when generating python-facing identifiers; empty list if not provided.
             excludes (list[str]): Names of structs to skip during rendering.
-        
+
         Side effects:
             Initializes internal accumulators `._python_rendered` and `._c_rendered` and stores provided configuration on the instance.
         """
@@ -1560,13 +1569,13 @@ class StaticStructsRenderer(BaseRenderer):
     ):
         """
         Render Python and C bindings for the configured CUDA structs and assemble the final script strings.
-        
+
         Processes each struct declaration (skipping any in the excludes list), instantiates a StaticStructRenderer for each, and collects per-struct Python and C outputs. Aggregates imports and concatenates the Python renderings into the instance attribute `_python_str`. Optionally prepends rendered imports when `with_imports` is True and injects a shim include when `with_shim_stream` is True. Clears `_shim_function_pystr` and `_c_str` at the end.
-        
+
         Parameters:
             with_imports (bool): If True, prepend the global rendered imports to the final Python string.
             with_shim_stream (bool): If True, prepend a shim include for the default header to the final Python string.
-        
+
         Raises:
             ValueError: If a struct declaration does not provide a header path.
         """

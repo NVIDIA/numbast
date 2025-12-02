@@ -89,10 +89,10 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     def __init__(self, decl):
         """
         Initialize the BaseRenderer with a declaration and ensure required base imports are registered.
-        
+
         Parameters:
-            decl: The parsed declaration object the renderer will use to produce code. 
-        
+            decl: The parsed declaration object the renderer will use to produce code.
+
         Notes:
             This constructor records "import numba" and "import io" in the class-level Imports set as part of instance initialization.
         """
@@ -134,7 +134,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
 def clear_base_renderer_cache():
     """
     Clear all class-level caches and exposed-symbol lists on BaseRenderer.
-    
+
     This resets shared renderer state by removing all entries from the following BaseRenderer attributes:
     `Imports`, `Imported_VectorTypes`, `Includes`, `ShimFunctions`, `_imported_numba_types`,
     `_nbtype_symbols`, `_record_symbols`, `_function_symbols`, and `_enum_symbols`.
@@ -155,12 +155,12 @@ def get_reproducible_info(
 ) -> str:
     """
     Produce a reproducible information header composed of commented lines documenting versions, the generation command, generator parameters, and the config path.
-    
+
     Parameters:
         config_rel_path (str): Path to the generator configuration file relative to the generated binding file.
         cmd (str): The command line used to invoke the generation.
         sbg_params (dict[str, str]): Static binding generator parameters to record.
-    
+
     Returns:
         str: A multi-line string where each line is prefixed with "# " and the block ends with a single trailing newline.
     """
@@ -267,7 +267,7 @@ _RECORD_SYMBOLS = [{record_symbols}]
 def _get_function_symbols() -> str:
     """
     Render a Python code block that defines the _FUNCTION_SYMBOLS list from BaseRenderer._function_symbols.
-    
+
     Returns:
         code (str): A string containing a Python assignment that defines `_FUNCTION_SYMBOLS` as a list of symbol names quoted and comma-separated.
     """
@@ -285,9 +285,9 @@ _FUNCTION_SYMBOLS = [{function_symbols}]
 def _get_enum_symbols() -> str:
     """
     Generate a Python source snippet that defines the `_ENUM_SYMBOLS` list from BaseRenderer._enum_symbols.
-    
+
     The returned string is a ready-to-insert code block where each enum name is quoted and placed into a Python list assigned to `_ENUM_SYMBOLS`.
-    
+
     Returns:
         A string containing Python code that assigns `_ENUM_SYMBOLS` to a list of quoted enum symbol names (e.g., `_ENUM_SYMBOLS = ["A","B"]`).
     """
@@ -305,7 +305,7 @@ _ENUM_SYMBOLS = [{enum_symbols}]
 def get_all_exposed_symbols() -> str:
     """
     Produce the code block that defines and exposes all symbol name lists and the module __all__.
-    
+
     Returns:
         A string containing Python code that defines `_NBTYPE_SYMBOLS`, `_RECORD_SYMBOLS`, `_FUNCTION_SYMBOLS`, `_ENUM_SYMBOLS`
         and an `__all__` list that is the concatenation of those symbol lists.

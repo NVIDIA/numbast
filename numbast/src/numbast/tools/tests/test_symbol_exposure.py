@@ -5,6 +5,9 @@ import os
 import subprocess
 import sys
 
+from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import clear_function_apis_registry
+
 from cuda.core.experimental import Device
 
 dev = Device(0)
@@ -13,6 +16,9 @@ cc = dev.compute_capability
 
 def test_symbol_exposure(run_in_isolated_folder, arch_str):
     """Test that only a limited set of symbols are exposed via __all__ imports."""
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+
     res = run_in_isolated_folder(
         "cfg.yml.j2",
         "data.cuh",
