@@ -88,6 +88,8 @@ class Config:
     api_prefix_removal : dict[str, list[str]]
         Dictionary mapping declaration types to lists of prefixes to remove from names.
         For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+        Acceptable keywords: ["Struct", "Function", "Enum"]. Value types are lists of prefix
+        strings. Specifically, prefixes in enums are also applicable to enum values.
     module_callbacks : dict[str, str]
         Dictionary containing setup and teardown callbacks for the module.
         Expected keys: "setup", "teardown". Each value is a string callback function.
@@ -373,7 +375,14 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     return aliases
 
 
-def _generate_structs(struct_decls, header_path, types, data_models, excludes):
+def _generate_structs(
+    struct_decls,
+    header_path,
+    types,
+    data_models,
+    struct_prefix_removal,
+    excludes,
+):
     """Convert CLI inputs into structure that fits `StaticStructsRenderer` and create struct bindings."""
     specs = {}
     for struct_decl in struct_decls:
@@ -382,7 +391,12 @@ def _generate_structs(struct_decls, header_path, types, data_models, excludes):
         this_data_model = data_models.get(struct_name, None)
         specs[struct_name] = (this_type, this_data_model, header_path)
 
-    SSR = StaticStructsRenderer(struct_decls, specs, excludes=excludes)
+    SSR = StaticStructsRenderer(
+        struct_decls,
+        specs,
+        struct_prefix_removal=struct_prefix_removal,
+        excludes=excludes,
+    )
 
     return SSR.render_as_str(with_imports=False, with_shim_stream=False)
 
@@ -409,9 +423,11 @@ def _generate_functions(
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
-def _generate_enums(enum_decls: list[Enum]):
+def _generate_enums(
+    enum_decls: list[Enum], enum_prefix_removal: list[str] = []
+):
     """Create enum bindings."""
-    SER = StaticEnumsRenderer(enum_decls)
+    SER = StaticEnumsRenderer(enum_decls, enum_prefix_removal)
     return SER.render_as_str(with_imports=False, with_shim_stream=False)
 
 
@@ -511,12 +527,15 @@ def _static_binding_generator(
     aliases = _typedef_to_aliases(typedefs)
     rendered_aliases = render_aliases(aliases)
 
-    enum_bindings = _generate_enums(enums)
+    enum_bindings = _generate_enums(
+        enums, config.api_prefix_removal.get("Enum", [])
+    )
     struct_bindings = _generate_structs(
         structs,
         entry_point,
         config.types,
         config.datamodels,
+        config.api_prefix_removal.get("Struct", []),
         config.exclude_structs,
     )
 

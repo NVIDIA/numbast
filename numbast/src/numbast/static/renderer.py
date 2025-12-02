@@ -83,6 +83,9 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     _function_symbols: list[str] = []
     """List of new function handles to expose."""
 
+    _enum_symbols: list[str] = []
+    """List of new enum handles to expose."""
+
     def __init__(self, decl):
         self.Imports.add("import numba")
         self.Imports.add("import io")
@@ -128,6 +131,7 @@ def clear_base_renderer_cache():
     BaseRenderer._nbtype_symbols.clear()
     BaseRenderer._record_symbols.clear()
     BaseRenderer._function_symbols.clear()
+    BaseRenderer._enum_symbols.clear()
 
 
 def get_reproducible_info(
@@ -245,6 +249,18 @@ _FUNCTION_SYMBOLS = [{function_symbols}]
     return code
 
 
+def _get_enum_symbols() -> str:
+    template = """
+_ENUM_SYMBOLS = [{enum_symbols}]
+"""
+
+    symbols = BaseRenderer._enum_symbols
+    quote_wrapped = [f'"{s}"' for s in symbols]
+    concat = ",".join(quote_wrapped)
+    code = template.format(enum_symbols=concat)
+    return code
+
+
 def get_all_exposed_symbols() -> str:
     """Return the definition of all exposed symbols via `__all__`.
 
@@ -257,13 +273,14 @@ def get_all_exposed_symbols() -> str:
     nbtype_symbols = _get_nbtype_symbols()
     record_symbols = _get_record_symbols()
     function_symbols = _get_function_symbols()
+    enum_symbols = _get_enum_symbols()
 
     all_symbols = f"""
 {nbtype_symbols}
 {record_symbols}
 {function_symbols}
-
-__all__ = _NBTYPE_SYMBOLS + _RECORD_SYMBOLS + _FUNCTION_SYMBOLS
+{enum_symbols}
+__all__ = _NBTYPE_SYMBOLS + _RECORD_SYMBOLS + _FUNCTION_SYMBOLS + _ENUM_SYMBOLS
 """
 
     return all_symbols

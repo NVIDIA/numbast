@@ -17,6 +17,7 @@ CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
 
 def register_enum_type_str(ctype_enum_name: str, enum_name: str):
+    """Register the C++ enum type name mapping to its Numba type."""
     global CTYPE_TO_NBTYPE_STR
 
     CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
