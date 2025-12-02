@@ -31,6 +31,10 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
     assert "__internal__Foo" not in alls, (
         f"Expected '__internal__Foo' NOT in __all__, got: {alls}"
     )
+    assert "Bar" in alls, f"Expected 'Bar' in __all__, got: {alls}"
+    assert "__internal__Bar" not in alls, (
+        f"Expected '__internal__Bar' NOT in __all__, got: {alls}"
+    )
 
     foo = symbols["foo"]
     Foo = symbols["Foo"]
