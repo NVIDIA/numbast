@@ -34,6 +34,10 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
     assert "__internal__Foo" not in alls, (
         f"Expected '__internal__Foo' NOT in __all__, got: {alls}"
     )
+    assert "Bar" in alls, f"Expected 'Bar' in __all__, got: {alls}"
+    assert "__internal__Bar" not in alls, (
+        f"Expected '__internal__Bar' NOT in __all__, got: {alls}"
+    )
 
     foo = symbols["foo"]
     Foo = symbols["Foo"]
@@ -41,6 +45,11 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
 
     @cuda.jit
     def kernel():
+        """
+        Exercise generated bindings for `foo`, `Foo`, and `Bar` in a CUDA kernel.
+
+        This kernel invokes the top-level function `foo` with example arguments, constructs a `Foo` instance and accesses its `get_x()` method and `x` attribute, and reads the `BAR_A` and `BAR_B` attributes from `Bar`. It is intended for use in tests that verify API symbol exposure and runtime linkage.
+        """
         result = foo(1, 2)  # noqa: F841
         foo_obj = Foo()
         x = foo_obj.get_x()  # noqa: F841
