@@ -414,13 +414,13 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
     ):
         """
         Initialize the non-operator function renderer, compute the Python-facing function name by removing configured prefixes, and update tracked function symbols accordingly.
-        
+
         Parameters:
             decl (Function): The parsed function declaration to render.
             header_path (str): Path to the C++ header containing the declaration.
             use_cooperative (bool): Whether the function requires cooperative launch support.
             function_prefix_removal (list[str]): List of prefixes to remove from the original function name to produce the Python-visible name.
-        
+
         Notes:
             This initializer replaces the original C++ name in the renderer's tracked function symbols with the computed Python name.
         """
@@ -440,7 +440,7 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
     def func_name_python(self):
         """
         Python-visible function name after applying configured prefix removal.
-        
+
         Returns:
             str: The Python-exposed function name with any configured prefixes removed.
         """
