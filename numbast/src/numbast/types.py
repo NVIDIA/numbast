@@ -9,6 +9,8 @@ from numba.cuda.types import bfloat16
 from numba.cuda.vector_types import vector_types
 from numba.misc.special import typeof
 
+from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
+
 
 class FunctorType(nbtypes.Type):
     def __init__(self, name):
@@ -83,8 +85,8 @@ def register_enum_type(cxx_name: str, e: IntEnum):
 
 
 def to_numba_type(ty: str):
-    if ty == "__nv_bfloat16":
-        return bfloat16
+    if ty == "__nv_bfloat16_raw":
+        return _type_unnamed1405307
 
     if "FunctorType" in ty:
         return FunctorType(ty[:-11])
