@@ -109,7 +109,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             cls.Imports.add("from numba.cuda.types import bfloat16")
             cls._imported_numba_types.add(typ)
 
-        if typ == "__nv_bfloat16_raw":
+        elif typ == "__nv_bfloat16_raw":
             cls.Imports.add(
                 "from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307 as bfloat16_raw_type"
             )
