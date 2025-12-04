@@ -122,7 +122,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             cls.Imported_VectorTypes.append(typ)
             cls._imported_numba_types.add(typ)
 
-        elif typ in numba.types.__dict__:
+        elif typ in numba.cuda.types.__dict__:
             cls.Imports.add(f"from numba.cuda.types import {typ}")
             cls._imported_numba_types.add(typ)
 
