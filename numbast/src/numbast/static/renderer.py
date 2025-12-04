@@ -22,6 +22,7 @@ target_registry = TargetRegistry()
 lower = target_registry.lower
 lower_attr = target_registry.lower_getattr
 lower_constant = target_registry.lower_constant
+lower_cast = target_registry.lower_cast
 """
 
     KeyedStringIO = """
@@ -341,7 +342,7 @@ def registry_setup(use_separate_registry: bool) -> str:
             "from numba.cuda.typing.templates import Registry as TypingRegistry"
         )
         BaseRenderer.Imports.add(
-            "from numba.core.imputils import Registry as TargetRegistry, lower_cast"
+            "from numba.core.imputils import Registry as TargetRegistry"
         )
         return BaseRenderer.SeparateRegistrySetup
     else:
