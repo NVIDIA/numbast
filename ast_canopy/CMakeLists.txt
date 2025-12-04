@@ -3,6 +3,9 @@
 
 cmake_minimum_required(VERSION 3.29)
 
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _version_raw)
+string(STRIP ${_version_raw} _version)
+
 # Oddly, C language is needed here to build in PyTorch image on aarch64
 # machine
 
@@ -10,10 +13,12 @@ project(${SKBUILD_PROJECT_NAME}
         VERSION ${SKBUILD_PROJECT_VERSION}
 	LANGUAGES C CXX)
 
+# Prevent C++ modules from being scanned (not used in this project).
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
-find_package(astcanopy ${SKBUILD_PROJECT_VERSION} REQUIRED)
+find_package(astcanopy ${_version} REQUIRED)
 
 python_add_library(pylibastcanopy MODULE ast_canopy/pylibastcanopy.cpp WITH_SOABI)
 

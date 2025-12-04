@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "numbast"
 dynamic = ["version"]
+readme = { file = "README.md", content-type = "text/markdown" }
 description = "Numbast - auto Numba binding generation tool for CUDA C++."
 requires-python = ">=3.7"
 classifiers = [
@@ -17,15 +18,18 @@ classifiers = [
 ]
 dependencies = [
   "numba>=0.59.0",
-  "numba-cuda>=0.20.0",
+  "numba-cuda>=0.20.1,<0.21.0",
   "ast_canopy>=0.5.0",
   "pyyaml",
   "click",
   "jinja2",
 ]
 
-[tool.setuptools.dynamic]
-version = { file = "VERSION" }
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.setuptools_scm"
+
+[tool.setuptools_scm]
+root = ".."
 
 [project.scripts]
 numbast = "numbast.tool:static_binding_generator"
@@ -37,12 +41,12 @@ repository = "https://github.com/NVIDIA/numbast"
 [project.optional-dependencies]
 dev = ["ruff"]
 docs = ["sphinx>=7.0", "sphinx-copybutton>=0.5.2"]
-test-cu12 = ["pytest", "cffi", "numba-cuda[cu12]>=0.20.0"]
+test-cu12 = ["pytest", "cffi", "numba-cuda[cu12]>=0.20.1,<0.21.0"]
 test-cu13 = [
   "pytest",
   "cffi",
   "cuda-toolkit[cudart,crt,curand,cccl,nvcc]==13.*",
-  "numba-cuda[cu13]>=0.20.0",
+  "numba-cuda[cu13]>=0.20.1,<0.21.0",
 ]
 
 

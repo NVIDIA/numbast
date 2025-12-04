@@ -16,10 +16,17 @@ _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
 
-def register_enum_type_str(enum_name: str):
+def register_enum_type_str(ctype_enum_name: str, enum_name: str):
+    """
+    Register a mapping from a C++ enum type name to its corresponding Numba type string.
+
+    Parameters:
+        ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
+        enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).
+    """
     global CTYPE_TO_NBTYPE_STR
 
-    CTYPE_TO_NBTYPE_STR[enum_name] = enum_name
+    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
 
 
 def reset_types():
@@ -51,6 +58,10 @@ def to_numba_type_str(ty: str):
     if ty == "__nv_bfloat16":
         BaseRenderer._try_import_numba_type("__nv_bfloat16")
         return "bfloat16"
+
+    if ty == "__nv_bfloat16_raw":
+        BaseRenderer._try_import_numba_type("__nv_bfloat16_raw")
+        return "bfloat16_raw_type"
 
     if ty.endswith("*"):
         base_ty = ty.rstrip("*").rstrip(" ")

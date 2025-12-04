@@ -3,6 +3,8 @@
 
 import pytest
 
+import numpy as np
+
 from numba import cuda
 from numba.cuda.types import Type, Number
 from numba.cuda.datamodel import StructModel, PrimitiveModel
@@ -74,6 +76,19 @@ def test_foo_ctor_default_simple(decl, impl):
     assert all(arr.copy_to_host() == [0, 42])
 
 
+def test_foo_attriubte_readonly_access(decl, impl):
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.x
+
+    arr = np.ones((1,), dtype="int32")
+    kernel[1, 1](arr)
+    assert arr == pytest.approx([0])
+
+
 def test_bar_ctor_overloads(decl, impl):
     Bar = decl["Bar"]
 
@@ -122,3 +137,45 @@ def test_static_type_check(decl, impl):
     arr = device_array((1,), "int32")
     kernel[1, 1](arr)
     assert arr.copy_to_host() == pytest.approx([42])
+
+
+def test_struct_methods_simple_static(decl, impl):
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.get_x()
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host()[0] == 0
+
+
+def test_struct_methods_argument_static(decl, impl):
+    from numba.types import float32 as nb_float32
+
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.add_one(nb_float32(42.0))
+
+    arr = device_array((1,), "float32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([43.0])
+
+
+def test_struct_void_return_static(decl, impl, capfd):
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel():
+        foo = Foo()
+        foo.print()
+
+    kernel[1, 1]()
+    cuda.synchronize()
+    captured = capfd.readouterr()
+    assert "Foo: 0" in captured.out
