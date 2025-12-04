@@ -7,8 +7,8 @@ from logging import getLogger, FileHandler
 import tempfile
 import warnings
 
-from numba.types import Type
-from numba.core.datamodel.models import StructModel, PrimitiveModel
+from numba.cuda.types import Type
+from numba.cuda.datamodel.models import StructModel, PrimitiveModel
 
 from ast_canopy.pylibastcanopy import access_kind, method_kind
 from ast_canopy.decl import Struct, StructMethod
@@ -216,11 +216,11 @@ def {lower_scope_name}(shim_stream, shim_obj):
         """Render codes that declares a foreign function for this constructor in Numba."""
 
         self.Imports.add("from numba.cuda import declare_device")
-        self.Imports.add("from numba.core.typing import signature")
+        self.Imports.add("from numba.cuda.typing import signature")
         # All arguments are passed by pointers in C-CPP shim interop
-        self.Imports.add("from numba.types import CPointer")
+        self.Imports.add("from numba.cuda.types import CPointer")
         # Numba ABI returns int32 for exception codes
-        self.Imports.add("from numba.types import int32")
+        self.Imports.add("from numba.cuda.types import int32")
 
         decl_device_rendered = self.struct_ctor_decl_device_template.format(
             struct_ctor_device_decl_str=self._struct_ctor_device_decl_str,
@@ -396,7 +396,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
         self.Imports.add(
             "from numba.cuda.typing.templates import ConcreteTemplate"
         )
-        self.Imports.add("from numba.types import Function")
+        self.Imports.add("from numba.cuda.types import Function")
 
         signatures_str = ", ".join(signature_strs)
 
@@ -565,9 +565,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
         """Render codes that declares a foreign function for this constructor in Numba."""
 
         self.Imports.add("from numba.cuda import declare_device")
-        self.Imports.add("from numba.core.typing import signature")
+        self.Imports.add("from numba.cuda.typing import signature")
         # All arguments are passed by pointers in C-CPP shim interop
-        self.Imports.add("from numba.types import CPointer")
+        self.Imports.add("from numba.cuda.types import CPointer")
 
         decl_device_rendered = (
             self.struct_conversion_op_decl_device_template.format(
@@ -1108,7 +1108,7 @@ class {struct_type_class_name}({parent_type}):
         self.bitwidth = {struct_sizeof} * 8
 
     def can_convert_from(self, typingctx, other):
-        from numba.core.typeconv import Conversion
+        from numba.cuda.typeconv import Conversion
         if other in [{implicit_conversion_types}]:
             return Conversion.safe
 
@@ -1211,12 +1211,12 @@ class {struct_attr_typing_name}(AttributeTemplate):
         self._data_model = data_model
 
         self.Imports.add(
-            f"from numba.types import {self._parent_type.__qualname__}"
+            f"from numba.cuda.types import {self._parent_type.__qualname__}"
         )
         self._parent_type_str = self._parent_type.__qualname__
 
         self.Imports.add(
-            f"from numba.core.datamodel import {self._data_model.__qualname__}"
+            f"from numba.cuda.datamodel import {self._data_model.__qualname__}"
         )
         self._data_model_str = self._data_model.__qualname__
 
@@ -1269,7 +1269,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
 
         This is the python handle to use it in Numba kernels.
         """
-        self.Imports.add("from numba.extending import as_numba_type")
+        self.Imports.add("from numba.cuda.extending import as_numba_type")
 
         self._python_api_rendered = self.python_api_template.format(
             struct_type_name=self._struct_type_name,
@@ -1290,7 +1290,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
         - Sets self._data_model_rendered.
         """
 
-        self.Imports.add("from numba.core.extending import register_model")
+        self.Imports.add("from numba.cuda.extending import register_model")
 
         if self._data_model == PrimitiveModel:
             self.Imports.add("from llvmlite import ir")
@@ -1332,7 +1332,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
                 "from numba.cuda.typing.templates import AttributeTemplate"
             )
             self.Imports.add(
-                "from numba.core.extending import make_attribute_wrapper"
+                "from numba.cuda.extending import make_attribute_wrapper"
             )
             # For method attribute resolution
             self.Imports.add("from numba.types import BoundFunction")

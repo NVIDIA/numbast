@@ -110,7 +110,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             cls.Imports.add("from numba.cuda.types import bfloat16")
             cls._imported_numba_types.add(typ)
 
-        if typ == "__nv_bfloat16_raw":
+        elif typ == "__nv_bfloat16_raw":
             cls.Imports.add(
                 "from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307 as bfloat16_raw_type"
             )
@@ -122,8 +122,8 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             cls.Imported_VectorTypes.append(typ)
             cls._imported_numba_types.add(typ)
 
-        elif typ in numba.types.__dict__:
-            cls.Imports.add(f"from numba.types import {typ}")
+        elif typ in numba.cuda.types.__dict__:
+            cls.Imports.add(f"from numba.cuda.types import {typ}")
             cls._imported_numba_types.add(typ)
 
         else:
@@ -348,7 +348,7 @@ def registry_setup(use_separate_registry: bool) -> str:
             "from numba.cuda.typing.templates import Registry as TypingRegistry"
         )
         BaseRenderer.Imports.add(
-            "from numba.core.imputils import Registry as TargetRegistry"
+            "from numba.cuda.core.imputils import Registry as TargetRegistry"
         )
         return BaseRenderer.SeparateRegistrySetup
     else:
@@ -364,5 +364,5 @@ def registry_setup(use_separate_registry: bool) -> str:
         BaseRenderer.Imports.add(
             "from numba.cuda.cudaimpl import lower_constant"
         )
-        BaseRenderer.Imports.add("from numba.core.extending import lower_cast")
+        BaseRenderer.Imports.add("from numba.cuda.extending import lower_cast")
         return ""

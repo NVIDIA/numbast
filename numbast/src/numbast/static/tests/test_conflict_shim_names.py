@@ -3,8 +3,8 @@
 
 
 from numba import cuda
-from numba.types import Type
-from numba.core.datamodel import StructModel
+from numba.cuda.types import Type
+from numba.cuda.datamodel import StructModel
 
 
 def _check_shim_name_contains_mangled_name(src: str, mangled_name: str):

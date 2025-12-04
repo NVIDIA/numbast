@@ -1,6 +1,6 @@
 import numba.cuda as cuda
+from numba.cuda.types import float32
 import numpy as np
-from numba import float32
 
 import pytest
 
