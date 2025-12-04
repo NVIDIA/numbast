@@ -5,4 +5,4 @@
 
 #pragma once
 
-void __device__ func_with_void_ptr_arg(void *ptr) {}
+__device__ void func_with_void_ptr_arg(void *ptr) { (void)ptr; }
