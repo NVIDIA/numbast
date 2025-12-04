@@ -608,8 +608,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
-        self.Imports.add("from numba.core.extending import lower_cast")
-
         self._lowering_rendered = (
             self.struct_conversion_op_lowering_template.format(
                 struct_name=self._struct_name,
