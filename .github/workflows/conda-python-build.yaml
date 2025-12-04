@@ -96,7 +96,7 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           role-duration-seconds: 43200 # 12h
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
@@ -110,6 +110,12 @@ jobs:
       - name: Setup proxy cache
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
+      - name: GitHub Metadata
+        run: |
+          GIT_DESCRIBE_TAG=$(git describe --abbrev=0)
+          echo "GIT_DESCRIBE_TAG: ${GIT_DESCRIBE_TAG}"
+          echo "git describe: $(git describe)"
+          echo "git count commits since tag: $(git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count)"
       - name: Build Conda Package
         run: ${{ inputs.script }}
         env:
