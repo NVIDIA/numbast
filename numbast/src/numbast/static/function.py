@@ -227,11 +227,11 @@ def {func_name}():
         """Render codes that declares a foreign function for this function in Numba."""
 
         self.Imports.add("from numba.cuda import declare_device")
-        self.Imports.add("from numba.core.typing import signature")
+        self.Imports.add("from numba.cuda.typing import signature")
         # All arguments are passed by pointers in C-CPP shim interop
-        self.Imports.add("from numba.types import CPointer")
+        self.Imports.add("from numba.cuda.types import CPointer")
         # Numba ABI returns int32 for exception codes
-        self.Imports.add("from numba.types import int32")
+        self.Imports.add("from numba.cuda.types import int32")
 
         decl_device_rendered = self.decl_device_template.format(
             decl_name=self._deduplicated_shim_name,
@@ -273,7 +273,7 @@ def {func_name}():
     def _render_lowering(self):
         """Render lowering codes for this struct constructor."""
 
-        self.Imports.add("from numba.core.typing import signature")
+        self.Imports.add("from numba.cuda.typing import signature")
 
         use_cooperative = ""
         if self._use_cooperative:

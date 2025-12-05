@@ -6,7 +6,7 @@ import os
 import numpy as np
 
 from numba import types, cuda, float32
-from numba.core.datamodel import StructModel
+from numba.cuda.datamodel import StructModel
 
 from llvmlite import ir
 

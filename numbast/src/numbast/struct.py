@@ -6,15 +6,15 @@ from collections import defaultdict
 
 from llvmlite import ir
 
-from numba import types as nbtypes
-from numba.core.extending import (
+from numba.cuda import types as nbtypes
+from numba.cuda.extending import (
     register_model,
     lower_cast,
     make_attribute_wrapper,
 )
-from numba.core.typing import signature as nb_signature
+from numba.cuda.typing import signature as nb_signature
 from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate
-from numba.core.datamodel.models import StructModel, PrimitiveModel
+from numba.cuda.datamodel.models import StructModel, PrimitiveModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower

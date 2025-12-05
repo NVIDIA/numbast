@@ -4,8 +4,8 @@
 import pytest
 
 from numba import cuda
-from numba.types import Number, float64
-from numba.core.datamodel import PrimitiveModel
+from numba.cuda.types import Number, float64
+from numba.cuda.datamodel import PrimitiveModel
 from numba.cuda import device_array
 
 from ast_canopy import parse_declarations_from_source
