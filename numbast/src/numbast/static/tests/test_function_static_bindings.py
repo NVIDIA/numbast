@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 import cffi
 
-from numba.types import int32, float32
+from numba.cuda.types import int32, float32
 from numba import cuda
 from numba.cuda import device_array
 
