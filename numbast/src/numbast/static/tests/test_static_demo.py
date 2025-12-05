@@ -3,6 +3,8 @@
 
 import pytest
 
+import numpy as np
+
 from numba import cuda
 from numba.cuda.types import Number, float64
 from numba.cuda.datamodel import PrimitiveModel
@@ -53,4 +55,5 @@ def test_demo(decl):
 
     arr = device_array((1,), "float64")
     kernel[1, 1](arr)
-    assert all(arr.copy_to_host() == [])
+    host = arr.copy_to_host()
+    assert np.allclose(host, [3.14], rtol=1e-3, atol=1e-3)
