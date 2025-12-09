@@ -16,17 +16,26 @@ _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
 
-def register_enum_type_str(ctype_enum_name: str, enum_name: str):
+def register_enum_type_str(
+    ctype_enum_name: str, enum_name: str, underlying_integer_type: str = "int32"
+):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
 
     Parameters:
         ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
         enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).
+        underlying_integer_type (str): The underlying integer type to use for the enum.
     """
     global CTYPE_TO_NBTYPE_STR
 
-    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
+    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = (
+        f"IntEnumMember({enum_name}, {underlying_integer_type})"
+    )
+
+
+# Add additional enum type mappings here
+register_enum_type_str("cudaRoundMode", "cudaRoundMode", "int32")
 
 
 def reset_types():
@@ -54,6 +63,13 @@ def to_numba_type_str(ty: str):
     numba_ty: str
         The corresponding string representing a Numba type
     """
+
+    if ty == "cudaRoundMode":
+        BaseRenderer.Imports.add(
+            "from cuda.bindings.runtime import cudaRoundMode"
+        )
+        BaseRenderer._try_import_numba_type("IntEnumMember")
+        return CTYPE_TO_NBTYPE_STR[ty]
 
     if ty == "__nv_bfloat16":
         BaseRenderer._try_import_numba_type("__nv_bfloat16")
