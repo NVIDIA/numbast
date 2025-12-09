@@ -62,8 +62,9 @@ class {enum_name}(IntEnum):
         - Writes the resulting Python class source into `self._python_rendered`.
         """
         self.Imports.add("from enum import IntEnum")
-        self.Imports.add("from numba.types import IntEnumMember")
-        self.Imports.add("from numba.types import int64")
+
+        BaseRenderer._try_import_numba_type("IntEnumMember")
+        BaseRenderer._try_import_numba_type("int64")
 
         register_enum_type_str(self._decl.name, self._enum_name)
 

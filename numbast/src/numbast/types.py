@@ -6,10 +6,12 @@ import re
 
 from numba import types as nbtypes
 from numba.cuda.types import bfloat16
-from numba.cuda.typing.typeof import typeof
 from numba.cuda.vector_types import vector_types
 
+
 from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
+
+from cuda.bindings import runtime
 
 
 class FunctorType(nbtypes.Type):
@@ -78,10 +80,14 @@ NUMBA_TO_CTYPE_MAPS = {
 }
 
 
-def register_enum_type(cxx_name: str, e: IntEnum):
+def register_enum_type(
+    cxx_name: str,
+    e: IntEnum,
+    underlying_integer_type: nbtypes.Type = nbtypes.int32,
+):
     global CTYPE_MAPS
 
-    CTYPE_MAPS[cxx_name] = typeof(e)
+    CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, underlying_integer_type)
 
 
 def to_numba_type(ty: str):
@@ -125,3 +131,7 @@ def is_c_integral_type(typ_str: str) -> bool:
 
 def is_c_floating_type(typ_str: str) -> bool:
     return typ_str in FLOATING_TYPE_MAPS
+
+
+# Register CUDA Python Types
+register_enum_type("cudaRoundMode", runtime.cudaRoundMode, nbtypes.int32)
