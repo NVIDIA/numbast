@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import numba.cuda.types as nbtypes
-from numbast.registry import ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP
+from numbast.registry import enum_underlying_integer_type_registry
 
 
 def prepare_args(target_context, llvm_builder, sig, args):
@@ -35,7 +35,7 @@ def prepare_args(target_context, llvm_builder, sig, args):
         if isinstance(argty, nbtypes.IntEnumMember):
             pyenum = argty.instance_class
             pyenum_qualname = pyenum.__qualname__
-            argty = ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP[pyenum_qualname]
+            argty = enum_underlying_integer_type_registry[pyenum_qualname]
 
         processed_sigs.append(target_context.get_value_type(argty))
 

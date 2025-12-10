@@ -1,3 +1,3 @@
 from numba import types as nbtypes
 
-ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP: dict[str, nbtypes.Type] = {}
+enum_underlying_integer_type_registry: dict[str, nbtypes.Type] = {}

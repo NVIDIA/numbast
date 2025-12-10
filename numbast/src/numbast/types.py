@@ -11,7 +11,7 @@ from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
 
 from cuda.bindings import runtime
 
-from numbast.registry import ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP
+from numbast.registry import enum_underlying_integer_type_registry
 
 
 class FunctorType(nbtypes.Type):
@@ -104,7 +104,7 @@ def register_enum_type(
     global CTYPE_MAPS
 
     CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, nbtypes.int64)
-    ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP[e.__qualname__] = (
+    enum_underlying_integer_type_registry[e.__qualname__] = (
         underlying_integer_type
     )
 
