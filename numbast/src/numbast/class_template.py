@@ -50,6 +50,7 @@ from numbast.utils import (
     make_struct_regular_method_shim,
 )
 from numbast.shim_writer import ShimWriterBase
+from numbast.args import prepare_args
 
 ConcreteTypeCache: dict[str, nbtypes.Type] = {}
 
@@ -153,12 +154,8 @@ def bind_cxx_struct_ctor(
         shim_writer.write_to_shim(shim, func_name)
 
         selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args[1:]
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args[1:], args[1:]):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
+        argptrs = prepare_args(context, builder, sig, args)
         context.compile_internal(
             builder,
             ctor_shim_call,
@@ -262,12 +259,7 @@ def bind_cxx_struct_regular_method(
     def _method_impl(context, builder, sig, args):
         shim_writer.write_to_shim(shim, func_name)
 
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
+        argptrs = prepare_args(context, builder, sig, args)
         return context.compile_internal(
             builder,
             shim_call,

@@ -1,18 +1,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import IntEnum
 import re
 
 from numba import types as nbtypes
 from numba.cuda.types import bfloat16
 from numba.cuda.vector_types import vector_types
-from numba.misc.special import typeof
-
 
 from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
 
 from cuda.bindings import runtime
+
+from numbast.registry import ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP
 
 
 class FunctorType(nbtypes.Type):
@@ -83,12 +82,31 @@ NUMBA_TO_CTYPE_MAPS = {
 
 def register_enum_type(
     cxx_name: str,
-    e: IntEnum,
-    underlying_integer_type: nbtypes.Type = nbtypes.int32,
+    e: type,
+    underlying_integer_type: nbtypes.Type,
 ):
+    """
+    Register a mapping from a C++ enum type name to its corresponding Numba type.
+
+    Notice that in Numba, python enum object is always mapped to int64. In Numbast,
+    we use a separate mapping to map the python enum object to the underlying integer type.
+
+    At lowering time, we will convert the int64 integer value to the underlying integer type.
+
+    Parameters:
+        cxx_name: The C++ enum type name to register (as it appears in C/C++ headers).
+        e: The Python enum type to register.
+        underlying_integer_type: The underlying integer type to use for the enum.
+
+    Returns:
+        None
+    """
     global CTYPE_MAPS
 
-    CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, underlying_integer_type)
+    CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, nbtypes.int64)
+    ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP[e.__qualname__] = (
+        underlying_integer_type
+    )
 
 
 def to_numba_type(ty: str):

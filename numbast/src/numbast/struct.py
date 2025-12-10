@@ -31,6 +31,7 @@ from numbast.utils import (
     assemble_dereferenced_params_string,
 )
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
+from numbast.args import prepare_args
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int
@@ -131,12 +132,7 @@ def bind_cxx_struct_ctor(
         shim_writer.write_to_shim(shim, func_name)
 
         selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
+        argptrs = prepare_args(context, builder, sig, args)
         context.compile_internal(
             builder,
             ctor_shim_call,
@@ -255,13 +251,20 @@ def bind_cxx_struct_conversion_opeartor(
         value,
     ):
         shim_writer.write_to_shim(shim, func_name)
-        ptr = builder.alloca(context.get_value_type(s_type))
-        builder.store(value, ptr, align=getattr(s_type, "alignof_", None))
+        ptrs = prepare_args(
+            context,
+            builder,
+            [
+                s_type,
+            ],
+            [value],
+        )
+
         result = context.compile_internal(
             builder,
             shim_call,
             nb_signature(casted_type, nbtypes.CPointer(s_type)),
-            (ptr,),
+            ptrs,
         )
         return result
 
@@ -317,17 +320,12 @@ def bind_cxx_struct_regular_method(
     def _method_impl(context, builder, sig, args):
         shim_writer.write_to_shim(shim, func_name)
 
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
+        ptrs = prepare_args(context, builder, sig, args)
         return context.compile_internal(
             builder,
             shim_call,
             c_sig,
-            argptrs,
+            ptrs,
         )
 
     return nb_signature(return_type, *param_types, recvr=s_type)
