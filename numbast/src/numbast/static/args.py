@@ -8,7 +8,7 @@ def prepare_args(target_context, llvm_builder, sig, args):
         if isinstance(argty, types.IntEnumMember):
             pyenum = argty.instance_class
             pyenum_qualname = pyenum.__qualname__
-            argty = ENUM_TYPE_UNDERLYING_INTEGER_TYPE_MAP[pyenum_qualname]
+            argty = EUITSR[pyenum_qualname]
 
         processed_sigs.append(target_context.get_value_type(argty))
 
@@ -21,7 +21,7 @@ def prepare_args(target_context, llvm_builder, sig, args):
         for arg in sig.args
     ]
     for ptr, ty, arg in zip(ptrs, processed_sigs, args):
-        if isinstance(ty, nbtypes.IntEnumMember):
+        if isinstance(ty, types.IntEnumMember):
             arg = llvm_builder.trunc(arg, ty)
 
         llvm_builder.store(arg, ptr, align=getattr(ty, "alignof_", None))

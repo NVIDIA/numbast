@@ -11,6 +11,8 @@ from numbast.static.renderer import BaseRenderer, get_rendered_imports
 from numbast.static.types import register_enum_type_str
 from numbast.utils import _apply_prefix_removal
 
+from numbast.static.registry import get_enum_underlying_integer_type_dict_as_str
+
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "test.py")
 file_logger.debug(f"Struct debug outputs are written to {logger_path}")
@@ -119,6 +121,14 @@ class StaticEnumsRenderer(BaseRenderer):
                 with_imports (bool): If True, prepend the rendered import block to the assembled Python output.
         """
         self._python_str = ""
+
+        enum_underlying_integer_type_str_registry = (
+            get_enum_underlying_integer_type_dict_as_str()
+        )
+
+        self._python_str += (
+            f"EUITSR = {enum_underlying_integer_type_str_registry}"
+        )
 
         for decl in self._decls:
             SER = StaticEnumRenderer(decl, self._enum_prefix_removal)

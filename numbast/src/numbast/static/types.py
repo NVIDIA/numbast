@@ -8,6 +8,8 @@ from numbast.types import CTYPE_MAPS
 from numbast.static.renderer import BaseRenderer
 from numbast.errors import TypeNotFoundError
 
+from numbast.static.registry import enum_underlying_integer_type_str_registry
+
 
 _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
     k: str(v) for k, v in CTYPE_MAPS.items()
@@ -17,7 +19,9 @@ CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
 
 def register_enum_type_str(
-    ctype_enum_name: str, enum_name: str, underlying_integer_type: str = "int32"
+    ctype_enum_name: str,
+    enum_name: str,
+    underlying_integer_nbtype_str: str = "int32",
 ):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
@@ -25,12 +29,13 @@ def register_enum_type_str(
     Parameters:
         ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
         enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).
-        underlying_integer_type (str): The underlying integer type to use for the enum.
+        underlying_integer_type (str): The underlying integer numba type to use for the enum.
     """
     global CTYPE_TO_NBTYPE_STR
 
-    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = (
-        f"IntEnumMember({enum_name}, {underlying_integer_type})"
+    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
+    enum_underlying_integer_type_str_registry[ctype_enum_name] = (
+        underlying_integer_nbtype_str
     )
 
 
