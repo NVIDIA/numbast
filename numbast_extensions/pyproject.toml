@@ -15,7 +15,7 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
 ]
-dependencies = ["numba-cuda>=0.20.1,<0.21.0", "numbast>=0.2.0"]
+dependencies = ["numba-cuda>=0.21.0,<0.23.0", "numbast>=0.2.0"]
 
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"

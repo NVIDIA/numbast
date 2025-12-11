@@ -4,8 +4,8 @@
 import pytest
 
 from numba import cuda
-from numba.types import Type, Number
-from numba.core.datamodel import StructModel, PrimitiveModel
+from numba.cuda.types import Type, Number
+from numba.cuda.datamodel import StructModel, PrimitiveModel
 
 
 @pytest.fixture(scope="module")

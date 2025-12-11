@@ -4,8 +4,8 @@
 import pytest
 
 from numba import cuda
-from numba.types import Type
-from numba.core.datamodel import StructModel
+from numba.cuda.types import Type
+from numba.cuda.datamodel import StructModel
 from numba.cuda import device_array
 
 

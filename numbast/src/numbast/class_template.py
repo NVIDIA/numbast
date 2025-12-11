@@ -24,7 +24,7 @@ from numba.core.datamodel.models import StructModel, OpaqueModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
-from numba.core.imputils import numba_typeref_ctor
+from numba.cuda.core.imputils import numba_typeref_ctor
 from numba.core.typing.npydecl import parse_dtype
 from numba.core.errors import RequireLiteralValue, TypingError
 

@@ -3,7 +3,7 @@ from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_struct, bind_cxx_function, MemoryShimWriter
 
 from numba import types, cuda
-from numba.core.datamodel.models import PrimitiveModel
+from numba.cuda.datamodel.models import PrimitiveModel
 
 import numpy as np
 
