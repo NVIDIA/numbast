@@ -155,7 +155,7 @@ def bind_cxx_struct_ctor(
 
         selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
 
-        argptrs = prepare_args(context, builder, sig, args)
+        argptrs = prepare_args(context, builder, sig, args, ignore_first=True)
         context.compile_internal(
             builder,
             ctor_shim_call,

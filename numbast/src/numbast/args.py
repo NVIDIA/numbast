@@ -5,7 +5,7 @@ import numba.cuda.types as nbtypes
 from numbast.registry import enum_underlying_integer_type_registry
 
 
-def prepare_args(target_context, llvm_builder, sig, args):
+def prepare_args(target_context, llvm_builder, sig, args, ignore_first=False):
     """
     Prepare arguments to be passed across FFI calling convention.
 
@@ -23,6 +23,10 @@ def prepare_args(target_context, llvm_builder, sig, args):
         The signature of the function to prepare arguments for.
     args : list
         The actual arguments to prepare.
+    ignore_first : bool
+        Whether to ignore the first argument. Used by class template lowering when
+        the first argument is a numba typeof reference that's unused by actual
+        lowering.
 
     Returns
     -------
@@ -30,8 +34,11 @@ def prepare_args(target_context, llvm_builder, sig, args):
         The pointers to the arguments.
     """
 
+    argtys = sig.args[1:] if ignore_first else sig.args
+    args = args[1:] if ignore_first else args
+
     processed_sigs = []
-    for argty in sig.args:
+    for argty in argtys:
         if isinstance(argty, nbtypes.IntEnumMember):
             pyenum = argty.instance_class
             pyenum_qualname = pyenum.__qualname__
@@ -45,7 +52,7 @@ def prepare_args(target_context, llvm_builder, sig, args):
 
     ptrs = [
         llvm_builder.alloca(target_context.get_value_type(arg))
-        for arg in sig.args
+        for arg in argtys
     ]
     for ptr, ty, arg in zip(ptrs, processed_sigs, args):
         if isinstance(ty, nbtypes.IntEnumMember):
