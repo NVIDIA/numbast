@@ -49,6 +49,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("name", &Enum::name)
       .def_readwrite("enumerators", &Enum::enumerators)
       .def_readwrite("enumerator_values", &Enum::enumerator_values)
+      .def_readwrite("underlying_type", &Enum::underlying_type)
       .def(py::pickle(
           [](const Enum &e) {
             return py::make_tuple(e.name, e.enumerators, e.enumerator_values);

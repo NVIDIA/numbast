@@ -7,7 +7,9 @@
 
 namespace ast_canopy {
 
-Enum::Enum(const clang::EnumDecl *ED) : name(ED->getNameAsString()) {
+Enum::Enum(const clang::EnumDecl *ED)
+    : name(ED->getNameAsString()),
+      underlying_type(ED->getIntegerType(), ED->getASTContext()) {
   for (const auto *enumerator : ED->enumerators()) {
     enumerators.push_back(enumerator->getNameAsString());
 
