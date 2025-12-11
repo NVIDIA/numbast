@@ -5,7 +5,6 @@ import re
 
 from numba import types as nbtypes
 from numba.cuda.types import bfloat16
-from numba.cuda.typing.typeof import typeof
 from numba.cuda.vector_types import vector_types
 
 from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
