@@ -24,7 +24,7 @@ from numba.core.datamodel.models import StructModel, OpaqueModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
-from numba.core.imputils import numba_typeref_ctor
+from numba.cuda.core.imputils import numba_typeref_ctor
 from numba.core.typing.npydecl import parse_dtype
 from numba.core.errors import RequireLiteralValue, TypingError
 
@@ -50,6 +50,17 @@ from numbast.utils import (
     make_struct_regular_method_shim,
 )
 from numbast.shim_writer import ShimWriterBase
+
+if True:
+    import debugpy
+
+    print("ABOUT TO START DEBUGPY...\n")
+    debugpy.listen(5678)
+
+    # Pause the program until a remote debugger is attached
+    debugpy.wait_for_client()
+
+    debugpy.breakpoint()
 
 ConcreteTypeCache: dict[str, nbtypes.Type] = {}
 
@@ -451,6 +462,9 @@ def concrete_typing():
                 if isinstance(obj, (int, float)):
                     return str(obj)
 
+                if isinstance(obj, str):
+                    return obj
+
                 raise ValueError(
                     f"Unknown object to use in C shim function: {obj}"
                 )
@@ -473,7 +487,7 @@ def struct_type_from_instantiation(
     # code snippet creates such instantiation.
     src = f"""\n
 #include "{header_path}"
-template class {instance.angled_targs_str_as_c()};
+template class cub::{instance.angled_targs_str_as_c()};
 """
 
     with NamedTemporaryFile("w") as f:
