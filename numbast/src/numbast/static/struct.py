@@ -492,8 +492,8 @@ def {caller_name}(arg):
 def impl(context, builder, fromty, toty, value):
     context.active_code_library.add_linking_file(shim_obj)
     shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
-    ptrs = prepare_args(context, builder, sig, args)
-
+    ptr = builder.alloca(context.get_value_type({struct_type_name}))
+    builder.store(value, ptr, align=getattr({struct_type_name}, "alignof_", None))
     return context.compile_internal(
         builder,
         {struct_device_caller_name},
@@ -501,7 +501,7 @@ def impl(context, builder, fromty, toty, value):
             {cast_to_type},
             CPointer({struct_type_name}),
         ),
-        ptrs,
+        (ptr,),
     )
     """
 

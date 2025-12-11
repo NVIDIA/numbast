@@ -251,20 +251,13 @@ def bind_cxx_struct_conversion_opeartor(
         value,
     ):
         shim_writer.write_to_shim(shim, func_name)
-        ptrs = prepare_args(
-            context,
-            builder,
-            [
-                s_type,
-            ],
-            [value],
-        )
-
+        ptr = builder.alloca(context.get_value_type(s_type))
+        builder.store(value, ptr, align=getattr(s_type, "alignof_", None))
         result = context.compile_internal(
             builder,
             shim_call,
             nb_signature(casted_type, nbtypes.CPointer(s_type)),
-            ptrs,
+            (ptr,),
         )
         return result
 
