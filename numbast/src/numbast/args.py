@@ -37,27 +37,37 @@ def prepare_args(target_context, llvm_builder, sig, args, ignore_first=False):
     argtys = sig.args[1:] if ignore_first else sig.args
     args = args[1:] if ignore_first else args
 
-    processed_sigs = []
+    processed_argtys: list[nbtypes.Type] = []
     for argty in argtys:
         if isinstance(argty, nbtypes.IntEnumMember):
             pyenum = argty.instance_class
             pyenum_qualname = pyenum.__qualname__
-            argty = enum_underlying_integer_type_registry[pyenum_qualname]
+            underlying_integer_type = enum_underlying_integer_type_registry[
+                pyenum_qualname
+            ]
+            int_enum_type = nbtypes.IntEnumMember(
+                pyenum, underlying_integer_type
+            )
+            processed_argtys.append(int_enum_type)
+        else:
+            processed_argtys.append(argty)
 
-        processed_sigs.append(target_context.get_value_type(argty))
-
-    ptrs = []
-    for arg_irty in processed_sigs:
-        ptrs.append(llvm_builder.alloca(arg_irty))
+    processed_args = []
+    for argty, arg in zip(processed_argtys, args):
+        if isinstance(argty, nbtypes.IntEnumMember):
+            processed_args.append(
+                llvm_builder.trunc(
+                    arg, target_context.get_value_type(argty.dtype)
+                )
+            )
+        else:
+            processed_args.append(arg)
 
     ptrs = [
-        llvm_builder.alloca(target_context.get_value_type(arg))
-        for arg in argtys
+        llvm_builder.alloca(target_context.get_value_type(argty))
+        for argty in processed_argtys
     ]
-    for ptr, ty, arg in zip(ptrs, processed_sigs, args):
-        if isinstance(ty, nbtypes.IntEnumMember):
-            arg = llvm_builder.trunc(arg, ty)
-
-        llvm_builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+    for ptr, argty, arg in zip(ptrs, processed_argtys, processed_args):
+        llvm_builder.store(arg, ptr, align=getattr(argty, "alignof_", None))
 
     return ptrs
