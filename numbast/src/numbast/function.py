@@ -22,6 +22,8 @@ from numbast.utils import (
 )
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
+from numbast.args import prepare_args
+
 function_binding_shim_template = """
 extern "C" __device__ int
 {shim_name}({return_type} &retval {arglist}) {{
@@ -115,10 +117,8 @@ def bind_cxx_operator_overload_function(
     @lower(py_op, *param_types)
     def impl(context, builder, sig, args):
         shim_writer.write_to_shim(shim, shim_func_name)
-        ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-        for ptr, ty, arg in zip(ptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
 
+        ptrs = prepare_args(context, builder, sig, args)
         return context.compile_internal(
             builder,
             python_api,
@@ -207,9 +207,7 @@ def bind_cxx_non_operator_function(
     @lower(func, *param_types)
     def impl(context, builder, sig, args):
         shim_writer.write_to_shim(shim, shim_func_name)
-        ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-        for ptr, ty, arg in zip(ptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+        ptrs = prepare_args(context, builder, sig, args)
 
         return context.compile_internal(
             builder,

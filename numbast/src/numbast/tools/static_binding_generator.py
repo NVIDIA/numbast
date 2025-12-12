@@ -34,6 +34,7 @@ from numbast.static.function import (
     StaticFunctionsRenderer,
 )
 from numbast.static.enum import StaticEnumsRenderer
+from numbast.static.args import prepare_args_template
 from numbast.static.typedef import render_aliases
 from numbast.tools.yaml_tags import string_constructor
 
@@ -552,6 +553,9 @@ def _static_binding_generator(
     aliases = _typedef_to_aliases(typedefs)
     rendered_aliases = render_aliases(aliases)
 
+    helpers_str = ""
+    helpers_str += prepare_args_template
+
     enum_bindings = _generate_enums(
         enums, config.api_prefix_removal.get("Enum", [])
     )
@@ -615,6 +619,8 @@ def _static_binding_generator(
 {registry_setup_str}
 # Shim Stream:
 {shim_stream_str}
+# Helpers
+{helpers_str}
 # Enums:
 {enum_bindings}
 # Structs:

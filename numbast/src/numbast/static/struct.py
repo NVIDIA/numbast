@@ -88,9 +88,7 @@ def ctor_impl(context, builder, sig, args):
     context.active_code_library.add_linking_file(shim_obj)
     shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
     selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
-    argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-    for ptr, ty, arg in zip(argptrs, sig.args, args):
-        builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+    argptrs = prepare_args(context, builder, sig, args)
 
     context.compile_internal(
         builder,
@@ -494,9 +492,8 @@ def {caller_name}(arg):
 def impl(context, builder, fromty, toty, value):
     context.active_code_library.add_linking_file(shim_obj)
     shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
-    ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
-    builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
-
+    ptr = builder.alloca(context.get_value_type({struct_type_name}))
+    builder.store(value, ptr, align=getattr({struct_type_name}, "alignof_", None))
     return context.compile_internal(
         builder,
         {struct_device_caller_name},
@@ -731,10 +728,7 @@ def _{lower_fn_suffix}(context, builder, sig, args):
     context.active_code_library.add_linking_file(shim_obj)
     shim_stream.write_with_key("{unique_shim_name}", shim_raw_str)
 
-    argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-    for ptr, ty, arg in zip(argptrs, sig.args, args):
-        builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
+    argptrs = prepare_args(context, builder, sig, args)
     return context.compile_internal(
         builder,
         {device_caller_name},

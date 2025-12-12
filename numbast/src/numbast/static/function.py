@@ -119,10 +119,7 @@ shim_raw_str = \"\"\"{shim_rendered}\"\"\"
 def impl(context, builder, sig, args):
     context.active_code_library.add_linking_file(shim_obj){use_cooperative}
     shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
-    ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-    for ptr, ty, arg in zip(ptrs, sig.args, args):
-        builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
+    ptrs = prepare_args(context, builder, sig, args)
     return context.compile_internal(
         builder,
         {caller_name},
