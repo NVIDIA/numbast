@@ -68,8 +68,8 @@ ConcreteTypeCache2: dict[str, nbtypes.Type] = {}
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int
-{func_name}(int &ignore, {name} *self {arglist}) {{
-    new (self) {name}({args});
+{func_name}(int &ignore, cub::{name} *self {arglist}) {{
+    new (self) cub::{name}({args});
     return 0;
 }}
 """

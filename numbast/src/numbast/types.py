@@ -47,9 +47,15 @@ FLOATING_TYPE_MAPS = {
     "double": nbtypes.float64,
 }
 
+CCCL_Types = {
+    "cub::NullType": nbtypes.void,
+}
+
+
 CTYPE_MAPS = {
     **INTEGER_TYPE_MAPS,
     **FLOATING_TYPE_MAPS,
+    **CCCL_Types,
     "void": nbtypes.void,
     "bool": nbtypes.bool_,
     "uint4": vector_types["uint32x4"],
