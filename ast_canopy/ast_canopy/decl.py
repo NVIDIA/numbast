@@ -291,7 +291,7 @@ class StructMethod(Function):
 
 
 class TemplatedStructMethod(StructMethod):
-    """Struct/class method whose name may include template parameters.
+    """Struct/class method who's name may include template parameters.
 
     Provides utilities for working with the declaration name without
     template arguments.
@@ -379,6 +379,10 @@ class Struct:
                 and (not m.is_conversion_operator())
             ):
                 yield m
+
+    def templated_member_functions(self):
+        for m in self.templated_methods:
+            yield m
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.Record, parse_entry_point: str):

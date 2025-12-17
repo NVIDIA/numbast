@@ -19,11 +19,12 @@ from numba.cuda.typing.templates import (
     ConcreteTemplate,
     AttributeTemplate,
     CallableTemplate,
+    AbstractTemplate,
 )
 from numba.core.datamodel.models import StructModel, OpaqueModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
-from numba.cuda.cudaimpl import lower
+from numba.cuda.cudaimpl import lower, lower_attr
 from numba.cuda.core.imputils import numba_typeref_ctor
 from numba.core.typing.npydecl import parse_dtype
 from numba.core.errors import RequireLiteralValue, TypingError
@@ -33,6 +34,7 @@ from ast_canopy.decl import (
     ClassTemplateSpecialization,
     StructMethod,
     ClassTemplate,
+    FunctionTemplate,
 )
 
 from numbast.types import (
@@ -78,6 +80,12 @@ extern "C" __device__ int
 class MetaType(nbtypes.Type):
     def __init__(self, template_name):
         super().__init__(name=template_name + "MetaType")
+        self.template_name = template_name
+
+
+class MetaFunctionType(nbtypes.Type):
+    def __init__(self, template_name):
+        super().__init__(name=template_name + "MetaFunctionType")
         self.template_name = template_name
 
 
@@ -323,6 +331,70 @@ def bind_cxx_struct_regular_methods(
     return method_templates
 
 
+def bind_cxx_struct_templated_method(
+    struct_decl: ClassTemplateSpecialization,
+    templated_method: FunctionTemplate,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriterBase,
+) -> nb_signature:
+    print(
+        f"XXXXX: {templated_method.function.name}, {templated_method.template_parameters}"
+    )
+
+    template_parameters = templated_method.template_parameters
+    meta_function_type = MetaFunctionType(templated_method.function.name)
+
+    # @register
+    # class MetaFunctionType_template_decl(ConcreteTemplate):
+    #     key = meta_function_type
+    #     cases = [nb_signature(meta_function_type, nbtypes.VarArg(nbtypes.Any))]
+
+    import sys
+
+    print(f"YYYYY: {meta_function_type.__module__}")
+    meta_function_type.__name__ = "MetaFunctionType_template_decl"
+    mod = sys.modules[meta_function_type.__module__]
+    setattr(mod, "MetaFunctionType_template_decl", meta_function_type)
+
+    @register_global(meta_function_type)
+    class MetaFunctionType_template_decl(AbstractTemplate):
+        key = meta_function_type
+
+        def generic(self, args, kwds):
+            # # MetaType Lowering, NO-OP
+            # @lower_constant(meta_function_type)
+            # def lower_noop_1(context, builder, sig, args):
+            #     return context.get_constant(nbtypes.int32, 0)
+
+            # @lower_builtin(meta_function_type, nbtypes.VarArg(nbtypes.Any))
+            # def lower_noop_2(context, builder, sig, args):
+            #     return context.get_dummy_value()
+
+            return nb_signature(meta_function_type, nbtypes.VarArg(nbtypes.Any))
+
+    return meta_function_type
+
+
+def bind_cxx_struct_templated_methods(
+    struct_decl: ClassTemplateSpecialization,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriterBase,
+) -> dict[str, ConcreteTemplate]:
+    """ """
+
+    method_to_meta_function_type: dict[str, MetaFunctionType] = {}
+
+    for templated_method in struct_decl.templated_member_functions():
+        meta_function_type = bind_cxx_struct_templated_method(
+            struct_decl, templated_method, s_type, shim_writer
+        )
+        method_to_meta_function_type[templated_method.function.name] = (
+            meta_function_type
+        )
+
+    return method_to_meta_function_type
+
+
 def bind_cxx_class_template_specialization(
     shim_writer: ShimWriterBase,
     struct_decl: ClassTemplateSpecialization,
@@ -388,6 +460,10 @@ def bind_cxx_class_template_specialization(
         struct_decl, s_type, shim_writer
     )
 
+    templated_method_to_meta_type = bind_cxx_struct_templated_methods(
+        struct_decl, s_type, shim_writer
+    )
+
     public_fields_tys = {f.name: f.type_ for f in struct_decl.public_fields()}
 
     @register_attr
@@ -402,11 +478,22 @@ def bind_cxx_class_template_specialization(
             template = method_templates[attr]
             return nbtypes.BoundFunction(template, typ)
 
+        def _templated_method_ty(self, typ, attr: str) -> MetaFunctionType:
+            meta_function_type = templated_method_to_meta_type[attr]
+
+            @lower_attr(s_type, attr)
+            def lower_noop(context, builder, sig, args):
+                return context.get_dummy_value()
+
+            return meta_function_type
+
         def generic_resolve(self, typ, attr):
             if attr in public_fields_tys:
                 return self._field_ty(attr)
             elif attr in method_templates:
                 return self._method_ty(typ, attr)
+            elif attr in templated_method_to_meta_type:
+                return self._templated_method_ty(typ, attr)
             elif attr == "__call__":
                 # Special case when invoking tranpoline typing of numba_typeref_ctor
                 # Reject to look for internal typing.
@@ -671,3 +758,19 @@ def bind_cxx_class_templates(
         python_apis.append(TC)
 
     return python_apis
+
+
+# # Constructor typing:
+# @register
+# class TypeRefCallTemplate(ConcreteTemplate):
+#     key = numba_typeref_ctor
+#     cases = [
+#         nb_signature(nbtypes.CPointer(nbtypes.int32), nbtypes.TypeRef(nbtypes.CPointer(nbtypes.int32)), nbtypes.Any)
+#     ]
+
+# register_global(numba_typeref_ctor, nbtypes.Function(TypeRefCallTemplate))
+
+# @register
+# class CtorTemplate(ConcreteTemplate):
+#     key = nbtypes.CPointer
+#     cases = [nb_signature(nbtypes.CPointer(nbtypes.int32), nbtypes.Any)]
