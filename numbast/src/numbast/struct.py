@@ -30,6 +30,7 @@ from numbast.utils import (
     assemble_arglist_string,
     assemble_dereferenced_params_string,
 )
+from numbast.callconv import RecordCtorCallConv
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
 struct_ctor_shim_layer_template = """
@@ -91,25 +92,7 @@ def bind_cxx_struct_ctor(
     # Lowering
     # Note that libclang always consider the return type of a constructor
     # is void. So we need to manually specify the return type here.
-    func_name = deduplicate_overloads(f"{ctor.mangled_name}_nbst")
-
-    # FIXME: temporary solution for mismatching function prototype against definition.
-    # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
-    # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-    # is to pass all params by pointer and dereference them in shim. See dereferencing at the
-    # shim generation below.
-    ctor_shim_decl = declare_device(
-        func_name,
-        nbtypes.int32(
-            nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
-        ),
-    )
-
-    ctor_shim_call = make_device_caller_with_nargs(
-        func_name + "_shim",
-        1 + len(param_types),  # the extra argument for placement new pointer
-        ctor_shim_decl,
-    )
+    func_name = f"{ctor.mangled_name}_nbst"
 
     # Dynamically generate the shim layer:
     # FIXME: All params are passed by pointers, then dereferenced in shim.
@@ -124,30 +107,16 @@ def bind_cxx_struct_ctor(
         args=assemble_dereferenced_params_string(ctor.params),
     )
 
+    ctor_callconv = RecordCtorCallConv(
+        ctor.mangled_name,
+        shim_writer,
+        shim,
+        s_type,
+    )
+
     @lower(S, *param_types)
     def ctor_impl(context, builder, sig, args):
-        # Delay writing the shim function at lowering time. This avoids writing
-        # shim functions from the parsed header that's unused in kernels.
-        shim_writer.write_to_shim(shim, func_name)
-
-        selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
-        context.compile_internal(
-            builder,
-            ctor_shim_call,
-            nb_signature(
-                nbtypes.int32,
-                nbtypes.CPointer(s_type),
-                *map(nbtypes.CPointer, param_types),
-            ),
-            (selfptr, *argptrs),
-        )
-        return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+        return ctor_callconv(builder, context, sig, args)
 
     if ctor.kind == method_kind.converting_constructor:
         assert len(param_types) == 1, (
