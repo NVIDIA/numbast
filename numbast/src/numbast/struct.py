@@ -28,12 +28,12 @@ from numbast.utils import (
     assemble_arglist_string,
     assemble_dereferenced_params_string,
 )
-from numbast.callconv import RecordCtorCallConv, FunctionCallConv
+from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int
-{func_name}(int &ignore, {name} *self {arglist}) {{
+{func_name}({name} *self {arglist}) {{
     new (self) {name}({args});
     return 0;
 }}
@@ -105,7 +105,7 @@ def bind_cxx_struct_ctor(
         args=assemble_dereferenced_params_string(ctor.params),
     )
 
-    ctor_callconv = RecordCtorCallConv(
+    ctor_callconv = FunctionCallConv(
         ctor.mangled_name,
         shim_writer,
         shim,
