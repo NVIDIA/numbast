@@ -434,9 +434,9 @@ def parse_declarations_from_source(
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
         f"-resource-dir={clang_resource_dir}",
-        "-include__numbast_cuda_wrapper.h",
         # Place shim include dir early so it can intercept vendor headers.
         *([f"-I{_get_shim_include_dir()}"] if _get_shim_include_dir() else []),
+        "-include__numbast_cuda_wrapper.h",
         # cuda_wrappers_dir precede libstdc++ search includes to shadow certain
         # libstdc++ headers
         f"-isystem{cuda_wrappers_dir}",
