@@ -59,21 +59,6 @@ class StaticStructCtorRenderer(StaticStructMethodRenderer):
         Declaration of the constructor.
     """
 
-    struct_ctor_decl_device_template = """
-{struct_ctor_device_decl_str} = declare_device(
-    '{unique_shim_name}',
-    int32(
-        CPointer({struct_type_name}),
-        {pointer_wrapped_param_types}
-    )
-)
-    """
-
-    struct_ctor_device_caller_template = """
-def {struct_device_caller_name}({nargs}):
-    return {struct_ctor_device_decl_str}({nargs})
-    """
-
     struct_ctor_c_ext_shim_template = """
 extern "C" __device__ int
 {unique_shim_name}({struct_name} *self {arglist}) {{
@@ -108,7 +93,6 @@ def conversion_impl(context, builder, fromty, toty, value):
 
     lowering_body_template = """
 {shim_var}
-{decl_device}
 {lowering}
 """
 
@@ -157,8 +141,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
         self._header_path = header_path
         self._ctor_decl = ctor_decl
 
-        self._struct_ctor_device_decl_str = f"_ctor_decl_{struct_name}"
-
         # Cache the list of parameter types represented as Numba types
         self._nb_param_types = [
             to_numba_type_str(arg.unqualified_non_ref_type_name)
@@ -167,44 +149,11 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
         self._nb_param_types_str = ", ".join(map(str, self._nb_param_types))
 
-        # Cache the list of parameter types wrapped in pointer types.
-        def wrap_pointer(typ):
-            return f"CPointer({typ})"
-
-        _pointer_wrapped_param_types = [
-            wrap_pointer(typ) for typ in self._nb_param_types
-        ]
-        self._pointer_wrapped_param_types_str = ", ".join(
-            _pointer_wrapped_param_types
-        )
-
-        # Cache the list of parameter types in C++ pointer types
-        c_ptr_arglist = ", ".join(
-            f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-            for arg in self._ctor_decl.params
-        )
-        if c_ptr_arglist:
-            c_ptr_arglist = ", " + c_ptr_arglist
-
-        self._c_ext_argument_pointer_types = c_ptr_arglist
-
-        # Cache the list of dereferenced arguments
-        self._deref_args_str = ", ".join(
-            "*" + arg.name for arg in self._ctor_decl.params
-        )
-
         # Cache the unique shim name
         self._deduplicated_shim_name = f"{self._ctor_decl.mangled_name}_nbst"
 
-        # device caller name
-        self._device_caller_name = f"{self._struct_name}_device_caller"
-
         # lower scope name
         self._lower_scope_name = f"_lower_{ctor_decl.mangled_name}"
-
-    def _render_decl_device(self):
-        """Render codes that declares a foreign function for this constructor in Numba."""
-        self._decl_device_rendered = ""
 
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
@@ -248,7 +197,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
                 + self.struct_conversion_ctor_lowering_template.format(
                     struct_type_name=self._struct_type_name,
                     param_types=self._nb_param_types_str,
-                    pointer_wrapped_args=self._pointer_wrapped_param_types_str,
                 )
             )
 
@@ -257,14 +205,11 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
         Note that the typing still needs to be handled on a higher layer.
         """
-
-        self._render_decl_device()
         self._render_shim_function()
         self._render_lowering()
 
         lower_body = self.lowering_body_template.format(
             shim_var=self._c_ext_shim_var_rendered,
-            decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
         )
         lower_body = indent(lower_body, " " * 4)
@@ -437,20 +382,6 @@ class StaticStructConversionOperatorRenderer(StaticStructMethodRenderer):
         Declaration of the conversion operator.
     """
 
-    struct_conversion_op_decl_device_template = """
-{device_decl_name} = declare_device(
-    '{unique_shim_name}',
-    {cast_to_type}(
-        CPointer({struct_type_name}),
-    )
-)
-    """
-
-    struct_conversion_op_caller_template = """
-def {caller_name}(arg):
-    return {device_decl_name}(arg)
-    """
-
     struct_conversion_op_lowering_template = """
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
@@ -467,7 +398,6 @@ def impl(context, builder, fromty, toty, value):
 
     lowering_body_template = """
 {shim_var}
-{decl_device}
 {lowering}
 """
 
@@ -492,8 +422,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
         self._header_path = header_path
         self._convop_decl = convop_decl
 
-        self._device_decl_name = f"_op_decl_{struct_name}"
-
         # Cache the type that's converted to
         self._nb_cast_to_type = to_numba_type_str(
             self._convop_decl.return_type.unqualified_non_ref_type_name
@@ -503,45 +431,11 @@ def {lower_scope_name}(shim_stream, shim_obj):
         # Cache the C type that's converted to
         self._cast_to_type = self._convop_decl.return_type
 
-        # Cache the caller's name
-        self._caller_name = f"_conversion_op_caller_{struct_name}"
-
         # Cache the unique shim name of the c extension shim function
         self._unique_shim_name = f"{self._convop_decl.mangled_name}_nbst"
 
-        # device caller name
-        self._device_caller_name = f"_device_caller_{self._struct_name}"
-
         self._lower_scope_name = (
             f"_from_{struct_name}_to_{self._nb_cast_to_type_str}_lower"
-        )
-
-    def _render_decl_device(self):
-        """Render codes that declares a foreign function for this constructor in Numba."""
-
-        self.Imports.add("from numba.cuda import declare_device")
-        self.Imports.add("from numba.cuda.typing import signature")
-        # All arguments are passed by pointers in C-CPP shim interop
-        self.Imports.add("from numba.cuda.types import CPointer")
-
-        decl_device_rendered = (
-            self.struct_conversion_op_decl_device_template.format(
-                device_decl_name=self._device_decl_name,
-                unique_shim_name=self._unique_shim_name,
-                cast_to_type=self._nb_cast_to_type_str,
-                struct_type_name=self._struct_type_name,
-            )
-        )
-
-        device_caller_rendered = (
-            self.struct_conversion_op_caller_template.format(
-                device_decl_name=self._device_decl_name,
-                caller_name=self._caller_name,
-            )
-        )
-
-        self._decl_device_rendered = (
-            decl_device_rendered + "\n" + device_caller_rendered
         )
 
     def _render_shim_function(self):
@@ -577,14 +471,14 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
         Note that the typing still needs to be handled on a higher layer.
         """
-
-        self._render_decl_device()
         self._render_shim_function()
         self._render_lowering()
 
+        # Add import required for lowering
+        self.Imports.add("from numba.cuda.typing import signature")
+
         lower_body = self.lowering_body_template.format(
             shim_var=self._c_ext_shim_var_rendered,
-            decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
         )
         lower_body = indent(lower_body, " " * 4)
@@ -664,21 +558,6 @@ class StaticStructRegularMethodRenderer(BaseRenderer):
 shim_raw_str = \"\"\"{shim_rendered}\"\"\"
 """
 
-    struct_method_device_decl_template = """
-{device_decl_name} = declare_device(
-    '{unique_shim_name}',
-    {return_type}(
-        CPointer({struct_type_name}),
-        {pointer_wrapped_param_types}
-    )
-)
-"""
-
-    struct_method_device_caller_template = """
-def {device_caller_name}({nargs}):
-    return {device_decl_name}({nargs})
-"""
-
     struct_method_lowering_template = """
 @lower("{struct_name}.{method_name}", {struct_type_name}, {param_types})
 def _{lower_fn_suffix}(context, builder, sig, args):
@@ -694,7 +573,6 @@ def _{lower_fn_suffix}(context, builder, sig, args):
 
     lowering_body_template = """
 {shim_var}
-{decl_device}
 {lowering}
 """
 
@@ -744,34 +622,8 @@ def {lower_scope_name}(shim_stream, shim_obj):
         )
         self._nb_return_type_str = str(self._nb_return_type)
 
-        # Pointers for interop
-        def wrap_pointer(typ):
-            """
-            Construct a CPointer wrapper string for the given type.
-
-            Parameters:
-                typ (str): The underlying type name or type-string to wrap.
-
-            Returns:
-                str: A string representing the CPointer-wrapped type, e.g. "CPointer(int32)".
-            """
-            return f"CPointer({typ})"
-
-        _pointer_wrapped_param_types = [
-            wrap_pointer(typ) for typ in self._nb_param_types
-        ]
-        self._pointer_wrapped_param_types_str = ", ".join(
-            _pointer_wrapped_param_types
-        )
-
         # Unique shim name and helpers
         self._unique_shim_name = f"{self._method_decl.mangled_name}_nbst"
-        self._device_decl_name = (
-            f"_method_decl_{self._method_decl.mangled_name}"
-        )
-        self._device_caller_name = (
-            f"_device_caller_{self._method_decl.mangled_name}"
-        )
         self._lower_fn_suffix = f"lower_{self._method_decl.mangled_name}"
         self._lower_scope_name = f"_lower_{self._method_decl.mangled_name}"
 
@@ -793,20 +645,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
             )
         else:
             return f"signature({self._nb_return_type_str}, recvr={recvr})"
-
-    def _render_decl_device(self):
-        """
-        Render the CUDA device declaration and its Python-facing device-caller for this struct method and store the
-        combined source.
-
-        This method:
-        - Ensures required imports are registered on self.Imports.
-        - Formats the device declaration and a small Python device-caller using the renderer's template fields
-          (device/caller names, return type, struct type, pointer-wrapped parameter types).
-        - Builds a positional argument list based on the method's parameters and concatenates the declaration and caller
-          into self._decl_device_rendered.
-        """
-        self._decl_device_rendered = ""
 
     def _render_shim_function(self):
         """
@@ -857,13 +695,11 @@ def {lower_scope_name}(shim_stream, shim_obj):
         into the final Python lowering body (stored on self._python_rendered) and the final C shim string (stored on
         self._c_rendered).
         """
-        self._render_decl_device()
         self._render_shim_function()
         self._render_lowering()
 
         lower_body = self.lowering_body_template.format(
             shim_var=self._c_ext_shim_var_rendered,
-            decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
         )
         lower_body = indent(lower_body, " " * 4)
