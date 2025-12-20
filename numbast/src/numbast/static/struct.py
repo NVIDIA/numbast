@@ -17,10 +17,10 @@ from numbast.static.renderer import (
     BaseRenderer,
     get_rendered_imports,
     get_shim,
+    get_callconv_utils,
 )
 from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
 from numbast.utils import (
-    deduplicate_overloads,
     make_struct_ctor_shim,
     make_struct_conversion_operator_shim,
     make_struct_regular_method_shim,
@@ -76,7 +76,7 @@ def {struct_device_caller_name}({nargs}):
 
     struct_ctor_c_ext_shim_template = """
 extern "C" __device__ int
-{unique_shim_name}(int &ignore, {struct_name} *self {arglist}) {{
+{unique_shim_name}({struct_name} *self {arglist}) {{
     new (self) {struct_name}({args});
     return 0;
 }}
@@ -86,23 +86,13 @@ extern "C" __device__ int
 @lower({struct_name}, {param_types})
 def ctor_impl(context, builder, sig, args):
     context.active_code_library.add_linking_file(shim_obj)
-    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
-    selfptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
-    argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-    for ptr, ty, arg in zip(argptrs, sig.args, args):
-        builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
-    context.compile_internal(
-        builder,
-        {struct_device_caller_name},
-        signature(
-            int32,
-            CPointer({struct_type_name}),
-            {pointer_wrapped_args}
-        ),
-        (selfptr, *argptrs),
+    ctor_callconv = FunctionCallConv(
+        itanium_mangled_name="{mangled_name}",
+        shim_writer=shim_writer,
+        shim_code=shim_raw_str,
+        return_type={struct_type_name},
     )
-    return builder.load(selfptr, align=getattr({struct_type_name}, "alignof_", None))
+    return ctor_callconv(builder, context, sig, args)
     """
 
     struct_conversion_ctor_lowering_template = """
@@ -214,33 +204,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
     def _render_decl_device(self):
         """Render codes that declares a foreign function for this constructor in Numba."""
-
-        self.Imports.add("from numba.cuda import declare_device")
-        self.Imports.add("from numba.cuda.typing import signature")
-        # All arguments are passed by pointers in C-CPP shim interop
-        self.Imports.add("from numba.cuda.types import CPointer")
-        # Numba ABI returns int32 for exception codes
-        self.Imports.add("from numba.cuda.types import int32")
-
-        decl_device_rendered = self.struct_ctor_decl_device_template.format(
-            struct_ctor_device_decl_str=self._struct_ctor_device_decl_str,
-            struct_type_name=self._struct_type_name,
-            unique_shim_name=self._deduplicated_shim_name,
-            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
-        )
-
-        nargs = [f"arg_{i}" for i in range(len(self._ctor_decl.params) + 1)]
-        nargs_str = ", ".join(nargs)
-
-        device_caller_rendered = self.struct_ctor_device_caller_template.format(
-            struct_device_caller_name=self._device_caller_name,
-            nargs=nargs_str,
-            struct_ctor_device_decl_str=self._struct_ctor_device_decl_str,
-        )
-
-        self._decl_device_rendered = (
-            decl_device_rendered + "\n" + device_caller_rendered
-        )
+        self._decl_device_rendered = ""
 
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
@@ -271,9 +235,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
             struct_name=self._python_struct_name,
             param_types=self._nb_param_types_str,
             struct_type_name=self._struct_type_name,
-            struct_device_caller_name=self._device_caller_name,
-            pointer_wrapped_args=self._pointer_wrapped_param_types_str,
-            unique_shim_name=self._deduplicated_shim_name,
+            mangled_name=self._ctor_decl.mangled_name,
         )
 
         # When the function being lowered is a non-explicit single-arg
@@ -493,19 +455,14 @@ def {caller_name}(arg):
 @lower_cast({struct_type_name}, {cast_to_type})
 def impl(context, builder, fromty, toty, value):
     context.active_code_library.add_linking_file(shim_obj)
-    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
-    ptr = builder.alloca(context.get_value_type({struct_type_name}), name="selfptr")
-    builder.store(value, ptr, align=getattr({struct_type_name}, 'align', None))
-
-    return context.compile_internal(
-        builder,
-        {struct_device_caller_name},
-        signature(
-            {cast_to_type},
-            CPointer({struct_type_name}),
-        ),
-        (ptr,),
+    callconv = FunctionCallConv(
+        itanium_mangled_name="{mangled_name}",
+        shim_writer=shim_writer,
+        shim_code=shim_raw_str,
+        return_type={cast_to_type},
     )
+    sig = signature(toty, fromty)
+    return callconv(builder, context, sig, [value])
     """
 
     lowering_body_template = """
@@ -550,9 +507,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
         self._caller_name = f"_conversion_op_caller_{struct_name}"
 
         # Cache the unique shim name of the c extension shim function
-        self._unique_shim_name = deduplicate_overloads(
-            f"__{self._struct_name}_{self._convop_decl.mangled_name}"
-        )
+        self._unique_shim_name = f"{self._convop_decl.mangled_name}_nbst"
 
         # device caller name
         self._device_caller_name = f"_device_caller_{self._struct_name}"
@@ -613,8 +568,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
                 struct_name=self._struct_name,
                 cast_to_type=self._nb_cast_to_type_str,
                 struct_type_name=self._struct_type_name,
-                struct_device_caller_name=self._caller_name,
-                unique_shim_name=self._unique_shim_name,
+                mangled_name=self._convop_decl.mangled_name,
             )
         )
 
@@ -729,22 +683,13 @@ def {device_caller_name}({nargs}):
 @lower("{struct_name}.{method_name}", {struct_type_name}, {param_types})
 def _{lower_fn_suffix}(context, builder, sig, args):
     context.active_code_library.add_linking_file(shim_obj)
-    shim_stream.write_with_key("{unique_shim_name}", shim_raw_str)
-
-    argptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-    for ptr, ty, arg in zip(argptrs, sig.args, args):
-        builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
-    return context.compile_internal(
-        builder,
-        {device_caller_name},
-        signature(
-            {return_type},
-            CPointer({struct_type_name}),
-            {pointer_wrapped_param_types}
-        ),
-        argptrs,
+    callconv = FunctionCallConv(
+        itanium_mangled_name="{mangled_name}",
+        shim_writer=shim_writer,
+        shim_code=shim_raw_str,
+        return_type={return_type},
     )
+    return callconv(builder, context, sig, args)
 """
 
     lowering_body_template = """
@@ -820,9 +765,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
         )
 
         # Unique shim name and helpers
-        self._unique_shim_name = deduplicate_overloads(
-            f"__{self._method_decl.mangled_name}_nbst"
-        )
+        self._unique_shim_name = f"{self._method_decl.mangled_name}_nbst"
         self._device_decl_name = (
             f"_method_decl_{self._method_decl.mangled_name}"
         )
@@ -863,31 +806,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
         - Builds a positional argument list based on the method's parameters and concatenates the declaration and caller
           into self._decl_device_rendered.
         """
-        self.Imports.add("from numba.cuda import declare_device")
-        self.Imports.add("from numba.core.typing import signature")
-        self.Imports.add("from numba.types import CPointer")
-
-        decl_device_rendered = self.struct_method_device_decl_template.format(
-            device_decl_name=self._device_decl_name,
-            unique_shim_name=self._unique_shim_name,
-            return_type=self._nb_return_type_str,
-            struct_type_name=self._struct_type_name,
-            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
-        )
-
-        nargs = [f"arg_{i}" for i in range(len(self._method_decl.params) + 1)]
-        nargs_str = ", ".join(nargs)
-        device_caller_rendered = (
-            self.struct_method_device_caller_template.format(
-                device_caller_name=self._device_caller_name,
-                nargs=nargs_str,
-                device_decl_name=self._device_decl_name,
-            )
-        )
-
-        self._decl_device_rendered = (
-            decl_device_rendered + "\n" + device_caller_rendered
-        )
+        self._decl_device_rendered = ""
 
     def _render_shim_function(self):
         """
@@ -923,11 +842,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
             method_name=self._method_decl.name,
             struct_type_name=self._struct_type_name,
             param_types=param_types,
-            device_caller_name=self._device_caller_name,
             return_type=self._nb_return_type_str,
-            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
             lower_fn_suffix=self._lower_fn_suffix,
-            unique_shim_name=self._unique_shim_name,
+            mangled_name=self._method_decl.mangled_name,
         )
         self._lowering_rendered = lowering_rendered
 
@@ -1615,6 +1532,7 @@ class StaticStructsRenderer(BaseRenderer):
         if with_shim_stream:
             shim_include = f'"#include<{self._default_header}>"'
             self._python_str += "\n" + get_shim(shim_include)
+            self._python_str += "\n" + get_callconv_utils()
 
         self._python_str += "\n" + "\n".join(python_rendered)
 

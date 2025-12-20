@@ -28,6 +28,7 @@ from numbast.static.renderer import (
     get_reproducible_info,
     get_all_exposed_symbols,
     registry_setup,
+    get_callconv_utils,
 )
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import (
@@ -584,6 +585,7 @@ def _static_binding_generator(
         predefined_macros=config.predefined_macros,
         module_callbacks=config.module_callbacks,
     )
+    callconv_utils_str = get_callconv_utils()
     imports_str = get_rendered_imports(
         additional_imports=config.additional_imports
     )
@@ -615,6 +617,7 @@ def _static_binding_generator(
 {registry_setup_str}
 # Shim Stream:
 {shim_stream_str}
+{callconv_utils_str}
 # Enums:
 {enum_bindings}
 # Structs:

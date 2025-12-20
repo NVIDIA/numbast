@@ -14,6 +14,7 @@ from numbast.static.renderer import (
     get_rendered_imports,
     get_shim,
     registry_setup,
+    get_callconv_utils,
 )
 from numbast.static.renderer import clear_base_renderer_cache
 from numbast.static.function import clear_function_apis_registry
@@ -52,6 +53,7 @@ def cuda_decls(data_folder):
         [
             get_rendered_imports(),
             get_shim(shim_include),
+            get_callconv_utils(),
             struct_bindings,
             function_bindings,
         ]

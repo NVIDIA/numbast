@@ -1,4 +1,3 @@
-from numbast.shim_writer import ShimWriterBase
 from numbast.args import prepare_ir_types
 from numba.cuda import types, cgutils
 
@@ -11,7 +10,7 @@ class BaseCallConv:
     def __init__(
         self,
         itanium_mangled_name: str,
-        shim_writer: ShimWriterBase,
+        shim_writer: object,
         shim_code: str,
     ):
         self.shim_writer = shim_writer
@@ -40,7 +39,7 @@ class FunctionCallConv(BaseCallConv):
     def __init__(
         self,
         itanium_mangled_name: str,
-        shim_writer: ShimWriterBase,
+        shim_writer: object,
         shim_code: str,
         return_type: types.Type,
     ):
