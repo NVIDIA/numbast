@@ -75,20 +75,6 @@ class StaticFunctionRenderer(BaseRenderer):
 
     signature_template = "signature({return_type}, {param_types})"
 
-    decl_device_template = """
-{decl_name} = declare_device(
-    '{unique_shim_name}',
-    {return_type}(
-        {pointer_wrapped_param_types}
-    )
-)
-    """
-
-    caller_template = """
-def {caller_name}({nargs}):
-    return {decl_name}({nargs})
-    """
-
     c_ext_shim_template = """
 extern "C" __device__ int
 {unique_shim_name}({return_type} &retval {arglist}) {{
@@ -130,7 +116,6 @@ def impl(context, builder, sig, args):
 
     lowering_body_template = """
 {shim_var}
-{decl_device}
 {lowering}
 """
 
@@ -173,37 +158,10 @@ def {func_name}():
         )
         self._return_numba_type_str = str(self._return_numba_type)
 
-        # Cache the list of parameter types wrapped in pointer types.
-        def wrap_pointer(typ):
-            return f"CPointer({typ})"
-
-        _pointer_wrapped_param_types = [
-            wrap_pointer(typ) for typ in self._argument_numba_types
-        ]
-        self._pointer_wrapped_param_types_str = ", ".join(
-            _pointer_wrapped_param_types
-        )
-
         # Cache the unique shim name
         self._deduplicated_shim_name = f"{decl.mangled_name}_nbst"
-        self._caller_name = f"{self._deduplicated_shim_name}_caller"
 
         self._lower_scope_name = f"_lower_{self._deduplicated_shim_name}"
-
-        # Cache the list of parameter types in C++ pointer types
-        c_ptr_arglist = ", ".join(
-            f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-            for arg in self._decl.params
-        )
-        if c_ptr_arglist:
-            c_ptr_arglist = ", " + c_ptr_arglist
-
-        self._c_ext_argument_pointer_types = c_ptr_arglist
-
-        # Cache the list of dereferenced arguments
-        self._deref_args_str = ", ".join(
-            "*" + arg.name for arg in self._decl.params
-        )
 
         # Track the public symbols from a function binding
         self._function_symbols.append(self._decl.name)
@@ -219,10 +177,6 @@ def {func_name}():
 
     def _render_python_api(self):
         raise NotImplementedError()
-
-    def _render_decl_device(self):
-        """Render codes that declares a foreign function for this function in Numba."""
-        self._decl_device_rendered = ""
 
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
@@ -266,13 +220,11 @@ def {func_name}():
         other function lowerings.
         """
 
-        self._render_decl_device()
         self._render_shim_function()
         self._render_lowering()
 
         lower_body = self.lowering_body_template.format(
             shim_var=self._c_ext_shim_var_rendered,
-            decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
         )
         lower_body = indent(lower_body, " " * 4)
