@@ -1,7 +1,7 @@
 // The below is patching CUDA 13.0 headers for clang CUDA mode.
 #if defined(__clang__) && defined(__CUDA__) && defined(__CUDA_ARCH__)
 
-// NVCC 13 internally defines these to silidently deprecate certain functions.
+// NVCC 13 internally defines these to silently deprecate certain functions.
 #define __NV_SILENCE_DEPRECATION_BEGIN
 #define __NV_SILENCE_DEPRECATION_END
 
