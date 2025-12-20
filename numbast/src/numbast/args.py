@@ -23,6 +23,6 @@ def prepare_ir_types(context, argtys: list[ir.Type]) -> list[ir.Type]:
     Returns
     -------
     list[ir.Type]
-       List of pointer types wrapping the value types of each argument.
+        List of pointer types wrapping the value types of each argument.
     """
     return [ir.PointerType(context.get_value_type(argty)) for argty in argtys]
