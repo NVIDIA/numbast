@@ -32,6 +32,13 @@ def _get_shim_include_dir() -> str:
     """Return the absolute path to the local shim include directory"""
     here = os.path.dirname(__file__)
     shim_dir = os.path.join(here, "shim_include")
+
+    if not os.path.isdir(shim_dir):
+        raise RuntimeError(
+            f"Shim include directory not found at {shim_dir}. "
+            "This indicates a packaging issue. Please reinstall ast_canopy."
+        )
+
     return shim_dir
 
 

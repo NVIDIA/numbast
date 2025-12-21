@@ -2,10 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from numba.cuda.target import CUDATargetContext
 from llvmlite import ir
 
 
-def prepare_ir_types(context, argtys: list[ir.Type]) -> list[ir.Type]:
+def prepare_ir_types(
+    context: CUDATargetContext, argtys: list[ir.Type]
+) -> list[ir.Type]:
     """
     Prepare IR types for passing arguments via pointers in function calls.
 
