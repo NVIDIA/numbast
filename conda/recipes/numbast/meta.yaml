@@ -47,6 +47,7 @@ requirements:
     - python
     - pip
     - setuptools
+    - setuptools_scm
   run:
     - ast_canopy >={{ PROJECT_VERSION }}
     - cuda-nvrtc
