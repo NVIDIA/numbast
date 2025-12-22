@@ -14,6 +14,7 @@ from numbast.static.renderer import (
     BaseRenderer,
     get_rendered_imports,
     get_shim,
+    get_callconv_utils,
 )
 from numbast.static.types import to_numba_type_str
 from numbast.utils import make_function_shim, _apply_prefix_removal
@@ -74,20 +75,6 @@ class StaticFunctionRenderer(BaseRenderer):
 
     signature_template = "signature({return_type}, {param_types})"
 
-    decl_device_template = """
-{decl_name} = declare_device(
-    '{unique_shim_name}',
-    {return_type}(
-        {pointer_wrapped_param_types}
-    )
-)
-    """
-
-    caller_template = """
-def {caller_name}({nargs}):
-    return {decl_name}({nargs})
-    """
-
     c_ext_shim_template = """
 extern "C" __device__ int
 {unique_shim_name}({return_type} &retval {arglist}) {{
@@ -118,22 +105,17 @@ shim_raw_str = \"\"\"{shim_rendered}\"\"\"
 @lower({func_name}, {params})
 def impl(context, builder, sig, args):
     context.active_code_library.add_linking_file(shim_obj){use_cooperative}
-    shim_stream.write_with_key(\"{unique_shim_name}\", shim_raw_str)
-    ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-    for ptr, ty, arg in zip(ptrs, sig.args, args):
-        builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
-    return context.compile_internal(
-        builder,
-        {caller_name},
-        signature({return_type}, {pointer_wrapped_param_types}),
-        ptrs,
+    callconv = FunctionCallConv(
+        itanium_mangled_name="{mangled_name}",
+        shim_writer=shim_writer,
+        shim_code=shim_raw_str,
+        return_type={return_type},
     )
+    return callconv(builder, context, sig, args)
 """
 
     lowering_body_template = """
 {shim_var}
-{decl_device}
 {lowering}
 """
 
@@ -176,37 +158,10 @@ def {func_name}():
         )
         self._return_numba_type_str = str(self._return_numba_type)
 
-        # Cache the list of parameter types wrapped in pointer types.
-        def wrap_pointer(typ):
-            return f"CPointer({typ})"
-
-        _pointer_wrapped_param_types = [
-            wrap_pointer(typ) for typ in self._argument_numba_types
-        ]
-        self._pointer_wrapped_param_types_str = ", ".join(
-            _pointer_wrapped_param_types
-        )
-
         # Cache the unique shim name
         self._deduplicated_shim_name = f"{decl.mangled_name}_nbst"
-        self._caller_name = f"{self._deduplicated_shim_name}_caller"
 
         self._lower_scope_name = f"_lower_{self._deduplicated_shim_name}"
-
-        # Cache the list of parameter types in C++ pointer types
-        c_ptr_arglist = ", ".join(
-            f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-            for arg in self._decl.params
-        )
-        if c_ptr_arglist:
-            c_ptr_arglist = ", " + c_ptr_arglist
-
-        self._c_ext_argument_pointer_types = c_ptr_arglist
-
-        # Cache the list of dereferenced arguments
-        self._deref_args_str = ", ".join(
-            "*" + arg.name for arg in self._decl.params
-        )
 
         # Track the public symbols from a function binding
         self._function_symbols.append(self._decl.name)
@@ -222,36 +177,6 @@ def {func_name}():
 
     def _render_python_api(self):
         raise NotImplementedError()
-
-    def _render_decl_device(self):
-        """Render codes that declares a foreign function for this function in Numba."""
-
-        self.Imports.add("from numba.cuda import declare_device")
-        self.Imports.add("from numba.cuda.typing import signature")
-        # All arguments are passed by pointers in C-CPP shim interop
-        self.Imports.add("from numba.cuda.types import CPointer")
-        # Numba ABI returns int32 for exception codes
-        self.Imports.add("from numba.cuda.types import int32")
-
-        decl_device_rendered = self.decl_device_template.format(
-            decl_name=self._deduplicated_shim_name,
-            unique_shim_name=self._deduplicated_shim_name,
-            return_type=self._return_numba_type_str,
-            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
-        )
-
-        nargs = [f"arg_{i}" for i in range(len(self._decl.params))]
-        nargs_str = ", ".join(nargs)
-
-        caller_rendered = self.caller_template.format(
-            caller_name=self._caller_name,
-            decl_name=self._deduplicated_shim_name,
-            nargs=nargs_str,
-        )
-
-        self._decl_device_rendered = (
-            decl_device_rendered + "\n" + caller_rendered
-        )
 
     def _render_shim_function(self):
         """Render external C shim functions for this struct constructor."""
@@ -282,10 +207,8 @@ def {func_name}():
         self._lowering_rendered = self.lowering_template.format(
             func_name=self.func_name_python,
             params=self._argument_numba_types_str,
-            caller_name=self._caller_name,
+            mangled_name=self._decl.mangled_name,
             return_type=self._return_numba_type_str,
-            pointer_wrapped_param_types=self._pointer_wrapped_param_types_str,
-            unique_shim_name=self._deduplicated_shim_name,
             use_cooperative=use_cooperative,
         )
 
@@ -297,13 +220,11 @@ def {func_name}():
         other function lowerings.
         """
 
-        self._render_decl_device()
         self._render_shim_function()
         self._render_lowering()
 
         lower_body = self.lowering_body_template.format(
             shim_var=self._c_ext_shim_var_rendered,
-            decl_device=self._decl_device_rendered,
             lowering=self._lowering_rendered,
         )
         lower_body = indent(lower_body, " " * 4)
@@ -702,6 +623,7 @@ class {op_typing_name}(ConcreteTemplate):
         if with_shim_stream:
             shim_include = f'"#include<{self._header_path}>"'
             self._python_str += "\n" + get_shim(shim_include)
+            self._python_str += "\n" + get_callconv_utils()
 
         self._python_str += "\n" + "\n".join(python_rendered)
 

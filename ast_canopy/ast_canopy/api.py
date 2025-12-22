@@ -28,11 +28,18 @@ from ast_canopy.fdcap_min import capture_fd, STREAMFD
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
 
 
-def _get_shim_include_dir() -> str | None:
-    """Return the absolute path to the local shim include directory, if present."""
+def _get_shim_include_dir() -> str:
+    """Return the absolute path to the local shim include directory"""
     here = os.path.dirname(__file__)
     shim_dir = os.path.join(here, "shim_include")
-    return shim_dir if os.path.isdir(shim_dir) else None
+
+    if not os.path.isdir(shim_dir):
+        raise RuntimeError(
+            f"Shim include directory not found at {shim_dir}. "
+            "This indicates a packaging issue. Please reinstall ast_canopy."
+        )
+
+    return shim_dir
 
 
 @dataclass
@@ -435,7 +442,7 @@ def parse_declarations_from_source(
         f"-std={cxx_standard}",
         f"-resource-dir={clang_resource_dir}",
         # Place shim include dir early so it can intercept vendor headers.
-        *([f"-I{_get_shim_include_dir()}"] if _get_shim_include_dir() else []),
+        f"-I{_get_shim_include_dir()}",
         # cuda_wrappers_dir precede libstdc++ search includes to shadow certain
         # libstdc++ headers
         f"-isystem{cuda_wrappers_dir}",

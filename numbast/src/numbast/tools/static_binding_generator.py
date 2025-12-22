@@ -5,7 +5,6 @@ import click
 import os
 import json
 from collections import defaultdict
-import sys
 import subprocess
 import importlib
 import warnings
@@ -28,6 +27,7 @@ from numbast.static.renderer import (
     get_reproducible_info,
     get_all_exposed_symbols,
     registry_setup,
+    get_callconv_utils,
 )
 from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import (
@@ -584,6 +584,7 @@ def _static_binding_generator(
         predefined_macros=config.predefined_macros,
         module_callbacks=config.module_callbacks,
     )
+    callconv_utils_str = get_callconv_utils()
     imports_str = get_rendered_imports(
         additional_imports=config.additional_imports
     )
@@ -594,8 +595,21 @@ def _static_binding_generator(
     else:
         output_file = os.path.join(output_dir, config.output_name)
 
-    # Full command line that generate the binding:
-    cmd = " ".join(sys.argv)
+    # Full command line that generated the binding:
+    #
+    # NOTE: This generator is frequently invoked from within other Python
+    # programs (e.g. pytest via click's CliRunner). In such cases, `sys.argv`
+    # reflects the *outer* process (pytest) rather than the generator itself,
+    # which makes the embedded metadata unstable and can lead to confusing
+    # output (and even false positives in tests that inspect the generated
+    # bindings).
+    if cfg_file_path is not None:
+        cmd = (
+            f"static_binding_generator --cfg-path {cfg_file_path} "
+            f"--output-dir {output_dir}"
+        )
+    else:
+        cmd = "<programmatic invocation>"
 
     # Compute the relative path from generated binding to the config file:
     if cfg_file_path is not None:
@@ -615,6 +629,7 @@ def _static_binding_generator(
 {registry_setup_str}
 # Shim Stream:
 {shim_stream_str}
+{callconv_utils_str}
 # Enums:
 {enum_bindings}
 # Structs:
