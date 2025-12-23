@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import numba.cuda.types as nbtypes
+from numba.cuda.target import CUDATargetContext
+
+from llvmlite import ir
+
 from numbast.registry import enum_underlying_integer_type_registry
 
 
@@ -71,3 +75,28 @@ def prepare_args(target_context, llvm_builder, sig, args, ignore_first=False):
         llvm_builder.store(arg, ptr, align=getattr(argty, "alignof_", None))
 
     return ptrs
+
+
+def prepare_ir_types(
+    context: CUDATargetContext, argtys: list[ir.Type]
+) -> list[ir.Type]:
+    """
+    Prepare IR types for passing arguments via pointers in function calls.
+
+    This utility wraps each argument type in a PointerType to enable
+    the call convention used by FunctionCallConv, where arguments are
+    passed by reference.
+
+    Parameters
+    ----------
+    context : context object
+        The compilation context providing the get_value_type method.
+    argtys : list[ir.Type]
+        List of LLVM IR types representing function arguments.
+
+    Returns
+    -------
+    list[ir.Type]
+        List of pointer types wrapping the value types of each argument.
+    """
+    return [ir.PointerType(context.get_value_type(argty)) for argty in argtys]

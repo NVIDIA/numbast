@@ -91,7 +91,7 @@ jobs:
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
       - name: Cache build dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/build-deps
           key: build-deps-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/install-build-deps.sh') }}
@@ -99,7 +99,7 @@ jobs:
         run: ./ci/install-build-deps.sh
       - name: Cache LLVM installation
         id: cache-llvm
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/llvm-install
           key: llvm-${{ matrix.ARCH }}-${{ matrix.LINUX_VER }}|${{ hashFiles('ci/llvm-build-static.sh') }}-llvm-${{ inputs.llvm_version }}

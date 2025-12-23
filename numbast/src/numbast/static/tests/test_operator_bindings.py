@@ -8,23 +8,64 @@ from numba.cuda.types import Type
 from numba.cuda.datamodel import StructModel
 from numba.cuda import device_array
 
+from ast_canopy import parse_declarations_from_source
 
-@pytest.fixture(scope="function")
-def cuda_decls(make_binding):
-    types = {
-        "Foo": Type,
-    }
-    datamodels = {
-        "Foo": StructModel,
-    }
+from numbast.static.renderer import (
+    get_rendered_imports,
+    get_shim,
+    registry_setup,
+    get_callconv_utils,
+)
+from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import clear_function_apis_registry
+from numbast.static.struct import StaticStructsRenderer
+from numbast.static.function import StaticFunctionsRenderer
 
-    res = make_binding("operator.cuh", types, datamodels, "sm_50")
-    bindings = res["bindings"]
 
-    public_apis = ["Foo"]
-    assert all(public_api in bindings for public_api in public_apis)
+@pytest.fixture(scope="module")
+def cuda_decls(data_folder):
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
 
-    return bindings
+    header = data_folder("operator.cuh")
+
+    specs = {"Foo": (Type, StructModel, header)}
+
+    decls = parse_declarations_from_source(header, [header], "sm_50")
+    structs = decls.structs
+    functions = decls.functions
+
+    assert len(structs) == 1
+
+    registry_setup(use_separate_registry=False)
+    SSR = StaticStructsRenderer(structs, specs)
+    SFR = StaticFunctionsRenderer(functions, header)
+
+    struct_bindings = SSR.render_as_str(
+        with_imports=False, with_shim_stream=False
+    )
+    function_bindings = SFR.render_as_str(
+        with_imports=False, with_shim_stream=False
+    )
+
+    shim_include = f'"#include<{header}>"'
+    bindings = "\n".join(
+        [
+            get_rendered_imports(),
+            get_shim(shim_include),
+            get_callconv_utils(),
+            struct_bindings,
+            function_bindings,
+        ]
+    )
+
+    globals = {}
+    exec(bindings, globals)
+
+    public_apis = [*specs]
+    assert all(public_api in globals for public_api in public_apis)
+
+    return {k: globals[k] for k in public_apis}
 
 
 @pytest.fixture(scope="module")

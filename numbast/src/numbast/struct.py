@@ -15,7 +15,6 @@ from numba.cuda.extending import (
 from numba.cuda.typing import signature as nb_signature
 from numba.cuda.typing.templates import ConcreteTemplate, AttributeTemplate
 from numba.cuda.datamodel.models import StructModel, PrimitiveModel
-from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 
@@ -25,17 +24,16 @@ from ast_canopy.decl import Struct, StructMethod
 from numbast.types import CTYPE_MAPS as C2N, to_numba_type
 from numbast.utils import (
     deduplicate_overloads,
-    make_device_caller_with_nargs,
     make_struct_regular_method_shim,
     assemble_arglist_string,
     assemble_dereferenced_params_string,
 )
+from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
-from numbast.args import prepare_args
 
 struct_ctor_shim_layer_template = """
 extern "C" __device__ int
-{func_name}(int &ignore, {name} *self {arglist}) {{
+{func_name}({name} *self {arglist}) {{
     new (self) {name}({args});
     return 0;
 }}
@@ -92,25 +90,7 @@ def bind_cxx_struct_ctor(
     # Lowering
     # Note that libclang always consider the return type of a constructor
     # is void. So we need to manually specify the return type here.
-    func_name = deduplicate_overloads(f"{ctor.mangled_name}_nbst")
-
-    # FIXME: temporary solution for mismatching function prototype against definition.
-    # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
-    # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-    # is to pass all params by pointer and dereference them in shim. See dereferencing at the
-    # shim generation below.
-    ctor_shim_decl = declare_device(
-        func_name,
-        nbtypes.int32(
-            nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
-        ),
-    )
-
-    ctor_shim_call = make_device_caller_with_nargs(
-        func_name + "_shim",
-        1 + len(param_types),  # the extra argument for placement new pointer
-        ctor_shim_decl,
-    )
+    func_name = f"{ctor.mangled_name}_nbst"
 
     # Dynamically generate the shim layer:
     # FIXME: All params are passed by pointers, then dereferenced in shim.
@@ -125,25 +105,16 @@ def bind_cxx_struct_ctor(
         args=assemble_dereferenced_params_string(ctor.params),
     )
 
+    ctor_callconv = FunctionCallConv(
+        ctor.mangled_name,
+        shim_writer,
+        shim,
+        s_type,
+    )
+
     @lower(S, *param_types)
     def ctor_impl(context, builder, sig, args):
-        # Delay writing the shim function at lowering time. This avoids writing
-        # shim functions from the parsed header that's unused in kernels.
-        shim_writer.write_to_shim(shim, func_name)
-
-        selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-        argptrs = prepare_args(context, builder, sig, args)
-        context.compile_internal(
-            builder,
-            ctor_shim_call,
-            nb_signature(
-                nbtypes.int32,
-                nbtypes.CPointer(s_type),
-                *map(nbtypes.CPointer, param_types),
-            ),
-            (selfptr, *argptrs),
-        )
-        return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+        return ctor_callconv(builder, context, sig, args)
 
     if ctor.kind == method_kind.converting_constructor:
         assert len(param_types) == 1, (
@@ -226,21 +197,22 @@ def bind_cxx_struct_conversion_opeartor(
     casted_type = to_numba_type(conv.return_type.unqualified_non_ref_type_name)
 
     # Lowering:
-    func_name = deduplicate_overloads(f"__{struct_name}__{conv.mangled_name}")
-
-    shim_decl = declare_device(func_name, casted_type(nbtypes.CPointer(s_type)))
-    # Types cast shims always has 1 parameter: self*.
-    shim_call = make_device_caller_with_nargs(func_name + "_shim", 1, shim_decl)
+    mangled_name = deduplicate_overloads(
+        f"__{struct_name}__{conv.mangled_name}"
+    )
+    shim_func_name = f"{mangled_name}_nbst"
 
     # Conversion operators has no arguments
     shim = struct_method_shim_layer_template.format(
-        func_name=func_name,
+        func_name=shim_func_name,
         return_type=conv.return_type.unqualified_non_ref_type_name,
         name=struct_name,
         arglist="",
         method_name=conv.name,
         args="",
     )
+
+    conv_cc = FunctionCallConv(mangled_name, shim_writer, shim, casted_type)
 
     @lower_cast(s_type, casted_type)
     def impl(
@@ -250,16 +222,7 @@ def bind_cxx_struct_conversion_opeartor(
         toty,
         value,
     ):
-        shim_writer.write_to_shim(shim, func_name)
-        ptr = builder.alloca(context.get_value_type(s_type))
-        builder.store(value, ptr, align=getattr(s_type, "alignof_", None))
-        result = context.compile_internal(
-            builder,
-            shim_call,
-            nb_signature(casted_type, nbtypes.CPointer(s_type)),
-            (ptr,),
-        )
-        return result
+        return conv_cc(builder, context, nb_signature(toty, fromty), [value])
 
 
 def bind_cxx_struct_conversion_opeartors(
@@ -287,39 +250,24 @@ def bind_cxx_struct_regular_method(
     )
 
     # Lowering
-    func_name = deduplicate_overloads(f"__{method_decl.mangled_name}_nbst")
-
-    c_sig = return_type(
-        nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
-    )
-
-    shim_decl = declare_device(func_name, c_sig)
-
-    shim_call = make_device_caller_with_nargs(
-        func_name + "_shim", 1 + len(param_types), shim_decl
-    )
+    mangled_name = deduplicate_overloads(f"__{method_decl.mangled_name}")
+    shim_func_name = f"{mangled_name}_nbst"
 
     shim = make_struct_regular_method_shim(
-        shim_name=func_name,
+        shim_name=shim_func_name,
         struct_name=struct_decl.name,
         method_name=method_decl.name,
         return_type=method_decl.return_type.unqualified_non_ref_type_name,
         params=method_decl.params,
     )
 
+    method_cc = FunctionCallConv(mangled_name, shim_writer, shim, return_type)
+
     qualname = f"{s_type}.{method_decl.name}"
 
     @lower(qualname, s_type, *param_types)
     def _method_impl(context, builder, sig, args):
-        shim_writer.write_to_shim(shim, func_name)
-
-        ptrs = prepare_args(context, builder, sig, args)
-        return context.compile_internal(
-            builder,
-            shim_call,
-            c_sig,
-            ptrs,
-        )
+        return method_cc(builder, context, sig, args)
 
     return nb_signature(return_type, *param_types, recvr=s_type)
 
