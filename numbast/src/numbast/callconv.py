@@ -36,24 +36,15 @@ class BaseCallConv:
 
 
 class FunctionCallConv(BaseCallConv):
-    def __init__(
-        self,
-        itanium_mangled_name: str,
-        shim_writer: object,
-        shim_code: str,
-        return_type: types.Type,
-    ):
-        super().__init__(itanium_mangled_name, shim_writer, shim_code)
-        self.return_type = return_type
-
     def _lower_impl(self, builder, context, sig, args):
+        return_type = sig.return_type
         # 1. Prepare return value pointer
-        if self.return_type == types.void:
+        if return_type == types.void:
             # Void return type in C++ is shimmed as int& ignored
             retval_ty = ir.IntType(32)
             retval_ptr = builder.alloca(retval_ty, name="ignored")
         else:
-            retval_ty = context.get_value_type(self.return_type)
+            retval_ty = context.get_value_type(return_type)
             retval_ptr = builder.alloca(retval_ty, name="retval")
 
         # 2. Prepare arguments
@@ -80,9 +71,9 @@ class FunctionCallConv(BaseCallConv):
         builder.call(fn, (retval_ptr, *ptrs))
 
         # 5. Return
-        if self.return_type == types.void:
+        if return_type == types.void:
             return None
         else:
             return builder.load(
-                retval_ptr, align=getattr(self.return_type, "alignof_", None)
+                retval_ptr, align=getattr(return_type, "alignof_", None)
             )

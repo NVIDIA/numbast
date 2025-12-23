@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import re
@@ -11,12 +11,19 @@ from numbast.errors import TypeNotFoundError
 
 _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
     k: str(v) for k, v in CTYPE_MAPS.items()
-} | {"bool": "bool_", "void": "void"}
+} | {
+    "bool": "bool_",
+    "void": "void",
+    "cudaRoundMode": "IntEnumMember(cudaRoundMode, int64)",
+}
 
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
 
-def register_enum_type_str(ctype_enum_name: str, enum_name: str):
+def register_enum_type_str(
+    ctype_enum_name: str,
+    enum_name: str,
+):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
 
@@ -54,6 +61,13 @@ def to_numba_type_str(ty: str):
     numba_ty: str
         The corresponding string representing a Numba type
     """
+
+    if ty == "cudaRoundMode":
+        BaseRenderer.Imports.add(
+            "from cuda.bindings.runtime import cudaRoundMode"
+        )
+        BaseRenderer._try_import_numba_type("IntEnumMember")
+        return CTYPE_TO_NBTYPE_STR[ty]
 
     if ty == "__nv_bfloat16":
         BaseRenderer._try_import_numba_type("__nv_bfloat16")

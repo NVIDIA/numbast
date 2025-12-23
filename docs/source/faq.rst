@@ -167,3 +167,26 @@ bindings generated with a specific version of Numbast are tested against a speci
 .. note::
    These version restrictions may be relaxed or removed once ``numba-cuda`` releases a stable 1.0 version with
    stabilized public APIs. Until then, bindings are tested against specific version ranges to ensure compatibility.
+
+
+C++ Enum Binding Generation Notes
+---------------------------------
+
+**Why do Numbast bindings treat C++ enums as ``int64`` in Numba?**
+
+Numba represents Python ``IntEnum`` values using ``IntEnumMember(..., int64)`` (i.e., enum values are lowered as
+64-bit integers). Numbast follows this convention in both dynamic and static binding generation so that Python-side
+typing and lowering are consistent.
+
+**But C++ enums can have different underlying integer types. Why don't we track and truncate to that type in lowering?**
+
+Numbast does not keep a per-enum “underlying integer type” registry and does not perform explicit truncation during
+lowering because the device-side shim is compiled by NVRTC, and the shim call site is where C++ type checking happens.
+Even though the Python/Numba side lowers enum values as 64-bit integers, NVRTC can resolve the target enum type and emit
+the appropriate conversion when the shim calls the original function that takes the C++ enum parameter. This means we
+don't need to track per-enum underlying integer types in Python or add special-case truncation/casting logic in Numbast
+lowering.
+
+If you are binding code that depends on unusual enum representations or non-standard ABIs, you may need a custom
+adapter. For typical CUDA device code, this approach keeps the implementation simpler and avoids maintaining extra
+metadata for every enum type.

@@ -10,44 +10,32 @@ from numba.cuda.types import Type, Number
 from numba.cuda.datamodel import StructModel, PrimitiveModel
 from numba.cuda import device_array
 
-from ast_canopy import parse_declarations_from_source
-from numbast.static.renderer import clear_base_renderer_cache, registry_setup
-from numbast.static.function import clear_function_apis_registry
-from numbast.static.struct import StaticStructsRenderer
-
 
 @pytest.fixture(scope="module")
 def header(data_folder):
     return data_folder("struct.cuh")
 
 
-@pytest.fixture(scope="module")
-def decl(data_folder, header):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-    specs = {
-        "Foo": (Type, StructModel, header),
-        "Bar": (Type, StructModel, header),
-        "MyInt": (Number, PrimitiveModel, header),
+@pytest.fixture(scope="function")
+def decl(make_binding):
+    types = {
+        "Foo": Type,
+        "Bar": Type,
+        "MyInt": Number,
+    }
+    datamodels = {
+        "Foo": StructModel,
+        "Bar": StructModel,
+        "MyInt": PrimitiveModel,
     }
 
-    decls = parse_declarations_from_source(header, [header], "sm_50")
-    structs = decls.structs
+    res = make_binding("struct.cuh", types, datamodels, "sm_50")
+    bindings = res["bindings"]
 
-    assert len(structs) == 3
+    public_apis = ["Foo", "Bar", "MyInt"]
+    assert all(public_api in bindings for public_api in public_apis)
 
-    registry_setup(use_separate_registry=False)
-    SSR = StaticStructsRenderer(structs, specs, header)
-
-    bindings = SSR.render_as_str(with_imports=True, with_shim_stream=True)
-
-    globals = {}
-    exec(bindings, globals)
-
-    public_apis = [*specs]
-    assert all(public_api in globals for public_api in public_apis)
-
-    return {k: globals[k] for k in public_apis}
+    return bindings
 
 
 @pytest.fixture(scope="module")

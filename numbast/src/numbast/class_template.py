@@ -110,9 +110,7 @@ def bind_cxx_struct_ctor(
         shim_name=shim_func_name, struct_name=struct_name, params=ctor.params
     )
 
-    ctor_cc = FunctionCallConv(
-        mangled_name, shim_writer, shim, s_type_ref.instance_type
-    )
+    ctor_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     @lower(numba_typeref_ctor, s_type_ref, *param_types)
     def ctor_impl(context, builder, sig, args):
@@ -197,7 +195,7 @@ def bind_cxx_struct_regular_method(
         params=method_decl.params,
     )
 
-    method_cc = FunctionCallConv(mangled_name, shim_writer, shim, return_type)
+    method_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     qualname = f"{s_type}.{method_decl.name}"
 

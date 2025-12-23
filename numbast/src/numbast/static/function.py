@@ -109,7 +109,6 @@ def impl(context, builder, sig, args):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
-        return_type={return_type},
     )
     return callconv(builder, context, sig, args)
 """

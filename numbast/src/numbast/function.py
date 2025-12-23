@@ -99,7 +99,7 @@ def bind_cxx_operator_overload_function(
     class op_decl(ConcreteTemplate):
         cases = [nb_signature(return_type, *param_types)]
 
-    func_cc = FunctionCallConv(mangled_name, shim_writer, shim, return_type)
+    func_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     @lower(py_op, *param_types)
     def impl(context, builder, sig, args):
@@ -175,7 +175,7 @@ def bind_cxx_non_operator_function(
         shim_func_name, func_decl.name, return_type_name, func_decl.params
     )
 
-    func_cc = FunctionCallConv(mangled_name, shim_writer, shim, return_type)
+    func_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     # Lowering
     @lower(func, *param_types)
