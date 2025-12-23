@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+from enum import Enum
 import re
 
 from numba import types as nbtypes
@@ -80,14 +81,14 @@ NUMBA_TO_CTYPE_MAPS = {
 
 def register_enum_type(
     cxx_name: str,
-    e: type,
+    e: type[Enum],
 ):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type.
 
     Parameters:
-        cxx_name: The C++ enum type name to register (as it appears in C/C++ headers).
-        e: The Python enum type to register.
+        cxx_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
+        e (type[Enum]): The Python enum type to register.
 
     Returns:
         None
