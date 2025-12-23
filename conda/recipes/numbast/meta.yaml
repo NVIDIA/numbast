@@ -32,7 +32,6 @@ build:
     - SCCACHE_S3_KEY_PREFIX=numbast-linux64 # [linux64]
     - SCCACHE_S3_USE_SSL
     - SCCACHE_S3_NO_CREDENTIALS
-    - SETUPTOOLS_SCM_PRETEND_VERSION
   ignore_run_exports_from:
     - libnvjitlink-dev
 

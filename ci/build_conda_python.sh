@@ -21,9 +21,6 @@ if [[ "${GIT_DESCRIBE_NUMBER}" =~ ^[0-9]+$ ]] && [[ "${GIT_DESCRIBE_NUMBER}" -gt
   export PROJECT_VERSION="${PROJECT_VERSION}.dev${GIT_DESCRIBE_NUMBER}"
 fi
 
-# Ensure the setuptools_scm version is correct.
-export SETUPTOOLS_SCM_PRETEND_VERSION="${PROJECT_VERSION}"
-
 rapids-print-env
 
 rapids-logger "Begin py build"
