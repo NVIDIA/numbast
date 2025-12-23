@@ -9,7 +9,7 @@ from llvmlite import ir
 from numbast.registry import enum_underlying_integer_type_registry
 
 
-def prepare_args(target_context, llvm_builder, sig, args, ignore_first=False):
+def prepare_args(context, builder, sig, args, ignore_first=False):
     """
     Prepare arguments to be passed across FFI calling convention.
 
@@ -19,9 +19,9 @@ def prepare_args(target_context, llvm_builder, sig, args, ignore_first=False):
 
     Parameters
     ----------
-    target_context : numba.cuda.context.CUDATargetContext
+    context : numba.cuda.context.CUDATargetContext
         The target context to prepare arguments for.
-    llvm_builder : llvmlite.IRBuilder
+    builder : llvmlite.IRBuilder
         The llvmlite IR builder to use.
     sig : numba.cuda.typing.templates.Signature
         The signature of the function to prepare arguments for.
@@ -60,19 +60,17 @@ def prepare_args(target_context, llvm_builder, sig, args, ignore_first=False):
     for argty, arg in zip(processed_argtys, args):
         if isinstance(argty, nbtypes.IntEnumMember):
             processed_args.append(
-                llvm_builder.trunc(
-                    arg, target_context.get_value_type(argty.dtype)
-                )
+                builder.trunc(arg, context.get_value_type(argty.dtype))
             )
         else:
             processed_args.append(arg)
 
     ptrs = [
-        llvm_builder.alloca(target_context.get_value_type(argty))
+        builder.alloca(context.get_value_type(argty))
         for argty in processed_argtys
     ]
     for ptr, argty, arg in zip(ptrs, processed_argtys, processed_args):
-        llvm_builder.store(arg, ptr, align=getattr(argty, "alignof_", None))
+        builder.store(arg, ptr, align=getattr(argty, "alignof_", None))
 
     return ptrs
 
