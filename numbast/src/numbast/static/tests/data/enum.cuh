@@ -9,6 +9,13 @@ enum Fruit { Apple = 1, Banana = 3, Orange = 5 };
 
 enum class Animal { Cat, Dog, Horse };
 
+/**
+ * @brief Map an animal enum to an integer code.
+ *
+ * @param animal The animal to encode.
+ * @param[out] out Output pointer where the encoded value is written to
+ * `out[0]`.
+ */
 void __device__ feed(Animal animal, int *out) {
   switch (animal) {
   case Animal::Cat:
@@ -31,6 +38,15 @@ enum Car : uint8_t { Sedan, SUV, Pickup, Hatchback };
 
 enum Color : int16_t { Red, Green, Blue, Black = -1 };
 
+/**
+ * @brief Convert a `Color` enum value to its ASCII name.
+ *
+ * @param color The color to convert.
+ * @param[out] out Output buffer to receive the name (not null-terminated).
+ * @return The number of bytes written to `out`. Returns 0 for unknown values.
+ *
+ * @note `out` must have space for at least 5 bytes (e.g., "Green"/"Black").
+ */
 size_t __device__ __inline__ get_color_name(Color color, char *out) {
   switch (color) {
   case Color::Red:
@@ -50,6 +66,15 @@ size_t __device__ __inline__ get_color_name(Color color, char *out) {
   }
 }
 
+/**
+ * @brief Convert a `Car` enum value to its ASCII name.
+ *
+ * @param car The car to convert.
+ * @param[out] out Output buffer to receive the name (not null-terminated).
+ * @return The number of bytes written to `out`. Returns 0 for unknown values.
+ *
+ * @note `out` must have space for at least 9 bytes (e.g., "Hatchback").
+ */
 size_t __device__ __inline__ get_car_name(Car car, char *out) {
   switch (car) {
   case Car::Sedan:
@@ -69,6 +94,19 @@ size_t __device__ __inline__ get_car_name(Car car, char *out) {
   }
 }
 
+/**
+ * @brief Format "`<Color> <Car>`" into an output buffer.
+ *
+ * Writes a null-terminated string consisting of the color name, a single space,
+ * and the car name.
+ *
+ * @param car The car value to format.
+ * @param color The color value to format.
+ * @param[out] out Output buffer for the formatted string.
+ *
+ * @note `out` must have enough space for the longest combination, e.g.
+ * "Black Hatchback\0" (16 bytes).
+ */
 void __device__ car_with_color(Car car, Color color, char *out) {
   char color_buf[32];
   char car_buf[32];
