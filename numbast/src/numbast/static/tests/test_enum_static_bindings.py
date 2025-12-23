@@ -65,7 +65,7 @@ def test_enum_used_in_function_argument(cuda_enum):
     assert np.array_equal(out, [1])
 
 
-def test_enum_with_different_underlying_integer_types(cuda_enum, cuda_enum_src):
+def test_enum_with_different_underlying_integer_types(cuda_enum):
     Car = cuda_enum["Car"]
     assert Car.Sedan == 0
     assert Car.SUV == 1
@@ -93,8 +93,3 @@ def test_enum_with_different_underlying_integer_types(cuda_enum, cuda_enum_src):
     end = end[0][0] if end[0].size > 0 else len(out)
 
     assert out[:end].tobytes().decode("ascii") == "Red Sedan"
-
-    assert '"Fruit":types.uint32' in cuda_enum_src
-    assert '"Animal":types.int32' in cuda_enum_src
-    assert '"Car":types.uint8' in cuda_enum_src
-    assert '"Color":types.int16' in cuda_enum_src

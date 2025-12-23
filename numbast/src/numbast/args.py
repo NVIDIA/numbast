@@ -6,8 +6,6 @@ from numba.cuda.target import CUDATargetContext
 
 from llvmlite import ir
 
-from numbast.registry import enum_underlying_integer_type_registry
-
 
 def prepare_args(context, builder, sig, args, ignore_first=False):
     """
@@ -15,7 +13,6 @@ def prepare_args(context, builder, sig, args, ignore_first=False):
 
     Currently the calling convention is:
     All arguments are copied onto the stack and passed as pointers across FFI.
-    If the argument is an enum, it is converted to the underlying integer type.
 
     Parameters
     ----------
@@ -41,29 +38,8 @@ def prepare_args(context, builder, sig, args, ignore_first=False):
     argtys = sig.args[1:] if ignore_first else sig.args
     args = args[1:] if ignore_first else args
 
-    processed_argtys: list[nbtypes.Type] = []
-    for argty in argtys:
-        if isinstance(argty, nbtypes.IntEnumMember):
-            pyenum = argty.instance_class
-            pyenum_qualname = pyenum.__qualname__
-            underlying_integer_type = enum_underlying_integer_type_registry[
-                pyenum_qualname
-            ]
-            int_enum_type = nbtypes.IntEnumMember(
-                pyenum, underlying_integer_type
-            )
-            processed_argtys.append(int_enum_type)
-        else:
-            processed_argtys.append(argty)
-
-    processed_args = []
-    for argty, arg in zip(processed_argtys, args):
-        if isinstance(argty, nbtypes.IntEnumMember):
-            processed_args.append(
-                builder.trunc(arg, context.get_value_type(argty.dtype))
-            )
-        else:
-            processed_args.append(arg)
+    processed_argtys: list[nbtypes.Type] = list(argtys)
+    processed_args = list(args)
 
     ptrs = [
         builder.alloca(context.get_value_type(argty))

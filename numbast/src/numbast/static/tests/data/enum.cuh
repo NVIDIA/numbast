@@ -31,7 +31,7 @@ enum Car : uint8_t { Sedan, SUV, Pickup, Hatchback };
 
 enum Color : int16_t { Red, Green, Blue, Black = -1 };
 
-size_t __device__ get_color_name(Color color, char *out) {
+size_t __device__ __inline__ get_color_name(Color color, char *out) {
   switch (color) {
   case Color::Red:
     memcpy(out, "Red", 3);
@@ -50,7 +50,7 @@ size_t __device__ get_color_name(Color color, char *out) {
   }
 }
 
-size_t __device__ get_car_name(Car car, char *out) {
+size_t __device__ __inline__ get_car_name(Car car, char *out) {
   switch (car) {
   case Car::Sedan:
     memcpy(out, "Sedan", 5);

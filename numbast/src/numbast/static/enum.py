@@ -8,10 +8,8 @@ import os
 from ast_canopy.pylibastcanopy import Enum
 
 from numbast.static.renderer import BaseRenderer, get_rendered_imports
-from numbast.static.types import register_enum_type_str, to_numba_type_str
+from numbast.static.types import register_enum_type_str
 from numbast.utils import _apply_prefix_removal
-
-from numbast.static.registry import get_enum_underlying_integer_type_dict_as_str
 
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "test.py")
@@ -45,9 +43,6 @@ class {enum_name}(IntEnum):
             Stores the declaration and prefix-removal configuration, computes the Python enum name from the C++ name using the provided prefixes, and appends that Python name to the renderer's symbol list.
         """
         self._decl = decl
-        self._underlying_integer_type = to_numba_type_str(
-            self._decl.underlying_type.name
-        )
         self._enum_prefix_removal = enum_prefix_removal or []
 
         self._enum_name = _apply_prefix_removal(
@@ -71,9 +66,7 @@ class {enum_name}(IntEnum):
         BaseRenderer._try_import_numba_type("IntEnumMember")
         BaseRenderer._try_import_numba_type("int64")
 
-        register_enum_type_str(
-            self._decl.name, self._enum_name, self._underlying_integer_type
-        )
+        register_enum_type_str(self._decl.name, self._enum_name)
 
         enumerators = []
         for enumerator, value in zip(
@@ -134,14 +127,6 @@ class StaticEnumsRenderer(BaseRenderer):
 
         if with_imports:
             self._python_str += "\n" + get_rendered_imports()
-
-        enum_underlying_integer_type_str_registry = (
-            get_enum_underlying_integer_type_dict_as_str()
-        )
-
-        self._python_str += (
-            f"EUITSR = {enum_underlying_integer_type_str_registry}"
-        )
 
         self._python_str += "\n" + "\n".join(self._python_rendered)
 
