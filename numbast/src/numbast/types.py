@@ -93,8 +93,6 @@ def register_enum_type(
     Returns:
         None
     """
-    global CTYPE_MAPS
-
     CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, nbtypes.int64)
 
 
