@@ -25,9 +25,6 @@ def decl(make_binding):
     public_apis = ["__myfloat16"]
     assert all(public_api in bindings for public_api in public_apis)
 
-    with open("/tmp/binding.py", "w") as f:
-        f.write(res["src"])
-
     return bindings
 
 

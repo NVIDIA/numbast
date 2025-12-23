@@ -52,14 +52,21 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("underlying_type", &Enum::underlying_type)
       .def(py::pickle(
           [](const Enum &e) {
-            return py::make_tuple(e.name, e.enumerators, e.enumerator_values);
+            return py::make_tuple(e.name, e.enumerators, e.enumerator_values,
+                                  e.underlying_type);
           },
           [](py::tuple t) {
-            if (t.size() != 3)
+            // Backward compat: older pickles only stored (name, enumerators,
+            // enumerator_values).
+            if (t.size() != 3 && t.size() != 4)
               throw std::runtime_error("Invalid enum state during unpickle!");
-            return Enum{t[0].cast<std::string>(),
-                        t[1].cast<std::vector<std::string>>(),
-                        t[2].cast<std::vector<std::string>>()};
+            Enum e{t[0].cast<std::string>(),
+                   t[1].cast<std::vector<std::string>>(),
+                   t[2].cast<std::vector<std::string>>()};
+            if (t.size() == 4) {
+              e.underlying_type = t[3].cast<Type>();
+            }
+            return e;
           }));
 
   py::class_<Type>(m, "Type")

@@ -501,6 +501,9 @@ def test_load_enum_underlying_type(sample_enum_source, test_pickle):
     )
 
     enums = decls.enums
+    if test_pickle:
+        pickled = [pickle.dumps(e) for e in enums]
+        enums = [pickle.loads(p) for p in pickled]
 
     assert enums[3].name == "Fruit"
     assert enums[3].underlying_type.name == "uint64_t"

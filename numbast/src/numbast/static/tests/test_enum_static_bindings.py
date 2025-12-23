@@ -11,8 +11,6 @@ import cffi
 @pytest.fixture(scope="function")
 def decl(make_binding):
     res = make_binding("enum.cuh", {}, {}, "sm_50")
-    with open("/tmp/binding.py", "w") as f:
-        f.write(res["src"])
     return res
 
 
