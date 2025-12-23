@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-name: Publish CONDA PKG
+name: Publish Python Packages
 on:
   workflow_dispatch:
   push:
