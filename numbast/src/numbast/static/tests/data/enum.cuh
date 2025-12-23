@@ -70,8 +70,8 @@ size_t __device__ __inline__ get_car_name(Car car, char *out) {
 }
 
 void __device__ car_with_color(Car car, Color color, char *out) {
-  char *color_buf = new char[32];
-  char *car_buf = new char[32];
+  char color_buf[32];
+  char car_buf[32];
 
   size_t color_length = get_color_name(color, color_buf);
   size_t car_length = get_car_name(car, car_buf);
@@ -80,7 +80,4 @@ void __device__ car_with_color(Car car, Color color, char *out) {
   out[color_length] = ' ';
   memcpy(out + color_length + 1, car_buf, car_length);
   out[color_length + car_length + 1] = '\0';
-
-  delete[] color_buf;
-  delete[] car_buf;
 }
