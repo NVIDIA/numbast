@@ -48,9 +48,16 @@ FLOATING_TYPE_MAPS = {
     "double": nbtypes.float64,
 }
 
+ENUM_TYPE_MAPS = {
+    "cudaRoundMode": nbtypes.IntEnumMember(
+        runtime.cudaRoundMode, nbtypes.int64
+    ),
+}
+
 CTYPE_MAPS = {
     **INTEGER_TYPE_MAPS,
     **FLOATING_TYPE_MAPS,
+    **ENUM_TYPE_MAPS,
     "void": nbtypes.void,
     "bool": nbtypes.bool_,
     "uint4": vector_types["uint32x4"],

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import re
@@ -11,7 +11,11 @@ from numbast.errors import TypeNotFoundError
 
 _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
     k: str(v) for k, v in CTYPE_MAPS.items()
-} | {"bool": "bool_", "void": "void"}
+} | {
+    "bool": "bool_",
+    "void": "void",
+    "cudaRoundMode": "IntEnumMember(cudaRoundMode, int64)",
+}
 
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
@@ -30,10 +34,6 @@ def register_enum_type_str(
     global CTYPE_TO_NBTYPE_STR
 
     CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
-
-
-# Add additional enum type mappings here
-register_enum_type_str("cudaRoundMode", "cudaRoundMode")
 
 
 def reset_types():
