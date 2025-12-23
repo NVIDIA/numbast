@@ -33,7 +33,7 @@ class BaseInstantiation:
     @property
     def param_list(self):
         return [
-            self.instantiated_args[tparam.name]
+            self.instantiated_args.get(tparam.name, None)
             for tparam in self.template_parameters
         ]
 
@@ -43,10 +43,11 @@ class BaseInstantiation:
 
         flatten = []
         for param in param_list:
-            if isinstance(param, BaseInstantiation):
-                flatten.append(param.get_instantiated_c_stmt())
-            else:
-                flatten.append(str(param))
+            if param is not None:
+                if isinstance(param, BaseInstantiation):
+                    flatten.append(param.get_instantiated_c_stmt())
+                else:
+                    flatten.append(str(param))
 
         param_list = ", ".join(flatten)
         return f"{name}<{param_list}>"

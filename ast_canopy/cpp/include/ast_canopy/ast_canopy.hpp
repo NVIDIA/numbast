@@ -119,6 +119,7 @@ struct TemplateParam {
   std::string name;
   template_param_kind kind;
   Type type;
+  bool is_parameter_pack;
 };
 
 struct Function {
