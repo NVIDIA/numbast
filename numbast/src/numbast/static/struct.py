@@ -75,7 +75,6 @@ def ctor_impl(context, builder, sig, args):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
-        return_type={struct_type_name},
     )
     return ctor_callconv(builder, context, sig, args)
     """
@@ -390,7 +389,6 @@ def impl(context, builder, fromty, toty, value):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
-        return_type={cast_to_type},
     )
     sig = signature(toty, fromty)
     return callconv(builder, context, sig, [value])
@@ -566,7 +564,6 @@ def _{lower_fn_suffix}(context, builder, sig, args):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
-        return_type={return_type},
     )
     return callconv(builder, context, sig, args)
 """

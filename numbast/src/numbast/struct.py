@@ -105,12 +105,7 @@ def bind_cxx_struct_ctor(
         args=assemble_dereferenced_params_string(ctor.params),
     )
 
-    ctor_callconv = FunctionCallConv(
-        ctor.mangled_name,
-        shim_writer,
-        shim,
-        s_type,
-    )
+    ctor_callconv = FunctionCallConv(ctor.mangled_name, shim_writer, shim)
 
     @lower(S, *param_types)
     def ctor_impl(context, builder, sig, args):
@@ -212,7 +207,7 @@ def bind_cxx_struct_conversion_opeartor(
         args="",
     )
 
-    conv_cc = FunctionCallConv(mangled_name, shim_writer, shim, casted_type)
+    conv_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     @lower_cast(s_type, casted_type)
     def impl(
@@ -261,7 +256,7 @@ def bind_cxx_struct_regular_method(
         params=method_decl.params,
     )
 
-    method_cc = FunctionCallConv(mangled_name, shim_writer, shim, return_type)
+    method_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     qualname = f"{s_type}.{method_decl.name}"
 
