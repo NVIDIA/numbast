@@ -204,7 +204,7 @@ def make_struct_ctor_shim(
 
     ctor_binding_shim = """{includes}
 extern "C" __device__ int
-{shim_name}(int &ignore, {struct_name} *self {formal_args}) {{
+{shim_name}({struct_name} *self {formal_args}) {{
     new (self) {struct_name}({actual_args});
     return 0;
 }}

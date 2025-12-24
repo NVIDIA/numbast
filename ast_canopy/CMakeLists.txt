@@ -32,3 +32,12 @@ target_link_libraries(pylibastcanopy
   PUBLIC astcanopy::astcanopy)
 
 install(TARGETS pylibastcanopy LIBRARY DESTINATION ast_canopy)
+
+# Ensure header shims are shipped inside the wheel under:
+#   site-packages/ast_canopy/shim_include/
+# scikit-build-core builds wheels from the CMake install tree, so non-built
+# sources must be installed explicitly.
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ast_canopy/shim_include
+  DESTINATION ast_canopy
+)

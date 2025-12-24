@@ -21,7 +21,6 @@ from numba.cuda.typing.templates import (
     CallableTemplate,
 )
 from numba.core.datamodel.models import StructModel, OpaqueModel
-from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 from numba.cuda.core.imputils import numba_typeref_ctor
@@ -44,24 +43,13 @@ from numbast.types import (
 )
 from numbast.utils import (
     deduplicate_overloads,
-    make_device_caller_with_nargs,
-    assemble_arglist_string,
-    assemble_dereferenced_params_string,
+    make_struct_ctor_shim,
     make_struct_regular_method_shim,
 )
+from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import ShimWriterBase
 
 ConcreteTypeCache: dict[str, nbtypes.Type] = {}
-
-ConcreteTypeCache2: dict[str, nbtypes.Type] = {}
-
-struct_ctor_shim_layer_template = """
-extern "C" __device__ int
-{func_name}(int &ignore, {name} *self {arglist}) {{
-    new (self) {name}({args});
-    return 0;
-}}
-"""
 
 
 class MetaType(nbtypes.Type):
@@ -111,65 +99,25 @@ def bind_cxx_struct_ctor(
     # Lowering
     # Note that libclang always consider the return type of a constructor
     # is void. So we need to manually specify the return type here.
-    func_name = deduplicate_overloads(f"{ctor.mangled_name}_nbst")
-
-    # FIXME: temporary solution for mismatching function prototype against definition.
-    # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
-    # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-    # is to pass all params by pointer and dereference them in shim. See dereferencing at the
-    # shim generation below.
-    ctor_shim_decl = declare_device(
-        func_name,
-        nbtypes.int32(
-            nbtypes.CPointer(s_type_ref.instance_type),
-            *map(nbtypes.CPointer, param_types),
-        ),
-    )
-
-    ctor_shim_call = make_device_caller_with_nargs(
-        func_name + "_shim",
-        1 + len(param_types),  # the extra argument for placement new pointer
-        ctor_shim_decl,
-    )
+    mangled_name = deduplicate_overloads(ctor.mangled_name)
+    shim_func_name = f"{mangled_name}_nbst"
 
     # Dynamically generate the shim layer:
     # FIXME: All params are passed by pointers, then dereferenced in shim.
     # temporary solution for mismatching function prototype against definition.
     # See above lowering for details.
-    arglist = assemble_arglist_string(ctor.params)
-
-    shim = struct_ctor_shim_layer_template.format(
-        func_name=func_name,
-        name=struct_name,
-        arglist=arglist,
-        args=assemble_dereferenced_params_string(ctor.params),
+    shim = make_struct_ctor_shim(
+        shim_name=shim_func_name, struct_name=struct_name, params=ctor.params
     )
+
+    ctor_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     @lower(numba_typeref_ctor, s_type_ref, *param_types)
     def ctor_impl(context, builder, sig, args):
-        s_type = s_type_ref.instance_type
-        # Delay writing the shim function at lowering time. This avoids writing
-        # shim functions from the parsed header that's unused in kernels.
-        shim_writer.write_to_shim(shim, func_name)
-
-        selfptr = builder.alloca(context.get_value_type(s_type), name="selfptr")
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args[1:]
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args[1:], args[1:]):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
-        context.compile_internal(
-            builder,
-            ctor_shim_call,
-            nb_signature(
-                nbtypes.int32,
-                nbtypes.CPointer(s_type),
-                *map(nbtypes.CPointer, param_types),
-            ),
-            (selfptr, *argptrs),
-        )
-        return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+        # `numba_typeref_ctor` includes the typeref as the first argument; the
+        # generated shim expects only the actual constructor params.
+        ctor_sig = nb_signature(s_type_ref.instance_type, *param_types)
+        return ctor_cc(builder, context, ctor_sig, args[1:])
 
     return param_types
 
@@ -236,44 +184,24 @@ def bind_cxx_struct_regular_method(
     )
 
     # Lowering
-    func_name = deduplicate_overloads(f"__{method_decl.mangled_name}_nbst")
-
-    c_sig = return_type(
-        nbtypes.CPointer(s_type), *map(nbtypes.CPointer, param_types)
-    )
-
-    shim_decl = declare_device(func_name, c_sig)
-
-    shim_call = make_device_caller_with_nargs(
-        func_name + "_shim", 1 + len(param_types), shim_decl
-    )
+    mangled_name = deduplicate_overloads(f"__{method_decl.mangled_name}")
+    shim_func_name = f"{mangled_name}_nbst"
 
     shim = make_struct_regular_method_shim(
-        shim_name=func_name,
+        shim_name=shim_func_name,
         struct_name=struct_decl.name,
         method_name=method_decl.name,
         return_type=method_decl.return_type.unqualified_non_ref_type_name,
         params=method_decl.params,
     )
 
+    method_cc = FunctionCallConv(mangled_name, shim_writer, shim)
+
     qualname = f"{s_type}.{method_decl.name}"
 
     @lower(qualname, s_type, *param_types)
     def _method_impl(context, builder, sig, args):
-        shim_writer.write_to_shim(shim, func_name)
-
-        argptrs = [
-            builder.alloca(context.get_value_type(arg)) for arg in sig.args
-        ]
-        for ptr, ty, arg in zip(argptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
-        return context.compile_internal(
-            builder,
-            shim_call,
-            c_sig,
-            argptrs,
-        )
+        return method_cc(builder, context, sig, args)
 
     return nb_signature(return_type, *param_types, recvr=s_type)
 

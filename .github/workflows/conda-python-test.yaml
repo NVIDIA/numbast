@@ -118,7 +118,7 @@ jobs:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
@@ -143,7 +143,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CUDA_VER: ${{ matrix.CUDA_VER }}
       - name: Generate test report
-        uses: test-summary/action@v2.3
+        uses: test-summary/action@v2.4
         with:
           paths: "${{ env.RAPIDS_TESTS_DIR }}/*.xml"
         if: always()

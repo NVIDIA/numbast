@@ -7,7 +7,6 @@ from collections import defaultdict
 from numba import types as nbtypes
 from numba.cuda.typing import signature as nb_signature, Signature
 from numba.cuda.typing.templates import ConcreteTemplate
-from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register
 from numba.cuda.cudaimpl import lower
 
@@ -17,10 +16,10 @@ from ast_canopy.decl import Function
 from numbast.types import to_numba_type
 from numbast.utils import (
     deduplicate_overloads,
-    make_device_caller_with_nargs,
     make_function_shim,
 )
 from numbast.shim_writer import MemoryShimWriter as ShimWriter
+from numbast.callconv import FunctionCallConv
 
 function_binding_shim_template = """
 extern "C" __device__ int
@@ -73,7 +72,8 @@ def bind_cxx_operator_overload_function(
     ]
 
     return_type_name = func_decl.return_type.unqualified_non_ref_type_name
-    shim_func_name = deduplicate_overloads(func_decl.mangled_name)
+    mangled_name = deduplicate_overloads(func_decl.mangled_name)
+    shim_func_name = f"{mangled_name}_nbst"
 
     py_op = func_decl.overloaded_operator_to_python_operator
 
@@ -99,34 +99,13 @@ def bind_cxx_operator_overload_function(
     class op_decl(ConcreteTemplate):
         cases = [nb_signature(return_type, *param_types)]
 
-    # Lowering
-    # FIXME: temporary solution for mismatching function prototype against definition.
-    # If params are passed by value, at prototype the signature of __nv_bfloat16 is set
-    # to `b32` type, but to `b64` at definition, causing a linker error. A temporary solution
-    # is to pass all params by pointer and dereference them in shim. See dereferencing at the
-    # shim generation below.
-    func = declare_device(
-        shim_func_name, return_type(*map(nbtypes.CPointer, param_types))
-    )
-    python_api = make_device_caller_with_nargs(
-        shim_func_name + "_shim", len(param_types), func
-    )
+    func_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     @lower(py_op, *param_types)
     def impl(context, builder, sig, args):
-        shim_writer.write_to_shim(shim, shim_func_name)
-        ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-        for ptr, ty, arg in zip(ptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
+        return func_cc(builder, context, sig, args)
 
-        return context.compile_internal(
-            builder,
-            python_api,
-            nb_signature(return_type, *map(nbtypes.CPointer, param_types)),
-            ptrs,
-        )
-
-    return python_api
+    return func_cc
 
 
 def bind_cxx_non_operator_function(
@@ -189,34 +168,19 @@ def bind_cxx_non_operator_function(
     register_global(func, nbtypes.Function(func_typing))
 
     return_type_name = func_decl.return_type.unqualified_non_ref_type_name
-    shim_func_name = deduplicate_overloads(func_decl.mangled_name)
-
-    # Declaration of the foreign function
-    native_func = declare_device(
-        shim_func_name, return_type(*map(nbtypes.CPointer, param_types))
-    )
-    shim_call = make_device_caller_with_nargs(
-        shim_func_name + "_shim", len(param_types), native_func
-    )
+    mangled_name = deduplicate_overloads(func_decl.mangled_name)
+    shim_func_name = f"{mangled_name}_nbst"
 
     shim = make_function_shim(
         shim_func_name, func_decl.name, return_type_name, func_decl.params
     )
 
+    func_cc = FunctionCallConv(mangled_name, shim_writer, shim)
+
     # Lowering
     @lower(func, *param_types)
     def impl(context, builder, sig, args):
-        shim_writer.write_to_shim(shim, shim_func_name)
-        ptrs = [builder.alloca(context.get_value_type(arg)) for arg in sig.args]
-        for ptr, ty, arg in zip(ptrs, sig.args, args):
-            builder.store(arg, ptr, align=getattr(ty, "alignof_", None))
-
-        return context.compile_internal(
-            builder,
-            shim_call,
-            nb_signature(return_type, *map(nbtypes.CPointer, param_types)),
-            ptrs,
-        )
+        return func_cc(builder, context, sig, args)
 
     return func
 

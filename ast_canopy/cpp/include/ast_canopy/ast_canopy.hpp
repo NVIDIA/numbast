@@ -40,18 +40,6 @@ enum class template_param_kind { type, non_type, template_ };
 
 enum class access_kind { public_, protected_, private_ };
 
-struct Enum {
-  Enum(const std::string &name, const std::vector<std::string> &enumerators,
-       const std::vector<std::string> &enumerator_values)
-      : name(name), enumerators(enumerators),
-        enumerator_values(enumerator_values) {}
-  Enum(const clang::EnumDecl *);
-
-  std::string name;
-  std::vector<std::string> enumerators;
-  std::vector<std::string> enumerator_values;
-};
-
 struct Type {
   Type() = default;
   Type(std::string name, std::string unqualified_non_ref_type_name,
@@ -67,6 +55,19 @@ struct Type {
 private:
   bool _is_right_reference;
   bool _is_left_reference;
+};
+
+struct Enum {
+  Enum(const std::string &name, const std::vector<std::string> &enumerators,
+       const std::vector<std::string> &enumerator_values)
+      : name(name), enumerators(enumerators),
+        enumerator_values(enumerator_values) {}
+  Enum(const clang::EnumDecl *);
+
+  std::string name;
+  std::vector<std::string> enumerators;
+  std::vector<std::string> enumerator_values;
+  Type underlying_type;
 };
 
 struct ConstExprVar {

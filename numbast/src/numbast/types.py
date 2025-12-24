@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import IntEnum
+from enum import Enum
 import re
 
 from numba import types as nbtypes
 from numba.cuda.types import bfloat16
 from numba.cuda.vector_types import vector_types
-
 
 from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
 
@@ -49,9 +48,16 @@ FLOATING_TYPE_MAPS = {
     "double": nbtypes.float64,
 }
 
+ENUM_TYPE_MAPS = {
+    "cudaRoundMode": nbtypes.IntEnumMember(
+        runtime.cudaRoundMode, nbtypes.int64
+    ),
+}
+
 CTYPE_MAPS = {
     **INTEGER_TYPE_MAPS,
     **FLOATING_TYPE_MAPS,
+    **ENUM_TYPE_MAPS,
     "void": nbtypes.void,
     "bool": nbtypes.bool_,
     "uint4": vector_types["uint32x4"],
@@ -82,12 +88,19 @@ NUMBA_TO_CTYPE_MAPS = {
 
 def register_enum_type(
     cxx_name: str,
-    e: IntEnum,
-    underlying_integer_type: nbtypes.Type = nbtypes.int32,
+    e: type[Enum],
 ):
-    global CTYPE_MAPS
+    """
+    Register a mapping from a C++ enum type name to its corresponding Numba type.
 
-    CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, underlying_integer_type)
+    Parameters:
+        cxx_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
+        e (type[Enum]): The Python enum type to register.
+
+    Returns:
+        None
+    """
+    CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, nbtypes.int64)
 
 
 def to_numba_type(ty: str):
@@ -134,4 +147,4 @@ def is_c_floating_type(typ_str: str) -> bool:
 
 
 # Register CUDA Python Types
-register_enum_type("cudaRoundMode", runtime.cudaRoundMode, nbtypes.int32)
+register_enum_type("cudaRoundMode", runtime.cudaRoundMode)
