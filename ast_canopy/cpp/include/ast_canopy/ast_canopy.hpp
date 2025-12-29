@@ -58,11 +58,13 @@ private:
 };
 
 struct Enum {
-  Enum(const std::string &name, const std::vector<std::string> &enumerators,
+  Enum(const std::string &name, const std::string &qual_name,
+       const std::vector<std::string> &enumerators,
        const std::vector<std::string> &enumerator_values,
-       const std::string &qual_name)
+       const Type &underlying_type)
       : name(name), qual_name(qual_name), enumerators(enumerators),
-        enumerator_values(enumerator_values) {}
+        enumerator_values(enumerator_values), underlying_type(underlying_type) {
+  }
   Enum(const clang::EnumDecl *);
 
   std::string name;

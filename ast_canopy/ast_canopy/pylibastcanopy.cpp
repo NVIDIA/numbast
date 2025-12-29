@@ -44,27 +44,6 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .value("protected_", access_kind::protected_)
       .value("private_", access_kind::private_);
 
-  py::class_<Enum>(m, "Enum")
-      .def(py::init<const clang::EnumDecl *>())
-      .def_readwrite("name", &Enum::name)
-      .def_readwrite("qual_name", &Enum::qual_name)
-      .def_readwrite("enumerators", &Enum::enumerators)
-      .def_readwrite("enumerator_values", &Enum::enumerator_values)
-      .def_readwrite("underlying_type", &Enum::underlying_type)
-      .def(py::pickle(
-          [](const Enum &e) {
-            return py::make_tuple(e.name, e.enumerators, e.enumerator_values,
-                                  e.qual_name);
-          },
-          [](py::tuple t) {
-            if (t.size() != 4)
-              throw std::runtime_error("Invalid enum state during unpickle!");
-            return Enum{t[0].cast<std::string>(),
-                        t[1].cast<std::vector<std::string>>(),
-                        t[2].cast<std::vector<std::string>>(),
-                        t[3].cast<std::string>()};
-          }));
-
   py::class_<Type>(m, "Type")
       .def(py::init<>())
       .def(py::init<std::string, std::string, bool, bool>())
@@ -85,6 +64,27 @@ PYBIND11_MODULE(pylibastcanopy, m) {
               throw std::runtime_error("Invalid type state during unpickle!");
             return Type{t[0].cast<std::string>(), t[1].cast<std::string>(),
                         t[2].cast<bool>(), t[3].cast<bool>()};
+          }));
+
+  py::class_<Enum>(m, "Enum")
+      .def(py::init<const clang::EnumDecl *>())
+      .def_readwrite("name", &Enum::name)
+      .def_readwrite("qual_name", &Enum::qual_name)
+      .def_readwrite("enumerators", &Enum::enumerators)
+      .def_readwrite("enumerator_values", &Enum::enumerator_values)
+      .def_readwrite("underlying_type", &Enum::underlying_type)
+      .def(py::pickle(
+          [](const Enum &e) {
+            return py::make_tuple(e.name, e.qual_name, e.enumerators,
+                                  e.enumerator_values, e.underlying_type);
+          },
+          [](py::tuple t) {
+            if (t.size() != 5)
+              throw std::runtime_error("Invalid enum state during unpickle!");
+            return Enum{t[0].cast<std::string>(), t[1].cast<std::string>(),
+                        t[2].cast<std::vector<std::string>>(),
+                        t[3].cast<std::vector<std::string>>(),
+                        t[4].cast<Type>()};
           }));
 
   py::class_<ConstExprVar>(m, "ConstExprVar")
