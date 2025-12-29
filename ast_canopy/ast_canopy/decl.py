@@ -69,6 +69,7 @@ class Function:
     def __init__(
         self,
         name: str,
+        qual_name: str,
         return_type: bindings.Type,
         params: list[bindings.ParamVar],
         exec_space: bindings.execution_space,
@@ -78,6 +79,7 @@ class Function:
         parse_entry_point: str,
     ):
         self.name = name
+        self.qual_name = qual_name
         self.return_type = return_type
         self.params = params
         self.is_operator = self.name.startswith("operator")
@@ -159,6 +161,7 @@ class Function:
     def from_c_obj(cls, c_obj: bindings.Function, parse_entry_point: str):
         return cls(
             c_obj.name,
+            c_obj.qual_name,
             c_obj.return_type,
             c_obj.params,
             c_obj.exec_space,
@@ -204,10 +207,12 @@ class FunctionTemplate(Template):
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
         function: Function,
+        qual_name: str,
         parse_entry_point: str,
     ):
         super().__init__(template_parameters, num_min_required_args)
         self.function = function
+        self.qual_name = qual_name
 
         self.parse_entry_point = parse_entry_point
 
@@ -219,6 +224,7 @@ class FunctionTemplate(Template):
             c_obj.template_parameters,
             c_obj.num_min_required_args,
             Function.from_c_obj(c_obj.function, parse_entry_point),
+            c_obj.qual_name,
             parse_entry_point,
         )
 
@@ -237,6 +243,7 @@ class StructMethod(Function):
     def __init__(
         self,
         name: str,
+        qual_name: str,
         return_type: bindings.Type,
         params: list[bindings.ParamVar],
         kind: bindings.method_kind,
@@ -249,6 +256,7 @@ class StructMethod(Function):
     ):
         super().__init__(
             name,
+            qual_name,
             return_type,
             params,
             exec_space,
@@ -278,6 +286,7 @@ class StructMethod(Function):
     def from_c_obj(cls, c_obj: bindings.Method, parse_entry_point: str):
         return cls(
             c_obj.name,
+            c_obj.qual_name,
             c_obj.return_type,
             c_obj.params,
             c_obj.kind,
@@ -330,6 +339,7 @@ class Struct:
     def __init__(
         self,
         name: str,
+        qual_name: str,
         fields: list[bindings.Field],
         methods: list[StructMethod],
         templated_methods: list[FunctionTemplate],
@@ -340,6 +350,7 @@ class Struct:
         parse_entry_point: str,
     ):
         self._name = name
+        self._qual_name = qual_name
         self.fields = fields
         self.methods = methods
         self.templated_methods = templated_methods
@@ -381,13 +392,13 @@ class Struct:
                 yield m
 
     def templated_member_functions(self):
-        for m in self.templated_methods:
-            yield m
+        yield from self.templated_methods
 
     @classmethod
     def from_c_obj(cls, c_obj: bindings.Record, parse_entry_point: str):
         return cls(
             c_obj.name,
+            c_obj.qual_name,
             c_obj.fields,
             [
                 StructMethod.from_c_obj(m, parse_entry_point)
@@ -408,6 +419,10 @@ class Struct:
     def name(self):
         return self._name
 
+    @property
+    def qual_name(self):
+        return self._qual_name
+
 
 class TemplatedStruct(Struct):
     """A ``Struct`` whose methods include templated methods.
@@ -421,6 +436,7 @@ class TemplatedStruct(Struct):
     def from_c_obj(cls, c_obj: bindings.Record, parse_entry_point: str):
         return cls(
             c_obj.name,
+            c_obj.qual_name,
             c_obj.fields,
             [
                 TemplatedStructMethod.from_c_obj(m, parse_entry_point)
@@ -450,10 +466,12 @@ class ClassTemplate(Template):
         record: TemplatedStruct,
         template_parameters: list[bindings.TemplateParam],
         num_min_required_args: int,
+        qual_name: str,
         parse_entry_point: str,
     ):
         super().__init__(template_parameters, num_min_required_args)
         self.record = record
+        self.qual_name = qual_name
 
         self.parse_entry_point = parse_entry_point
 
@@ -463,6 +481,7 @@ class ClassTemplate(Template):
             TemplatedStruct.from_c_obj(c_obj.record, parse_entry_point),
             c_obj.template_parameters,
             c_obj.num_min_required_args,
+            c_obj.qual_name,
             parse_entry_point,
         )
 
@@ -509,6 +528,7 @@ class ClassTemplateSpecialization(Struct, ClassInstantiation):
         Struct.__init__(
             self,
             record.name,
+            record.qual_name,
             record.fields,
             record.methods,
             record.templated_methods,

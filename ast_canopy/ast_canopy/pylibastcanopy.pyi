@@ -3,11 +3,13 @@ from typing import ClassVar, overload
 
 class ClassTemplate(Template):
     num_min_required_args: int
+    qual_name: str
     record: Incomplete
     def __init__(self, *args, **kwargs) -> None: ...
 
 class ConstExprVar:
     name: str
+    qual_name: str
     type_: Type
     value: str
     def __init__(self) -> None: ...
@@ -25,6 +27,7 @@ class Enum:
     enumerator_values: list[str]
     enumerators: list[str]
     name: str
+    qual_name: str
     def __init__(self, arg0) -> None: ...
 
 class Field:
@@ -38,12 +41,14 @@ class Function:
     is_constexpr: bool
     mangled_name: str
     name: str
+    qual_name: str
     params: list[ParamVar]
     return_type: Type
     def __init__(self, *args, **kwargs) -> None: ...
 
 class FunctionTemplate(Template):
     function: Function
+    qual_name: str
     num_min_required_args: int
     def __init__(self, *args, **kwargs) -> None: ...
 
@@ -64,6 +69,7 @@ class Record:
     fields: list[Field]
     methods: list[Method]
     name: str
+    qual_name: str
     nested_class_templates: list[ClassTemplate]
     nested_records: list[Record]
     sizeof_: int
@@ -95,6 +101,7 @@ class Type:
 
 class Typedef:
     name: str
+    qual_name: str
     underlying_name: str
     def __init__(self, *args, **kwargs) -> None: ...
 

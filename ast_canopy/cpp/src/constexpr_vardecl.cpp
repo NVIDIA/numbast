@@ -9,7 +9,11 @@
 namespace ast_canopy {
 
 ConstExprVar::ConstExprVar(const clang::VarDecl *VD)
-    : type_(VD->getType(), VD->getASTContext()), name(VD->getNameAsString()) {
+    : type_(VD->getType(), VD->getASTContext()), name(VD->getNameAsString()),
+      qual_name(VD->getQualifiedNameAsString()) {
+  if (qual_name.empty()) {
+    qual_name = name;
+  }
   if (!VD->isConstexpr()) {
     throw std::runtime_error("Not a constexpr variable");
   }

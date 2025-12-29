@@ -30,7 +30,7 @@ execution_space get_execution_space(const clang::FunctionDecl *FD) {
 }
 
 Function::Function(const clang::FunctionDecl *FD)
-    : name(FD->getNameAsString()),
+    : name(FD->getNameAsString()), qual_name(FD->getQualifiedNameAsString()),
       return_type(FD->getReturnType(), FD->getASTContext()),
       is_constexpr(FD->isConstexpr()) {
   params.reserve(FD->getNumParams());

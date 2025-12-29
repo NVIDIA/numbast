@@ -43,11 +43,17 @@ enum class access_kind { public_, protected_, private_ };
 struct Enum {
   Enum(const std::string &name, const std::vector<std::string> &enumerators,
        const std::vector<std::string> &enumerator_values)
-      : name(name), enumerators(enumerators),
+      : name(name), qual_name(name), enumerators(enumerators),
+        enumerator_values(enumerator_values) {}
+  Enum(const std::string &name, const std::vector<std::string> &enumerators,
+       const std::vector<std::string> &enumerator_values,
+       const std::string &qual_name)
+      : name(name), qual_name(qual_name), enumerators(enumerators),
         enumerator_values(enumerator_values) {}
   Enum(const clang::EnumDecl *);
 
   std::string name;
+  std::string qual_name;
   std::vector<std::string> enumerators;
   std::vector<std::string> enumerator_values;
 };
@@ -75,6 +81,7 @@ struct ConstExprVar {
 
   Type type_;
   std::string name;
+  std::string qual_name;
   std::string value;
 };
 
@@ -124,11 +131,17 @@ struct Function {
   Function(const std::string &name, const Type &return_type,
            const std::vector<ParamVar> &params,
            const execution_space &exec_space)
-      : name(name), return_type(return_type), params(params),
+      : name(name), qual_name(name), return_type(return_type), params(params),
         exec_space(exec_space) {}
+  Function(const std::string &name, const Type &return_type,
+           const std::vector<ParamVar> &params,
+           const execution_space &exec_space, const std::string &qual_name)
+      : name(name), qual_name(qual_name), return_type(return_type),
+        params(params), exec_space(exec_space) {}
   Function(const clang::FunctionDecl *);
 
   std::string name;
+  std::string qual_name;
   Type return_type;
   std::vector<ParamVar> params;
   execution_space exec_space;
@@ -142,8 +155,14 @@ struct FunctionTemplate : public Template {
                    const std::size_t &num_min_required_args,
                    const Function &function)
       : Template(std::move(template_parameters), num_min_required_args),
-        function(std::move(function)) {}
+        qual_name(function.qual_name), function(std::move(function)) {}
+  FunctionTemplate(const std::vector<TemplateParam> &template_parameters,
+                   const std::size_t &num_min_required_args,
+                   const Function &function, const std::string &qual_name)
+      : Template(std::move(template_parameters), num_min_required_args),
+        qual_name(qual_name), function(std::move(function)) {}
   FunctionTemplate(const clang::FunctionTemplateDecl *);
+  std::string qual_name;
   Function function;
 };
 
@@ -174,7 +193,18 @@ struct Record {
          const std::vector<ClassTemplate> &nested_class_templates,
          const std::size_t &sizeof_, const std::size_t &alignof_,
          const std::string &source_range)
-      : name(name), fields(fields), methods(methods),
+      : name(name), qual_name(name), fields(fields), methods(methods),
+        templated_methods(templated_methods), nested_records(nested_records),
+        nested_class_templates(nested_class_templates), sizeof_(sizeof_),
+        alignof_(alignof_), source_range(source_range) {}
+  Record(const std::string &name, const std::vector<Field> &fields,
+         const std::vector<Method> &methods,
+         const std::vector<FunctionTemplate> &templated_methods,
+         const std::vector<Record> &nested_records,
+         const std::vector<ClassTemplate> &nested_class_templates,
+         const std::size_t &sizeof_, const std::size_t &alignof_,
+         const std::string &source_range, const std::string &qual_name)
+      : name(name), qual_name(qual_name), fields(fields), methods(methods),
         templated_methods(templated_methods), nested_records(nested_records),
         nested_class_templates(nested_class_templates), sizeof_(sizeof_),
         alignof_(alignof_), source_range(source_range) {}
@@ -183,6 +213,7 @@ struct Record {
          std::string); // overrides name from RD
 
   std::string name;
+  std::string qual_name;
   std::vector<Field> fields;
   std::vector<Method> methods;
   std::vector<FunctionTemplate> templated_methods;
@@ -197,16 +228,21 @@ struct Record {
 
 struct ClassTemplate : public Template {
   ClassTemplate(const clang::ClassTemplateDecl *);
+  std::string qual_name;
   Record record;
 };
 
 struct Typedef {
   Typedef(const std::string &name, const std::string &underlying_name)
-      : name(name), underlying_name(underlying_name) {}
+      : name(name), qual_name(name), underlying_name(underlying_name) {}
+  Typedef(const std::string &name, const std::string &underlying_name,
+          const std::string &qual_name)
+      : name(name), qual_name(qual_name), underlying_name(underlying_name) {}
   Typedef(const clang::TypedefDecl *,
           std::unordered_map<int64_t, std::string> *);
 
   std::string name;
+  std::string qual_name;
   std::string underlying_name;
 };
 
