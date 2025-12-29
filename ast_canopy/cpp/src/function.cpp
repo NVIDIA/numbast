@@ -33,6 +33,9 @@ Function::Function(const clang::FunctionDecl *FD)
     : name(FD->getNameAsString()), qual_name(FD->getQualifiedNameAsString()),
       return_type(FD->getReturnType(), FD->getASTContext()),
       is_constexpr(FD->isConstexpr()) {
+  if (qual_name.empty()) {
+    qual_name = name;
+  }
   params.reserve(FD->getNumParams());
   std::transform(FD->param_begin(), FD->param_end(), std::back_inserter(params),
                  [](const clang::ParmVarDecl *PVD) { return ParamVar(PVD); });
