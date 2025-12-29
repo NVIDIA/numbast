@@ -8,7 +8,7 @@ import inspect
 
 from ast_canopy import pylibastcanopy
 
-from numba import types as nbtypes
+from numba.cuda import types as nbtypes
 from numba.core.extending import (
     register_model,
     make_attribute_wrapper,
@@ -24,7 +24,7 @@ from numba.cuda.typing.templates import (
 from numba.core.datamodel.models import StructModel, OpaqueModel
 from numba.cuda import declare_device
 from numba.cuda.cudadecl import register_global, register, register_attr
-from numba.cuda.cudaimpl import lower, lower_attr
+from numba.cuda.cudaimpl import lower
 from numba.cuda.core.imputils import numba_typeref_ctor
 from numba.core.typing.npydecl import parse_dtype
 from numba.core.errors import RequireLiteralValue, TypingError
@@ -53,7 +53,7 @@ from numbast.utils import (
 )
 from numbast.shim_writer import ShimWriterBase
 
-if True:
+if False:
     import debugpy
 
     print("ABOUT TO START DEBUGPY...\n")
@@ -188,7 +188,8 @@ def bind_cxx_struct_ctor(
             ),
             (selfptr, *argptrs),
         )
-        return builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+        ret = builder.load(selfptr, align=getattr(s_type, "alignof_", None))
+        return ret
 
     return param_types
 
@@ -337,42 +338,99 @@ def bind_cxx_struct_templated_method(
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
 ) -> nb_signature:
-    print(
-        f"XXXXX: {templated_method.function.name}, {templated_method.template_parameters}"
-    )
+    # NOTE: We intentionally *do not* use `lower_attr(...)=dummy_value` for templated
+    # methods. Doing so loses the receiver value and the call ends up seeing `i8* null`
+    # for the first argument. Instead, we return a normal Numba `BoundFunction`, whose
+    # template's `generic()` runs at *call time* and can see the concrete argument types.
 
-    template_parameters = templated_method.template_parameters
-    meta_function_type = MetaFunctionType(templated_method.function.name)
+    qualname = f"{s_type}.{templated_method.function.name}"
 
-    # @register
-    # class MetaFunctionType_template_decl(ConcreteTemplate):
-    #     key = meta_function_type
-    #     cases = [nb_signature(meta_function_type, nbtypes.VarArg(nbtypes.Any))]
-
-    import sys
-
-    print(f"YYYYY: {meta_function_type.__module__}")
-    meta_function_type.__name__ = "MetaFunctionType_template_decl"
-    mod = sys.modules[meta_function_type.__module__]
-    setattr(mod, "MetaFunctionType_template_decl", meta_function_type)
-
-    @register_global(meta_function_type)
-    class MetaFunctionType_template_decl(AbstractTemplate):
-        key = meta_function_type
+    class TemplatedMethodDecl(AbstractTemplate):
+        key = qualname
 
         def generic(self, args, kwds):
-            # # MetaType Lowering, NO-OP
-            # @lower_constant(meta_function_type)
-            # def lower_noop_1(context, builder, sig, args):
-            #     return context.get_constant(nbtypes.int32, 0)
+            # BoundFunction passes only the explicit call args (receiver is implicit).
+            # We can recover the receiver type from the bound template class attribute.
+            recvr = self.this
+            param_types = tuple(args)
 
-            # @lower_builtin(meta_function_type, nbtypes.VarArg(nbtypes.Any))
-            # def lower_noop_2(context, builder, sig, args):
-            #     return context.get_dummy_value()
+            @lower(qualname, recvr, *param_types)
+            def _impl(context, builder, sig, args):
+                # args[0] is the receiver value (a struct value), args[1:] are parameters.
+                param_types_inner = sig.args[1:]
 
-            return nb_signature(meta_function_type, nbtypes.VarArg(nbtypes.Any))
+                func_name = deduplicate_overloads(
+                    f"__{templated_method.function.mangled_name}_nbst"
+                )
 
-    return meta_function_type
+                param_c_type_strings = [
+                    to_c_type_str(paramty) for paramty in param_types_inner
+                ]
+
+                formal_arg_string = ",".join(
+                    [
+                        f"{c_ty} *arg{i}"
+                        for i, c_ty in enumerate(param_c_type_strings)
+                    ]
+                )
+                actual_arg_string_with_dereference = ",".join(
+                    [f"*arg{i}" for i in range(len(param_types_inner))]
+                )
+
+                shim = make_struct_regular_method_shim(
+                    shim_name=func_name,
+                    struct_name=struct_decl.name,
+                    method_name=templated_method.function.name,
+                    return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
+                    formal_args_str="," + formal_arg_string,
+                    actual_args_str=actual_arg_string_with_dereference,
+                )
+
+                # FIXME: These are temporary, signature-specific hacks. Long-term we should
+                # generate correct shim signatures from the parsed C++ parameter types.
+                shim = (
+                    shim.replace(", BlockLoad", ", cub::BlockLoad")
+                    .replace("int* *arg1", "int (&arg1)[1]")
+                    .replace("*arg1);", "arg1);")
+                    .replace("int* *arg0", "int *arg0")
+                    .replace("(*arg0,", "(arg0,")
+                )
+
+                print(f"SHIM: {shim}")
+
+                shim_writer.write_to_shim(shim, func_name)
+
+                # Match the calling convention used for non-templated methods:
+                # pass all arguments by pointer (including `this`).
+                c_sig = nbtypes.void(
+                    nbtypes.CPointer(recvr),
+                    # recvr,
+                    *param_types_inner,
+                )
+                shim_decl = declare_device(func_name, c_sig)
+                shim_call = make_device_caller_with_nargs(
+                    func_name + "_shim",
+                    1 + len(param_types_inner),
+                    shim_decl,
+                )
+
+                print(f"c_sig: {c_sig}")
+                print(f"ARGS.types: {[arg.type for arg in args]}")
+                print("self.this == args[0]?:", self.this == args[0])
+
+                selfptr = builder.alloca(context.get_value_type(recvr))
+                builder.store(
+                    args[0], selfptr, align=getattr(recvr, "alignof_", None)
+                )
+
+                return context.compile_internal(
+                    builder, shim_call, c_sig, (selfptr, *args[1:])
+                )
+
+            # Return a method signature (receiver is implicit).
+            return nb_signature(nbtypes.void, *param_types, recvr=recvr)
+
+    return TemplatedMethodDecl
 
 
 def bind_cxx_struct_templated_methods(
@@ -380,19 +438,17 @@ def bind_cxx_struct_templated_methods(
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
 ) -> dict[str, ConcreteTemplate]:
-    """ """
+    """Create bindings for a templated method of a C++ struct."""
 
-    method_to_meta_function_type: dict[str, MetaFunctionType] = {}
+    method_to_template: dict[str, AbstractTemplate] = {}
 
     for templated_method in struct_decl.templated_member_functions():
-        meta_function_type = bind_cxx_struct_templated_method(
+        template = bind_cxx_struct_templated_method(
             struct_decl, templated_method, s_type, shim_writer
         )
-        method_to_meta_function_type[templated_method.function.name] = (
-            meta_function_type
-        )
+        method_to_template[templated_method.function.name] = template
 
-    return method_to_meta_function_type
+    return method_to_template
 
 
 def bind_cxx_class_template_specialization(
@@ -460,7 +516,7 @@ def bind_cxx_class_template_specialization(
         struct_decl, s_type, shim_writer
     )
 
-    templated_method_to_meta_type = bind_cxx_struct_templated_methods(
+    templated_method_to_template = bind_cxx_struct_templated_methods(
         struct_decl, s_type, shim_writer
     )
 
@@ -478,21 +534,16 @@ def bind_cxx_class_template_specialization(
             template = method_templates[attr]
             return nbtypes.BoundFunction(template, typ)
 
-        def _templated_method_ty(self, typ, attr: str) -> MetaFunctionType:
-            meta_function_type = templated_method_to_meta_type[attr]
-
-            @lower_attr(s_type, attr)
-            def lower_noop(context, builder, sig, args):
-                return context.get_dummy_value()
-
-            return meta_function_type
+        def _templated_method_ty(self, typ, attr: str) -> nbtypes.BoundFunction:
+            template = templated_method_to_template[attr]
+            return nbtypes.BoundFunction(template, typ)
 
         def generic_resolve(self, typ, attr):
             if attr in public_fields_tys:
                 return self._field_ty(attr)
             elif attr in method_templates:
                 return self._method_ty(typ, attr)
-            elif attr in templated_method_to_meta_type:
+            elif attr in templated_method_to_template:
                 return self._templated_method_ty(typ, attr)
             elif attr == "__call__":
                 # Special case when invoking tranpoline typing of numba_typeref_ctor
@@ -593,9 +644,7 @@ template class cub::{instance.angled_targs_str_as_c()};
     decl = specializations[0]
 
     instance_type_ref = nbtypes.TypeRef(instance)
-    _block_scan_type = bind_cxx_class_template_specialization(
-        shim_writer, decl, instance_type_ref
-    )
+    bind_cxx_class_template_specialization(shim_writer, decl, instance_type_ref)
 
     return instance_type_ref
 
