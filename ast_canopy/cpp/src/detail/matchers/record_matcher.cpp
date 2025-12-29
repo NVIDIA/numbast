@@ -50,13 +50,13 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
       // This placeholder is not stable across runs because it is derived from
       // Clang's internal Decl ID.
       std::string name = RD->getNameAsString();
-      std::string reanme_for_unnamed =
+      std::string rename_for_unnamed =
           name.empty() ? "unnamed" + std::to_string(id) : name;
 
       auto &record_id_map = *payload->record_id_to_name;
-      record_id_map[id] = reanme_for_unnamed;
+      record_id_map[id] = rename_for_unnamed;
       payload->decls->records.push_back(Record(
-          RD, RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE, reanme_for_unnamed));
+          RD, RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE, rename_for_unnamed));
 
 #ifndef NDEBUG
       std::string source_range =
