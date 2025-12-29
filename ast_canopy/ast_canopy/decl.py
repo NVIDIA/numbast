@@ -391,9 +391,6 @@ class Struct:
             ):
                 yield m
 
-    def templated_member_functions(self):
-        yield from self.templated_methods
-
     @classmethod
     def from_c_obj(cls, c_obj: bindings.Record, parse_entry_point: str):
         return cls(
