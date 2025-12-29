@@ -44,8 +44,11 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
       if (skip_set->find(id) != skip_set->end())
         return;
 
-      // Anonymous structs, such as struct { int a; } X; is named as
-      // "unnamed<ID>". This behavior is not persistent.
+      // Anonymous records may have an empty name from Clang
+      // (`getNameAsString()` can return ""). In that case we assign a
+      // placeholder `unnamed<ID>` so downstream always has something printable.
+      // This placeholder is not stable across runs because it is derived from
+      // Clang's internal Decl ID.
       std::string name = RD->getNameAsString();
       std::string rename_for_unamed =
           name.empty() ? "unnamed" + std::to_string(id) : name;
