@@ -117,6 +117,9 @@ def to_numba_type(ty: str):
 
 
 def to_c_type_str(nbty: nbtypes.Type) -> str:
+    if isinstance(nbty, nbtypes.CPointer):
+        return f"{NUMBA_TO_CTYPE_MAPS[nbty.dtype]}*"
+
     if nbty not in NUMBA_TO_CTYPE_MAPS:
         raise ValueError(
             f"Unknown numba type attempted to converted into ctype: {nbty}"
