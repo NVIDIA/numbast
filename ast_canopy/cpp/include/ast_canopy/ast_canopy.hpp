@@ -168,8 +168,9 @@ struct FunctionTemplate : public Template {
 struct Method : public Function {
   Method(const std::string &name, const Type &return_type,
          const std::vector<ParamVar> &params, const execution_space &exec_space,
-         const method_kind &kind)
-      : Function(name, return_type, params, exec_space), kind(kind) {}
+         const std::string &qual_name, const method_kind &kind)
+      : Function(name, return_type, params, exec_space, qual_name), kind(kind) {
+  }
   Method(const clang::CXXMethodDecl *);
   method_kind kind;
 
