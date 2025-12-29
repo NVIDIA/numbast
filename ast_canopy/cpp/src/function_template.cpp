@@ -17,5 +17,10 @@ namespace ast_canopy {
 
 FunctionTemplate::FunctionTemplate(const clang::FunctionTemplateDecl *FTD)
     : Template(FTD->getTemplateParameters()),
-      function(FTD->getTemplatedDecl()) {}
+      qual_name(FTD->getQualifiedNameAsString()),
+      function(FTD->getTemplatedDecl()) {
+  if (qual_name.empty()) {
+    qual_name = function.qual_name;
+  }
+}
 } // namespace ast_canopy

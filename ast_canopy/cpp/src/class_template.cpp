@@ -14,5 +14,10 @@
 namespace ast_canopy {
 ClassTemplate::ClassTemplate(const clang::ClassTemplateDecl *CTD)
     : Template(CTD->getTemplateParameters()),
-      record(CTD->getTemplatedDecl(), RecordAncestor::ANCESTOR_IS_TEMPLATE) {}
+      qual_name(CTD->getQualifiedNameAsString()),
+      record(CTD->getTemplatedDecl(), RecordAncestor::ANCESTOR_IS_TEMPLATE) {
+  if (qual_name.empty()) {
+    qual_name = record.qual_name;
+  }
+}
 } // namespace ast_canopy
