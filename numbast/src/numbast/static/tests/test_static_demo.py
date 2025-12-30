@@ -3,43 +3,29 @@
 
 import pytest
 
+import numpy as np
+
 from numba import cuda
-from numba.types import Number, float64
-from numba.core.datamodel import PrimitiveModel
+from numba.cuda.types import Number, float64
+from numba.cuda.datamodel import PrimitiveModel
 from numba.cuda import device_array
 
-from ast_canopy import parse_declarations_from_source
-from numbast.static.struct import StaticStructsRenderer
-from numbast.static.renderer import clear_base_renderer_cache, registry_setup
-from numbast.static.function import clear_function_apis_registry
 
+@pytest.fixture(scope="function")
+def decl(make_binding):
+    types = {
+        "__myfloat16": Number,
+    }
+    datamodels = {
+        "__myfloat16": PrimitiveModel,
+    }
+    res = make_binding("demo.cuh", types, datamodels, "sm_50")
+    bindings = res["bindings"]
 
-@pytest.fixture(scope="module")
-def decl(data_folder):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
+    public_apis = ["__myfloat16"]
+    assert all(public_api in bindings for public_api in public_apis)
 
-    header = data_folder("demo.cuh")
-
-    specs = {"__myfloat16": (Number, PrimitiveModel, header)}
-
-    decls = parse_declarations_from_source(header, [header], "sm_50")
-    structs = decls.structs
-
-    assert len(structs) == 1
-
-    registry_setup(use_separate_registry=False)
-    SSR = StaticStructsRenderer(structs, specs, header)
-
-    bindings = SSR.render_as_str(with_imports=True, with_shim_stream=True)
-
-    globals = {}
-    exec(bindings, globals)
-
-    public_apis = [*specs]
-    assert all(public_api in globals for public_api in public_apis)
-
-    return {k: globals[k] for k in public_apis}
+    return bindings
 
 
 def test_demo(decl):
@@ -53,4 +39,5 @@ def test_demo(decl):
 
     arr = device_array((1,), "float64")
     kernel[1, 1](arr)
-    assert all(arr.copy_to_host() == [])
+    host = arr.copy_to_host()
+    assert np.allclose(host, [3.14], rtol=1e-3, atol=1e-3)

@@ -12,6 +12,8 @@ import cffi
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_enums, bind_cxx_functions, MemoryShimWriter
 
+from cuda.bindings.runtime import cudaRoundMode
+
 import pytest
 
 
@@ -63,3 +65,24 @@ def test_enum_arg(enum_bindings, func_bindings, shim_writer):
     out = np.zeros(3, dtype=np.int32)
     kernel[1, 1](out)
     assert np.array_equal(out, [1, 2, 3])
+
+
+def test_cudaRoundMode_arg(enum_bindings, func_bindings, shim_writer):
+    ffi = cffi.FFI()
+    test_cudaRoundMode = func_bindings[1]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(out):
+        first_slot = ffi.from_buffer(out[0:1])
+        second_slot = ffi.from_buffer(out[1:2])
+        third_slot = ffi.from_buffer(out[2:3])
+        fourth_slot = ffi.from_buffer(out[3:4])
+
+        test_cudaRoundMode(cudaRoundMode.cudaRoundNearest, first_slot)
+        test_cudaRoundMode(cudaRoundMode.cudaRoundZero, second_slot)
+        test_cudaRoundMode(cudaRoundMode.cudaRoundPosInf, third_slot)
+        test_cudaRoundMode(cudaRoundMode.cudaRoundMinInf, fourth_slot)
+
+    out = np.zeros(4, dtype=np.int32)
+    kernel[1, 1](out)
+    assert np.array_equal(out, [1, 2, 3, 4])

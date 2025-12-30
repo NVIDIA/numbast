@@ -14,12 +14,10 @@ def bind_cxx_enum(e: pylibastcanopy.Enum):
     vals = [int(v) for v in e.enumerator_values]
     # Numba takes python enum object as-is. Thus we only need to dynamically create
     # the enum object and return it.
-    pyenum = IntEnum(e.name, dict(zip(e.enumerators, vals)))
-
-    example_value = vals[0]
+    pyenum = IntEnum(e.name, dict(zip(e.enumerators, vals)))  # type: ignore
 
     # Add the enum to the CTYPE_MAPS
-    register_enum_type(e.name, pyenum(example_value))
+    register_enum_type(e.name, pyenum)
 
     return pyenum
 

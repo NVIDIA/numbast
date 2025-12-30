@@ -44,23 +44,6 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .value("protected_", access_kind::protected_)
       .value("private_", access_kind::private_);
 
-  py::class_<Enum>(m, "Enum")
-      .def(py::init<const clang::EnumDecl *>())
-      .def_readwrite("name", &Enum::name)
-      .def_readwrite("enumerators", &Enum::enumerators)
-      .def_readwrite("enumerator_values", &Enum::enumerator_values)
-      .def(py::pickle(
-          [](const Enum &e) {
-            return py::make_tuple(e.name, e.enumerators, e.enumerator_values);
-          },
-          [](py::tuple t) {
-            if (t.size() != 3)
-              throw std::runtime_error("Invalid enum state during unpickle!");
-            return Enum{t[0].cast<std::string>(),
-                        t[1].cast<std::vector<std::string>>(),
-                        t[2].cast<std::vector<std::string>>()};
-          }));
-
   py::class_<Type>(m, "Type")
       .def(py::init<>())
       .def(py::init<std::string, std::string, bool, bool>())
@@ -83,10 +66,32 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[2].cast<bool>(), t[3].cast<bool>()};
           }));
 
+  py::class_<Enum>(m, "Enum")
+      .def(py::init<const clang::EnumDecl *>())
+      .def_readwrite("name", &Enum::name)
+      .def_readwrite("qual_name", &Enum::qual_name)
+      .def_readwrite("enumerators", &Enum::enumerators)
+      .def_readwrite("enumerator_values", &Enum::enumerator_values)
+      .def_readwrite("underlying_type", &Enum::underlying_type)
+      .def(py::pickle(
+          [](const Enum &e) {
+            return py::make_tuple(e.name, e.qual_name, e.enumerators,
+                                  e.enumerator_values, e.underlying_type);
+          },
+          [](py::tuple t) {
+            if (t.size() != 5)
+              throw std::runtime_error("Invalid enum state during unpickle!");
+            return Enum{t[0].cast<std::string>(), t[1].cast<std::string>(),
+                        t[2].cast<std::vector<std::string>>(),
+                        t[3].cast<std::vector<std::string>>(),
+                        t[4].cast<Type>()};
+          }));
+
   py::class_<ConstExprVar>(m, "ConstExprVar")
       .def(py::init<>())
       .def_readwrite("type_", &ConstExprVar::type_)
       .def_readwrite("name", &ConstExprVar::name)
+      .def_readwrite("qual_name", &ConstExprVar::qual_name)
       .def_readwrite("value", &ConstExprVar::value);
 
   py::class_<Field>(m, "Field")
@@ -148,6 +153,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
 
   py::class_<Function>(m, "Function")
       .def_readwrite("name", &Function::name)
+      .def_readwrite("qual_name", &Function::qual_name)
       .def_readwrite("return_type", &Function::return_type)
       .def_readwrite("params", &Function::params)
       .def_readwrite("exec_space", &Function::exec_space)
@@ -156,16 +162,17 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("attributes", &Function::attributes)
       .def(py::pickle(
           [](const Function &f) {
-            return py::make_tuple(f.name, f.return_type, f.params,
-                                  f.exec_space);
+            return py::make_tuple(f.name, f.return_type, f.params, f.exec_space,
+                                  f.qual_name);
           },
           [](py::tuple t) {
-            if (t.size() != 4)
+            if (t.size() != 5)
               throw std::runtime_error(
                   "Invalid function state during unpickle!");
             return Function{t[0].cast<std::string>(), t[1].cast<Type>(),
                             t[2].cast<std::vector<ParamVar>>(),
-                            t[3].cast<execution_space>()};
+                            t[3].cast<execution_space>(),
+                            t[4].cast<std::string>()};
           }));
 
   py::class_<Template>(m, "Template")
@@ -187,26 +194,28 @@ PYBIND11_MODULE(pylibastcanopy, m) {
 
   py::class_<FunctionTemplate, Template>(m, "FunctionTemplate")
       .def_readwrite("function", &FunctionTemplate::function)
+      .def_readwrite("qual_name", &FunctionTemplate::qual_name)
       .def_readwrite("num_min_required_args",
                      &FunctionTemplate::num_min_required_args)
       .def(py::pickle(
           [](const FunctionTemplate &f) {
             Template t = f;
-            return py::make_tuple(t, f.function);
+            return py::make_tuple(t, f.function, f.qual_name);
           },
           [](py::tuple t) {
-            if (t.size() != 2)
+            if (t.size() != 3)
               throw std::runtime_error(
                   "Invalid function template state during unpickle!");
             Template tmpl = t[0].cast<Template>();
-            return FunctionTemplate{tmpl.template_parameters,
-                                    tmpl.num_min_required_args,
-                                    t[1].cast<Function>()};
+            return FunctionTemplate{
+                tmpl.template_parameters, tmpl.num_min_required_args,
+                t[1].cast<Function>(), t[2].cast<std::string>()};
           }));
 
   py::class_<ClassTemplate, Template>(m, "ClassTemplate")
       .def_readwrite("num_min_required_args",
                      &ClassTemplate::num_min_required_args)
+      .def_readwrite("qual_name", &ClassTemplate::qual_name)
       .def_readwrite("record", &ClassTemplate::record);
 
   py::class_<Method, Function>(m, "Method")
@@ -222,12 +231,14 @@ PYBIND11_MODULE(pylibastcanopy, m) {
               throw std::runtime_error(
                   "Invalid class template state during unpickle!");
             Function f = t[0].cast<Function>();
-            return Method{f.name, f.return_type, f.params, f.exec_space,
-                          t[1].cast<method_kind>()};
+            return Method{f.name,      f.return_type,
+                          f.params,    f.exec_space,
+                          f.qual_name, t[1].cast<method_kind>()};
           }));
 
   py::class_<Record>(m, "Record")
       .def_readwrite("name", &Record::name)
+      .def_readwrite("qual_name", &Record::qual_name)
       .def_readwrite("fields", &Record::fields)
       .def_readwrite("methods", &Record::methods)
       .def_readwrite("templated_methods", &Record::templated_methods)
@@ -240,10 +251,10 @@ PYBIND11_MODULE(pylibastcanopy, m) {
             return py::make_tuple(r.name, r.fields, r.methods,
                                   r.templated_methods, r.nested_records,
                                   r.nested_class_templates, r.sizeof_,
-                                  r.alignof_, r.source_range);
+                                  r.alignof_, r.source_range, r.qual_name);
           },
           [](py::tuple t) {
-            if (t.size() != 9)
+            if (t.size() != 10)
               throw std::runtime_error("Invalid record state during unpickle!");
             return Record{t[0].cast<std::string>(),
                           t[1].cast<std::vector<Field>>(),
@@ -253,21 +264,24 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                           t[5].cast<std::vector<ClassTemplate>>(),
                           t[6].cast<std::size_t>(),
                           t[7].cast<std::size_t>(),
-                          t[8].cast<std::string>()};
+                          t[8].cast<std::string>(),
+                          t[9].cast<std::string>()};
           }));
 
   py::class_<Typedef>(m, "Typedef")
       .def_readwrite("name", &Typedef::name)
+      .def_readwrite("qual_name", &Typedef::qual_name)
       .def_readwrite("underlying_name", &Typedef::underlying_name)
       .def(py::pickle(
           [](const Typedef &t) {
-            return py::make_tuple(t.name, t.underlying_name);
+            return py::make_tuple(t.name, t.underlying_name, t.qual_name);
           },
           [](py::tuple t) {
-            if (t.size() != 2)
+            if (t.size() != 3)
               throw std::runtime_error(
                   "Invalid typedef state during unpickle!");
-            return Typedef{t[0].cast<std::string>(), t[1].cast<std::string>()};
+            return Typedef{t[0].cast<std::string>(), t[1].cast<std::string>(),
+                           t[2].cast<std::string>()};
           }));
 
   py::class_<ClassTemplateSpecialization, Record>(m,

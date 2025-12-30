@@ -8,6 +8,7 @@ from numba.cuda.cudadrv.runtime import get_version
 from numba.cuda.vector_types import vector_types
 
 from numbast import __version__ as numbast_ver
+from numbast.static.callconv import CALLCONV_SRC
 
 from ast_canopy import __version__ as ast_canopy_ver
 
@@ -49,6 +50,17 @@ shim_prefix = shim_defines + \"\\n\" + shim_include
 shim_stream = _KeyedStringIO()
 shim_stream.write(shim_prefix)
 shim_obj = CUSource(shim_stream)
+"""
+
+    CallConvAdapter = """
+class ShimWriterAdapter:
+    def __init__(self, stream):
+        self.stream = stream
+
+    def write_to_shim(self, content, id):
+        self.stream.write_with_key(id, content)
+
+shim_writer = ShimWriterAdapter(shim_stream)
 """
 
     Imports: set[str] = set()
@@ -122,8 +134,8 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             cls.Imported_VectorTypes.append(typ)
             cls._imported_numba_types.add(typ)
 
-        elif typ in numba.types.__dict__:
-            cls.Imports.add(f"from numba.types import {typ}")
+        elif typ in numba.cuda.types.__dict__:
+            cls.Imports.add(f"from numba.cuda.types import {typ}")
             cls._imported_numba_types.add(typ)
 
         else:
@@ -233,6 +245,11 @@ def get_shim(
         + "\n"
         + callbacks_setup
     )
+
+
+def get_callconv_utils() -> str:
+    """Render the code block for call convention utilities."""
+    return CALLCONV_SRC + "\n" + BaseRenderer.CallConvAdapter
 
 
 def get_rendered_imports(additional_imports: list[str] = []) -> str:
@@ -348,7 +365,7 @@ def registry_setup(use_separate_registry: bool) -> str:
             "from numba.cuda.typing.templates import Registry as TypingRegistry"
         )
         BaseRenderer.Imports.add(
-            "from numba.core.imputils import Registry as TargetRegistry"
+            "from numba.cuda.core.imputils import Registry as TargetRegistry"
         )
         return BaseRenderer.SeparateRegistrySetup
     else:
@@ -364,5 +381,5 @@ def registry_setup(use_separate_registry: bool) -> str:
         BaseRenderer.Imports.add(
             "from numba.cuda.cudaimpl import lower_constant"
         )
-        BaseRenderer.Imports.add("from numba.core.extending import lower_cast")
+        BaseRenderer.Imports.add("from numba.cuda.extending import lower_cast")
         return ""

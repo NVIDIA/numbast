@@ -467,7 +467,7 @@ def test_load_enum(sample_enum_source, test_pickle):
         pickled = [pickle.dumps(e) for e in enums]
         enums = [pickle.loads(p) for p in pickled]
 
-    assert len(enums) == 3
+    assert len(enums) == 6
     assert enums[0].name == "Foo"
     assert len(enums[0].enumerators) == 3
     assert enums[0].enumerators[0] == "A"
@@ -493,6 +493,24 @@ def test_load_enum(sample_enum_source, test_pickle):
     assert enums[2].enumerators[0] == "A"
     assert len(enums[2].enumerator_values) == 1
     assert enums[2].enumerator_values[0] == "1"
+
+
+def test_load_enum_underlying_type(sample_enum_source, test_pickle):
+    decls = parse_declarations_from_source(
+        sample_enum_source, [sample_enum_source], "sm_80"
+    )
+
+    enums = decls.enums
+    if test_pickle:
+        pickled = [pickle.dumps(e) for e in enums]
+        enums = [pickle.loads(p) for p in pickled]
+
+    assert enums[3].name == "Fruit"
+    assert enums[3].underlying_type.name == "uint64_t"
+    assert enums[4].name == "Car"
+    assert enums[4].underlying_type.name == "int16_t"
+    assert enums[5].name == "Plane"
+    assert enums[5].underlying_type.name == "char"
 
 
 def test_load_struct_function_execution_space(

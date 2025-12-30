@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from numba import types
-from numba.core.extending import typeof_impl
-from numba.core.imputils import lower_constant
+from numba.cuda.extending import typeof_impl
+from numba.cuda.core.imputils import lower_constant
 from numba import cuda
 
 from numbast.types import NUMBA_TO_CTYPE_MAPS as N2C, FunctorType

@@ -29,6 +29,12 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
 #endif
 
   name = RD->getNameAsString();
+  qual_name = RD->getQualifiedNameAsString();
+  if (qual_name.empty()) {
+    // For anonymous records, Clang may return an empty qualified name.
+    // Keep this stable by falling back to whatever name we have.
+    qual_name = name;
+  }
 
   // Class default access specifier is private, struct is public.
   AS access = RD->isClass() ? AS::AS_private : AS::AS_public;
@@ -95,6 +101,9 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp,
                std::string name)
     : Record(RD, rp) {
   this->name = name;
+  if (this->qual_name.empty()) {
+    this->qual_name = this->name;
+  }
 }
 
 void Record::print(int level) const {
