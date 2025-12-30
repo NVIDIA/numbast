@@ -131,6 +131,10 @@ def bind_cxx_struct_ctor(
         shim_name=shim_func_name, struct_name=struct_name, params=ctor.params
     )
 
+    shim = shim.replace("BlockLoad<int", "cub::BlockLoad<int")
+
+    print(f"CTOR SHIM: {shim}")
+
     ctor_cc = FunctionCallConv(mangled_name, shim_writer, shim)
 
     @lower(numba_typeref_ctor, s_type_ref, *param_types)
@@ -325,7 +329,7 @@ def bind_cxx_struct_templated_method(
                     .replace("(*arg0,", "(arg0,")
                 )
 
-                print(f"SHIM: {shim}")
+                print(f"TEMPLATED METHOD SHIM: {shim}")
 
                 shim_writer.write_to_shim(shim, func_name)
 

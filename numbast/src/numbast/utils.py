@@ -238,9 +238,25 @@ def make_struct_regular_method_shim(
     struct_name: str,
     method_name: str,
     return_type: str,
-    params: list[pylibastcanopy.ParamVar],
+    formal_args_str: str | None = None,
+    actual_args_str: str | None = None,
+    params: list[pylibastcanopy.ParamVar] | None = None,
     includes: list[str] = [],
 ) -> str:
+    if (params is not None) and (
+        formal_args_str is not None or actual_args_str is not None
+    ):
+        raise ValueError(
+            "formal_args_str and actual_args_str cannot be provided if params are provided"
+        )
+
+    if (params is None) and (
+        formal_args_str is None or actual_args_str is None
+    ):
+        raise ValueError(
+            "Either params or both formal_args_str and actual_args_str must be provided"
+        )
+
     struct_method_shim_layer_template = """{includes}
     extern "C" __device__ int
     {shim_name}({return_type} &retval, {struct_name}* self {arglist}) {{
@@ -251,8 +267,12 @@ def make_struct_regular_method_shim(
 
     retval, return_type = get_return_type_strings(return_type)
 
-    formal_args_str = assemble_arglist_string(params)
-    acutal_args_str = assemble_dereferenced_params_string(params)
+    if params:
+        formal_args_str = assemble_arglist_string(params)
+        actual_args_str = assemble_dereferenced_params_string(params)
+    else:
+        formal_args_str = formal_args_str
+        actual_args_str = actual_args_str
 
     include_str = "\n".join([f"#include <{include}>" for include in includes])
     shim = struct_method_shim_layer_template.format(
@@ -262,7 +282,7 @@ def make_struct_regular_method_shim(
         method_name=method_name,
         arglist=formal_args_str,
         shim_name=shim_name,
-        args=acutal_args_str,
+        args=actual_args_str,
         includes=include_str,
     )
 
