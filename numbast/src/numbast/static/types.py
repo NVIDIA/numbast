@@ -30,6 +30,7 @@ def register_enum_type_str(
     Parameters:
         ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
         enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).
+        underlying_integer_type (str): The underlying integer type to use for the enum.
     """
     global CTYPE_TO_NBTYPE_STR
 
