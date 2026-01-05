@@ -68,9 +68,9 @@ ConcreteTypeCache: dict[str, nbtypes.Type] = {}
 
 
 class MetaType(nbtypes.Type):
-    def __init__(self, template_name):
-        super().__init__(name=template_name + "MetaType")
-        self.template_name = template_name
+    def __init__(self, qualified_template_name):
+        super().__init__(name=qualified_template_name + "MetaType")
+        self.qualified_template_name = qualified_template_name
 
 
 class MetaFunctionType(nbtypes.Type):
@@ -131,7 +131,7 @@ def bind_cxx_struct_ctor(
         shim_name=shim_func_name, struct_name=struct_name, params=ctor.params
     )
 
-    shim = shim.replace("BlockLoad<int", "cub::BlockLoad<int")
+    # shim = shim.replace("BlockLoad<int", "cub::BlockLoad<int")
 
     print(f"CTOR SHIM: {shim}")
 
@@ -172,7 +172,10 @@ def bind_cxx_ctsd_ctors(
     ctor_params: list[list[Any]] = []
     for ctor in struct_decl.constructors():
         param_types = bind_cxx_struct_ctor(
-            ctor, struct_decl.name, s_type_ref, shim_writer
+            ctor=ctor,
+            struct_name=struct_decl.qual_name,
+            s_type_ref=s_type_ref,
+            shim_writer=shim_writer,
         )
         if param_types is not None:
             ctor_params.append(param_types)
@@ -312,7 +315,7 @@ def bind_cxx_struct_templated_method(
 
                 shim = make_struct_regular_method_shim(
                     shim_name=func_name,
-                    struct_name=struct_decl.name,
+                    struct_name=struct_decl.qual_name,
                     method_name=templated_method.function.name,
                     return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
                     formal_args_str="," + formal_arg_string,
@@ -322,8 +325,7 @@ def bind_cxx_struct_templated_method(
                 # FIXME: These are temporary, signature-specific hacks. Long-term we should
                 # generate correct shim signatures from the parsed C++ parameter types.
                 shim = (
-                    shim.replace(", BlockLoad", ", cub::BlockLoad")
-                    .replace("int* *arg1", "int (&arg1)[1]")
+                    shim.replace("int* *arg1", "int (&arg1)[1]")
                     .replace("*arg1);", "arg1);")
                     .replace("int* *arg0", "int *arg0")
                     .replace("(*arg0,", "(arg0,")
@@ -511,7 +513,7 @@ def concrete_typing():
             Mostly used for debugging purposes.
             """
             return (
-                self.meta_type.template_name
+                self.meta_type.qualified_template_name
                 + f"<{', '.join([f'{tparam_name}={targ}' for tparam_name, targ in self.targs.items()])}>"
             )
 
@@ -521,11 +523,13 @@ def concrete_typing():
             Used to format shim function strings.
             """
             return (
-                self.meta_type.template_name
+                self.meta_type.qualified_template_name
                 + f"<{', '.join([f'{targ}' for targ in self.targs_dict_as_c().values()])}>"
             )
 
         def targs_dict_as_c(self):
+            """Reversely map the template parameter types into C type strings."""
+
             def to_c_str(obj: nbtypes.Type | int | float) -> str:
                 if isinstance(obj, nbtypes.Type):
                     return to_c_type_str(obj)
@@ -558,7 +562,7 @@ def struct_type_from_instantiation(
     # code snippet creates such instantiation.
     src = f"""\n
 #include "{header_path}"
-template class cub::{instance.angled_targs_str_as_c()};
+template class {instance.angled_targs_str_as_c()};
 """
 
     with NamedTemporaryFile("w") as f:
@@ -686,7 +690,7 @@ def bind_cxx_class_template(
         pass
 
     # Typing
-    TC_templated_type = MetaType(class_template_decl.record.name)
+    TC_templated_type = MetaType(class_template_decl.record.qual_name)
 
     # Data model
     @register_model(MetaType)

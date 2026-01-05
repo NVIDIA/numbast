@@ -513,7 +513,7 @@ class ConstExprVar:
         return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)
 
 
-class ClassTemplateSpecialization(Struct, ClassInstantiation):
+class ClassTemplateSpecialization(Struct):
     """Represents a C++ class template specialization declaration.
 
     Holds the underlying ``TemplatedStruct`` and provides ``instantiate`` for
@@ -539,7 +539,8 @@ class ClassTemplateSpecialization(Struct, ClassInstantiation):
             record.alignof_,
             record.parse_entry_point,
         )
-        ClassInstantiation.__init__(self, class_template)
+
+        self._instantiation = ClassInstantiation(class_template)
 
         targ_names: list[str] = [
             tp.name for tp in class_template.template_parameters
@@ -548,7 +549,7 @@ class ClassTemplateSpecialization(Struct, ClassInstantiation):
 
         kwargs = dict(zip(targ_names, targ_values))
 
-        self.instantiate(**kwargs)
+        self._instantiation.instantiate(**kwargs)
 
         self.actual_template_arguments = actual_template_arguments
 
@@ -564,11 +565,15 @@ class ClassTemplateSpecialization(Struct, ClassInstantiation):
 
     @property
     def name(self):
-        return self.get_instantiated_c_stmt()
+        return self._name
+
+    @property
+    def qual_name(self):
+        return self._instantiation.get_instantiated_c_stmt(use_qual_name=True)
 
     @property
     def base_name(self):
-        return self.record.name
+        return self._name
 
     def constructors(self):
         for m in self.methods:
