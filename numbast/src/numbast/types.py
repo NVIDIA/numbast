@@ -131,6 +131,9 @@ def to_numba_type(ty: str):
         base_ty, size = is_array_type.groups()
         return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
 
+    if ty not in CTYPE_MAPS:
+        return nbtypes.undefined
+
     return CTYPE_MAPS[ty]
 
 

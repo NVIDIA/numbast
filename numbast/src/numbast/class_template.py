@@ -804,8 +804,7 @@ def bind_cxx_class_template(
     header_path: str,
 ):
     # Stub class
-    class TC:
-        pass
+    TC = type(class_template_decl.record.qual_name, (object,), {})
 
     # Typing
     TC_templated_type = MetaType(class_template_decl.record.qual_name)
