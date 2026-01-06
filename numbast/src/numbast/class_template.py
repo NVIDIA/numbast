@@ -862,19 +862,3 @@ def bind_cxx_class_templates(
         python_apis.append(TC)
 
     return python_apis
-
-
-# # Constructor typing:
-# @register
-# class TypeRefCallTemplate(ConcreteTemplate):
-#     key = numba_typeref_ctor
-#     cases = [
-#         nb_signature(nbtypes.CPointer(nbtypes.int32), nbtypes.TypeRef(nbtypes.CPointer(nbtypes.int32)), nbtypes.Any)
-#     ]
-
-# register_global(numba_typeref_ctor, nbtypes.Function(TypeRefCallTemplate))
-
-# @register
-# class CtorTemplate(ConcreteTemplate):
-#     key = nbtypes.CPointer
-#     cases = [nb_signature(nbtypes.CPointer(nbtypes.int32), nbtypes.Any)]
