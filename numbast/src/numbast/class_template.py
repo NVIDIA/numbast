@@ -5,6 +5,7 @@ from typing import Any, Optional
 from collections import defaultdict
 from tempfile import NamedTemporaryFile
 import inspect
+import re
 
 from ast_canopy import pylibastcanopy
 
@@ -53,16 +54,6 @@ from numbast.utils import (
 from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import ShimWriterBase
 
-if False:
-    import debugpy
-
-    print("ABOUT TO START DEBUGPY...\n")
-    debugpy.listen(5678)
-
-    # Pause the program until a remote debugger is attached
-    debugpy.wait_for_client()
-
-    debugpy.breakpoint()
 
 ConcreteTypeCache: dict[str, nbtypes.Type] = {}
 
@@ -130,8 +121,6 @@ def bind_cxx_struct_ctor(
     shim = make_struct_ctor_shim(
         shim_name=shim_func_name, struct_name=struct_name, params=ctor.params
     )
-
-    # shim = shim.replace("BlockLoad<int", "cub::BlockLoad<int")
 
     print(f"CTOR SHIM: {shim}")
 
@@ -273,7 +262,7 @@ def bind_cxx_struct_templated_method(
     templated_method: FunctionTemplate,
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
-) -> nb_signature:
+) -> type[AbstractTemplate]:
     # NOTE: We intentionally *do not* use `lower_attr(...)=dummy_value` for templated
     # methods. Doing so loses the receiver value and the call ends up seeing `i8* null`
     # for the first argument. Instead, we return a normal Numba `BoundFunction`, whose
@@ -284,33 +273,32 @@ def bind_cxx_struct_templated_method(
     class TemplatedMethodDecl(AbstractTemplate):
         key = qualname
 
-        def generic(self, args, kwds):
+        def generic(self, args, kwds, templated_method=templated_method):
             # BoundFunction passes only the explicit call args (receiver is implicit).
             # We can recover the receiver type from the bound template class attribute.
             recvr = self.this
             param_types = tuple(args)
 
             @lower(qualname, recvr, *param_types)
-            def _impl(context, builder, sig, args):
+            def _impl(
+                context,
+                builder,
+                sig,
+                args,
+                param_types=param_types,
+                templated_method=templated_method,
+            ):
                 # args[0] is the receiver value (a struct value), args[1:] are parameters.
                 param_types_inner = sig.args[1:]
 
                 func_name = deduplicate_overloads(
                     f"__{templated_method.function.mangled_name}_nbst"
                 )
-
-                param_c_type_strings = [
-                    to_c_type_str(paramty) for paramty in param_types_inner
-                ]
-
-                formal_arg_string = ",".join(
-                    [
-                        f"{c_ty} *arg{i}"
-                        for i, c_ty in enumerate(param_c_type_strings)
-                    ]
-                )
-                actual_arg_string_with_dereference = ",".join(
-                    [f"*arg{i}" for i in range(len(param_types_inner))]
+                formal_args_str, actual_args_str = (
+                    _make_templated_method_shim_arg_strings(
+                        param_types_inner=tuple(param_types_inner),
+                        cxx_params=templated_method.function.params,
+                    )
                 )
 
                 shim = make_struct_regular_method_shim(
@@ -318,17 +306,8 @@ def bind_cxx_struct_templated_method(
                     struct_name=struct_decl.qual_name,
                     method_name=templated_method.function.name,
                     return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
-                    formal_args_str="," + formal_arg_string,
-                    actual_args_str=actual_arg_string_with_dereference,
-                )
-
-                # FIXME: These are temporary, signature-specific hacks. Long-term we should
-                # generate correct shim signatures from the parsed C++ parameter types.
-                shim = (
-                    shim.replace("int* *arg1", "int (&arg1)[1]")
-                    .replace("*arg1);", "arg1);")
-                    .replace("int* *arg0", "int *arg0")
-                    .replace("(*arg0,", "(arg0,")
+                    formal_args_str=formal_args_str,
+                    actual_args_str=actual_args_str,
                 )
 
                 print(f"TEMPLATED METHOD SHIM: {shim}")
@@ -368,20 +347,222 @@ def bind_cxx_struct_templated_method(
     return TemplatedMethodDecl
 
 
+def _select_templated_overload(
+    *,
+    qualname: str,
+    overloads: list[FunctionTemplate],
+    param_types: tuple[nbtypes.Type, ...],
+    kwds: dict[str, Any] | None = None,
+) -> FunctionTemplate:
+    """
+    Select a FunctionTemplate overload for a templated method.
+
+    Today we select by explicit argument count (arity). Keep this logic in one
+    place so we can later expand it to:
+    - disambiguate overloads with the same arity using template-parameter
+      inference (or explicit template args if we add a user-facing API),
+    - match on parsed C++ parameter types,
+    - incorporate kwds / default args.
+    """
+    arity = len(param_types)
+    candidates = [m for m in overloads if len(m.function.params) == arity]
+    if len(candidates) != 1:
+        raise TypeError(
+            f"Ambiguous or missing overload for {qualname} with {arity} args. "
+            f"Overload arities: {[len(m.function.params) for m in overloads]}"
+        )
+    return candidates[0]
+
+
+_CXX_ARRAY_TYPE_RE = re.compile(r"^(?P<base>.*?)(?P<sizes>(\[\d+\])+)\s*$")
+
+
+def _make_templated_method_shim_arg_strings(
+    *,
+    param_types_inner: tuple[nbtypes.Type, ...],
+    cxx_params: list[pylibastcanopy.ParamVar],
+) -> tuple[str, str]:
+    """
+    Build (formal_args_str, actual_args_str) for `make_struct_regular_method_shim`
+    using:
+    - `param_types_inner` (from Numba signature) to match the ABI/calling convention
+    - `cxx_params` (from parsed C++ decl) to produce correct expressions when the
+      C++ parameter type is not directly representable in Numba (e.g. `T (&)[N]`).
+
+    `formal_args_str` is either empty or begins with a leading comma (matching the
+    expectations of `make_struct_regular_method_shim`).
+    """
+    if len(param_types_inner) != len(cxx_params):
+        raise ValueError(
+            "Templated method parameter mismatch: "
+            f"sig has {len(param_types_inner)} params, but C++ decl has {len(cxx_params)} params."
+        )
+
+    formal_parts: list[str] = []
+    actual_parts: list[str] = []
+
+    for i, (nb_ty, cxx_param) in enumerate(zip(param_types_inner, cxx_params)):
+        # Make the shim signature match the *Numba* ABI types. (Numba will pass
+        # pointer values as pointers, not as pointers-to-pointers.)
+        c_ty = to_c_type_str(nb_ty)
+        formal_parts.append(f"{c_ty} arg{i}")
+        base_expr = f"arg{i}"
+
+        # NOTE: `unqualified_non_ref_type_name` strips references, so a true
+        # `T (&)[N]` parameter will present as an array type `T [N]` here, and
+        # we must consult `is_left_reference()` to know whether it was a ref.
+        cxx_ty = cxx_param.type_.unqualified_non_ref_type_name
+        m = _CXX_ARRAY_TYPE_RE.match(cxx_ty)
+        is_lref = cxx_param.type_.is_left_reference()
+        if m and is_lref:
+            # C++ wants a reference-to-array parameter like: `int (&)[1]`.
+            # Numba typically models the passed value as `CPointer(int)`, and
+            # `base_expr` is `int*`.
+            #
+            # Validate we got a compatible Numba argument type, then rebuild the
+            # shim signature to accept the array-ref directly. (At the LLVM IR
+            # level this is still a pointer value, and Numba will pass `i32*`.)
+            if not isinstance(nb_ty, nbtypes.CPointer):
+                raise TypingError(
+                    f"{cxx_param.name}: expected a pointer argument in Numba "
+                    f"to satisfy C++ '{cxx_ty}&', got {nb_ty}"
+                )
+
+            pointee = getattr(nb_ty, "dtype", None)
+            if pointee is None:
+                raise TypingError(
+                    f"{cxx_param.name}: cannot determine pointee type for {nb_ty}"
+                )
+
+            base = m.group("base").strip()
+            sizes = m.group("sizes")
+
+            nb_base = to_c_type_str(pointee).strip()
+            base_norm = base.replace("const", "").strip()
+            if base_norm != nb_base:
+                raise TypingError(
+                    f"{cxx_param.name}: Numba argument base type '{nb_base}' does not match "
+                    f"C++ array-ref base type '{base}' for '{cxx_ty}&'"
+                )
+
+            # Override the shim's formal parameter spelling to match the C++ API:
+            #   int (&arg1)[1]
+            # and pass it straight through to the underlying method call.
+            formal_parts[-1] = f"{base} (&arg{i}){sizes}"
+            actual_parts.append(f"arg{i}")
+        else:
+            actual_parts.append(base_expr)
+
+    formal_args_str = "," + ",".join(formal_parts) if formal_parts else ""
+    actual_args_str = ",".join(actual_parts)
+    return formal_args_str, actual_args_str
+
+
 def bind_cxx_struct_templated_methods(
     struct_decl: ClassTemplateSpecialization,
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
-) -> dict[str, ConcreteTemplate]:
+) -> dict[str, type[AbstractTemplate]]:
     """Create bindings for a templated method of a C++ struct."""
 
-    method_to_template: dict[str, AbstractTemplate] = {}
+    # NOTE: Templated methods can be overloaded (e.g. CCCL's BlockLoad::Load).
+    # If we key only by name, later overloads overwrite earlier ones. Instead we
+    # merge all overloads under one AbstractTemplate and select at call time.
+    method_overloads: dict[str, list[FunctionTemplate]] = defaultdict(list)
 
     for templated_method in struct_decl.templated_member_functions():
-        template = bind_cxx_struct_templated_method(
-            struct_decl, templated_method, s_type, shim_writer
+        print(
+            f"Templated method: {templated_method.function.name}, template params: {templated_method.template_parameters}"
         )
-        method_to_template[templated_method.function.name] = template
+        method_overloads[templated_method.function.name].append(
+            templated_method
+        )
+
+    method_to_template: dict[str, type[AbstractTemplate]] = {}
+
+    for name, overloads in method_overloads.items():
+        qualname = f"{s_type}.{name}"
+
+        class MergedTemplatedMethodDecl(AbstractTemplate):
+            key = qualname
+
+            def generic(self, args, kwds, overloads=overloads):
+                # BoundFunction passes only the explicit call args (receiver is implicit).
+                recvr = self.this
+                param_types = tuple(args)
+
+                templated_method = _select_templated_overload(
+                    qualname=qualname,
+                    overloads=overloads,
+                    param_types=param_types,
+                    kwds=kwds,
+                )
+
+                @lower(qualname, recvr, *param_types)
+                def _impl(
+                    context,
+                    builder,
+                    sig,
+                    args,
+                    param_types=param_types,
+                    templated_method=templated_method,
+                ):
+                    # args[0] is the receiver value (a struct value), args[1:] are parameters.
+                    param_types_inner = sig.args[1:]
+
+                    func_name = deduplicate_overloads(
+                        f"__{templated_method.function.mangled_name}_nbst"
+                    )
+                    formal_args_str, actual_args_str = (
+                        _make_templated_method_shim_arg_strings(
+                            param_types_inner=tuple(param_types_inner),
+                            cxx_params=templated_method.function.params,
+                        )
+                    )
+
+                    shim = make_struct_regular_method_shim(
+                        shim_name=func_name,
+                        struct_name=struct_decl.qual_name,
+                        method_name=templated_method.function.name,
+                        return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
+                        formal_args_str=formal_args_str,
+                        actual_args_str=actual_args_str,
+                    )
+
+                    print(f"TEMPLATED METHOD SHIM: {shim}")
+
+                    shim_writer.write_to_shim(shim, func_name)
+
+                    # Match the calling convention used for non-templated methods:
+                    # pass all arguments by pointer (including `this`).
+                    c_sig = nbtypes.void(
+                        nbtypes.CPointer(recvr),
+                        *param_types_inner,
+                    )
+                    shim_decl = declare_device(func_name, c_sig)
+                    shim_call = make_device_caller_with_nargs(
+                        func_name + "_shim",
+                        1 + len(param_types_inner),
+                        shim_decl,
+                    )
+
+                    print(f"c_sig: {c_sig}")
+                    print(f"ARGS.types: {[arg.type for arg in args]}")
+                    print("self.this == args[0]?:", self.this == args[0])
+
+                    selfptr = builder.alloca(context.get_value_type(recvr))
+                    builder.store(
+                        args[0], selfptr, align=getattr(recvr, "alignof_", None)
+                    )
+
+                    return context.compile_internal(
+                        builder, shim_call, c_sig, (selfptr, *args[1:])
+                    )
+
+                # Return a method signature (receiver is implicit).
+                return nb_signature(nbtypes.void, *param_types, recvr=recvr)
+
+        method_to_template[name] = MergedTemplatedMethodDecl
 
     return method_to_template
 
