@@ -259,25 +259,38 @@ def bind_cxx_struct_regular_methods(
 
 def bind_cxx_struct_templated_method(
     struct_decl: ClassTemplateSpecialization,
-    templated_method: FunctionTemplate,
+    *,
+    name: str,
+    overloads: list[FunctionTemplate],
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
 ) -> type[AbstractTemplate]:
-    # NOTE: We intentionally *do not* use `lower_attr(...)=dummy_value` for templated
-    # methods. Doing so loses the receiver value and the call ends up seeing `i8* null`
-    # for the first argument. Instead, we return a normal Numba `BoundFunction`, whose
-    # template's `generic()` runs at *call time* and can see the concrete argument types.
+    """Create bindings for a (possibly overloaded) templated method of a C++ struct.
 
-    qualname = f"{s_type}.{templated_method.function.name}"
+    NOTE: We intentionally *do not* use `lower_attr(...)=dummy_value` for templated
+    methods. Doing so loses the receiver value and the call ends up seeing `i8* null`
+    for the first argument. Instead, we return a normal Numba `BoundFunction`, whose
+    template's `generic()` runs at *call time* and can see the concrete argument types.
+    """
 
-    class TemplatedMethodDecl(AbstractTemplate):
+    # NOTE: Templated methods can be overloaded (e.g. CCCL's BlockLoad::Load).
+    # We merge all overloads under one AbstractTemplate and select at call time.
+    qualname = f"{s_type}.{name}"
+
+    class MergedTemplatedMethodDecl(AbstractTemplate):
         key = qualname
 
-        def generic(self, args, kwds, templated_method=templated_method):
+        def generic(self, args, kwds, overloads=overloads):
             # BoundFunction passes only the explicit call args (receiver is implicit).
-            # We can recover the receiver type from the bound template class attribute.
             recvr = self.this
             param_types = tuple(args)
+
+            templated_method = _select_templated_overload(
+                qualname=qualname,
+                overloads=overloads,
+                param_types=param_types,
+                kwds=kwds,
+            )
 
             @lower(qualname, recvr, *param_types)
             def _impl(
@@ -318,7 +331,6 @@ def bind_cxx_struct_templated_method(
                 # pass all arguments by pointer (including `this`).
                 c_sig = nbtypes.void(
                     nbtypes.CPointer(recvr),
-                    # recvr,
                     *param_types_inner,
                 )
                 shim_decl = declare_device(func_name, c_sig)
@@ -344,7 +356,7 @@ def bind_cxx_struct_templated_method(
             # Return a method signature (receiver is implicit).
             return nb_signature(nbtypes.void, *param_types, recvr=recvr)
 
-    return TemplatedMethodDecl
+    return MergedTemplatedMethodDecl
 
 
 def _select_templated_overload(
@@ -481,88 +493,13 @@ def bind_cxx_struct_templated_methods(
     method_to_template: dict[str, type[AbstractTemplate]] = {}
 
     for name, overloads in method_overloads.items():
-        qualname = f"{s_type}.{name}"
-
-        class MergedTemplatedMethodDecl(AbstractTemplate):
-            key = qualname
-
-            def generic(self, args, kwds, overloads=overloads):
-                # BoundFunction passes only the explicit call args (receiver is implicit).
-                recvr = self.this
-                param_types = tuple(args)
-
-                templated_method = _select_templated_overload(
-                    qualname=qualname,
-                    overloads=overloads,
-                    param_types=param_types,
-                    kwds=kwds,
-                )
-
-                @lower(qualname, recvr, *param_types)
-                def _impl(
-                    context,
-                    builder,
-                    sig,
-                    args,
-                    param_types=param_types,
-                    templated_method=templated_method,
-                ):
-                    # args[0] is the receiver value (a struct value), args[1:] are parameters.
-                    param_types_inner = sig.args[1:]
-
-                    func_name = deduplicate_overloads(
-                        f"__{templated_method.function.mangled_name}_nbst"
-                    )
-                    formal_args_str, actual_args_str = (
-                        _make_templated_method_shim_arg_strings(
-                            param_types_inner=tuple(param_types_inner),
-                            cxx_params=templated_method.function.params,
-                        )
-                    )
-
-                    shim = make_struct_regular_method_shim(
-                        shim_name=func_name,
-                        struct_name=struct_decl.qual_name,
-                        method_name=templated_method.function.name,
-                        return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
-                        formal_args_str=formal_args_str,
-                        actual_args_str=actual_args_str,
-                    )
-
-                    print(f"TEMPLATED METHOD SHIM: {shim}")
-
-                    shim_writer.write_to_shim(shim, func_name)
-
-                    # Match the calling convention used for non-templated methods:
-                    # pass all arguments by pointer (including `this`).
-                    c_sig = nbtypes.void(
-                        nbtypes.CPointer(recvr),
-                        *param_types_inner,
-                    )
-                    shim_decl = declare_device(func_name, c_sig)
-                    shim_call = make_device_caller_with_nargs(
-                        func_name + "_shim",
-                        1 + len(param_types_inner),
-                        shim_decl,
-                    )
-
-                    print(f"c_sig: {c_sig}")
-                    print(f"ARGS.types: {[arg.type for arg in args]}")
-                    print("self.this == args[0]?:", self.this == args[0])
-
-                    selfptr = builder.alloca(context.get_value_type(recvr))
-                    builder.store(
-                        args[0], selfptr, align=getattr(recvr, "alignof_", None)
-                    )
-
-                    return context.compile_internal(
-                        builder, shim_call, c_sig, (selfptr, *args[1:])
-                    )
-
-                # Return a method signature (receiver is implicit).
-                return nb_signature(nbtypes.void, *param_types, recvr=recvr)
-
-        method_to_template[name] = MergedTemplatedMethodDecl
+        method_to_template[name] = bind_cxx_struct_templated_method(
+            struct_decl,
+            name=name,
+            overloads=overloads,
+            s_type=s_type,
+            shim_writer=shim_writer,
+        )
 
     return method_to_template
 
