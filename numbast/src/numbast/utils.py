@@ -5,7 +5,7 @@ from typing import Callable, Tuple
 from collections import defaultdict
 import re
 
-from numba.cuda.compiler import ExternFunction
+from numba.cuda.compiler import ExternFunction  # type: ignore[import-untyped]
 
 from ast_canopy import pylibastcanopy
 
@@ -44,7 +44,8 @@ def {name}({args}):
     exec(func, globals)
     func_obj = globals[name]
 
-    assert isinstance(func_obj, Callable)
+    # `typing.Callable` isn't valid for `isinstance`; use runtime check instead.
+    assert callable(func_obj)
     return func_obj
 
 
@@ -267,12 +268,15 @@ def make_struct_regular_method_shim(
 
     retval, return_type = get_return_type_strings(return_type)
 
-    if params:
+    # NOTE: `params` can be an empty list for zero-argument methods. Treat that as
+    # "params provided" and generate empty strings, rather than leaving `None`
+    # (which would stringify into the C++ shim as the literal token `None`).
+    #
+    # If `params is None`, we keep the caller-provided `(formal_args_str, actual_args_str)`
+    # (validated above).
+    if params is not None:
         formal_args_str = assemble_arglist_string(params)
         actual_args_str = assemble_dereferenced_params_string(params)
-    else:
-        formal_args_str = formal_args_str
-        actual_args_str = actual_args_str
 
     include_str = "\n".join([f"#include <{include}>" for include in includes])
     shim = struct_method_shim_layer_template.format(

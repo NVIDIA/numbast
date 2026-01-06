@@ -206,7 +206,9 @@ def bind_cxx_struct_regular_method(
 
     shim = make_struct_regular_method_shim(
         shim_name=shim_func_name,
-        struct_name=struct_decl.name,
+        # For class-template specializations we must spell the instantiated C++
+        # type (e.g. `Foo<128, int>`) in the shim, not just the base template name.
+        struct_name=struct_decl.qual_name,
         method_name=method_decl.name,
         return_type=method_decl.return_type.unqualified_non_ref_type_name,
         params=method_decl.params,
