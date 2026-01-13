@@ -433,7 +433,7 @@ def parse_declarations_from_source(
     # 3. CUDA Toolkit include directories
     # 4. Additional include directories
     command_line_options = [
-        "clang++",
+        clang_binary if not None else "clang++",
         *clang_verbose_flag,
         "--cuda-device-only",
         "-xcuda",
