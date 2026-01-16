@@ -19,7 +19,12 @@ from numbast.static.renderer import (
     get_shim,
     get_callconv_utils,
 )
-from numbast.static.types import to_numba_type_str, CTYPE_TO_NBTYPE_STR
+from numbast.static.types import (
+    to_numba_type_str,
+    to_numba_arg_type_str,
+    CTYPE_TO_NBTYPE_STR,
+)
+from numbast.intent import ArgIntent, IntentPlan, compute_intent_plan
 from numbast.utils import (
     make_struct_ctor_shim,
     make_struct_conversion_operator_shim,
@@ -75,6 +80,7 @@ def ctor_impl(context, builder, sig, args):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
+        arg_is_ref={arg_is_ref},
     )
     return ctor_callconv(builder, context, sig, args)
     """
@@ -142,8 +148,11 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
         # Cache the list of parameter types represented as Numba types
         self._nb_param_types = [
-            to_numba_type_str(arg.unqualified_non_ref_type_name)
-            for arg in ctor_decl.param_types
+            to_numba_arg_type_str(t) for t in ctor_decl.param_types
+        ]
+        self._arg_is_ref = [
+            bool(t.is_left_reference() or t.is_right_reference())
+            for t in ctor_decl.param_types
         ]
 
         self._nb_param_types_str = ", ".join(map(str, self._nb_param_types))
@@ -184,6 +193,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
             param_types=self._nb_param_types_str,
             struct_type_name=self._struct_type_name,
             mangled_name=self._ctor_decl.mangled_name,
+            arg_is_ref=self._arg_is_ref,
         )
 
         # When the function being lowered is a non-explicit single-arg
@@ -389,6 +399,7 @@ def impl(context, builder, fromty, toty, value):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
+        arg_is_ref=[False],
     )
     sig = signature(toty, fromty)
     return callconv(builder, context, sig, [value])
@@ -564,6 +575,10 @@ def _{lower_fn_suffix}(context, builder, sig, args):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
+        arg_is_ref={arg_is_ref},
+        intent_plan={intent_plan},
+        out_return_types={out_return_types},
+        cxx_return_type={cxx_return_type},
     )
     return callconv(builder, context, sig, args)
 """
@@ -587,6 +602,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
         struct_type_name: str,
         header_path: str,
         method_decl: StructMethod,
+        function_argument_intents: dict | None = None,
     ):
         """
         Initialize a renderer for a single struct regular method and cache derived naming and type info used during code
@@ -606,18 +622,121 @@ def {lower_scope_name}(shim_stream, shim_obj):
         self._header_path = header_path
         self._method_decl = method_decl
 
-        # Cache Numba param and return types (as strings)
-        self._nb_param_types = [
-            to_numba_type_str(arg.unqualified_non_ref_type_name)
-            for arg in self._method_decl.param_types
-        ]
-        self._nb_param_types_str = (
-            ", ".join(map(str, self._nb_param_types)) or ""
-        )
-        self._nb_return_type = to_numba_type_str(
+        overrides = None
+        if function_argument_intents:
+            overrides = function_argument_intents.get(
+                f"{struct_name}.{method_decl.name}"
+            )
+
+        self._cxx_return_type = to_numba_type_str(
             self._method_decl.return_type.unqualified_non_ref_type_name
         )
-        self._nb_return_type_str = str(self._nb_return_type)
+        self._cxx_return_type_str = str(self._cxx_return_type)
+
+        if overrides is None:
+            # Cache Numba param and return types (as strings)
+            self._nb_param_types = [
+                to_numba_arg_type_str(t) for t in self._method_decl.param_types
+            ]
+            param_arg_is_ref = [
+                bool(t.is_left_reference() or t.is_right_reference())
+                for t in self._method_decl.param_types
+            ]
+            # Numba lowering signatures include receiver as first argument.
+            self._arg_is_ref = [False, *param_arg_is_ref]
+            self._nb_param_types_str = (
+                ", ".join(map(str, self._nb_param_types)) or ""
+            )
+            self._nb_return_type_str = self._cxx_return_type_str
+            self._intent_plan_rendered = "None"
+            self._out_return_types_rendered = "None"
+            self._cxx_return_type_rendered = "None"
+        else:
+            method_plan = compute_intent_plan(
+                params=self._method_decl.params,
+                param_types=self._method_decl.param_types,
+                overrides=overrides,
+                allow_out_return=True,
+            )
+            intent_plan = IntentPlan(
+                intents=(ArgIntent.in_,) + method_plan.intents,
+                visible_param_indices=(0,)
+                + tuple(i + 1 for i in method_plan.visible_param_indices),
+                out_return_indices=tuple(
+                    i + 1 for i in method_plan.out_return_indices
+                ),
+                pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
+            )
+            self._arg_is_ref = None
+
+            self._nb_param_types = []
+            for orig_idx in method_plan.visible_param_indices:
+                base = to_numba_type_str(
+                    self._method_decl.param_types[
+                        orig_idx
+                    ].unqualified_non_ref_type_name
+                )
+                if method_plan.intents[orig_idx].value in (
+                    "inout_ptr",
+                    "out_ptr",
+                ):
+                    BaseRenderer._try_import_numba_type("CPointer")
+                    self._nb_param_types.append(f"CPointer({base})")
+                else:
+                    self._nb_param_types.append(base)
+            self._nb_param_types_str = (
+                ", ".join(map(str, self._nb_param_types)) or ""
+            )
+
+            out_return_types = [
+                to_numba_type_str(
+                    self._method_decl.param_types[
+                        i
+                    ].unqualified_non_ref_type_name
+                )
+                for i in method_plan.out_return_indices
+            ]
+            if out_return_types:
+                self.Imports.add("from numba import types")
+                if self._cxx_return_type_str == "void":
+                    if len(out_return_types) == 1:
+                        self._nb_return_type_str = out_return_types[0]
+                    else:
+                        outs = ", ".join(out_return_types)
+                        self._nb_return_type_str = f"types.Tuple(({outs},))"
+                else:
+                    outs = ", ".join(
+                        [self._cxx_return_type_str, *out_return_types]
+                    )
+                    self._nb_return_type_str = f"types.Tuple(({outs},))"
+            else:
+                self._nb_return_type_str = self._cxx_return_type_str
+
+            self.Imports.add("from numbast.intent import ArgIntent, IntentPlan")
+            intents_str = (
+                "("
+                + ", ".join(
+                    f"ArgIntent.{i.value if i != ArgIntent.in_ else 'in_'}"
+                    for i in intent_plan.intents
+                )
+                + ("," if len(intent_plan.intents) == 1 else "")
+                + ")"
+            )
+            self._intent_plan_rendered = (
+                "IntentPlan("
+                f"intents={intents_str}, "
+                f"visible_param_indices={repr(intent_plan.visible_param_indices)}, "
+                f"out_return_indices={repr(intent_plan.out_return_indices)}, "
+                f"pass_ptr_mask={repr(intent_plan.pass_ptr_mask)}"
+                ")"
+            )
+            if out_return_types:
+                self._out_return_types_rendered = (
+                    "[" + ", ".join(out_return_types) + "]"
+                )
+            else:
+                self._out_return_types_rendered = "None"
+            self._cxx_return_type_rendered = self._cxx_return_type_str
 
         # Unique shim name and helpers
         self._unique_shim_name = f"{self._method_decl.mangled_name}_nbst"
@@ -680,6 +799,10 @@ def {lower_scope_name}(shim_stream, shim_obj):
             return_type=self._nb_return_type_str,
             lower_fn_suffix=self._lower_fn_suffix,
             mangled_name=self._method_decl.mangled_name,
+            arg_is_ref=self._arg_is_ref,
+            intent_plan=self._intent_plan_rendered,
+            out_return_types=self._out_return_types_rendered,
+            cxx_return_type=self._cxx_return_type_rendered,
         )
         self._lowering_rendered = lowering_rendered
 
@@ -725,6 +848,7 @@ class {method_template_name}(ConcreteTemplate):
         struct_type_name: str,
         header_path: str,
         method_decls: list[StructMethod],
+        function_argument_intents: dict | None = None,
     ):
         """
         Initialize the renderer for a struct's regular member methods.
@@ -744,6 +868,7 @@ class {method_template_name}(ConcreteTemplate):
         self._struct_type_name = struct_type_name
         self._header_path = header_path
         self._method_decls = method_decls
+        self._function_argument_intents = function_argument_intents or {}
 
         self._python_rendered = ""
         self._c_rendered = ""
@@ -779,6 +904,7 @@ class {method_template_name}(ConcreteTemplate):
                     struct_type_name=self._struct_type_name,
                     header_path=self._header_path,
                     method_decl=m,
+                    function_argument_intents=self._function_argument_intents,
                 )
             except TypeNotFoundError:
                 warnings.warn(
@@ -916,6 +1042,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
         header_path: os.PathLike | str,
         struct_prefix_removal: list[str] | None = None,
         aliases: list[str] = [],
+        function_argument_intents: dict | None = None,
     ):
         """
         Initialize renderer state for a CUDA struct binding and register related symbols and imports.
@@ -942,6 +1069,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
         )
         self._struct_name = decl.name
         self._aliases = aliases
+        self._function_argument_intents = function_argument_intents or {}
 
         if parent_type is None:
             parent_type = Type
@@ -1132,6 +1260,7 @@ class {struct_attr_typing_name}(AttributeTemplate):
             struct_type_name=self._struct_type_name,
             header_path=self._header_path,
             method_decls=self._decl.regular_member_functions(),
+            function_argument_intents=self._function_argument_intents,
         )
         static_methods_renderer._render()
 
@@ -1284,6 +1413,7 @@ class StaticStructsRenderer(BaseRenderer):
         default_header: os.PathLike | str | None = None,
         struct_prefix_removal: list[str] | None = None,
         excludes: list[str] = [],
+        function_argument_intents: dict | None = None,
     ):
         """
         Initialize the renderer for multiple CUDA struct declarations.
@@ -1304,6 +1434,7 @@ class StaticStructsRenderer(BaseRenderer):
         self._specs = specs
         self._default_header = default_header
         self._struct_prefix_removal = struct_prefix_removal or []
+        self._function_argument_intents = function_argument_intents or {}
 
         self._python_rendered = []
         self._c_rendered = []
@@ -1346,6 +1477,7 @@ class StaticStructsRenderer(BaseRenderer):
                 nb_datamodel,
                 header_path,
                 self._struct_prefix_removal,
+                function_argument_intents=self._function_argument_intents,
             )
 
             self._python_rendered.append(SSR.render_python())

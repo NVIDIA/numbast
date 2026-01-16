@@ -27,6 +27,26 @@ def impl(data_folder):
     return data_folder("src", "function.cu")
 
 
+@pytest.fixture(scope="function")
+def decl_out(make_binding):
+    intents = {
+        "add_out": {"out": "out_return"},
+        "add_out_ret": {"out": "out_return"},
+    }
+    res = make_binding("function_out.cuh", {}, {}, "sm_50", intents)
+    bindings = res["bindings"]
+
+    public_apis = ["add_out", "add_out_ret"]
+    assert all(public_api in bindings for public_api in public_apis)
+
+    return bindings
+
+
+@pytest.fixture(scope="module")
+def impl_out(data_folder):
+    return data_folder("src", "function_out.cu")
+
+
 @pytest.mark.parametrize("dtype", ["int32", "float32"])
 def test_same_argument_types_and_overload(decl, impl, dtype):
     add = decl["add"]
@@ -75,3 +95,24 @@ def test_float32x2_operator_add_overload(decl, impl):
     arr = device_array((1,), "float32")
     kernel[1, 1](arr)
     assert arr.copy_to_host()[0] == 6.0
+
+
+def test_out_return_function_bindings(decl_out, impl_out):
+    add_out = decl_out["add_out"]
+    add_out_ret = decl_out["add_out_ret"]
+
+    @cuda.jit(link=[impl_out])
+    def kernel(out_single, out_pair):
+        out_single[0] = add_out(10)
+        ret, out = add_out_ret(7)
+        out_pair[0] = ret
+        out_pair[1] = out
+
+    out_single = device_array((1,), "int32")
+    out_pair = device_array((2,), "int32")
+    kernel[1, 1](out_single, out_pair)
+
+    assert out_single.copy_to_host()[0] == 11
+    host_pair = out_pair.copy_to_host()
+    assert host_pair[0] == 10
+    assert host_pair[1] == 9

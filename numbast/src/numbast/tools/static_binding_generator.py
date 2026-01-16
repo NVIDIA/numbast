@@ -101,6 +101,11 @@ class Config:
         By default, the new typing and target registries are added to the existing
         typing and target context. When set to true, user should add the registries
         to the typing and target context manually. Default to False.
+    function_argument_intents : dict[str, dict[str|int, str|dict]]
+        Optional per-function argument intent overrides. Keys are function names
+        (including qualified method names like "Struct.method" if desired). Values
+        map parameter name (str) or 0-based index (int) to an intent string
+        ("in", "inout_ptr", "out_ptr", "out_return") or a dict containing "intent".
     """
 
     entry_point: str
@@ -120,6 +125,7 @@ class Config:
     module_callbacks: dict[str, str]
     skip_prefix: str | None
     separate_registry: bool
+    function_argument_intents: dict
 
     def __init__(self, config_dict: dict):
         """Initialize Config from a dictionary.
@@ -176,6 +182,10 @@ class Config:
         self.skip_prefix = config_dict.get("Skip Prefix", None)
 
         self.separate_registry = config_dict.get("Use Separate Registry", False)
+
+        self.function_argument_intents = (
+            config_dict.get("Function Argument Intents", {}) or {}
+        )
 
         # TODO: support multiple GPU architectures
         if len(self.gpu_arch) > 1:
@@ -373,6 +383,7 @@ def _generate_structs(
     data_models,
     struct_prefix_removal,
     excludes,
+    function_argument_intents: dict | None = None,
 ):
     """
     Render struct declarations into the Python source for struct bindings.
@@ -400,6 +411,7 @@ def _generate_structs(
         specs,
         struct_prefix_removal=struct_prefix_removal,
         excludes=excludes,
+        function_argument_intents=function_argument_intents or {},
     )
 
     return SSR.render_as_str(with_imports=False, with_shim_stream=False)
@@ -412,6 +424,7 @@ def _generate_functions(
     cooperative_launch_functions: list[str],
     function_prefix_removal: list[str],
     skip_prefix: str | None,
+    function_argument_intents: dict | None = None,
 ) -> str:
     """
     Render Python bindings for the provided function declarations.
@@ -435,6 +448,7 @@ def _generate_functions(
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
         skip_prefix=skip_prefix,
+        function_argument_intents=function_argument_intents or {},
     )
 
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
@@ -562,6 +576,7 @@ def _static_binding_generator(
         config.datamodels,
         config.api_prefix_removal.get("Struct", []),
         config.exclude_structs,
+        config.function_argument_intents,
     )
 
     function_bindings = _generate_functions(
@@ -571,6 +586,7 @@ def _static_binding_generator(
         config.cooperative_launch_required_functions_regex,
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
+        config.function_argument_intents,
     )
 
     registry_setup_str = registry_setup(config.separate_registry)
