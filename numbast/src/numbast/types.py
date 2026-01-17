@@ -129,6 +129,18 @@ def to_numba_type(ty: str):
     return CTYPE_MAPS[ty]
 
 
+def to_numba_arg_type(ast_type) -> nbtypes.Type:
+    """
+    Convert an ast_canopy Type to a Numba type suitable for use as a *function
+    argument* type.
+
+    Note: this function intentionally does *not* automatically map C++ reference
+    parameters (T& / T&&) to pointer types. Reference exposure is controlled by
+    higher-level binding configuration (see `numbast.intent.ArgIntent`).
+    """
+    return to_numba_type(ast_type.unqualified_non_ref_type_name)
+
+
 def to_c_type_str(nbty: nbtypes.Type) -> str:
     if nbty not in NUMBA_TO_CTYPE_MAPS:
         raise ValueError(
