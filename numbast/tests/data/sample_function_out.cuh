@@ -11,3 +11,5 @@ __device__ int add_out_ret(int &out, int x) {
   out = x + 2;
   return x + 3;
 }
+
+__device__ int add_in_ref(int &x) { return x + 5; }

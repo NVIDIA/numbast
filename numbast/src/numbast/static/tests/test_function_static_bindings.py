@@ -42,6 +42,22 @@ def decl_out(make_binding):
     return bindings
 
 
+@pytest.fixture(scope="function")
+def decl_out_ptr(make_binding):
+    intents = {
+        "add_out": {"out": "out_ptr"},
+        "add_in_ref": {"x": "in"},
+        "add_inout_ref": {"x": "inout_ptr"},
+    }
+    res = make_binding("function_out.cuh", {}, {}, "sm_50", intents)
+    bindings = res["bindings"]
+
+    public_apis = ["add_out", "add_in_ref", "add_inout_ref"]
+    assert all(public_api in bindings for public_api in public_apis)
+
+    return bindings
+
+
 @pytest.fixture(scope="module")
 def impl_out(data_folder):
     return data_folder("src", "function_out.cu")
@@ -116,3 +132,27 @@ def test_out_return_function_bindings(decl_out, impl_out):
     host_pair = out_pair.copy_to_host()
     assert host_pair[0] == 10
     assert host_pair[1] == 9
+
+
+def test_out_ptr_in_inout_function_bindings(decl_out_ptr, impl_out):
+    ffi = cffi.FFI()
+    add_out = decl_out_ptr["add_out"]
+    add_in_ref = decl_out_ptr["add_in_ref"]
+    add_inout_ref = decl_out_ptr["add_inout_ref"]
+
+    @cuda.jit(link=[impl_out])
+    def kernel(out_ptr_buf, in_val, inout_buf, out_val):
+        out_ptr = ffi.from_buffer(out_ptr_buf)
+        add_out(out_ptr, in_val)
+        inout_ptr = ffi.from_buffer(inout_buf)
+        add_inout_ref(inout_ptr, 6)
+        out_val[0] = add_in_ref(in_val)
+
+    out_ptr_buf = np.zeros(1, dtype=np.int32)
+    inout_buf = np.array([4], dtype=np.int32)
+    out_val = device_array((1,), "int32")
+    kernel[1, 1](out_ptr_buf, int32(8), inout_buf, out_val)
+
+    assert out_ptr_buf[0] == 9
+    assert inout_buf[0] == 10
+    assert out_val.copy_to_host()[0] == 13

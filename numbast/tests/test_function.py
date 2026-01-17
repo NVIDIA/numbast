@@ -115,3 +115,43 @@ def test_out_return_device_function_results(_sample_out_functions):
     assert out_single[0] == 11
     assert out_pair[0] == 10
     assert out_pair[1] == 9
+
+    DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
+    p = os.path.join(DATA_FOLDER, "sample_function_out.cuh")
+    decls = parse_declarations_from_source(p, [p], "sm_80", verbose=True)
+    funcs = decls.functions
+    shim_writer_ptr = MemoryShimWriter(f'#include "{p}"')
+
+    func_bindings_ptr = bind_cxx_functions(
+        shim_writer_ptr,
+        funcs,
+        arg_intent={
+            "add_out": {"out": "out_ptr"},
+            "add_in_ref": {"x": "in"},
+        },
+    )
+
+    add_out_ptr = next(
+        f
+        for f in func_bindings_ptr
+        if getattr(f, "__name__", None) == "add_out"
+    )
+    add_in_ref = next(
+        f
+        for f in func_bindings_ptr
+        if getattr(f, "__name__", None) == "add_in_ref"
+    )
+
+    ffi = cffi.FFI()
+
+    @cuda.jit(link=shim_writer_ptr.links())
+    def kernel_ptr(out_ptr_buf, in_val, out_in_ref):
+        out_ptr = ffi.from_buffer(out_ptr_buf)
+        add_out_ptr(out_ptr, in_val)
+        out_in_ref[0] = add_in_ref(in_val)
+
+    out_ptr_buf = np.array([0], dtype=np.int32)
+    out_in_ref = np.array([0], dtype=np.int32)
+    kernel_ptr[1, 1](out_ptr_buf, np.int32(8), out_in_ref)
+    assert out_ptr_buf[0] == 9
+    assert out_in_ref[0] == 13

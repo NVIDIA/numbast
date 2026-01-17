@@ -9,3 +9,7 @@ int __device__ add_out_ret(int &out, int x) {
   out = x + 2;
   return x + 3;
 }
+
+int __device__ add_in_ref(int &x) { return x + 5; }
+
+void __device__ add_inout_ref(int &x, int delta) { x += delta; }
