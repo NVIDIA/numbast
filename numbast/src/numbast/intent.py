@@ -15,11 +15,11 @@ def _parse_arg_intent(cls, v: Any) -> ArgIntent:
         v2 = v.strip().lower()
         if v2 == "in":
             return ArgIntent.in_
-        if v2 in ("inout_ptr", "inout", "mutate", "mutative"):
+        if v2 == "inout_ptr":
             return ArgIntent.inout_ptr
-        if v2 in ("out_ptr", "out"):
+        if v2 == "out_ptr":
             return ArgIntent.out_ptr
-        if v2 in ("out_return", "return", "outret"):
+        if v2 == "out_return":
             return ArgIntent.out_return
     raise ValueError(f"Unknown arg intent: {v!r}")
 
