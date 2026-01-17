@@ -3,45 +3,28 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Mapping
 
+from numbast.intent_defs import ArgIntent, IntentPlan
 
-class ArgIntent(str, Enum):
-    """
-    Per-parameter intent controlling how a C++ parameter is exposed to Numba.
 
-    Notes
-    -----
-    - Default is `in` (opt-in): argument is treated as input-only and is exposed
-      as a value type on the Numba side.
-    - `inout_ptr` / `out_ptr`: C++ reference parameter is exposed as a pointer
-      (CPointer(T)) on the Numba side and passed through to the shim.
-    - `out_return`: C++ reference parameter is *not* exposed as an argument; a
-      temporary is allocated, passed to the shim, and then returned to the caller.
-    """
+def _parse_arg_intent(cls, v: Any) -> ArgIntent:
+    if isinstance(v, ArgIntent):
+        return v
+    if isinstance(v, str):
+        v2 = v.strip().lower()
+        if v2 == "in":
+            return ArgIntent.in_
+        if v2 in ("inout_ptr", "inout", "mutate", "mutative"):
+            return ArgIntent.inout_ptr
+        if v2 in ("out_ptr", "out"):
+            return ArgIntent.out_ptr
+        if v2 in ("out_return", "return", "outret"):
+            return ArgIntent.out_return
+    raise ValueError(f"Unknown arg intent: {v!r}")
 
-    in_ = "in"
-    inout_ptr = "inout_ptr"
-    out_ptr = "out_ptr"
-    out_return = "out_return"
 
-    @classmethod
-    def parse(cls, v: Any) -> ArgIntent:
-        if isinstance(v, ArgIntent):
-            return v
-        if isinstance(v, str):
-            v2 = v.strip().lower()
-            if v2 == "in":
-                return ArgIntent.in_
-            if v2 in ("inout_ptr", "inout", "mutate", "mutative"):
-                return ArgIntent.inout_ptr
-            if v2 in ("out_ptr", "out"):
-                return ArgIntent.out_ptr
-            if v2 in ("out_return", "return", "outret"):
-                return ArgIntent.out_return
-        raise ValueError(f"Unknown arg intent: {v!r}")
+setattr(ArgIntent, "parse", classmethod(_parse_arg_intent))
 
 
 def _is_ref_type(ast_type: Any) -> bool:
@@ -51,18 +34,6 @@ def _is_ref_type(ast_type: Any) -> bool:
     if hasattr(ast_type, "is_right_reference"):
         is_ref = is_ref or bool(ast_type.is_right_reference())
     return bool(is_ref)
-
-
-@dataclass(frozen=True)
-class IntentPlan:
-    """
-    Normalized intent plan for a callable with N original parameters.
-    """
-
-    intents: tuple[ArgIntent, ...]  # length N
-    visible_param_indices: tuple[int, ...]  # subset of [0..N)
-    out_return_indices: tuple[int, ...]  # subset of [0..N)
-    pass_ptr_mask: tuple[bool, ...]  # aligned with visible params only
 
 
 def compute_intent_plan(
@@ -100,7 +71,7 @@ def compute_intent_plan(
         for key, raw in overrides.items():
             if isinstance(raw, dict):
                 raw = raw.get("intent", raw.get("Intent", raw.get("INTENT")))
-            intent = ArgIntent.parse(raw)
+            intent = _parse_arg_intent(ArgIntent, raw)
 
             if isinstance(key, int):
                 if key < 0 or key >= len(params):
@@ -124,7 +95,7 @@ def compute_intent_plan(
                 continue
             if isinstance(raw, dict):
                 raw = raw.get("intent", raw.get("Intent", raw.get("INTENT")))
-            intent = ArgIntent.parse(raw)
+            intent = _parse_arg_intent(ArgIntent, raw)
             if key not in name_to_idx:
                 raise ValueError(
                     f"arg_intent specified unknown param name {key!r}; known params: {list(name_to_idx.keys())}"

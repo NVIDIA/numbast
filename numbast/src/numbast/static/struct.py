@@ -712,7 +712,6 @@ def {lower_scope_name}(shim_stream, shim_obj):
             else:
                 self._nb_return_type_str = self._cxx_return_type_str
 
-            self.Imports.add("from numbast.intent import ArgIntent, IntentPlan")
             intents_str = (
                 "("
                 + ", ".join(

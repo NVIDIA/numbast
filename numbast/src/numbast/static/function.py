@@ -229,8 +229,6 @@ def {func_name}():
             else:
                 self._return_numba_type_str = self._cxx_return_type_str
 
-            self.Imports.add("from numbast.intent import ArgIntent, IntentPlan")
-
             def _tuple_literal(items: list[str]) -> str:
                 if not items:
                     return "()"
