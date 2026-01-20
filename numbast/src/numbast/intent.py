@@ -55,7 +55,7 @@ def compute_intent_plan(
         This is used for validation (e.g. `out_return` only allowed for refs).
     overrides
         Mapping from parameter name (str) or 0-based index (int) to intent.
-        Values may be strings, enums, or dicts containing `intent`.
+        Values may be strings or enums.
     allow_out_return
         Some call sites may not (yet) support `out_return` (e.g. certain special
         methods). When False, specifying out_return raises.
@@ -69,8 +69,10 @@ def compute_intent_plan(
     if overrides:
         # First apply index-based overrides, then name-based overrides so names win.
         for key, raw in overrides.items():
-            if isinstance(raw, dict):
-                raw = raw.get("intent", raw.get("Intent", raw.get("INTENT")))
+            if type(raw) not in (str, ArgIntent):
+                raise TypeError(
+                    "arg_intent values must be strings or ArgIntent enums"
+                )
             intent = _parse_arg_intent(ArgIntent, raw)
 
             if isinstance(key, int):
@@ -93,8 +95,10 @@ def compute_intent_plan(
         for key, raw in overrides.items():
             if not isinstance(key, str):
                 continue
-            if isinstance(raw, dict):
-                raw = raw.get("intent", raw.get("Intent", raw.get("INTENT")))
+            if type(raw) not in (str, ArgIntent):
+                raise TypeError(
+                    "arg_intent values must be strings or ArgIntent enums"
+                )
             intent = _parse_arg_intent(ArgIntent, raw)
             if key not in name_to_idx:
                 raise ValueError(
