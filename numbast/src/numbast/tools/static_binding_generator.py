@@ -234,6 +234,7 @@ class Config:
         module_callbacks: dict[str, str] | None = None,
         skip_prefix: str | None = None,
         separate_registry: bool = False,
+        function_argument_intents: dict | None = None,
     ) -> "Config":
         """Create a Config instance from individual parameters instead of a config file."""
         if types is None:
@@ -262,6 +263,7 @@ class Config:
             "Module Callbacks": module_callbacks or {},
             "Skip Prefix": skip_prefix,
             "Separate Registry": separate_registry,
+            "Function Argument Intents": function_argument_intents or {},
         }
 
         # Convert types and datamodels back to string format for the dict
