@@ -44,7 +44,9 @@ from numbast.types import (
     is_c_floating_type,
     is_c_integral_type,
     to_c_type_str,
+    to_numba_arg_type,
 )
+from numbast.intent import ArgIntent, IntentPlan, compute_intent_plan
 from numbast.utils import (
     deduplicate_overloads,
     make_struct_ctor_shim,
@@ -103,9 +105,10 @@ def bind_cxx_struct_ctor(
         # move constructor is trivially supported in Numba / Python, skip
         return None
 
-    param_types = [
-        to_numba_type(arg.unqualified_non_ref_type_name)
-        for arg in ctor.param_types
+    param_types = [to_numba_arg_type(arg) for arg in ctor.param_types]
+    arg_is_ref = [
+        bool(t.is_left_reference() or t.is_right_reference())
+        for t in ctor.param_types
     ]
 
     # Lowering
@@ -124,7 +127,9 @@ def bind_cxx_struct_ctor(
 
     print(f"CTOR SHIM: {shim}")
 
-    ctor_cc = FunctionCallConv(mangled_name, shim_writer, shim)
+    ctor_cc = FunctionCallConv(
+        mangled_name, shim_writer, shim, arg_is_ref=arg_is_ref
+    )
 
     @lower(numba_typeref_ctor, s_type_ref, *param_types)
     def ctor_impl(context, builder, sig, args):
@@ -191,14 +196,75 @@ def bind_cxx_struct_regular_method(
     method_decl: StructMethod,
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
+    *,
+    arg_intent: dict | None = None,
 ) -> nb_signature:
-    param_types = [
-        to_numba_type(arg.unqualified_non_ref_type_name)
-        for arg in method_decl.param_types
-    ]
-    return_type = to_numba_type(
+    cxx_return_type = to_numba_type(
         method_decl.return_type.unqualified_non_ref_type_name
     )
+    overrides = None
+    if arg_intent:
+        overrides = arg_intent.get(f"{struct_decl.name}.{method_decl.name}")
+
+    if overrides is None:
+        param_types = [
+            to_numba_arg_type(arg) for arg in method_decl.param_types
+        ]
+        param_arg_is_ref = [
+            bool(t.is_left_reference() or t.is_right_reference())
+            for t in method_decl.param_types
+        ]
+        # Numba method lowering signatures include the receiver as the first arg.
+        arg_is_ref = [False, *param_arg_is_ref]
+        return_type = cxx_return_type
+        intent_plan = None
+        out_return_types = None
+    else:
+        method_plan = compute_intent_plan(
+            params=method_decl.params,
+            param_types=method_decl.param_types,
+            overrides=overrides,
+            allow_out_return=True,
+        )
+        intent_plan = IntentPlan(
+            intents=(ArgIntent.in_,) + method_plan.intents,
+            visible_param_indices=(0,)
+            + tuple(i + 1 for i in method_plan.visible_param_indices),
+            out_return_indices=tuple(
+                i + 1 for i in method_plan.out_return_indices
+            ),
+            pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
+        )
+
+        param_types = []
+        for orig_idx in method_plan.visible_param_indices:
+            base = to_numba_type(
+                method_decl.param_types[orig_idx].unqualified_non_ref_type_name
+            )
+            if method_plan.intents[orig_idx].value in ("inout_ptr", "out_ptr"):
+                param_types.append(nbtypes.CPointer(base))
+            else:
+                param_types.append(base)
+
+        out_return_types = [
+            to_numba_type(
+                method_decl.param_types[i].unqualified_non_ref_type_name
+            )
+            for i in method_plan.out_return_indices
+        ]
+        if out_return_types:
+            if cxx_return_type == nbtypes.void:
+                if len(out_return_types) == 1:
+                    return_type = out_return_types[0]
+                else:
+                    return_type = nbtypes.Tuple(tuple(out_return_types))
+            else:
+                return_type = nbtypes.Tuple(
+                    tuple([cxx_return_type, *out_return_types])
+                )
+        else:
+            return_type = cxx_return_type
+        arg_is_ref = None
 
     # Lowering
     mangled_name = deduplicate_overloads(f"__{method_decl.mangled_name}")
@@ -214,7 +280,15 @@ def bind_cxx_struct_regular_method(
         params=method_decl.params,
     )
 
-    method_cc = FunctionCallConv(mangled_name, shim_writer, shim)
+    method_cc = FunctionCallConv(
+        mangled_name,
+        shim_writer,
+        shim,
+        arg_is_ref=arg_is_ref,
+        intent_plan=intent_plan,
+        out_return_types=out_return_types,
+        cxx_return_type=cxx_return_type,
+    )
 
     qualname = f"{s_type}.{method_decl.name}"
 
@@ -229,6 +303,8 @@ def bind_cxx_struct_regular_methods(
     struct_decl: ClassTemplateSpecialization,
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
+    *,
+    arg_intent: dict | None = None,
 ) -> dict[str, ConcreteTemplate]:
     """
 
@@ -242,7 +318,7 @@ def bind_cxx_struct_regular_methods(
 
     for method in struct_decl.regular_member_functions():
         sig = bind_cxx_struct_regular_method(
-            struct_decl, method, s_type, shim_writer
+            struct_decl, method, s_type, shim_writer, arg_intent=arg_intent
         )
         method_overloads[method.name].append(sig)
 
@@ -513,6 +589,8 @@ def bind_cxx_class_template_specialization(
     aliases: dict[
         str, list[str]
     ] = {},  # XXX: this should be just a list of aliases
+    *,
+    arg_intent: dict | None = None,
 ) -> object:
     """
     Create bindings for a C++ struct.
@@ -568,7 +646,7 @@ def bind_cxx_class_template_specialization(
     # Method, Attributes Typing and Lowering:
 
     method_templates = bind_cxx_struct_regular_methods(
-        struct_decl, s_type, shim_writer
+        struct_decl, s_type, shim_writer, arg_intent=arg_intent
     )
 
     templated_method_to_template = bind_cxx_struct_templated_methods(

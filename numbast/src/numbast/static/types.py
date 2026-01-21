@@ -109,3 +109,14 @@ def to_numba_type_str(ty: str):
 
     BaseRenderer._try_import_numba_type(nb_type_str)
     return nb_type_str
+
+
+def to_numba_arg_type_str(ast_type) -> str:
+    """
+    Convert an ast_canopy Type to a Numba type string suitable for *argument* typing.
+
+    Note: this function intentionally does *not* automatically map C++ reference
+    parameters (T& / T&&) to pointer types. Reference exposure is controlled by
+    higher-level binding configuration (see `numbast.intent.ArgIntent`).
+    """
+    return to_numba_type_str(ast_type.unqualified_non_ref_type_name)

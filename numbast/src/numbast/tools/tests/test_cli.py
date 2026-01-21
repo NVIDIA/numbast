@@ -10,8 +10,6 @@ import numba
 from numba import cuda
 import pytest
 
-from numbast.static.renderer import clear_base_renderer_cache
-from numbast.static.function import clear_function_apis_registry
 from numbast.tools.static_binding_generator import static_binding_generator
 
 
@@ -44,9 +42,6 @@ def kernel():
     ],
 )
 def test_cli_yml_invalid_inputs(tmpdir, args, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -85,9 +80,6 @@ Data Models:
 
 
 def test_cli_yml_inputs_full_spec(tmpdir, kernel, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -138,9 +130,6 @@ Data Models:
     "cc, expected", [("sm_70", False), ("sm_86", True), ("sm_90", True)]
 )
 def test_cli_yml_inputs_full_spec_with_cc(tmpdir, cc, expected):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -188,9 +177,6 @@ Data Models:
 
 
 def test_yaml_deduce_missing_types(tmpdir, kernel, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -237,9 +223,6 @@ Data Models:
 
 
 def test_yaml_deduce_missing_datamodels(tmpdir, kernel, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -287,9 +270,6 @@ Data Models:
 
 
 def test_yaml_exclude_function(tmpdir, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -350,9 +330,6 @@ Data Models:
 
 
 def test_yaml_exclude_function_empty_list(tmpdir, kernel, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -401,9 +378,6 @@ Data Models:
 
 
 def test_yaml_exclude_struct(tmpdir, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -461,9 +435,6 @@ Data Models: {{}}
 
 
 def test_yaml_exclude_struct_empty_list(tmpdir, kernel, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data.cuh")
 
@@ -546,9 +517,6 @@ def implicit_conversion_kernel():
 
 
 def test_implit_ctor_lowering(tmpdir, implicit_conversion_kernel, arch_str):
-    clear_base_renderer_cache()
-    clear_function_apis_registry()
-
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data_ctor_lowering.cuh")
 

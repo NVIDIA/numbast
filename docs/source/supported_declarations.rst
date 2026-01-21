@@ -77,6 +77,63 @@ Example mapping
      - N/A (serialization only)
      - Template parameters/signature captured; specializations/instantiations recorded when present
 
+Qualified names (``qual_name``)
+-------------------------------
+
+Many serialized declaration objects expose a ``qual_name`` attribute: the C++
+*qualified name* including enclosing scopes (namespaces and record scopes),
+using ``::`` as the separator.
+
+This is derived from Clang's ``Decl::getQualifiedNameAsString()`` with small
+stability tweaks for anonymous records so downstream consumers always have a
+printable identifier.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Declaration kind
+     - Example ``qual_name``
+   * - Function / method
+     - ``ns1::ns2::S::m``
+   * - Record (struct/class)
+     - ``ns1::ns2::S``
+   * - Enum
+     - ``ns1::ns2::E``
+   * - Typedef
+     - ``ns1::ns2::Alias``
+   * - Function template / class template
+     - ``ns1::ns2::tf`` / ``ns1::ns2::Tpl``
+
+Notes and edge cases
+^^^^^^^^^^^^^^^^^^^^
+
+- **Global scope**: in the global scope (no namespace), ``qual_name`` is
+  typically the unqualified identifier (e.g., ``GlobalS``).
+
+- **Anonymous namespace**: Clang typically renders anonymous namespaces as
+  ``(anonymous namespace)`` in qualified names. For example, a declaration
+  ``AnonNS_S`` inside ``namespace { ... }`` may have a qualified name like
+  ``(anonymous namespace)::AnonNS_S``.
+
+- **Anonymous records in C-style typedefs**: for patterns like
+
+  .. code-block:: cpp
+
+     typedef struct { int a; int b; } CStyleAnon;
+
+  the underlying record has no tag name and Clang may report an empty name.
+  ast_canopy falls back to a placeholder ``unnamed<ID>`` for the *record's*
+  ``name`` so downstream always has something printable (note: ``<ID>`` is a
+  Clang internal decl id and is not stable across runs).
+
+  In this common pattern, Clang often treats the typedef name as the record's
+  user-visible qualified name; in that case you may observe:
+
+  - ``Typedef.qual_name == "CStyleAnon"``
+  - ``Typedef.underlying_name`` matching ``unnamed<ID>``
+  - ``Record.name`` matching ``unnamed<ID>``
+  - ``Record.qual_name == "CStyleAnon"``
+
 Supported argument types
 ------------------------
 
