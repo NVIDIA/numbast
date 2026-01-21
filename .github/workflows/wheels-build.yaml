@@ -132,7 +132,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload PyPi wheels artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pypi-wheels-${{ matrix.ARCH }}
           path: final-dist/*.whl
