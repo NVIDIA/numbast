@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+# NBST:BEGIN_INTENT_DEFS
 from dataclasses import dataclass
 from enum import Enum
 
@@ -37,3 +38,6 @@ class IntentPlan:
     visible_param_indices: tuple[int, ...]  # subset of [0..N)
     out_return_indices: tuple[int, ...]  # subset of [0..N)
     pass_ptr_mask: tuple[bool, ...]  # aligned with visible params only
+
+
+# NBST:END_INTENT_DEFS

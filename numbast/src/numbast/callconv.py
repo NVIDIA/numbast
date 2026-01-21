@@ -1,5 +1,10 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
+
+# NBST:BEGIN_CALLCONV
 from numba.cuda import types, cgutils
 
 from llvmlite import ir
@@ -211,3 +216,6 @@ class FunctionCallConv(BaseCallConv):
                 f"got {len(ret_vals)}"
             )
         return ret_vals[0]
+
+
+# NBST:END_CALLCONV
