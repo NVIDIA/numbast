@@ -45,15 +45,18 @@ def shim_writer(_sample_functions):
     return _sample_functions[1]
 
 
+def find_binding(bindings, name):
+    for f in bindings:
+        if getattr(f, "__name__", None) == name:
+            return f
+    raise AssertionError(
+        f"Binding '{name}' not found in {[getattr(f, '__name__', None) for f in bindings]}"
+    )
+
+
 def test_mutative_device_function_persists_values(func_bindings, shim_writer):
-    add_one_inplace = next(
-        f
-        for f in func_bindings
-        if getattr(f, "__name__", None) == "add_one_inplace"
-    )
-    set_42 = next(
-        f for f in func_bindings if getattr(f, "__name__", None) == "set_42"
-    )
+    add_one_inplace = find_binding(func_bindings, "add_one_inplace")
+    set_42 = find_binding(func_bindings, "set_42")
 
     ffi = cffi.FFI()
 
@@ -93,14 +96,8 @@ def _sample_out_functions():
 
 def test_out_return_device_function_results(_sample_out_functions):
     func_bindings, shim_writer = _sample_out_functions
-    add_out = next(
-        f for f in func_bindings if getattr(f, "__name__", None) == "add_out"
-    )
-    add_out_ret = next(
-        f
-        for f in func_bindings
-        if getattr(f, "__name__", None) == "add_out_ret"
-    )
+    add_out = find_binding(func_bindings, "add_out")
+    add_out_ret = find_binding(func_bindings, "add_out_ret")
 
     @cuda.jit(link=shim_writer.links())
     def kernel(out_single, out_pair):
@@ -131,16 +128,8 @@ def test_out_return_device_function_results(_sample_out_functions):
         },
     )
 
-    add_out_ptr = next(
-        f
-        for f in func_bindings_ptr
-        if getattr(f, "__name__", None) == "add_out"
-    )
-    add_in_ref = next(
-        f
-        for f in func_bindings_ptr
-        if getattr(f, "__name__", None) == "add_in_ref"
-    )
+    add_out_ptr = find_binding(func_bindings_ptr, "add_out")
+    add_in_ref = find_binding(func_bindings_ptr, "add_in_ref")
 
     ffi = cffi.FFI()
 
