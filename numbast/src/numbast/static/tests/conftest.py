@@ -28,6 +28,7 @@ def make_binding(tmpdir, data_folder):
         types: dict[str, type],
         datamodels: dict[str, type],
         cc: str = "sm_80",
+        function_argument_intents: dict | None = None,
     ):
         clear_base_renderer_cache()
         clear_function_apis_registry()
@@ -41,6 +42,7 @@ def make_binding(tmpdir, data_folder):
             datamodels=datamodels,
             separate_registry=False,
         )
+        cfg.function_argument_intents = function_argument_intents or {}
         _static_binding_generator(cfg, tmpdir)
 
         basename = header_name.split(".")[0]
