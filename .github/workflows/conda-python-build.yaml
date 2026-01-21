@@ -122,7 +122,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       - name: Upload conda repo
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: conda-repo-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
           path: "/tmp/conda-bld-output"
