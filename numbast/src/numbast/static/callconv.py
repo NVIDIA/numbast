@@ -6,6 +6,20 @@ from numbast import intent_defs as intent_mod
 
 
 def _extract_section(src: str, begin: str, end: str) -> str:
+    """
+    Extract the text between two exact marker lines in a source string.
+    
+    Parameters:
+        src (str): The full source text to search, split into lines.
+        begin (str): The marker line that starts the section (the returned text begins after this line).
+        end (str): The marker line that ends the section (the returned text ends before this line).
+    
+    Returns:
+        str: The lines between the first occurrence of `begin` and the next occurrence of `end`, joined with newline characters, trimmed of surrounding whitespace, and terminated with a single trailing newline.
+    
+    Raises:
+        ValueError: If `begin` is not found in `src` or if `end` is not found after `begin`.
+    """
     lines = src.splitlines()
     try:
         start = lines.index(begin) + 1
