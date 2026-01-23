@@ -10,7 +10,6 @@ import re
 from ast_canopy import pylibastcanopy
 
 from numba.cuda import types as nbtypes
-from numba.cuda import declare_device
 from numba.core.extending import (
     register_model,
     make_attribute_wrapper,
@@ -51,13 +50,12 @@ from numbast.utils import (
     deduplicate_overloads,
     make_struct_ctor_shim,
     make_struct_regular_method_shim,
-    make_device_caller_with_nargs,
 )
 from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import ShimWriterBase
 
 
-ConcreteTypeCache: dict[str, nbtypes.Type] = {}
+ConcreteTypeCache: dict[object, nbtypes.Type] = {}
 
 
 class MetaType(nbtypes.Type):
@@ -191,6 +189,92 @@ def bind_cxx_ctsd_ctors(
         cases = [nb_signature(s_type, *arglist) for arglist in ctor_params]
 
 
+def _resolve_method_arg_intent(
+    arg_intent: dict | None,
+    struct_decl: ClassTemplateSpecialization,
+    method_name: str,
+) -> dict | None:
+    """Resolve per-method arg_intent overrides for class-template methods.
+
+    Lookup order:
+    - Try the base template name (``struct_decl.name``).
+    - Then the base name alias (``struct_decl.base_name``) if present.
+    - Finally the fully instantiated C++ name (``struct_decl.qual_name``).
+
+    The arg_intent schema is:
+    ``{class_name: {method_name: {arg_name: intent_name}}}``.
+
+    The first matching class_name key is selected, then method_name is looked
+    up within that mapping. If no match is found, return ``None``.
+    """
+    if not arg_intent:
+        return None
+
+    candidates = []
+    for attr in ("name", "base_name", "qual_name"):
+        if hasattr(struct_decl, attr):
+            value = getattr(struct_decl, attr)
+            if value:
+                candidates.append(value)
+
+    seen = set()
+    for base in candidates:
+        if base in seen:
+            continue
+        seen.add(base)
+        class_overrides = arg_intent.get(base)
+        if not isinstance(class_overrides, dict):
+            continue
+        method_overrides = class_overrides.get(method_name)
+        if method_overrides is not None:
+            return method_overrides
+
+    return None
+
+
+def _normalize_arg_intent(arg_intent: dict | None) -> tuple | None:
+    """Normalize arg_intent into a stable, hashable cache key."""
+    if not arg_intent:
+        return None
+
+    def _intent_value(value: Any) -> str:
+        return value.value if isinstance(value, ArgIntent) else str(value)
+
+    def _key_order(key: Any) -> tuple:
+        if isinstance(key, int):
+            return (0, key)
+        if isinstance(key, str):
+            return (1, key)
+        return (2, repr(key))
+
+    normalized = []
+    for class_key in sorted(arg_intent.keys()):
+        class_overrides = arg_intent[class_key]
+        if class_overrides is None:
+            norm_class = None
+        else:
+            norm_methods = []
+            for method_key in sorted(class_overrides.keys()):
+                overrides = class_overrides[method_key]
+                if overrides is None:
+                    norm_overrides = None
+                else:
+                    items = []
+                    for key, value in overrides.items():
+                        items.append(
+                            (_key_order(key), key, _intent_value(value))
+                        )
+                    items.sort()
+                    norm_overrides = tuple(
+                        (key, value) for _, key, value in items
+                    )
+                norm_methods.append((method_key, norm_overrides))
+            norm_class = tuple(norm_methods)
+        normalized.append((class_key, norm_class))
+
+    return tuple(normalized)
+
+
 def bind_cxx_struct_regular_method(
     struct_decl: ClassTemplateSpecialization,
     method_decl: StructMethod,
@@ -202,9 +286,9 @@ def bind_cxx_struct_regular_method(
     cxx_return_type = to_numba_type(
         method_decl.return_type.unqualified_non_ref_type_name
     )
-    overrides = None
-    if arg_intent:
-        overrides = arg_intent.get(f"{struct_decl.name}.{method_decl.name}")
+    overrides = _resolve_method_arg_intent(
+        arg_intent, struct_decl, method_decl.name
+    )
 
     if overrides is None:
         param_types = [
@@ -342,6 +426,7 @@ def bind_cxx_struct_templated_method(
     overloads: list[FunctionTemplate],
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
+    arg_intent: dict | None = None,
 ) -> type[AbstractTemplate]:
     """Create bindings for a (possibly overloaded) templated method of a C++ struct.
 
@@ -358,7 +443,9 @@ def bind_cxx_struct_templated_method(
     class MergedTemplatedMethodDecl(AbstractTemplate):
         key = qualname
 
-        def generic(self, args, kwds, overloads=overloads):
+        def generic(
+            self, args, kwds, overloads=overloads, arg_intent=arg_intent
+        ):
             # BoundFunction passes only the explicit call args (receiver is implicit).
             recvr = self.this
             param_types = tuple(args)
@@ -370,6 +457,57 @@ def bind_cxx_struct_templated_method(
                 kwds=kwds,
             )
 
+            overrides = _resolve_method_arg_intent(
+                arg_intent, struct_decl, name
+            )
+
+            cxx_return_type = to_numba_type(
+                templated_method.function.return_type.unqualified_non_ref_type_name
+            )
+            # Determine intent/return behavior: default to native C++ return,
+            # or apply arg_intent overrides to surface out-params as returns.
+            if overrides is None:
+                method_plan = None
+                intent_plan = None
+                out_return_types = None
+                return_type = cxx_return_type
+            else:
+                method_plan = compute_intent_plan(
+                    params=templated_method.function.params,
+                    param_types=templated_method.function.param_types,
+                    overrides=overrides,
+                    allow_out_return=True,
+                )
+                intent_plan = IntentPlan(
+                    intents=(ArgIntent.in_,) + method_plan.intents,
+                    visible_param_indices=(0,)
+                    + tuple(i + 1 for i in method_plan.visible_param_indices),
+                    out_return_indices=tuple(
+                        i + 1 for i in method_plan.out_return_indices
+                    ),
+                    pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
+                )
+                out_return_types = [
+                    to_numba_type(
+                        templated_method.function.param_types[
+                            i
+                        ].unqualified_non_ref_type_name
+                    )
+                    for i in method_plan.out_return_indices
+                ]
+                if out_return_types:
+                    if cxx_return_type == nbtypes.void:
+                        if len(out_return_types) == 1:
+                            return_type = out_return_types[0]
+                        else:
+                            return_type = nbtypes.Tuple(tuple(out_return_types))
+                    else:
+                        return_type = nbtypes.Tuple(
+                            tuple([cxx_return_type, *out_return_types])
+                        )
+                else:
+                    return_type = cxx_return_type
+
             @lower(qualname, recvr, *param_types)
             def _impl(
                 context,
@@ -378,22 +516,54 @@ def bind_cxx_struct_templated_method(
                 args,
                 param_types=param_types,
                 templated_method=templated_method,
+                method_plan=method_plan,
+                intent_plan=intent_plan,
+                out_return_types=out_return_types,
+                cxx_return_type=cxx_return_type,
             ):
                 # args[0] is the receiver value (a struct value), args[1:] are parameters.
                 param_types_inner = sig.args[1:]
+                if method_plan is None or not method_plan.out_return_indices:
+                    param_types_for_shim = tuple(param_types_inner)
+                else:
+                    if len(param_types_inner) != len(
+                        method_plan.visible_param_indices
+                    ):
+                        raise ValueError(
+                            "Signature args do not match templated intent plan visible params: "
+                            f"sig has {len(param_types_inner)} params but plan expects {len(method_plan.visible_param_indices)}"
+                        )
+                    out_return_map = {
+                        orig_idx: out_pos
+                        for out_pos, orig_idx in enumerate(
+                            method_plan.out_return_indices
+                        )
+                    }
+                    visible_iter = iter(param_types_inner)
+                    param_types_for_shim_list = []
+                    for orig_idx in range(len(method_plan.intents)):
+                        out_pos = out_return_map.get(orig_idx)
+                        if out_pos is not None:
+                            param_types_for_shim_list.append(
+                                out_return_types[out_pos]
+                            )
+                        else:
+                            param_types_for_shim_list.append(next(visible_iter))
+                    param_types_for_shim = tuple(param_types_for_shim_list)
 
-                func_name = deduplicate_overloads(
-                    f"__{templated_method.function.mangled_name}_nbst"
+                mangled_name = deduplicate_overloads(
+                    f"__{templated_method.function.mangled_name}"
                 )
+                shim_func_name = f"{mangled_name}_nbst"
                 formal_args_str, actual_args_str = (
                     _make_templated_method_shim_arg_strings(
-                        param_types_inner=tuple(param_types_inner),
+                        param_types_inner=tuple(param_types_for_shim),
                         cxx_params=templated_method.function.params,
                     )
                 )
 
                 shim = make_struct_regular_method_shim(
-                    shim_name=func_name,
+                    shim_name=shim_func_name,
                     struct_name=struct_decl.qual_name,
                     method_name=templated_method.function.name,
                     return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
@@ -403,36 +573,26 @@ def bind_cxx_struct_templated_method(
 
                 print(f"TEMPLATED METHOD SHIM: {shim}")
 
-                shim_writer.write_to_shim(shim, func_name)
+                param_arg_is_ref = [
+                    bool(t.is_left_reference() or t.is_right_reference())
+                    for t in templated_method.function.param_types
+                ]
+                arg_is_ref = [False, *param_arg_is_ref]
 
-                # Match the calling convention used for non-templated methods:
-                # pass all arguments by pointer (including `this`).
-                c_sig = nbtypes.void(
-                    nbtypes.CPointer(recvr),
-                    *param_types_inner,
-                )
-                shim_decl = declare_device(func_name, c_sig)
-                shim_call = make_device_caller_with_nargs(
-                    func_name + "_shim",
-                    1 + len(param_types_inner),
-                    shim_decl,
-                )
-
-                print(f"c_sig: {c_sig}")
-                print(f"ARGS.types: {[arg.type for arg in args]}")
-                print("self.this == args[0]?:", self.this == args[0])
-
-                selfptr = builder.alloca(context.get_value_type(recvr))
-                builder.store(
-                    args[0], selfptr, align=getattr(recvr, "alignof_", None)
+                method_cc = FunctionCallConv(
+                    mangled_name,
+                    shim_writer,
+                    shim,
+                    arg_is_ref=arg_is_ref,
+                    intent_plan=intent_plan,
+                    out_return_types=out_return_types,
+                    cxx_return_type=cxx_return_type,
                 )
 
-                return context.compile_internal(
-                    builder, shim_call, c_sig, (selfptr, *args[1:])
-                )
+                return method_cc(builder, context, sig, args)
 
             # Return a method signature (receiver is implicit).
-            return nb_signature(nbtypes.void, *param_types, recvr=recvr)
+            return nb_signature(return_type, *param_types, recvr=recvr)
 
     return MergedTemplatedMethodDecl
 
@@ -492,11 +652,13 @@ def _make_templated_method_shim_arg_strings(
     actual_parts: list[str] = []
 
     for i, (nb_ty, cxx_param) in enumerate(zip(param_types_inner, cxx_params)):
-        # Make the shim signature match the *Numba* ABI types. (Numba will pass
-        # pointer values as pointers, not as pointers-to-pointers.)
+        # Make the shim signature match the *Numba* ABI types.
+        # Numba's default ABI passes pointer-to-value for each argument, so the
+        # shim should accept a pointer to the Numba-visible type and then
+        # dereference once when calling the C++ method.
         c_ty = to_c_type_str(nb_ty)
-        formal_parts.append(f"{c_ty} arg{i}")
-        base_expr = f"arg{i}"
+        formal_default = f"{c_ty}* arg{i}"
+        actual_default = f"*arg{i}"
 
         # NOTE: `unqualified_non_ref_type_name` strips references, so a true
         # `T (&)[N]` parameter will present as an array type `T [N]` here, and
@@ -538,10 +700,11 @@ def _make_templated_method_shim_arg_strings(
             # Override the shim's formal parameter spelling to match the C++ API:
             #   int (&arg1)[1]
             # and pass it straight through to the underlying method call.
-            formal_parts[-1] = f"{base} (&arg{i}){sizes}"
+            formal_parts.append(f"{base} (&arg{i}){sizes}")
             actual_parts.append(f"arg{i}")
         else:
-            actual_parts.append(base_expr)
+            formal_parts.append(formal_default)
+            actual_parts.append(actual_default)
 
     formal_args_str = "," + ",".join(formal_parts) if formal_parts else ""
     actual_args_str = ",".join(actual_parts)
@@ -552,6 +715,8 @@ def bind_cxx_struct_templated_methods(
     struct_decl: ClassTemplateSpecialization,
     s_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
+    *,
+    arg_intent: dict | None = None,
 ) -> dict[str, type[AbstractTemplate]]:
     """Create bindings for a templated method of a C++ struct."""
 
@@ -577,6 +742,7 @@ def bind_cxx_struct_templated_methods(
             overloads=overloads,
             s_type=s_type,
             shim_writer=shim_writer,
+            arg_intent=arg_intent,
         )
 
     return method_to_template
@@ -650,7 +816,7 @@ def bind_cxx_class_template_specialization(
     )
 
     templated_method_to_template = bind_cxx_struct_templated_methods(
-        struct_decl, s_type, shim_writer
+        struct_decl, s_type, shim_writer, arg_intent=arg_intent
     )
 
     public_fields_tys = {f.name: f.type_ for f in struct_decl.public_fields()}
@@ -754,6 +920,8 @@ def struct_type_from_instantiation(
     instance: nbtypes.Type,
     shim_writer: ShimWriterBase,
     header_path: str,
+    *,
+    arg_intent: dict | None = None,
 ):
     # Clang determines to populate all members of an instantiated class based
     # on whether an explicit instantitation definition exists. The following
@@ -779,7 +947,9 @@ template class {instance.angled_targs_str_as_c()};
     decl = specializations[0]
 
     instance_type_ref = nbtypes.TypeRef(instance)
-    bind_cxx_class_template_specialization(shim_writer, decl, instance_type_ref)
+    bind_cxx_class_template_specialization(
+        shim_writer, decl, instance_type_ref, arg_intent=arg_intent
+    )
 
     return instance_type_ref
 
@@ -842,6 +1012,8 @@ def _register_meta_type(
     ctd: ClassTemplate,
     shim_writer: ShimWriterBase,
     header_path: str,
+    *,
+    arg_intent: dict | None = None,
 ):
     @register
     class MetaType_template_decl(CallableTemplate):
@@ -853,21 +1025,31 @@ def _register_meta_type(
             decl=ctd,
             shim_writer=shim_writer,
             header_path=header_path,
+            arg_intent=arg_intent,
         ):
             def typer(*args, **kwargs):
                 targs = _bind_tparams(decl, *args, **kwargs)
                 ConcreteType = concrete_typing()
                 instance = ConcreteType(meta_type, **targs)
                 unique_id = instance.name
-
-                if unique_id in ConcreteTypeCache:
-                    return ConcreteTypeCache[unique_id]
-
-                instance_type_ref = struct_type_from_instantiation(
-                    instance, shim_writer, header_path
+                intent_key = _normalize_arg_intent(arg_intent)
+                cache_key = (
+                    (unique_id, intent_key)
+                    if intent_key is not None
+                    else unique_id
                 )
 
-                ConcreteTypeCache[unique_id] = instance_type_ref
+                if cache_key in ConcreteTypeCache:
+                    return ConcreteTypeCache[cache_key]
+
+                instance_type_ref = struct_type_from_instantiation(
+                    instance,
+                    shim_writer,
+                    header_path,
+                    arg_intent=arg_intent,
+                )
+
+                ConcreteTypeCache[cache_key] = instance_type_ref
 
                 self.context.refresh()
                 return instance_type_ref
@@ -882,6 +1064,8 @@ def bind_cxx_class_template(
     class_template_decl: ClassTemplate,
     shim_writer: ShimWriterBase,
     header_path: str,
+    *,
+    arg_intent: dict | None = None,
 ):
     # Stub class
     TC = type(class_template_decl.record.qual_name, (object,), {})
@@ -901,7 +1085,12 @@ def bind_cxx_class_template(
         return context.get_constant(nbtypes.int32, 0)
 
     _register_meta_type(
-        TC, TC_templated_type, class_template_decl, shim_writer, header_path
+        TC,
+        TC_templated_type,
+        class_template_decl,
+        shim_writer,
+        header_path,
+        arg_intent=arg_intent,
     )
 
     return TC
@@ -911,6 +1100,8 @@ def bind_cxx_class_templates(
     class_templates: list[ClassTemplate],
     header_path: str,
     shim_writer: ShimWriterBase,
+    *,
+    arg_intent: dict | None = None,
 ) -> list[object]:
     """
     Create bindings for a list of C++ class templates.
@@ -923,6 +1114,8 @@ def bind_cxx_class_templates(
         List of declarations of the class template types in CXX
     header_path : str
         The path to the header file containing the class template declarations.
+    arg_intent : dict, optional
+        Argument intent overrides to apply to bound methods.
 
     Returns
     -------
@@ -937,6 +1130,7 @@ def bind_cxx_class_templates(
             class_template_decl=ct,
             shim_writer=shim_writer,
             header_path=header_path,
+            arg_intent=arg_intent,
         )
         python_apis.append(TC)
 
