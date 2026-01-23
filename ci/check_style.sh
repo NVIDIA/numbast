@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+# Install pre-commit requirements
+sudo apt-get update
+sudo apt-get install -y g++
+
 pip install pre-commit
 
 # Run pre-commit checks
