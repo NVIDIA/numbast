@@ -169,14 +169,25 @@ def test_return_only_placeholder_skipped(deduction_decls):
     assert specialized == []
 
 
-def test_pass_ptr_override_deduces_from_pointer(deduction_decls):
-    """Allow out_ptr overrides to pass pointers for reference params."""
+@pytest.mark.parametrize(
+    ("overrides", "args"),
+    [
+        ({"out": "out_ptr"}, (nbtypes.CPointer(nbtypes.int32), nbtypes.int32)),
+        (
+            {"out": "inout_ptr"},
+            (nbtypes.CPointer(nbtypes.int32), nbtypes.int32),
+        ),
+        ({"out": "out_return"}, (nbtypes.int32,)),
+    ],
+)
+def test_override_intents_adjust_deduction(deduction_decls, overrides, args):
+    """Allow overrides (including out_return) to adjust deduction behavior."""
     overloads = _get_function_templates(deduction_decls, "store_ref")
     specialized, intent_errors = deduce_templated_overloads(
         qualname="store_ref",
         overloads=overloads,
-        args=(nbtypes.CPointer(nbtypes.int32), nbtypes.int32),
-        overrides={"out": "out_ptr"},
+        args=args,
+        overrides=overrides,
     )
 
     assert intent_errors == []
