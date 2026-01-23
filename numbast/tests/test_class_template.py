@@ -99,14 +99,60 @@ def test_sample_class_template_with_fields(decl, shim_writer):
     assert (out == [256, 256, 128]).all()
 
 
-class TestTemplatedClassTemplatedMethodUnitStyle:
+@pytest.mark.parametrize(
+    "intent_kind",
+    [
+        "out_return",
+        "out_ptr",
+    ],
+)
+def test_class_template_arg_intent_regular_method(intent_kind):
+    DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
+    p = os.path.join(DATA_FOLDER, "sample_class_template.cuh")
+    decls = parse_declarations_from_source(p, [p], "sm_80", verbose=True)
+    shim_writer = MemoryShimWriter(f'#include "{p}"')
+
+    apis = bind_cxx_class_templates(
+        decls.class_templates,
+        header_path=p,
+        shim_writer=shim_writer,
+        arg_intent={"BlockScan": {"AddToRef": {"out": intent_kind}}},
+    )
+
+    BlockScan = apis[0]
+    T = np.int32
+    x = np.arange(1, 9, dtype=T)
+    out = np.zeros_like(x)
+
+    if intent_kind == "out_return":
+
+        @cuda.jit(link=shim_writer.links())
+        def kernel(inp, out):
+            i = cuda.grid(1)
+            if i >= out.size:
+                return
+            block_scan_t = BlockScan(T=T, BLOCK_DIM_X=128)
+            block_scan = block_scan_t()
+            out[i] = block_scan.AddToRef(inp[i])
+
+    else:
+
+        @cuda.jit(link=shim_writer.links())
+        def kernel(inp, out):
+            i = cuda.grid(1)
+            if i >= out.size:
+                return
+            block_scan_t = BlockScan(T=T, BLOCK_DIM_X=128)
+            block_scan = block_scan_t()
+            out_ptr = ffi.from_buffer(out[i:])
+            block_scan.AddToRef(inp[i], out_ptr)
+
+    kernel[1, 32](x, out)
+    np.testing.assert_array_equal(out, x + 1)
+
+
+class TestTemplatedClassTemplatedMethod:
     """
-    Test plan (unit-test-ish, not a full CCCL/CUB e2e):
-
-    Ultimately we want an end-to-end *binding-generation* story for a
-    templated-class + templated-method system. These tests focus on the
-    specialization/deduction/default-arg surface area.
-
     Covered scenarios:
     - Fully specialized:
       class template args provided; method template args fully provided.
@@ -161,4 +207,57 @@ class TestTemplatedClassTemplatedMethodUnitStyle:
         out = np.zeros_like(x)
         kernel[1, 32](x, out)
 
+        np.testing.assert_array_equal(out, x + 7)
+
+    @pytest.mark.parametrize(
+        "intent_kind",
+        [
+            "out_return",
+            "out_ptr",
+        ],
+    )
+    def test_method_template_arg_intent(self, intent_kind):
+        DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
+        p = os.path.join(
+            DATA_FOLDER, "sample_class_template_templated_method.cuh"
+        )
+        decls = parse_declarations_from_source(p, [p], "sm_80", verbose=True)
+        shim_writer = MemoryShimWriter(f'#include "{p}"')
+
+        apis = bind_cxx_class_templates(
+            decls.class_templates,
+            header_path=p,
+            shim_writer=shim_writer,
+            arg_intent={"TMix": {"AddConstRef": {"out": intent_kind}}},
+        )
+
+        TMix = apis[0]
+        T = np.int32
+        x = np.arange(1, 9, dtype=T)
+        out = np.zeros_like(x)
+
+        if intent_kind == "out_return":
+
+            @cuda.jit(link=shim_writer.links())
+            def kernel(inp, out):
+                i = cuda.grid(1)
+                if i >= out.size:
+                    return
+                tmix_t = TMix(T=T, N=7)
+                tmix = tmix_t()
+                out[i] = tmix.AddConstRef(inp[i])
+
+        else:
+
+            @cuda.jit(link=shim_writer.links())
+            def kernel(inp, out):
+                i = cuda.grid(1)
+                if i >= out.size:
+                    return
+                tmix_t = TMix(T=T, N=7)
+                tmix = tmix_t()
+                out_ptr = ffi.from_buffer(out[i:])
+                tmix.AddConstRef(inp[i], out_ptr)
+
+        kernel[1, 32](x, out)
         np.testing.assert_array_equal(out, x + 7)

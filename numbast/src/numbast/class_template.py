@@ -53,6 +53,7 @@ from numbast.utils import (
 )
 from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import ShimWriterBase
+from numbast.deduction import deduce_templated_overloads
 
 
 ConcreteTypeCache: dict[object, nbtypes.Type] = {}
@@ -450,15 +451,32 @@ def bind_cxx_struct_templated_method(
             recvr = self.this
             param_types = tuple(args)
 
-            templated_method = _select_templated_overload(
-                qualname=qualname,
-                overloads=overloads,
-                param_types=param_types,
-                kwds=kwds,
-            )
-
             overrides = _resolve_method_arg_intent(
                 arg_intent, struct_decl, name
+            )
+
+            specialized_overloads, intent_errors = deduce_templated_overloads(
+                qualname=qualname,
+                overloads=overloads,
+                args=param_types,
+                overrides=overrides,
+            )
+            if (
+                not specialized_overloads
+                and overrides is not None
+                and intent_errors
+            ):
+                raise TypeError(
+                    f"Failed to apply arg_intent overrides for {qualname}: "
+                    f"{intent_errors[0]}"
+                )
+
+            templated_method = _select_templated_overload(
+                qualname=qualname,
+                overloads=specialized_overloads,
+                param_types=param_types,
+                kwds=kwds,
+                overrides=overrides,
             )
 
             cxx_return_type = to_numba_type(
@@ -525,6 +543,11 @@ def bind_cxx_struct_templated_method(
                 param_types_inner = sig.args[1:]
                 if method_plan is None or not method_plan.out_return_indices:
                     param_types_for_shim = tuple(param_types_inner)
+                    pass_ptr_mask_for_shim = (
+                        None
+                        if method_plan is None
+                        else tuple(method_plan.pass_ptr_mask)
+                    )
                 else:
                     if len(param_types_inner) != len(
                         method_plan.visible_param_indices
@@ -540,16 +563,23 @@ def bind_cxx_struct_templated_method(
                         )
                     }
                     visible_iter = iter(param_types_inner)
+                    visible_mask_iter = iter(method_plan.pass_ptr_mask)
                     param_types_for_shim_list = []
+                    pass_ptr_mask_for_shim_list = []
                     for orig_idx in range(len(method_plan.intents)):
                         out_pos = out_return_map.get(orig_idx)
                         if out_pos is not None:
                             param_types_for_shim_list.append(
                                 out_return_types[out_pos]
                             )
+                            pass_ptr_mask_for_shim_list.append(False)
                         else:
                             param_types_for_shim_list.append(next(visible_iter))
+                            pass_ptr_mask_for_shim_list.append(
+                                next(visible_mask_iter)
+                            )
                     param_types_for_shim = tuple(param_types_for_shim_list)
+                    pass_ptr_mask_for_shim = tuple(pass_ptr_mask_for_shim_list)
 
                 mangled_name = deduplicate_overloads(
                     f"__{templated_method.function.mangled_name}"
@@ -559,6 +589,7 @@ def bind_cxx_struct_templated_method(
                     _make_templated_method_shim_arg_strings(
                         param_types_inner=tuple(param_types_for_shim),
                         cxx_params=templated_method.function.params,
+                        pass_ptr_mask=pass_ptr_mask_for_shim,
                     )
                 )
 
@@ -603,6 +634,7 @@ def _select_templated_overload(
     overloads: list[FunctionTemplate],
     param_types: tuple[nbtypes.Type, ...],
     kwds: dict[str, Any] | None = None,
+    overrides: dict | None = None,
 ) -> FunctionTemplate:
     """
     Select a FunctionTemplate overload for a templated method.
@@ -615,12 +647,40 @@ def _select_templated_overload(
     - incorporate kwds / default args.
     """
     arity = len(param_types)
-    candidates = [m for m in overloads if len(m.function.params) == arity]
+    candidates: list[FunctionTemplate] = []
+    intent_errors: list[Exception] = []
+
+    for m in overloads:
+        if overrides is None:
+            visible_arity = len(m.function.params)
+        else:
+            try:
+                plan = compute_intent_plan(
+                    params=m.function.params,
+                    param_types=m.function.param_types,
+                    overrides=overrides,
+                    allow_out_return=True,
+                )
+            except Exception as exc:
+                intent_errors.append(exc)
+                continue
+            visible_arity = len(plan.visible_param_indices)
+
+        if visible_arity == arity:
+            candidates.append(m)
+
     if len(candidates) != 1:
+        if overrides is not None and not candidates and intent_errors:
+            raise TypeError(
+                f"Failed to apply arg_intent overrides for {qualname}: "
+                f"{intent_errors[0]}"
+            )
         raise TypeError(
             f"Ambiguous or missing overload for {qualname} with {arity} args. "
             f"Overload arities: {[len(m.function.params) for m in overloads]}"
         )
+
+    print(f"SELECTED OVERLOAD: {candidates[0].function.param_types}")
     return candidates[0]
 
 
@@ -631,6 +691,7 @@ def _make_templated_method_shim_arg_strings(
     *,
     param_types_inner: tuple[nbtypes.Type, ...],
     cxx_params: list[pylibastcanopy.ParamVar],
+    pass_ptr_mask: tuple[bool, ...] | None = None,
 ) -> tuple[str, str]:
     """
     Build (formal_args_str, actual_args_str) for `make_struct_regular_method_shim`
@@ -647,6 +708,13 @@ def _make_templated_method_shim_arg_strings(
             "Templated method parameter mismatch: "
             f"sig has {len(param_types_inner)} params, but C++ decl has {len(cxx_params)} params."
         )
+    if pass_ptr_mask is not None and len(pass_ptr_mask) != len(
+        param_types_inner
+    ):
+        raise ValueError(
+            "Templated method pass_ptr_mask mismatch: "
+            f"sig has {len(param_types_inner)} params, but pass_ptr_mask has {len(pass_ptr_mask)} entries."
+        )
 
     formal_parts: list[str] = []
     actual_parts: list[str] = []
@@ -657,13 +725,27 @@ def _make_templated_method_shim_arg_strings(
         # shim should accept a pointer to the Numba-visible type and then
         # dereference once when calling the C++ method.
         c_ty = to_c_type_str(nb_ty)
-        formal_default = f"{c_ty}* arg{i}"
+        pass_ptr = (
+            bool(pass_ptr_mask[i]) if pass_ptr_mask is not None else False
+        )
+        use_pass_ptr = pass_ptr and isinstance(nb_ty, nbtypes.CPointer)
+        if use_pass_ptr:
+            formal_default = f"{c_ty} arg{i}"
+        else:
+            formal_default = f"{c_ty}* arg{i}"
         actual_default = f"*arg{i}"
 
         # NOTE: `unqualified_non_ref_type_name` strips references, so a true
         # `T (&)[N]` parameter will present as an array type `T [N]` here, and
         # we must consult `is_left_reference()` to know whether it was a ref.
         cxx_ty = cxx_param.type_.unqualified_non_ref_type_name
+        if use_pass_ptr:
+            # If C++ expects a pointer type, pass the pointer value directly.
+            # If it expects a reference/value type, dereference once to bind.
+            if "*" in cxx_ty:
+                actual_default = f"arg{i}"
+            else:
+                actual_default = f"*arg{i}"
         m = _CXX_ARRAY_TYPE_RE.match(cxx_ty)
         is_lref = cxx_param.type_.is_left_reference()
         if m and is_lref:

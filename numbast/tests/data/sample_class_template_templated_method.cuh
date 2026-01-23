@@ -31,4 +31,9 @@ template <typename T, int N = 5> struct TMix {
   __device__ void AddConstDefault(U x, U *out) const {
     *out = static_cast<U>(x + static_cast<U>(M));
   }
+
+  template <int M = N, typename U = T>
+  __device__ void AddConstRef(U x, U &out) const {
+    out = static_cast<U>(x + static_cast<U>(M));
+  }
 };
