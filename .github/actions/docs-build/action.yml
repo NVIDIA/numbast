@@ -8,11 +8,16 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Create conda environment
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        conda create -n docs-build python=3.12 -y
+        conda activate docs-build
     # Install required dependencies
     - name: Install build dependencies
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        conda install -c conda-forge python=3.12 clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make
+        conda install -c conda-forge clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make
     - name: Install Python dependencies for docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
@@ -24,6 +29,10 @@ runs:
         python -m pip install cuda-python cuda-core
         # Install Sphinx dependencies
         python -m pip install sphinx nvidia-sphinx-theme sphinx-copybutton
+    - name: Print Installed Packages
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        conda list
     # Build all docs
     - name: Build all docs
       shell: bash --noprofile --norc -euo pipefail {0}
