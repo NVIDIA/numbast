@@ -11,33 +11,32 @@ runs:
     - name: Create conda environment
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        conda init
         conda create -n docs-build python=3.12 -y
-        conda activate docs-build
     # Install required dependencies
     - name: Install build dependencies
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        conda install -c conda-forge clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make
+        conda install -n docs-build -c conda-forge clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make
     - name: Install Python dependencies for docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        python -m pip install --upgrade pip
+        conda run -n docs-build python -m pip install --upgrade pip
         # Build and install Numbast from Source
-        ast_canopy/build.sh
-        python -m pip install --pre numbast/
+        conda run -n docs-build ast_canopy/build.sh
+        conda run -n docs-build python -m pip install --pre numbast/
         # Minimum dependencies for Numba-CUDA to run
-        python -m pip install cuda-python cuda-core
+        conda run -n docs-build python -m pip install cuda-python cuda-core
         # Install Sphinx dependencies
-        python -m pip install sphinx nvidia-sphinx-theme sphinx-copybutton
+        conda run -n docs-build python -m pip install sphinx nvidia-sphinx-theme sphinx-copybutton
     - name: Print Installed Packages
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        conda list
+        conda list -n docs-build
     # Build all docs
     - name: Build all docs
       shell: bash --noprofile --norc -euo pipefail {0}
-      run: ci/build_docs.sh
+      run: |
+        conda run -n docs-build ci/build_docs.sh
     # Copy all docs to the right folder
     - name: Move docs to right folder
       shell: bash --noprofile --norc -euo pipefail {0}
