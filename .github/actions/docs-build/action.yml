@@ -11,6 +11,7 @@ runs:
     - name: Create conda environment
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
+        conda init
         conda create -n docs-build python=3.12 -y
         conda activate docs-build
     # Install required dependencies
