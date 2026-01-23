@@ -134,6 +134,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("name", &TemplateParam::name)
       .def_readwrite("type_", &TemplateParam::type)
       .def_readwrite("kind", &TemplateParam::kind)
+      .def_readwrite("is_parameter_pack", &TemplateParam::is_parameter_pack)
       .def("__repr__",
            [](const TemplateParam &t) {
              return "<TemplateParam: " + t.name + " " + t.type.name + ">";
