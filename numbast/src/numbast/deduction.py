@@ -284,7 +284,7 @@ def deduce_templated_overloads(
                     overrides=overrides,
                     allow_out_return=True,
                 )
-            except Exception as exc:
+            except (ValueError, TypeError) as exc:
                 intent_errors.append(exc)
                 _debug_print(
                     debug,
