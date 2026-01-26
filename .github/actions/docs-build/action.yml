@@ -16,7 +16,7 @@ runs:
     - name: Install build dependencies
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        conda install -n docs-build -c conda-forge clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make cuda-cudart
+        conda install -n docs-build -c conda-forge clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make cuda-cudart -y
     - name: Install Python dependencies for docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
