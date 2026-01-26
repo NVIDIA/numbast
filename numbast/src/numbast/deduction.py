@@ -71,7 +71,7 @@ def _numba_arg_to_cxx_type(arg: nbtypes.Type) -> str | None:
     arg = _normalize_numba_arg_type(arg)
     try:
         return _normalize_cxx_type_str(to_c_type_str(arg))
-    except Exception:
+    except ValueError:
         return None
 
 
