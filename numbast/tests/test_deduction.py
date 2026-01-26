@@ -45,6 +45,11 @@ _CXX_SOURCE = textwrap.dedent(
       template <typename T>
       __device__ void write(T &out, T value) const { out = value; }
     };
+
+    template <typename T>
+    __device__ void fill_array(T (&arr)[4], T value) {
+        for (int i = 0; i < 4; ++i) arr[i] = value;
+    }
     """
 )
 
@@ -252,3 +257,22 @@ def test_unmappable_numba_arg_skips_overload(deduction_decls):
 
     assert intent_errors == []
     assert specialized == []
+
+
+def test_array_param_decays_to_pointer_with_pass_ptr(deduction_decls):
+    """Array types like T[N] decay to T* when pass_ptr is applied."""
+    overloads = _get_function_templates(deduction_decls, "fill_array")
+    specialized, intent_errors = deduce_templated_overloads(
+        qualname="fill_array",
+        overloads=overloads,
+        args=(nbtypes.CPointer(nbtypes.int32), nbtypes.int32),
+        overrides={"arr": "out_ptr"},
+    )
+
+    assert intent_errors == []
+    assert len(specialized) == 1
+    func = specialized[0].function
+    # After specialization, params should be int[4] (reference) and int
+    assert func.params[0].type_.unqualified_non_ref_type_name == "int[4]"
+    assert func.params[0].type_.is_left_reference()
+    assert func.params[1].type_.unqualified_non_ref_type_name == "int"
