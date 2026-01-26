@@ -86,15 +86,57 @@ def _param_type_matches_arg(cxx_type: str, arg: nbtypes.Type) -> bool:
 def _deduce_from_type_pattern(
     cxx_type: str, arg_cxx: str, placeholders: Iterable[str]
 ) -> dict[str, str] | None:
+    """Deduce template placeholder values from a C++ type pattern.
+
+    This helper treats ``cxx_type`` as a pattern that may contain one or more
+    placeholder names (e.g., ``T``) supplied in ``placeholders``. It scans
+    ``cxx_type`` left-to-right, replacing each placeholder occurrence with a
+    non-greedy capture group, and records the placeholder name for every
+    occurrence. The resulting regex is matched against ``arg_cxx``. If the
+    match fails, no deduction is possible and ``None`` is returned.
+
+    For each captured group, the value is stripped of whitespace. Empty captures
+    are rejected. When a placeholder appears multiple times, all occurrences
+    must resolve to the same concrete type; conflicting values cause this
+    function to return ``None``. On success, a mapping from placeholder name to
+    deduced type string is returned.
+
+    Example:
+        # Pattern from a templated parameter.
+        cxx_type = "Pair<const T*, U>"
+        arg_cxx = "Pair<const float*, int>"
+        placeholders = ["T", "U"]
+
+        # Deduce placeholder values from the concrete argument type.
+        deduced = _deduce_from_type_pattern(cxx_type, arg_cxx, placeholders)
+        # deduced == {"T": "float", "U": "int"}
+
+        # The same placeholder can appear multiple times; all captures must agree.
+        repeat = _deduce_from_type_pattern("Pair<T, T>", "Pair<int, int>", ["T"])
+        # repeat == {"T": "int"}
+    """
     placeholders_in_type = [p for p in placeholders if p in cxx_type]
     if not placeholders_in_type:
         return None
 
-    pattern = re.escape(cxx_type)
+    unique_placeholders = list(dict.fromkeys(placeholders_in_type))
+    placeholder_patterns = sorted(unique_placeholders, key=len, reverse=True)
+    placeholder_regex = re.compile(
+        "|".join(re.escape(ph) for ph in placeholder_patterns)
+    )
+
     order: list[str] = []
-    for ph in placeholders_in_type:
-        pattern = pattern.replace(re.escape(ph), r"(.*?)")
-        order.append(ph)
+    pattern_parts: list[str] = []
+    last_index = 0
+    for ph_match in placeholder_regex.finditer(cxx_type):
+        start, end = ph_match.span()
+        if start > last_index:
+            pattern_parts.append(re.escape(cxx_type[last_index:start]))
+        pattern_parts.append(r"(.*?)")
+        order.append(ph_match.group(0))
+        last_index = end
+    pattern_parts.append(re.escape(cxx_type[last_index:]))
+    pattern = "".join(pattern_parts)
 
     match = re.fullmatch(pattern, arg_cxx)
     if not match:

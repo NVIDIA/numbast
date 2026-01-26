@@ -10,7 +10,10 @@ import pytest
 from ast_canopy import parse_declarations_from_source
 from numba.cuda import types as nbtypes
 
-from numbast.deduction import deduce_templated_overloads
+from numbast.deduction import (
+    _deduce_from_type_pattern,
+    deduce_templated_overloads,
+)
 
 
 _CXX_SOURCE = textwrap.dedent(
@@ -128,6 +131,16 @@ def test_conflicting_deduction_skips_overload(deduction_decls):
 
     assert intent_errors == []
     assert specialized == []
+
+
+def test_repeated_placeholder_conflict_in_type_pattern():
+    """Reject types when repeated placeholders deduce conflicting values."""
+    deduced = _deduce_from_type_pattern(
+        "pair<T, T>",
+        "pair<int, float>",
+        ["T"],
+    )
+    assert deduced is None
 
 
 def test_non_templated_param_requires_match(deduction_decls):
