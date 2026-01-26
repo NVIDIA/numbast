@@ -18,6 +18,7 @@ from numbast.types import to_c_type_str, to_numba_type
 
 
 _SPACE_RE = re.compile(r"\s+")
+_ARRAY_SUFFIX_RE = re.compile(r"^(?P<base>.+?)\s*\[(?P<size>[^\]]*)\]\s*$")
 _DEBUG_ENV_VAR = "NUMBAST_TAD_DEBUG"
 
 
@@ -48,6 +49,11 @@ def _normalize_cxx_type_str(type_str: str) -> str:
 def _apply_pass_ptr(cxx_param: str, pass_ptr: bool) -> str:
     if not pass_ptr:
         return cxx_param
+    array_match = _ARRAY_SUFFIX_RE.match(cxx_param)
+    if array_match:
+        # Arrays decay to element pointers when passed by value.
+        base = array_match.group("base").strip()
+        return _normalize_cxx_type_str(f"{base}*")
     if "*" in cxx_param:
         return cxx_param
     return _normalize_cxx_type_str(f"{cxx_param}*")
