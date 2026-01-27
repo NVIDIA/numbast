@@ -5,6 +5,7 @@ from typing import Any, Optional
 from collections import defaultdict
 from tempfile import NamedTemporaryFile
 import inspect
+import logging
 import re
 
 from ast_canopy import pylibastcanopy
@@ -56,7 +57,9 @@ from numbast.shim_writer import ShimWriterBase
 from numbast.deduction import deduce_templated_overloads
 
 
-ConcreteTypeCache: dict[object, nbtypes.Type] = {}
+logger = logging.getLogger(__name__)
+
+ConcreteTypeCache: dict[object, nbtypes.TypeRef] = {}
 
 
 class MetaType(nbtypes.Type):
@@ -124,7 +127,7 @@ def bind_cxx_struct_ctor(
         shim_name=shim_func_name, struct_name=struct_name, params=ctor.params
     )
 
-    print(f"CTOR SHIM: {shim}")
+    logger.debug("CTOR SHIM: %s", shim)
 
     ctor_cc = FunctionCallConv(
         mangled_name, shim_writer, shim, arg_is_ref=arg_is_ref
@@ -602,7 +605,7 @@ def bind_cxx_struct_templated_method(
                     actual_args_str=actual_args_str,
                 )
 
-                print(f"TEMPLATED METHOD SHIM: {shim}")
+                logger.debug("TEMPLATED METHOD SHIM: %s", shim)
 
                 param_arg_is_ref = [
                     bool(t.is_left_reference() or t.is_right_reference())
@@ -680,7 +683,6 @@ def _select_templated_overload(
             f"Overload arities: {[len(m.function.params) for m in overloads]}"
         )
 
-    print(f"SELECTED OVERLOAD: {candidates[0].function.param_types}")
     return candidates[0]
 
 
@@ -808,9 +810,6 @@ def bind_cxx_struct_templated_methods(
     method_overloads: dict[str, list[FunctionTemplate]] = defaultdict(list)
 
     for templated_method in struct_decl.templated_member_functions():
-        print(
-            f"Templated method: {templated_method.function.name}, template params: {templated_method.template_parameters}"
-        )
         method_overloads[templated_method.function.name].append(
             templated_method
         )
