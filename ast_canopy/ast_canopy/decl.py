@@ -568,6 +568,10 @@ class ClassTemplateSpecialization(Struct):
         return self._name
 
     @property
+    def specialized_name(self):
+        return self._instantiation.get_instantiated_c_stmt(use_qual_name=False)
+
+    @property
     def qual_name(self):
         return self._instantiation.get_instantiated_c_stmt(use_qual_name=True)
 
