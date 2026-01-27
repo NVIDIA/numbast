@@ -126,7 +126,9 @@ def to_numba_type(ty: str):
         base_ty, size = is_array_type.groups()
         return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
 
-    return CTYPE_MAPS[ty]
+    # FIXME: Currently returning an undefined type. But in a future PR, we will
+    # return an opaque type instead.
+    return CTYPE_MAPS.get(ty, nbtypes.undefined)
 
 
 def to_numba_arg_type(ast_type) -> nbtypes.Type:
@@ -142,6 +144,8 @@ def to_numba_arg_type(ast_type) -> nbtypes.Type:
 
 
 def to_c_type_str(nbty: nbtypes.Type) -> str:
+    if isinstance(nbty, nbtypes.CPointer):
+        return f"{to_c_type_str(nbty.dtype)}*"
     if nbty not in NUMBA_TO_CTYPE_MAPS:
         raise ValueError(
             f"Unknown numba type attempted to converted into ctype: {nbty}"
