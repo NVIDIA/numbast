@@ -60,6 +60,9 @@ from numbast.deduction import deduce_templated_overloads
 logger = logging.getLogger(__name__)
 
 ConcreteTypeCache: dict[object, nbtypes.TypeRef] = {}
+_TEMPLATED_METHOD_LOWERING_CACHE: set[
+    tuple[str, nbtypes.Type, tuple[nbtypes.Type, ...]]
+] = set()
 
 
 class MetaType(nbtypes.Type):
@@ -529,101 +532,112 @@ def bind_cxx_struct_templated_method(
                 else:
                     return_type = cxx_return_type
 
-            @lower(qualname, recvr, *param_types)
-            def _impl(
-                context,
-                builder,
-                sig,
-                args,
-                param_types=param_types,
-                templated_method=templated_method,
-                method_plan=method_plan,
-                intent_plan=intent_plan,
-                out_return_types=out_return_types,
-                cxx_return_type=cxx_return_type,
-            ):
-                # args[0] is the receiver value (a struct value), args[1:] are parameters.
-                param_types_inner = sig.args[1:]
-                if method_plan is None or not method_plan.out_return_indices:
-                    param_types_for_shim = tuple(param_types_inner)
-                    pass_ptr_mask_for_shim = (
-                        None
-                        if method_plan is None
-                        else tuple(method_plan.pass_ptr_mask)
-                    )
-                else:
-                    if len(param_types_inner) != len(
-                        method_plan.visible_param_indices
-                    ):
-                        raise ValueError(
-                            "Signature args do not match templated intent plan visible params: "
-                            f"sig has {len(param_types_inner)} params but plan expects {len(method_plan.visible_param_indices)}"
-                        )
-                    out_return_map = {
-                        orig_idx: out_pos
-                        for out_pos, orig_idx in enumerate(
-                            method_plan.out_return_indices
-                        )
-                    }
-                    visible_iter = iter(param_types_inner)
-                    visible_mask_iter = iter(method_plan.pass_ptr_mask)
-                    param_types_for_shim_list = []
-                    pass_ptr_mask_for_shim_list = []
-                    for orig_idx in range(len(method_plan.intents)):
-                        out_pos = out_return_map.get(orig_idx)
-                        if out_pos is not None:
-                            param_types_for_shim_list.append(
-                                out_return_types[out_pos]
-                            )
-                            pass_ptr_mask_for_shim_list.append(False)
-                        else:
-                            param_types_for_shim_list.append(next(visible_iter))
-                            pass_ptr_mask_for_shim_list.append(
-                                next(visible_mask_iter)
-                            )
-                    param_types_for_shim = tuple(param_types_for_shim_list)
-                    pass_ptr_mask_for_shim = tuple(pass_ptr_mask_for_shim_list)
+            lowering_key = (qualname, recvr, param_types)
+            if lowering_key not in _TEMPLATED_METHOD_LOWERING_CACHE:
+                _TEMPLATED_METHOD_LOWERING_CACHE.add(lowering_key)
 
-                mangled_name = deduplicate_overloads(
-                    f"__{templated_method.function.mangled_name}"
-                )
-                shim_func_name = f"{mangled_name}_nbst"
-                formal_args_str, actual_args_str = (
-                    _make_templated_method_shim_arg_strings(
-                        param_types_inner=tuple(param_types_for_shim),
-                        cxx_params=templated_method.function.params,
-                        pass_ptr_mask=pass_ptr_mask_for_shim,
-                    )
-                )
-
-                shim = make_struct_regular_method_shim(
-                    shim_name=shim_func_name,
-                    struct_name=struct_decl.qual_name,
-                    method_name=templated_method.function.name,
-                    return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
-                    formal_args_str=formal_args_str,
-                    actual_args_str=actual_args_str,
-                )
-
-                logger.debug("TEMPLATED METHOD SHIM: %s", shim)
-
-                param_arg_is_ref = [
-                    bool(t.is_left_reference() or t.is_right_reference())
-                    for t in templated_method.function.param_types
-                ]
-                arg_is_ref = [False, *param_arg_is_ref]
-
-                method_cc = FunctionCallConv(
-                    mangled_name,
-                    shim_writer,
-                    shim,
-                    arg_is_ref=arg_is_ref,
+                @lower(qualname, recvr, *param_types)
+                def _impl(
+                    context,
+                    builder,
+                    sig,
+                    args,
+                    param_types=param_types,
+                    templated_method=templated_method,
+                    method_plan=method_plan,
                     intent_plan=intent_plan,
                     out_return_types=out_return_types,
                     cxx_return_type=cxx_return_type,
-                )
+                ):
+                    # args[0] is the receiver value (a struct value), args[1:] are parameters.
+                    param_types_inner = sig.args[1:]
+                    if (
+                        method_plan is None
+                        or not method_plan.out_return_indices
+                    ):
+                        param_types_for_shim = tuple(param_types_inner)
+                        pass_ptr_mask_for_shim = (
+                            None
+                            if method_plan is None
+                            else tuple(method_plan.pass_ptr_mask)
+                        )
+                    else:
+                        if len(param_types_inner) != len(
+                            method_plan.visible_param_indices
+                        ):
+                            raise ValueError(
+                                "Signature args do not match templated intent plan visible params: "
+                                f"sig has {len(param_types_inner)} params but plan expects {len(method_plan.visible_param_indices)}"
+                            )
+                        out_return_map = {
+                            orig_idx: out_pos
+                            for out_pos, orig_idx in enumerate(
+                                method_plan.out_return_indices
+                            )
+                        }
+                        visible_iter = iter(param_types_inner)
+                        visible_mask_iter = iter(method_plan.pass_ptr_mask)
+                        param_types_for_shim_list = []
+                        pass_ptr_mask_for_shim_list = []
+                        for orig_idx in range(len(method_plan.intents)):
+                            out_pos = out_return_map.get(orig_idx)
+                            if out_pos is not None:
+                                param_types_for_shim_list.append(
+                                    out_return_types[out_pos]
+                                )
+                                pass_ptr_mask_for_shim_list.append(False)
+                            else:
+                                param_types_for_shim_list.append(
+                                    next(visible_iter)
+                                )
+                                pass_ptr_mask_for_shim_list.append(
+                                    next(visible_mask_iter)
+                                )
+                        param_types_for_shim = tuple(param_types_for_shim_list)
+                        pass_ptr_mask_for_shim = tuple(
+                            pass_ptr_mask_for_shim_list
+                        )
 
-                return method_cc(builder, context, sig, args)
+                    mangled_name = deduplicate_overloads(
+                        f"__{templated_method.function.mangled_name}"
+                    )
+                    shim_func_name = f"{mangled_name}_nbst"
+                    formal_args_str, actual_args_str = (
+                        _make_templated_method_shim_arg_strings(
+                            param_types_inner=tuple(param_types_for_shim),
+                            cxx_params=templated_method.function.params,
+                            pass_ptr_mask=pass_ptr_mask_for_shim,
+                        )
+                    )
+
+                    shim = make_struct_regular_method_shim(
+                        shim_name=shim_func_name,
+                        struct_name=struct_decl.qual_name,
+                        method_name=templated_method.function.name,
+                        return_type=templated_method.function.return_type.unqualified_non_ref_type_name,
+                        formal_args_str=formal_args_str,
+                        actual_args_str=actual_args_str,
+                    )
+
+                    logger.debug("TEMPLATED METHOD SHIM: %s", shim)
+
+                    param_arg_is_ref = [
+                        bool(t.is_left_reference() or t.is_right_reference())
+                        for t in templated_method.function.param_types
+                    ]
+                    arg_is_ref = [False, *param_arg_is_ref]
+
+                    method_cc = FunctionCallConv(
+                        mangled_name,
+                        shim_writer,
+                        shim,
+                        arg_is_ref=arg_is_ref,
+                        intent_plan=intent_plan,
+                        out_return_types=out_return_types,
+                        cxx_return_type=cxx_return_type,
+                    )
+
+                    return method_cc(builder, context, sig, args)
 
             # Return a method signature (receiver is implicit).
             return nb_signature(return_type, *param_types, recvr=recvr)
@@ -673,15 +687,20 @@ def _select_templated_overload(
         if visible_arity == arity:
             candidates.append(m)
 
-    if len(candidates) != 1:
-        if overrides is not None and not candidates and intent_errors:
-            raise TypeError(
-                f"Failed to apply arg_intent overrides for {qualname}: "
-                f"{intent_errors[0]}"
-            )
+    if overrides is not None and not candidates and intent_errors:
         raise TypeError(
-            f"Ambiguous or missing overload for {qualname} with {arity} args. "
+            f"Failed to apply arg_intent overrides for {qualname}: "
+            f"{intent_errors[0]}"
+        )
+    if not candidates:
+        raise TypeError(
+            f"No matching overload found for {qualname} with {arity} args. "
             f"Overload arities: {[len(m.function.params) for m in overloads]}"
+        )
+    if len(candidates) > 1:
+        raise TypeError(
+            f"Ambiguous overload for {qualname} with {arity} args. "
+            f"Matching overload arities: {[len(m.function.params) for m in candidates]}"
         )
 
     return candidates[0]
