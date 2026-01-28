@@ -686,7 +686,7 @@ def _select_templated_overload(
     return candidates[0]
 
 
-_CXX_ARRAY_TYPE_RE = re.compile(r"^(?P<base>.*?)(?P<sizes>(\[\d+\])+)\s*$")
+_CXX_ARRAY_TYPE_RE = re.compile(r"^(?P<base>.*?)(?P<sizes>(\[[^\]]+\])+)\s*$")
 
 
 def _make_templated_method_shim_arg_strings(
@@ -921,9 +921,20 @@ def bind_cxx_class_template_specialization(
         def generic_resolve(self, typ, attr):
             if attr in public_fields_tys:
                 return self._field_ty(attr)
-            elif attr in method_templates:
+            has_regular = attr in method_templates
+            has_templated = attr in templated_method_to_template
+            if has_regular and has_templated:
+                # TODO: support shared names by doing TAD before overload selection.
+                raise NotImplementedError(
+                    "Attribute name collision for "
+                    f"'{attr}': present in both method_templates "
+                    f"({method_templates[attr]}) and "
+                    "templated_method_to_template "
+                    f"({templated_method_to_template[attr]})."
+                )
+            elif has_regular:
                 return self._method_ty(typ, attr)
-            elif attr in templated_method_to_template:
+            elif has_templated:
                 return self._templated_method_ty(typ, attr)
             elif attr == "__call__":
                 # Special case when invoking tranpoline typing of numba_typeref_ctor

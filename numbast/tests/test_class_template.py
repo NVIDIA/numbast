@@ -2,16 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import textwrap
 
 import numpy as np
 
 from numba import cuda
+from numba.cuda import types as nbtypes
 
 import cffi
 
 
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_class_templates, MemoryShimWriter
+from numbast.class_template import _make_templated_method_shim_arg_strings
 
 
 import pytest
@@ -261,3 +264,90 @@ class TestTemplatedClassTemplatedMethod:
 
         kernel[1, 32](x, out)
         np.testing.assert_array_equal(out, x + 7)
+
+
+def test_method_name_collision_raises(tmp_path):
+    source = textwrap.dedent(
+        """\
+        #pragma once
+        template <typename T>
+        struct Collision {
+          __device__ Collision() {}
+          __device__ void Touch(T value) const { (void)value; }
+          template <typename U>
+          __device__ void Touch(U value) const { (void)value; }
+        };
+        """
+    )
+    header_path = tmp_path / "collision.cuh"
+    header_path.write_text(source, encoding="utf-8")
+
+    decls = parse_declarations_from_source(
+        str(header_path),
+        [str(header_path)],
+        "sm_80",
+        verbose=False,
+    )
+    shim_writer = MemoryShimWriter(f'#include "{header_path}"')
+    apis = bind_cxx_class_templates(
+        decls.class_templates,
+        header_path=str(header_path),
+        shim_writer=shim_writer,
+    )
+
+    Collision = apis[0]
+    T = np.int32
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(inp):
+        i = cuda.grid(1)
+        if i >= inp.size:
+            return
+        collide_t = Collision(T=T)
+        collide = collide_t()
+        collide.Touch(inp[i])
+
+    x = np.arange(1, dtype=T)
+
+    with pytest.raises(NotImplementedError) as excinfo:
+        kernel[1, 1](x)
+
+    msg = str(excinfo.value)
+    assert "Touch" in msg
+    assert "method_templates" in msg
+    assert "templated_method_to_template" in msg
+
+
+def test_templated_method_array_ref_non_numeric_size(tmp_path):
+    source = textwrap.dedent(
+        """\
+        #pragma once
+        template <int N>
+        __device__ void take_array(int (&arr)[N]) { (void)arr; }
+        """
+    )
+    header_path = tmp_path / "array_ref_non_numeric.cuh"
+    header_path.write_text(source, encoding="utf-8")
+
+    decls = parse_declarations_from_source(
+        str(header_path),
+        [str(header_path)],
+        "sm_80",
+        verbose=False,
+    )
+    templs = [
+        templ
+        for templ in decls.function_templates
+        if templ.function.name == "take_array"
+    ]
+    assert templs
+    params = templs[0].function.params
+    assert params[0].type_.unqualified_non_ref_type_name.endswith("[N]")
+
+    formal_args_str, actual_args_str = _make_templated_method_shim_arg_strings(
+        param_types_inner=(nbtypes.CPointer(nbtypes.int32),),
+        cxx_params=params,
+    )
+
+    assert formal_args_str == ",int (&arg0)[N]"
+    assert actual_args_str == "arg0"
