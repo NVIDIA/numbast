@@ -642,12 +642,13 @@ def _select_templated_overload(
     """
     Select a FunctionTemplate overload for a templated method.
 
-    Today we select by explicit argument count (arity). Keep this logic in one
-    place so we can later expand it to:
-    - disambiguate overloads with the same arity using template-parameter
-      inference (or explicit template args if we add a user-facing API),
-    - match on parsed C++ parameter types,
-    - incorporate kwds / default args.
+    Today we only select by explicit argument count (visible arity). Keep this
+    logic centralized so we can expand it with C++-style overload resolution:
+    - filter viable candidates (arity/defaults/variadics, arg_intent visibility),
+    - rank implicit conversions (exact > promotion > standard > user-defined),
+    - prefer better ref/cv binding and non-variadic over variadic,
+    - prefer more specialized templates / stronger constraints,
+    - treat remaining ties as ambiguous.
     """
     arity = len(param_types)
     candidates: list[FunctionTemplate] = []
