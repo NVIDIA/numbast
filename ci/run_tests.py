@@ -38,6 +38,7 @@ def run_pytest(lib, test_dir):
 @click.option(
     "--curand_device", is_flag=True, help="Run curand device binding pytests."
 )
+@click.option("--cccl", is_flag=True, help="Run CCCL (CUB) binding pytests.")
 @click.option("--all-tests", is_flag=True, help="Run all pytests.")
 def run(
     ast_canopy: bool,
@@ -45,6 +46,7 @@ def run(
     bf16: bool,
     fp16: bool,
     curand_device: bool,
+    cccl: bool,
     all_tests: bool,
 ):
     """Selectively run pytests in Numbast repo based on options provided.
@@ -53,7 +55,7 @@ def run(
     package. `--all-tests` option is mutually exclusive to all other options.
     """
     if all_tests:
-        if any([ast_canopy, numbast, bf16, fp16, curand_device]):
+        if any([ast_canopy, numbast, bf16, fp16, curand_device, cccl]):
             raise ValueError(
                 "`all_tests` and any subpackage specs are mutual exclusive."
             )
@@ -82,6 +84,8 @@ def run(
         )
     if all_tests or curand_device:
         run_pytest("curand_device", ["numbast_extensions/tests/test_curand.py"])
+    if all_tests or cccl:
+        run_pytest("cccl", ["numbast_extensions/tests/thirdparty/CCCL/"])
 
 
 if __name__ == "__main__":

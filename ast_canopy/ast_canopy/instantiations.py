@@ -37,14 +37,20 @@ class BaseInstantiation:
             for tparam in self.template_parameters
         ]
 
-    def get_instantiated_c_stmt(self) -> str:
-        name = self.base_name
+    def get_instantiated_c_stmt(self, use_qual_name: bool = False) -> str:
+        if use_qual_name:
+            name = self.qual_name
+        else:
+            name = self.base_name
+
         param_list = self.param_list
 
         flatten = []
         for param in param_list:
             if isinstance(param, BaseInstantiation):
-                flatten.append(param.get_instantiated_c_stmt())
+                flatten.append(
+                    param.get_instantiated_c_stmt(use_qual_name=use_qual_name)
+                )
             else:
                 flatten.append(str(param))
 
@@ -54,6 +60,11 @@ class BaseInstantiation:
     def base_name(self):
         raise NotImplementedError(
             "BaseInstantiation.base_name is not implemented"
+        )
+
+    def qual_name(self):
+        raise NotImplementedError(
+            "BaseInstantiation.qual_name is not implemented"
         )
 
 
@@ -67,6 +78,10 @@ class FunctionInstantiation(BaseInstantiation):
     @property
     def base_name(self):
         return self.function.name
+
+    @property
+    def qual_name(self):
+        return self.function.qual_name
 
     def evaluate_constexpr_value(self, *args, header=None):
         if not self.function.is_constexpr:
@@ -124,3 +139,7 @@ class ClassInstantiation(BaseInstantiation):
     @property
     def base_name(self):
         return self.record.name
+
+    @property
+    def qual_name(self):
+        return self.record.qual_name

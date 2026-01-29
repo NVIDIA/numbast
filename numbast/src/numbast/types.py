@@ -48,6 +48,10 @@ FLOATING_TYPE_MAPS = {
     "double": nbtypes.float64,
 }
 
+CCCL_Types = {
+    "cub::NullType": nbtypes.void,
+}
+
 ENUM_TYPE_MAPS = {
     "cudaRoundMode": nbtypes.IntEnumMember(
         runtime.cudaRoundMode, nbtypes.int64
@@ -57,6 +61,7 @@ ENUM_TYPE_MAPS = {
 CTYPE_MAPS = {
     **INTEGER_TYPE_MAPS,
     **FLOATING_TYPE_MAPS,
+    **CCCL_Types,
     **ENUM_TYPE_MAPS,
     "void": nbtypes.void,
     "bool": nbtypes.bool_,
@@ -126,9 +131,8 @@ def to_numba_type(ty: str):
         base_ty, size = is_array_type.groups()
         return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
 
-    # FIXME: Currently returning an undefined type. But in a future PR, we will
-    # return an opaque type instead.
-    return CTYPE_MAPS.get(ty, nbtypes.undefined)
+    # For any type that's unknown / not yet supported, return an opaque type.
+    return CTYPE_MAPS.get(ty, nbtypes.Opaque(ty))
 
 
 def to_numba_arg_type(ast_type) -> nbtypes.Type:

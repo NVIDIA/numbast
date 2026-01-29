@@ -341,7 +341,7 @@ def parse_declarations_from_source(
     cxx_standard: str = "gnu++17",
     additional_includes: list[str] = [],
     defines: list[str] = [],
-    verbose: bool = True,
+    verbose: bool = False,
     bypass_parse_error: bool = False,
 ) -> Declarations:
     """Given a source file, parse all top-level declarations from it and return

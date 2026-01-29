@@ -49,8 +49,7 @@ trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "Run Tests"
-# Debug print
-python ci/run_tests.py --ast-canopy --numbast
+python ci/run_tests.py --ast-canopy --numbast --cccl
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
