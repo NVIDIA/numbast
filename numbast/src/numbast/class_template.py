@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile
 import inspect
 import logging
 import re
+import warnings
 
 from ast_canopy import pylibastcanopy
 
@@ -944,14 +945,18 @@ def bind_cxx_class_template_specialization(
             has_regular = attr in method_templates
             has_templated = attr in templated_method_to_template
             if has_regular and has_templated:
-                # TODO: support shared names by doing TAD before overload selection.
-                raise NotImplementedError(
+                # FIXME: support shared names by doing TAD before overload selection.
+                warnings.warn(
                     "Attribute name collision for "
                     f"'{attr}': present in both method_templates "
                     f"({method_templates[attr]}) and "
                     "templated_method_to_template "
-                    f"({templated_method_to_template[attr]})."
+                    f"({templated_method_to_template[attr]}). "
+                    "Regular method will occlude templated method.",
+                    UserWarning,
+                    stacklevel=2,
                 )
+                return self._method_ty(typ, attr)
             elif has_regular:
                 return self._method_ty(typ, attr)
             elif has_templated:
