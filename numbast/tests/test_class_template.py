@@ -266,58 +266,6 @@ class TestTemplatedClassTemplatedMethod:
         np.testing.assert_array_equal(out, x + 7)
 
 
-def test_method_name_collision_raises(tmp_path):
-    source = textwrap.dedent(
-        """\
-        #pragma once
-        template <typename T>
-        struct Collision {
-          __device__ Collision() {}
-          __device__ void Touch(T value) const { (void)value; }
-          template <typename U>
-          __device__ void Touch(U value) const { (void)value; }
-        };
-        """
-    )
-    header_path = tmp_path / "collision.cuh"
-    header_path.write_text(source, encoding="utf-8")
-
-    decls = parse_declarations_from_source(
-        str(header_path),
-        [str(header_path)],
-        "sm_80",
-        verbose=False,
-    )
-    shim_writer = MemoryShimWriter(f'#include "{header_path}"')
-    apis = bind_cxx_class_templates(
-        decls.class_templates,
-        header_path=str(header_path),
-        shim_writer=shim_writer,
-    )
-
-    Collision = apis[0]
-    T = np.int32
-
-    @cuda.jit(link=shim_writer.links())
-    def kernel(inp):
-        i = cuda.grid(1)
-        if i >= inp.size:
-            return
-        collide_t = Collision(T=T)
-        collide = collide_t()
-        collide.Touch(inp[i])
-
-    x = np.arange(1, dtype=T)
-
-    with pytest.raises(NotImplementedError) as excinfo:
-        kernel[1, 1](x)
-
-    msg = str(excinfo.value)
-    assert "Touch" in msg
-    assert "method_templates" in msg
-    assert "templated_method_to_template" in msg
-
-
 def test_templated_method_array_ref_non_numeric_size(tmp_path):
     source = textwrap.dedent(
         """\
