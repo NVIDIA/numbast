@@ -157,22 +157,13 @@ def test_class_template_arg_intent_regular_method(intent_kind):
 class TestTemplatedClassTemplatedMethod:
     """
     Covered scenarios:
-    - Fully specialized:
-      class template args provided; method template args fully provided.
-    - Partially specialized but deducible:
-      some method template args explicitly provided (e.g. a non-type), while
-      the rest (e.g. a type param) is deduced from call argument types.
-    - Not fully specialized:
-      method template args are neither provided nor deducible, and no defaults
-      exist; should error.
-    - Not fully specialized but defaults exist:
-      method template args omitted but method template has defaults, so the
-      call is still well-formed.
+    - Method template defaults: call without explicit method template args.
+    - arg_intent handling for templated method outputs (return vs out ptr).
 
     Notes about current state:
     - The templated-method plumbing exists, but there's no user-facing API for
-      specifying method template parameters yet. Those tests are xfail to
-      document the gap without implementing it.
+      specifying method template parameters yet, so explicit/partial
+      specialization and missing-parameter error cases are not covered here.
     """
 
     @pytest.fixture
