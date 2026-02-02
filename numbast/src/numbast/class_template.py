@@ -576,10 +576,12 @@ def bind_cxx_struct_templated_method(
                                 method_plan.out_return_indices
                             )
                         }
-                        visible_iter = iter(param_types_inner)
-                        visible_mask_iter = iter(method_plan.pass_ptr_mask)
+                        # Reconstruct full C++ param order by merging visible
+                        # params with out_return slots, keeping a shim-aligned
+                        # pass_ptr_mask.
                         param_types_for_shim_list = []
                         pass_ptr_mask_for_shim_list = []
+                        visible_idx = 0
                         for orig_idx in range(len(method_plan.intents)):
                             out_pos = out_return_map.get(orig_idx)
                             if out_pos is not None:
@@ -589,11 +591,12 @@ def bind_cxx_struct_templated_method(
                                 pass_ptr_mask_for_shim_list.append(False)
                             else:
                                 param_types_for_shim_list.append(
-                                    next(visible_iter)
+                                    param_types_inner[visible_idx]
                                 )
                                 pass_ptr_mask_for_shim_list.append(
-                                    next(visible_mask_iter)
+                                    method_plan.pass_ptr_mask[visible_idx]
                                 )
+                                visible_idx += 1
                         param_types_for_shim = tuple(param_types_for_shim_list)
                         pass_ptr_mask_for_shim = tuple(
                             pass_ptr_mask_for_shim_list
