@@ -106,10 +106,10 @@ def register_enum_type(
 def to_numba_type(ty: str):
     """
     Map a C/C++ type string to the corresponding Numba type.
-    
+
     Parameters:
         ty (str): C/C++ type name as it appears in headers (may include pointers '*', fixed-size array syntax '[N]', functor suffix 'FunctorType', or collapsed array-pointer forms).
-    
+
     Returns:
         nbty (nbtypes.Type): The mapped Numba type (e.g., scalar types from CTYPE_MAPS, `nbtypes.CPointer(...)` for pointer forms, or `nbtypes.UniTuple(..., N)` for fixed-size arrays).
     """
@@ -135,18 +135,20 @@ def to_numba_type(ty: str):
         base_ty, size = is_array_type.groups()
         return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
 
-    return CTYPE_MAPS[ty]
+    # FIXME: Currently returning an undefined type. But in a future PR, we will
+    # return an opaque type instead.
+    return CTYPE_MAPS.get(ty, nbtypes.undefined)
 
 
 def to_numba_arg_type(ast_type) -> nbtypes.Type:
     """
     Map an ast_canopy Type to the corresponding Numba type for use as a function argument.
-    
+
     This conversion uses the type's unqualified, non-reference form. It does not map C++ reference parameters (T& / T&&) to pointer types; reference exposure is controlled by higher-level binding configuration (numbast.intent.ArgIntent).
-    
+
     Parameters:
         ast_type: The AST type to convert; its unqualified non-reference name will be used.
-    
+
     Returns:
         nbtypes.Type: The Numba type appropriate for a function argument.
     """
@@ -156,16 +158,18 @@ def to_numba_arg_type(ast_type) -> nbtypes.Type:
 def to_c_type_str(nbty: nbtypes.Type) -> str:
     """
     Convert a Numba type to its corresponding C/C++ type string.
-    
+
     Parameters:
         nbty (nbtypes.Type): The Numba type to convert.
-    
+
     Returns:
         str: The C/C++ type name that corresponds to `nbty`.
-    
+
     Raises:
         ValueError: If `nbty` has no known mapping to a C type.
     """
+    if isinstance(nbty, nbtypes.CPointer):
+        return f"{to_c_type_str(nbty.dtype)}*"
     if nbty not in NUMBA_TO_CTYPE_MAPS:
         raise ValueError(
             f"Unknown numba type attempted to converted into ctype: {nbty}"
