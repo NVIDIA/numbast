@@ -4,6 +4,8 @@
 import os
 import pytest
 
+import ast_canopy
+from numbast import bind_cxx_class_templates  # type: ignore[attr-defined]
 from cuda.pathfinder import find_nvidia_header_directory
 from numba.cuda.cudadrv.runtime import get_version
 from numba import cuda
@@ -17,6 +19,21 @@ requires_cuda_13 = pytest.mark.skipif(
     CUDA_MAJOR_VERSION < 13,
     reason=f"CCCL tests require CUDA 13+, found CUDA {CUDA_MAJOR_VERSION}",
 )
+
+
+def make_bindings(path, shim_writer, class_name, arg_intent):
+    """Create bindings for a class template from a header file."""
+    decls = ast_canopy.parse_declarations_from_source(path, [path], "sm_50")
+
+    bindings = bind_cxx_class_templates(
+        decls.class_templates, path, shim_writer, arg_intent=arg_intent
+    )
+
+    for ct in bindings:
+        if ct.__name__ == class_name:
+            return ct
+
+    return None
 
 
 def _get_cccl_include_path():

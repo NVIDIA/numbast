@@ -91,6 +91,8 @@ jobs:
       - name: Setup proxy cache
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
+        with:
+          enable-apt: true
       - name: Ensure GPU is working
         run: nvidia-smi
       - name: Set up Python ${{ matrix.PY_VER }}
@@ -133,6 +135,6 @@ jobs:
       - name: Test numbast wheels
         run: |
           python -m pytest numbast/
-      - name: Run a specific set of numbast_extensions tests
+      - name: Run numbast_extensions third-party CCCL tests
         run: |
           python -m pytest numbast_extensions/tests/thirdparty/CCCL/

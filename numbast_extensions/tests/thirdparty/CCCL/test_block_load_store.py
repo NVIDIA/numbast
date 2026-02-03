@@ -5,28 +5,12 @@ import pytest
 import numpy as np
 import cffi
 
-import ast_canopy
-from numbast import bind_cxx_class_templates, MemoryShimWriter
+from numbast import MemoryShimWriter
 
 from numba import cuda
 from numba.cuda.types import int32
 
-from .conftest import requires_cuda_13
-
-
-def make_bindings(path, shim_writer, class_name, arg_intent):
-    """Create bindings for a class template from a header file."""
-    decls = ast_canopy.parse_declarations_from_source(path, [path], "sm_50")
-
-    bindings = bind_cxx_class_templates(
-        decls.class_templates, path, shim_writer, arg_intent=arg_intent
-    )
-
-    for ct in bindings:
-        if ct.__name__ == class_name:
-            return ct
-
-    return None
+from .conftest import make_bindings, requires_cuda_13
 
 
 @requires_cuda_13

@@ -2,16 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import textwrap
 
 import numpy as np
 
 from numba import cuda
+from numba.cuda import types as nbtypes
 
 import cffi
 
 
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_class_templates, MemoryShimWriter
+from numbast.class_template import _make_templated_method_shim_arg_strings
 
 
 import pytest
@@ -154,22 +157,13 @@ def test_class_template_arg_intent_regular_method(intent_kind):
 class TestTemplatedClassTemplatedMethod:
     """
     Covered scenarios:
-    - Fully specialized:
-      class template args provided; method template args fully provided.
-    - Partially specialized but deducible:
-      some method template args explicitly provided (e.g. a non-type), while
-      the rest (e.g. a type param) is deduced from call argument types.
-    - Not fully specialized:
-      method template args are neither provided nor deducible, and no defaults
-      exist; should error.
-    - Not fully specialized but defaults exist:
-      method template args omitted but method template has defaults, so the
-      call is still well-formed.
+    - Method template defaults: call without explicit method template args.
+    - arg_intent handling for templated method outputs (return vs out ptr).
 
     Notes about current state:
     - The templated-method plumbing exists, but there's no user-facing API for
-      specifying method template parameters yet. Those tests are xfail to
-      document the gap without implementing it.
+      specifying method template parameters yet, so explicit/partial
+      specialization and missing-parameter error cases are not covered here.
     """
 
     @pytest.fixture
@@ -261,3 +255,38 @@ class TestTemplatedClassTemplatedMethod:
 
         kernel[1, 32](x, out)
         np.testing.assert_array_equal(out, x + 7)
+
+
+def test_templated_method_array_ref_non_numeric_size(tmp_path):
+    source = textwrap.dedent(
+        """\
+        #pragma once
+        template <int N>
+        __device__ void take_array(int (&arr)[N]) { (void)arr; }
+        """
+    )
+    header_path = tmp_path / "array_ref_non_numeric.cuh"
+    header_path.write_text(source, encoding="utf-8")
+
+    decls = parse_declarations_from_source(
+        str(header_path),
+        [str(header_path)],
+        "sm_80",
+        verbose=False,
+    )
+    templs = [
+        templ
+        for templ in decls.function_templates
+        if templ.function.name == "take_array"
+    ]
+    assert templs
+    params = templs[0].function.params
+    assert params[0].type_.unqualified_non_ref_type_name.endswith("[N]")
+
+    formal_args_str, actual_args_str = _make_templated_method_shim_arg_strings(
+        param_types_inner=(nbtypes.CPointer(nbtypes.int32),),
+        cxx_params=params,
+    )
+
+    assert formal_args_str == ",int (&arg0)[N]"
+    assert actual_args_str == "arg0"
