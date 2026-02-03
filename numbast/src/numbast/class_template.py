@@ -56,6 +56,7 @@ from numbast.utils import (
 from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import ShimWriterBase
 from numbast.deduction import deduce_templated_overloads
+from numbast.overload_selection import _select_templated_overload
 
 
 logger = logging.getLogger(__name__)
@@ -647,67 +648,6 @@ def bind_cxx_struct_templated_method(
             return nb_signature(return_type, *param_types, recvr=recvr)
 
     return MergedTemplatedMethodDecl
-
-
-def _select_templated_overload(
-    *,
-    qualname: str,
-    overloads: list[FunctionTemplate],
-    param_types: tuple[nbtypes.Type, ...],
-    kwds: dict[str, Any] | None = None,
-    overrides: dict | None = None,
-) -> FunctionTemplate:
-    """
-    Select a FunctionTemplate overload for a templated method.
-
-    Today we only select by explicit argument count (visible arity). Keep this
-    logic centralized so we can expand it with C++-style overload resolution:
-    - filter viable candidates (arity/defaults/variadics, arg_intent visibility),
-    - rank implicit conversions (exact > promotion > standard > user-defined),
-    - prefer better ref/cv binding and non-variadic over variadic,
-    - prefer more specialized templates / stronger constraints,
-    - treat remaining ties as ambiguous.
-    """
-    arity = len(param_types)
-    candidates: list[FunctionTemplate] = []
-    intent_errors: list[Exception] = []
-
-    for m in overloads:
-        if overrides is None:
-            visible_arity = len(m.function.params)
-        else:
-            try:
-                plan = compute_intent_plan(
-                    params=m.function.params,
-                    param_types=m.function.param_types,
-                    overrides=overrides,
-                    allow_out_return=True,
-                )
-            except Exception as exc:
-                intent_errors.append(exc)
-                continue
-            visible_arity = len(plan.visible_param_indices)
-
-        if visible_arity == arity:
-            candidates.append(m)
-
-    if overrides is not None and not candidates and intent_errors:
-        raise TypeError(
-            f"Failed to apply arg_intent overrides for {qualname}: "
-            f"{intent_errors[0]}"
-        )
-    if not candidates:
-        raise TypeError(
-            f"No matching overload found for {qualname} with {arity} args. "
-            f"Overload arities: {[len(m.function.params) for m in overloads]}"
-        )
-    if len(candidates) > 1:
-        raise TypeError(
-            f"Ambiguous overload for {qualname} with {arity} args. "
-            f"Matching overload arities: {[len(m.function.params) for m in candidates]}"
-        )
-
-    return candidates[0]
 
 
 _CXX_ARRAY_TYPE_RE = re.compile(r"^(?P<base>.*?)(?P<sizes>(\[[^\]]+\])+)\s*$")
