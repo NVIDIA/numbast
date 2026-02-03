@@ -181,7 +181,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_lowering(self):
         """
         Render and store the Numba lowering code for this struct constructor.
-        
+
         Populates self._lowering_rendered with the formatted constructor lowering. If the constructor is a non-explicit single-argument converting constructor, also append a lower_cast lowering to enable implicit conversion from the argument type to the struct type.
         """
 
@@ -603,9 +603,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
     ):
         """
         Initialize the renderer for a single struct regular method and cache derived names, Numba type strings, and lowering metadata used during code generation.
-        
+
         When provided, `function_argument_intents` overrides are processed into an IntentPlan that affects `nb_param_types`, visible parameter ordering, out-return handling, and the rendered intent/out-return/type strings; otherwise parameter/ref information is derived directly from `method_decl`. The initializer also sets unique identifiers used by the lowering/shim generation (`_unique_shim_name`, `_lower_fn_suffix`, `_lower_scope_name`).
-        
+
         Parameters:
             method_decl: Parsed method declaration used to derive parameter and return types, mangled names, and signatures.
             function_argument_intents: Optional mapping of "<Struct>.<method>" to intent overrides that control parameter passing, out-returns, and visibility during lowering.
@@ -778,7 +778,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
     def _render_lowering(self):
         """
         Render and store the Numba CUDA lowering for this struct method.
-        
+
         Formats the method lowering using the renderer's template, ensures the required `lower` import is recorded, and assigns the generated source to `self._lowering_rendered`.
         """
         self.Imports.add("from numba.cuda.cudaimpl import lower")
@@ -871,9 +871,9 @@ class {method_template_name}(ConcreteTemplate):
     def _render(self):
         """
         Render lowering, C shims, and typing templates for all regular methods of the struct.
-        
+
         Processes each method declaration to produce per-overload Python lowering, C shim code, and typing signatures; then emits a ConcreteTemplate typing class per method name aggregating overload signatures.
-        
+
         Side effects:
         - Adds required imports to self.Imports.
         - Appends generated Python lowering/typing code to self._python_rendered.
@@ -1410,7 +1410,7 @@ class StaticStructsRenderer(BaseRenderer):
     ):
         """
         Create a renderer that will produce Python bindings and C shim code for a collection of CUDA struct declarations.
-        
+
         Parameters:
             decls: Struct declarations to render.
             specs: Mapping from struct name to (parent Numba type or None, data model type or None, header path); used to override per-struct rendering options.
@@ -1418,7 +1418,7 @@ class StaticStructsRenderer(BaseRenderer):
             struct_prefix_removal: Optional list of name prefixes to strip from struct names when generating Python-facing identifiers.
             excludes: Names of structs to skip during rendering.
             function_argument_intents: Optional mapping that supplies per-struct or per-function argument intent overrides (controls reference/pointer handling, out-returns, and intent plans) used by per-method and constructor renderers.
-        
+
         """
         self._decls = decls
         self._specs = specs

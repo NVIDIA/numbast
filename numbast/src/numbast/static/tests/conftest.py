@@ -25,11 +25,11 @@ def data_folder():
 def make_binding(tmpdir, data_folder):
     """
     Return a factory that generates static Python bindings for a C/C++ header into the given temporary directory.
-    
+
     Parameters:
         tmpdir (os.PathLike | py.path.local): Directory where generated binding files will be written.
         data_folder (Callable[[str], str]): Function that maps a header filename to its full path within the test data folder.
-    
+
     Returns:
         Callable[[str, dict[str, type], dict[str, type], str, dict | None], dict]:
             A factory function with signature
@@ -38,6 +38,7 @@ def make_binding(tmpdir, data_folder):
                 - "src": the generated Python source code as a string.
                 - "bindings": a dict populated by executing the generated source.
     """
+
     def _make_binding(
         header_name: str,
         types: dict[str, type],

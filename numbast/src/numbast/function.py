@@ -50,11 +50,11 @@ def bind_cxx_operator_overload_function(
 ) -> object:
     """
     Create a Numba-callable binding for a C++ operator-overload function.
-    
+
     Parameters:
         func_decl (Function): C++ function declaration to bind.
         arg_intent (dict | None): Optional mapping that customizes argument intent (e.g., which reference parameters are treated as input, output, or inout). When provided, intent controls visible parameter/pointer treatment and out-return composition.
-    
+
     Returns:
         FunctionCallConv | None: A callable wrapper used during lowering that performs the bound call, or `None` when the operator is unsupported (e.g., copy assignment operators).
     """
@@ -107,13 +107,13 @@ def bind_cxx_operator_overload_function(
     def impl(context, builder, sig, args):
         """
         Delegate lowering to the captured FunctionCallConv instance `func_cc`.
-        
+
         Parameters:
             context: Numba lowering context used during compilation.
             builder: LLVM IR builder used to emit instructions.
             sig: The function signature being lowered.
             args: Sequence of lowered argument values passed to the call.
-        
+
         Returns:
             The lowered native value(s) produced by `func_cc`.
         """
@@ -132,9 +132,9 @@ def bind_cxx_non_operator_function(
 ) -> object:
     """
     Create a Python-callable binding for a C++ non-operator function.
-    
+
     Optionally uses an arg_intent override to control which C++ reference parameters are exposed as pointer parameters or returned as out-returns; when no overrides are provided, reference parameters are treated as input-only values.
-    
+
     Parameters
     ----------
     shim_writer : ShimWriter
@@ -147,7 +147,7 @@ def bind_cxx_non_operator_function(
         Set of function names to exclude from binding.
     arg_intent : dict | None, optional
         Optional per-function intent overrides that specify visibility and in/out semantics for reference parameters.
-    
+
     Returns
     -------
     object
@@ -272,7 +272,7 @@ def bind_cxx_function(
 ) -> object:
     """
     Create Python bindings for a C++ function.
-    
+
     Parameters:
         shim_writer (ShimWriter): Writer that emits the generated C/C++ shim code.
         func_decl (Function): C++ function declaration to bind.
@@ -282,7 +282,7 @@ def bind_cxx_function(
         arg_intent (dict | None): Optional explicit intent overrides that control which C++ reference
             parameters are exposed as inputs, outputs, or inout pointers and which parameters are
             promoted to out-returns.
-    
+
     Returns:
         object or None: The Numba-CUDA-callable Python binding object for the function, or `None`
         if the function is skipped or not exposed.

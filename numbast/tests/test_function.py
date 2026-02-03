@@ -19,9 +19,9 @@ import pytest
 def _sample_functions():
     """
     Prepare function bindings and a MemoryShimWriter for the mutative sample C++ functions.
-    
+
     Parses the sample_function_mutative.cuh header from the package data directory, constructs a MemoryShimWriter that includes that header, and binds the parsed C++ functions with argument intent mappings for mutative behavior: both `add_one_inplace` and `set_42` have their `x` parameter treated as an inout pointer.
-    
+
     Returns:
         tuple: A pair `(func_bindings, shim_writer)` where `func_bindings` is the list of bound function objects and `shim_writer` is the configured MemoryShimWriter.
     """
@@ -47,10 +47,10 @@ def _sample_functions():
 def func_bindings(_sample_functions):
     """
     Retrieve the function bindings from the sample functions fixture.
-    
+
     Parameters:
         _sample_functions (tuple): A two-element tuple where the first element is the collection of bound function objects and the second is a MemoryShimWriter.
-    
+
     Returns:
         func_bindings: The first element of `_sample_functions`, i.e., the bound function objects.
     """
@@ -61,10 +61,10 @@ def func_bindings(_sample_functions):
 def shim_writer(_sample_functions):
     """
     Provide the MemoryShimWriter produced by the _sample_functions fixture.
-    
+
     Parameters:
         _sample_functions (tuple): Pair (func_bindings, shim_writer) returned by the `_sample_functions` fixture.
-    
+
     Returns:
         MemoryShimWriter: The shim writer instance extracted from the fixture.
     """
@@ -74,14 +74,14 @@ def shim_writer(_sample_functions):
 def find_binding(bindings, name):
     """
     Find a binding object in `bindings` whose `__name__` attribute matches `name`.
-    
+
     Parameters:
         bindings (Iterable): Iterable of binding objects to search; each may have a `__name__` attribute.
         name (str): The target name to match against each binding's `__name__`.
-    
+
     Returns:
         object: The first binding whose `__name__` equals `name`.
-    
+
     Raises:
         AssertionError: If no binding with the given `name` is found; the error message lists the `__name__` values inspected.
     """
@@ -96,7 +96,7 @@ def find_binding(bindings, name):
 def test_mutative_device_function_persists_values(func_bindings, shim_writer):
     """
     Verify that device functions which mutate an integer pointer persist their changes when called from a Numba CUDA kernel.
-    
+
     This test binds the C++ functions `set_42` and `add_one_inplace`, launches a CUDA kernel that obtains a C pointer to a one-element int32 buffer, calls `set_42` once and `add_one_inplace` twice, and asserts the final buffer value is 44.
     """
     add_one_inplace = find_binding(func_bindings, "add_one_inplace")
@@ -110,7 +110,7 @@ def test_mutative_device_function_persists_values(func_bindings, shim_writer):
         # Passing a 1-element array provides a stable addressable location.
         """
         CUDA kernel that stores the value 44 into a one-element output buffer by invoking C++ shim functions.
-        
+
         Parameters:
             out (numpy.ndarray): A single-element int32 buffer whose element will be written with the result (44).
         """
@@ -128,9 +128,9 @@ def test_mutative_device_function_persists_values(func_bindings, shim_writer):
 def _sample_out_functions():
     """
     Create C++ function bindings and a MemoryShimWriter for the sample_function_out test header.
-    
+
     Parses declarations from the sample_function_out.cuh test header, constructs a MemoryShimWriter that includes that header, and binds the parsed C++ functions with argument intent mappings that treat each function's `out` parameter as an out-return.
-    
+
     Returns:
         tuple: A pair (func_bindings, shim_writer) where `func_bindings` is the list of bound functions and `shim_writer` is the MemoryShimWriter configured for the sample header.
     """
@@ -155,16 +155,16 @@ def _sample_out_functions():
 def test_out_return_device_function_results(_sample_out_functions):
     """
     End-to-end test verifying out-return and pointer/out semantics for C++ functions bound into Numba CUDA kernels.
-    
+
     First, binds `add_out` and `add_out_ret` and launches a CUDA kernel that:
     - stores `add_out(10)` into `out_single[0]`
     - calls `add_out_ret(7)` and stores the returned pair into `out_pair`
-    
+
     Asserts that:
     - `out_single[0] == 11`
     - `out_pair[0] == 10`
     - `out_pair[1] == 9`
-    
+
     Then re-parses and re-binds the same header with different argument intents (`add_out` using an output pointer, `add_in_ref` as an input),
     creates a kernel that uses `ffi.from_buffer` to obtain a pointer for the out parameter, and asserts that:
     - `out_ptr_buf[0] == 9`
@@ -178,7 +178,7 @@ def test_out_return_device_function_results(_sample_out_functions):
     def kernel(out_single, out_pair):
         """
         Populate provided output buffers with results produced by bound device functions.
-        
+
         Parameters:
             out_single: Single-element output buffer; receives the result of calling `add_out(10)`.
             out_pair: Two-element output buffer; receives the `(ret, out)` pair returned by `add_out_ret(7)`.
@@ -219,7 +219,7 @@ def test_out_return_device_function_results(_sample_out_functions):
     def kernel_ptr(out_ptr_buf, in_val, out_in_ref):
         """
         Call bound C++ device functions to store a computed value via a pointer and to write a secondary result into a provided output buffer.
-        
+
         Parameters:
             out_ptr_buf: A buffer object exposing writable memory for a single integer element; converted to a C pointer and passed to the bound `add_out_ptr` function.
             in_val: Integer input value provided to the bound functions.

@@ -46,15 +46,15 @@ def reset_types():
 def to_numba_type_str(ty: str):
     """
     Map a C/C++ type string to its corresponding Numba type string.
-    
+
     This also records any required Numba/CUDA type imports in BaseRenderer so generated code can import the mapped types.
-    
+
     Parameters:
         ty (str): C/C++ type name (may include pointers '*' or fixed-size array syntax like 'T[4]').
-    
+
     Returns:
         str: The corresponding Numba type expression (e.g., "int64", "CPointer(int64)", "UniTuple(float32, 4)").
-    
+
     Raises:
         TypeNotFoundError: If `ty` has no known mapping to a Numba type.
     """
@@ -111,13 +111,13 @@ def to_numba_type_str(ty: str):
 def to_numba_arg_type_str(ast_type) -> str:
     """
     Convert an AST Canopy Type to the corresponding Numba type string for use in function argument typing.
-    
+
     Parameters:
         ast_type: An AST Canopy Type object; its unqualified, non-reference type name is used to determine the mapped Numba type.
-    
+
     Returns:
         A string representing the Numba type suitable for argument annotations.
-    
+
     Note:
         This function does not map C++ reference parameters (T& / T&&) to pointer types. Reference exposure is handled by higher-level binding configuration (e.g., numbast.intent.ArgIntent).
     """

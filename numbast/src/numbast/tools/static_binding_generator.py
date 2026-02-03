@@ -130,7 +130,7 @@ class Config:
     def __init__(self, config_dict: dict):
         """
         Initialize a Config object from a configuration dictionary.
-        
+
         Parameters:
             config_dict (dict): Mapping of configuration keys to values. Expected keys include:
                 - "Entry Point": path to the source file to process.
@@ -150,7 +150,7 @@ class Config:
                 - "Skip Prefix": optional prefix to skip.
                 - "Use Separate Registry": boolean flag.
                 - "Function Argument Intents": mapping of function argument intent specifications.
-        
+
         Raises:
             NotImplementedError: if more than one GPU architecture is provided.
             ValueError: if required files or include paths referenced by the configuration do not exist, or if any provided regex is invalid.
@@ -258,13 +258,13 @@ class Config:
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
-        
+
         Parameters:
             function_argument_intents (dict | None): Mapping from function names to argument-intent specifications used by renderers; defaults to an empty dict if omitted.
             cooperative_launch_required_functions_regex (list[str] | None): Regular expression patterns that identify functions requiring cooperative launch handling; defaults to an empty list if omitted.
             api_prefix_removal (dict[str, list[str]] | None): Mapping of API names to lists of symbol-name prefixes to remove when generating bindings; defaults to an empty dict if omitted.
             module_callbacks (dict[str, str] | None): Mapping of callback identifiers to their fully qualified callable names to be invoked from the generated module; defaults to an empty dict if omitted.
-        
+
         Returns:
             Config: A Config instance populated with the provided parameters (types and datamodels are converted to their type names in the underlying config dictionary).
         """
@@ -420,7 +420,7 @@ def _generate_structs(
 ):
     """
     Render struct declarations into generated Python source for struct bindings.
-    
+
     Parameters:
         struct_decls (list): Struct declaration objects to render.
         header_path (str): Path to the original header file associated with the declarations.
@@ -429,7 +429,7 @@ def _generate_structs(
         struct_prefix_removal (list): Name prefixes to remove from struct identifiers when rendering.
         excludes (list): Struct names to exclude from rendering.
         function_argument_intents (dict | None): Optional mapping describing argument intent metadata to influence rendering (defaults to an empty dict).
-    
+
     Returns:
         str: Rendered source code for the struct bindings.
     """
@@ -462,7 +462,7 @@ def _generate_functions(
 ) -> str:
     """
     Render the function-binding source for the given function declarations.
-    
+
     Parameters:
         func_decls (list[Function]): Parsed function declarations to render.
         header_path (str): Path to the original header file used for the shim stream.
@@ -471,7 +471,7 @@ def _generate_functions(
         function_prefix_removal (list[str]): Prefixes to strip from function names when generating bindings.
         skip_prefix (str | None): If provided, skip generating bindings for functions whose names start with this prefix.
         function_argument_intents (dict | None): Mapping from function names to argument-intent specifications used to guide parameter handling during rendering.
-    
+
     Returns:
         binding_source (str): Generated source code for the functions section (imports and shim stream are omitted).
     """
@@ -544,12 +544,12 @@ def _static_binding_generator(
 ) -> str:
     """
     Generate static Python bindings for a CUDA C++ header according to the provided configuration.
-    
+
     Parameters:
         cfg_file_path (str | None): Path to the YAML config used to produce these bindings; used for reproducible metadata and may be None.
         sbg_params (dict[str, str]): Additional key/value parameters to embed in the generator metadata.
         bypass_parse_error (bool): If True, continue generation when source parsing reports recoverable errors.
-    
+
     Returns:
         str: Absolute path to the generated binding file.
     """

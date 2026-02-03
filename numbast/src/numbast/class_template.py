@@ -68,13 +68,13 @@ def bind_cxx_struct_ctor(
 ) -> Optional[list]:
     """
     Bind a C++ struct constructor into Numba and return the constructor's argument types.
-    
+
     Parameters:
         ctor (StructMethod): The C++ constructor declaration to bind.
         struct_name (str): The name of the C++ struct being bound.
         s_type_ref (numba.types.TypeRef): The Numba TypeRef that represents the struct instantiation.
         shim_writer (ShimWriterBase): Writer used to emit the shim function for the constructor.
-    
+
     Returns:
         list: A list of Numba argument types for the constructor, or `None` if the constructor is a move constructor.
     """
@@ -113,9 +113,9 @@ def bind_cxx_struct_ctor(
         # generated shim expects only the actual constructor params.
         """
         Lowering implementation for a template-type constructor that delegates to the constructor call-convention with the instance type and actual constructor parameters.
-        
+
         This function builds a constructor signature whose first parameter is the concrete instance type and invokes the prepared FunctionCallConv, passing the original args with the leading typeref argument removed.
-        
+
         Returns:
             The value produced by the constructor call-convention (the constructed instance).
         """
@@ -182,7 +182,7 @@ def bind_cxx_struct_regular_method(
 ) -> nb_signature:
     """
     Bind a single C++ struct regular method to a Numba-callable signature and register its lowering.
-    
+
     Parameters:
         struct_decl (ClassTemplateSpecialization): Parsed C++ class template specialization for the method's declaring type.
         method_decl (StructMethod): Parsed method declaration describing name, parameters, and C++ return type.
@@ -191,7 +191,7 @@ def bind_cxx_struct_regular_method(
         arg_intent (dict | None, optional): Optional mapping of "TypeName.methodName" -> intent overrides. When provided,
             visible parameters, pointer-passing intents, and out-returns are derived from the overrides and may cause the
             resulting Numba signature and return type to include out-return values or pointer-wrapped parameters.
-    
+
     Returns:
         nb_signature: The Numba signature for the bound method (including the receiver as `recvr`). The signature's return
         type reflects any out-return promotion caused by `arg_intent` overrides; otherwise it matches the method's C++
@@ -304,13 +304,13 @@ def bind_cxx_struct_regular_methods(
 ) -> dict[str, ConcreteTemplate]:
     """
     Collect concrete typing templates for all regular member functions of a C++ class template specialization.
-    
+
     Parameters:
         struct_decl (ClassTemplateSpecialization): The parsed C++ class specialization declaration.
         s_type (nbtypes.Type): The Numba type representing the instantiated struct.
         shim_writer (ShimWriterBase): Writer used to emit shim code for bound methods.
         arg_intent (dict | None): Optional mapping of argument-intent overrides (keyed by method or parameter as consumed by the per-method binder); forwarded to individual method bindings.
-    
+
     Returns:
         dict[str, ConcreteTemplate]: Mapping from method name to a ConcreteTemplate whose cases are the collected Numba signatures for that method's overloads.
     """
@@ -348,9 +348,9 @@ def bind_cxx_class_template_specialization(
 ) -> object:
     """
     Bind a C++ class template specialization into Numba and return the corresponding Numba instance type.
-    
+
     This registers the C++ name-to-Numba-type mapping, installs a StructModel for the instantiated type, registers attribute and method typing templates, and binds constructors so the specialization can be used from Numba.
-    
+
     Parameters:
         shim_writer: ShimWriterBase
             Utility used to emit shim-layer code for bound methods.
@@ -362,7 +362,7 @@ def bind_cxx_class_template_specialization(
             Optional name aliases for the C++ type (e.g., typedefs) to register to the same Numba type.
         arg_intent: dict | None, optional
             Optional per-argument intent overrides to influence method parameter/return typing.
-    
+
     Returns:
         nbtypes.Type
             The Numba instance type for the bound class template specialization (instance_type_ref.instance_type).

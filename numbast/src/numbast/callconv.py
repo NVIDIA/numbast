@@ -55,7 +55,7 @@ class FunctionCallConv(BaseCallConv):
     ):
         """
         Initialize a FunctionCallConv with shim information and optional ABI/intent hints.
-        
+
         Parameters:
             itanium_mangled_name (str): The Itanium-mangled C++ function name used to derive the shim name.
             shim_writer (object): Writer used to emit the shim code when required.
@@ -78,19 +78,19 @@ class FunctionCallConv(BaseCallConv):
         # when out_return parameters are enabled (tuple returns, etc.).
         """
         Lower the configured call into a shim invocation, preparing return and argument pointers according to arg_is_ref or an IntentPlan and materializing the final Numba-visible return value.
-        
+
         Parameters:
             builder: LLVM IR builder used to emit allocations, stores, and calls.
             context: Compilation context used to map numba types to LLVM value types and to construct tuple return values.
             sig: Numba function signature describing the visible parameter and return types.
             args: Sequence of LLVM IR values corresponding to the visible signature parameters.
-        
+
         Returns:
             The loaded return value(s) according to the signature and intent plan:
             - `None` if the effective C++ return type is void and no out-return values are present.
             - A single LLVM value for a single visible return.
             - A tuple object constructed via `context.make_tuple` when the visible return type is a tuple; the tuple contains the C++ return (if non-void) followed by any out-return values.
-        
+
         Raises:
             ValueError: if the provided IntentPlan does not align with `sig` (mismatched visible_param_indices or pass_ptr_mask), if `out_return_types` are required but missing or length-mismatched, or if a non-tuple visible return is expected but multiple return values are produced.
         """

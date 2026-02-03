@@ -11,13 +11,13 @@ from numbast.intent_defs import ArgIntent, IntentPlan
 def _parse_arg_intent(cls, v: Any) -> ArgIntent:
     """
     Parse an argument intent representation into an ArgIntent member.
-    
+
     Parameters:
         v (Any): An ArgIntent instance or a string alias (case-insensitive, whitespace ignored). Accepted string aliases: "in", "inout_ptr", "out_ptr", "out_return".
-    
+
     Returns:
         ArgIntent: The corresponding ArgIntent enum member.
-    
+
     Raises:
         ValueError: If `v` is neither an ArgIntent nor a recognized string alias.
     """
@@ -42,13 +42,13 @@ setattr(ArgIntent, "parse", classmethod(_parse_arg_intent))
 def _is_ref_type(ast_type: Any) -> bool:
     """
     Determine whether an AST type-like object represents a reference type.
-    
+
     If `ast_type` exposes `is_left_reference()` or `is_right_reference()`, those methods are consulted;
     the function returns `True` when either indicates a reference, `False` otherwise.
-    
+
     Parameters:
         ast_type (Any): Type-like object that may implement `is_left_reference()` and/or `is_right_reference()`.
-    
+
     Returns:
         bool: `True` if the object represents a reference type, `False` otherwise.
     """
@@ -69,22 +69,22 @@ def compute_intent_plan(
 ) -> IntentPlan:
     """
     Compute a per-parameter intent plan for a function call.
-    
+
     This determines an ArgIntent for each parameter (defaulting to `ArgIntent.in_`), applies optional overrides (index-based and name-based; name-based overrides take precedence), validates intents against parameter types (non-`in_` intents require reference-like types), and produces an IntentPlan describing which parameters are visible, which are returned via out_return, and which should be passed as pointer-like arguments.
-    
+
     Parameters:
         params (list[Any]): Parameter-like objects (must have a `.name` attribute when name-based overrides are used).
         param_types (list[Any]): Type-like objects used for validation of reference capability.
         overrides (Mapping[str|int, Any] | None): Optional mapping from 0-based index (int) or parameter name (str) to intent. Values may be an `ArgIntent` or a string parseable by `ArgIntent.parse`. Index-based overrides are applied first; name-based overrides override them.
         allow_out_return (bool): If False, specifying `out_return` as an intent is rejected.
-    
+
     Returns:
         IntentPlan: Contains:
           - intents: tuple[ArgIntent] for each parameter
           - visible_param_indices: tuple[int] indices of parameters that remain visible (not out_return)
           - out_return_indices: tuple[int] indices of parameters specified as `out_return`
           - pass_ptr_mask: tuple[bool] parallel to visible_param_indices indicating whether the parameter should be passed as a pointer (True for `inout_ptr`/`out_ptr`)
-    
+
     Raises:
         ValueError: If `params` and `param_types` lengths differ, an index override is out of range, a named override refers to an unknown parameter, a non-`in_` intent is applied to a non-reference type, or `out_return` is disallowed.
         TypeError: If override keys are not `int` or `str`, or override values are not `str` or `ArgIntent`.

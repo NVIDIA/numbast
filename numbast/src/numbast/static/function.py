@@ -149,13 +149,13 @@ def {func_name}():
     ):
         """
         Initialize the renderer for a static (non-operator) C++/CUDA function binding and compute type/intent metadata used for shim and lowering generation.
-        
+
         Parameters:
             decl (Function): Parsed function declaration to render.
             header_path (str): Path to the header where the function is declared; used for shim includes.
             use_cooperative (bool): Whether the generated lowering should include cooperative launch support.
             function_argument_intents (dict | None): Optional mapping from function name to intent overrides that influence visible argument types, pointer wrappers, and out-return handling. When provided, an intent plan is computed and used to derive visible parameter indices, argument Numba type strings, return type tuple rendering, and rendered intent-plan metadata.
-        
+
         Raises:
             MangledFunctionNameConflictError: If the declaration's mangled name has already been registered (duplicate shim name).
         """
@@ -244,10 +244,10 @@ def {func_name}():
             def _tuple_literal(items: list[str]) -> str:
                 """
                 Builds a Python tuple literal from a list of string expressions.
-                
+
                 Parameters:
                     items (list[str]): String representations of tuple elements.
-                
+
                 Returns:
                     tuple_literal (str): A Python tuple literal. For an empty list returns "()"; for a single element returns "(element,)" (includes the trailing comma); otherwise returns "(elem1, elem2, ...)".
                 """
@@ -294,7 +294,7 @@ def {func_name}():
     def _signature_cases(self):
         """
         Constructs the Python typing signature string for this function.
-        
+
         Returns:
             str: The signature string formatted as "signature(<return_type>, <param_types>)", where <return_type> is the function's return type and <param_types> is a comma-separated list of argument types.
         """
@@ -327,7 +327,7 @@ def {func_name}():
     def _render_lowering(self):
         """
         Render the Numba lowering function for this declaration and store it on the renderer.
-        
+
         Adds the necessary numba typing import and populates the lowering template with
         the function name, parameter and return typing, cooperative-launch snippet
         (if enabled), argument reference flags, intent plan, out-return types, and
@@ -437,11 +437,11 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
     ):
         """
         Initialize an overloaded-operator renderer and record the Python operator mapping.
-        
+
         Parameters:
             decl: Function declaration representing the overloaded C++ operator to render.
             header_path: Path to the C/C++ header used when generating the C shim.
-            function_argument_intents: Optional mapping of per-function argument/return intent overrides that influence how argument and return types are rendered. 
+            function_argument_intents: Optional mapping of per-function argument/return intent overrides that influence how argument and return types are rendered.
         """
         super().__init__(
             decl,
@@ -597,7 +597,7 @@ class {op_typing_name}(ConcreteTemplate):
     ):
         """
         Initialize the renderer for a collection of CUDA/C++ function declarations and configure rendering options.
-        
+
         Parameters:
             decls (list[Function]): Function declarations to render.
             header_path (str): Path to the C++ header used for generating C shims.
@@ -607,7 +607,7 @@ class {op_typing_name}(ConcreteTemplate):
             cooperative_launch_required (list[str]): Regex patterns; functions whose names match any pattern will be rendered to require cooperative launch.
             function_prefix_removal (list[str]): Prefixes to strip from C++ function names when exposing Python-visible names.
             function_argument_intents (dict | None): Optional per-function intent overrides that affect argument/return handling and resulting signatures.
-        
+
         The constructor also initializes internal caches and accumulators used during rendering:
         - _func_typing_signature_cache and _op_typing_signature_cache for typing signatures,
         - _python_rendered and _c_rendered for assembled Python and C output.
@@ -655,12 +655,12 @@ class {op_typing_name}(ConcreteTemplate):
     ) -> StaticOverloadedOperatorRenderer | None:
         """
         Create a renderer for an overloaded operator declaration.
-        
+
         Returns a StaticOverloadedOperatorRenderer for the given operator declaration, or `None` when the operator should be skipped (copy-assignment), when a referenced type is missing, or when a mangled-name conflict is detected; in the latter two cases a warning is emitted.
-        
+
         Parameters:
             decl (Function): The function declaration representing the operator.
-        
+
         Returns:
             StaticOverloadedOperatorRenderer | None: The renderer instance, or `None` if the operator is not renderable.
         """

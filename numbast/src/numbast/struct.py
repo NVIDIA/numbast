@@ -58,18 +58,18 @@ def bind_cxx_struct_ctor(
 ) -> Optional[list]:
     """
     Bind a C++ struct constructor to Numba and return the constructor's parameter types.
-    
+
     Registers a lowering for the constructor. If the constructor is a converting constructor,
     also registers a cast from the single parameter type to the struct Numba type.
     Move constructors are skipped.
-    
+
     Parameters:
         ctor (StructMethod): Constructor declaration.
         struct_name (str): Name of the C++ struct.
         s_type (numba.types.Type): Numba type representing the struct.
         S (object): Python API type for the struct.
         shim_writer (ShimWriter): Shim writer used to emit the shim layer code.
-    
+
     Returns:
         Optional[list]: `None` if the constructor is a move constructor; otherwise a list of Numba argument types for the constructor.
     """
@@ -110,7 +110,7 @@ def bind_cxx_struct_ctor(
     def ctor_impl(context, builder, sig, args):
         """
         Lower a bound C++ constructor for Numba's lowering pipeline.
-        
+
         Returns:
             The lowered value produced by invoking the constructor call convention.
         """
@@ -245,18 +245,18 @@ def bind_cxx_struct_regular_method(
 ) -> nb_signature:
     """
     Bind a single C++ member function to a Numba-callable lowering and produce its Numba signature.
-    
+
     Depending on optional intent overrides, this creates a shim and lowering that either:
     - maps C++ parameter and return types directly to Numba types (default behavior), or
     - applies an intent plan that can treat parameters as in/out/inout/out-pointer and promote out-returns to the Numba return value(s).
-    
+
     Parameters:
         struct_decl: C++ struct declaration for which the method is defined.
         method_decl: C++ method declaration to bind.
         s_type: Numba API type representing the struct receiver.
         shim_writer: Helper that emits the C++ shim used by the call convention.
         arg_intent: Optional mapping of "StructName.MethodName" -> intent overrides that modify how parameters and out-returns are represented.
-    
+
     Returns:
         nb_signature: The Numba-level signature for the bound method (return type followed by parameter types, with the receiver specified as `recvr=s_type`).
     """
@@ -370,15 +370,15 @@ def bind_cxx_struct_regular_methods(
 ) -> dict[str, ConcreteTemplate]:
     """
     Bind all regular (non-constructor) member functions of a C++ struct into Numba ConcreteTemplates.
-    
+
     For each method name, collects overload signatures produced by bind_cxx_struct_regular_method and defines a ConcreteTemplate whose `cases` are those signatures. The returned dict maps method names to their corresponding ConcreteTemplate classes.
-    
+
     Parameters:
         struct_decl (Struct): C++ struct declaration providing member function declarations.
         s_type (nbtypes.Type): Numba type representing the C++ struct (used as the receiver type).
         shim_writer (ShimWriter): Utility used to generate shim layer code for calls.
         arg_intent (dict | None): Optional overrides that control argument intent/visibility for method overloads; keys are method names and values describe intent plans.
-    
+
     Returns:
         dict[str, ConcreteTemplate]: Mapping from method name to a ConcreteTemplate class whose `cases` are the Numba signatures for that method's overloads.
     """
@@ -417,9 +417,9 @@ def bind_cxx_struct(
 ) -> object:
     """
     Create and register a Numba API type and associated bindings for a C++ struct.
-    
+
     Binds the struct type, its data model, public fields, methods, constructors, and conversion operators into the Numba type system and registers any provided aliases.
-    
+
     Parameters:
         shim_writer: ShimWriter
             Writer used to emit generated shim-layer code for method/ctor bindings.
@@ -433,7 +433,7 @@ def bind_cxx_struct(
             Mapping from the struct's canonical name to alternate names that should resolve to the same type.
         arg_intent: dict | None, optional
             Optional overrides that guide argument intent (in/out/inout) and influence method overload lowering.
-    
+
     Returns:
         S: object
             The Python-facing Numba API type for the bound C++ struct.
@@ -540,17 +540,17 @@ def bind_cxx_structs(
 ) -> list[object]:
     """
     Create Python API bindings for a sequence of C++ struct declarations.
-    
+
     Parameters:
-    	shim_writer (ShimWriter): Writer used to emit shim-layer code for each binding.
-    	structs (list[Struct]): C++ struct declarations to bind.
-    	parent_types (dict[str, type], optional): Mapping from struct name to the Python API base type to use for that struct.
-    	data_models (dict[str, type], optional): Mapping from struct name to the data model class to use (e.g., StructModel or PrimitiveModel).
-    	aliases (dict[str, list[str]], optional): Mapping from a struct name to alternative names (aliases) to consult when a struct is unnamed; used to look up parent_types and data_models.
-    	arg_intent (dict | None, optional): Optional per-struct/method argument intent overrides that influence parameter and return typing for method bindings.
-    
+        shim_writer (ShimWriter): Writer used to emit shim-layer code for each binding.
+        structs (list[Struct]): C++ struct declarations to bind.
+        parent_types (dict[str, type], optional): Mapping from struct name to the Python API base type to use for that struct.
+        data_models (dict[str, type], optional): Mapping from struct name to the data model class to use (e.g., StructModel or PrimitiveModel).
+        aliases (dict[str, list[str]], optional): Mapping from a struct name to alternative names (aliases) to consult when a struct is unnamed; used to look up parent_types and data_models.
+        arg_intent (dict | None, optional): Optional per-struct/method argument intent overrides that influence parameter and return typing for method bindings.
+
     Returns:
-    	list[object]: The created Python API types (one per input struct).
+        list[object]: The created Python API types (one per input struct).
     """
 
     python_apis = []
