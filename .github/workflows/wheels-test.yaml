@@ -135,3 +135,6 @@ jobs:
       - name: Test numbast wheels
         run: |
           python -m pytest numbast/
+      - name: Run numbast_extensions third-party CCCL tests
+        run: |
+          python -m pytest numbast_extensions/tests/thirdparty/CCCL/

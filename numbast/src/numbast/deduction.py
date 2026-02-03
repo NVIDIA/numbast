@@ -78,7 +78,12 @@ def _numba_arg_to_cxx_type(arg: nbtypes.Type) -> str | None:
 def _param_type_matches_arg(cxx_type: str, arg: nbtypes.Type) -> bool:
     """Best-effort compatibility check for non-templated parameters."""
     nb_expected = to_numba_type(cxx_type)
-    if nb_expected is nbtypes.undefined:
+    # XXX: If Numbast fails to map a C++ type to its Numba type, we still try
+    # to match the argument type. Not sure if this will cause loads of issue
+    # when misused or when debugging.
+    if nb_expected is nbtypes.undefined or isinstance(
+        nb_expected, nbtypes.Opaque
+    ):
         return True
     return nb_expected == _normalize_numba_arg_type(arg)
 
