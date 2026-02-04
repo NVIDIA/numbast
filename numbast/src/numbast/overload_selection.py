@@ -21,6 +21,9 @@ def _select_templated_overload(
     """
     Select a FunctionTemplate overload for a templated function/method.
 
+    kwds is reserved for future C++-style overload resolution (keyword argument
+    dispatch) and is intentionally unused today.
+
     Today we only select by explicit argument count (visible arity). Keep this
     logic centralized so we can expand it with C++-style overload resolution:
     - filter viable candidates (arity/defaults/variadics, arg_intent visibility),

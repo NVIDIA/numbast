@@ -14,7 +14,7 @@ from numbast import bind_cxx_function_templates, MemoryShimWriter
 
 
 @pytest.fixture
-def _sample_function_templates():
+def sample_function_templates():
     DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
     p = os.path.join(DATA_FOLDER, "sample_function_template.cuh")
     decls = parse_declarations_from_source(p, [p], "sm_80", verbose=True)
@@ -37,8 +37,8 @@ def find_binding(bindings, name):
     )
 
 
-def test_templated_function_overload_selection(_sample_function_templates):
-    func_bindings, shim_writer = _sample_function_templates
+def test_templated_function_overload_selection(sample_function_templates):
+    func_bindings, shim_writer = sample_function_templates
     add = find_binding(func_bindings, "add")
 
     @cuda.jit(link=shim_writer.links())
@@ -55,8 +55,8 @@ def test_templated_function_overload_selection(_sample_function_templates):
     np.testing.assert_allclose(out, np.array([3.0, 6.0], dtype=np.float32))
 
 
-def test_templated_function_explicit_specialization(_sample_function_templates):
-    func_bindings, shim_writer = _sample_function_templates
+def test_templated_function_explicit_specialization(sample_function_templates):
+    func_bindings, shim_writer = sample_function_templates
     add = find_binding(func_bindings, "add")
 
     @cuda.jit(link=shim_writer.links())
@@ -76,8 +76,8 @@ def test_templated_function_explicit_specialization(_sample_function_templates):
     np.testing.assert_allclose(out_float, np.array([4.0], dtype=np.float32))
 
 
-def test_templated_function_default_non_type(_sample_function_templates):
-    func_bindings, shim_writer = _sample_function_templates
+def test_templated_function_default_non_type(sample_function_templates):
+    func_bindings, shim_writer = sample_function_templates
     add_default = find_binding(func_bindings, "add_default")
 
     @cuda.jit(link=shim_writer.links())
@@ -91,8 +91,8 @@ def test_templated_function_default_non_type(_sample_function_templates):
     assert out[0] == 17
 
 
-def test_templated_function_default_type(_sample_function_templates):
-    func_bindings, shim_writer = _sample_function_templates
+def test_templated_function_default_type(sample_function_templates):
+    func_bindings, shim_writer = sample_function_templates
     add_default_type = find_binding(func_bindings, "add_default_type")
 
     @cuda.jit(link=shim_writer.links())
@@ -107,9 +107,9 @@ def test_templated_function_default_type(_sample_function_templates):
 
 
 def test_templated_function_multiple_template_args(
-    _sample_function_templates,
+    sample_function_templates,
 ):
-    func_bindings, shim_writer = _sample_function_templates
+    func_bindings, shim_writer = sample_function_templates
     add_cast = find_binding(func_bindings, "add_cast")
 
     @cuda.jit(link=shim_writer.links())
@@ -125,9 +125,9 @@ def test_templated_function_multiple_template_args(
 
 
 def test_templated_function_type_and_non_type(
-    _sample_function_templates,
+    sample_function_templates,
 ):
-    func_bindings, shim_writer = _sample_function_templates
+    func_bindings, shim_writer = sample_function_templates
     add_with_non_type = find_binding(func_bindings, "add_with_non_type")
 
     @cuda.jit(link=shim_writer.links())

@@ -300,7 +300,7 @@ class StructMethod(Function):
 
 
 class TemplatedStructMethod(StructMethod):
-    """Struct/class method who's name may include template parameters.
+    """Struct/class method whose name may include template parameters.
 
     Provides utilities for working with the declaration name without
     template arguments.

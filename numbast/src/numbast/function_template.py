@@ -12,7 +12,7 @@ import re
 from ast_canopy.pylibastcanopy import execution_space
 from ast_canopy.decl import FunctionTemplate
 
-from numba import types as nbtypes
+from numba.cuda import types as nbtypes
 from numba.cuda.typing import signature as nb_signature
 from numba.cuda.typing.templates import AbstractTemplate
 from numba.cuda.cudadecl import register, register_global
@@ -38,6 +38,10 @@ def make_new_func_obj():
     return func
 
 
+# Registry key: (name, intent_key, shim_writer). name is str; intent_key is tuple
+# or None for intent/overload dispatch; shim_writer is compared by identity so
+# different writer instances get separate entries; make_new_func_obj is the
+# default factory.
 func_obj_registry: dict[tuple[str, tuple | None, object], object] = defaultdict(
     make_new_func_obj
 )
