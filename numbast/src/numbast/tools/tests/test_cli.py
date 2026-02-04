@@ -173,7 +173,7 @@ Data Models:
     globals = {}
     exec(bindings, globals)
 
-    assert ("mul" in bindings) is expected
+    assert ("def mul" in bindings) is expected
 
 
 def test_yaml_deduce_missing_types(tmpdir, kernel, arch_str):
