@@ -118,7 +118,7 @@ jobs:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
