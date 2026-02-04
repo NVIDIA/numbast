@@ -180,12 +180,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
     def _render_lowering(self):
         """
-        Generate and store the Numba lowering code for this struct constructor.
+        Render and store the Numba lowering code for this struct constructor.
 
-        Formats the constructor lowering from the renderer's templates and writes the result to
-        self._lowering_rendered. If the constructor is a converting (non-explicit single-argument)
-        constructor, also append a `lower_cast` lowering that enables implicit conversion from the
-        argument type to the struct type.
+        Populates self._lowering_rendered with the formatted constructor lowering. If the constructor is a non-explicit single-argument converting constructor, also append a lower_cast lowering to enable implicit conversion from the argument type to the struct type.
         """
 
         self._lowering_rendered = self.struct_ctor_lowering_template.format(
@@ -605,15 +602,13 @@ def {lower_scope_name}(shim_stream, shim_obj):
         function_argument_intents: dict | None = None,
     ):
         """
-        Initialize a renderer for a single struct regular method and cache derived naming and type info used during code
-        generation.
+        Initialize the renderer for a single struct regular method and cache derived names, Numba type strings, and lowering metadata used during code generation.
+
+        When provided, `function_argument_intents` overrides are processed into an IntentPlan that affects `nb_param_types`, visible parameter ordering, out-return handling, and the rendered intent/out-return/type strings; otherwise parameter/ref information is derived directly from `method_decl`. The initializer also sets unique identifiers used by the lowering/shim generation (`_unique_shim_name`, `_lower_fn_suffix`, `_lower_scope_name`).
 
         Parameters:
-            struct_name (str): Original C/C++ struct name from the header.
-            python_struct_name (str): Python-facing struct name used for generated Numba/typing symbols.
-            struct_type_name (str): Fully-qualified Numba type identifier for the struct.
-            header_path (str): Path to the C/C++ header that declares the struct.
-            method_decl (StructMethod): Parsed method declaration; used to derive parameter/return types, mangled names, and signatures.
+            method_decl: Parsed method declaration used to derive parameter and return types, mangled names, and signatures.
+            function_argument_intents: Optional mapping of "<Struct>.<method>" to intent overrides that control parameter passing, out-returns, and visibility during lowering.
         """
         super().__init__(method_decl)
         self._struct_name = struct_name
@@ -782,10 +777,9 @@ def {lower_scope_name}(shim_stream, shim_obj):
 
     def _render_lowering(self):
         """
-        Render and store the Numba lowering code for the struct method.
+        Render and store the Numba CUDA lowering for this struct method.
 
-        Generates the CUDA lowering function for this method using the renderer's lowering template, registers the
-        required `lower` import, and assigns the resulting source string to `self._lowering_rendered`.
+        Formats the method lowering using the renderer's template, ensures the required `lower` import is recorded, and assigns the generated source to `self._lowering_rendered`.
         """
         self.Imports.add("from numba.cuda.cudaimpl import lower")
 
@@ -878,15 +872,15 @@ class {method_template_name}(ConcreteTemplate):
         """
         Render lowering, C shims, and typing templates for all regular methods of the struct.
 
-        This populates the renderer's imports and appends per-overload lowering/python bindings and C shim code to self._python_rendered and self._c_rendered. For each method declaration it collects a typing signature (stored in self._method_signatures) and, after processing overloads, emits a ConcreteTemplate typing class for each method name and records the template name in self._method_templates.
+        Processes each method declaration to produce per-overload Python lowering, C shim code, and typing signatures; then emits a ConcreteTemplate typing class per method name aggregating overload signatures.
 
         Side effects:
         - Adds required imports to self.Imports.
         - Appends generated Python lowering/typing code to self._python_rendered.
         - Appends generated C shim code to self._c_rendered.
-        - Updates self._method_signatures (mapping method name -> list of signatures).
-        - Updates self._method_templates (mapping method name -> generated template name).
-        - Emits a warning and skips a method if an unknown type is encountered.
+        - Updates self._method_signatures (method name -> list of signatures).
+        - Updates self._method_templates (method name -> generated template name).
+        - Emits a warning and skips a method when a required type is not found.
         """
         self.Imports.add(
             "from numba.cuda.typing.templates import ConcreteTemplate"
@@ -1415,19 +1409,16 @@ class StaticStructsRenderer(BaseRenderer):
         function_argument_intents: dict | None = None,
     ):
         """
-        Initialize the renderer for multiple CUDA struct declarations.
-
-        Create an instance that will render Python bindings and C shim code for the provided struct declarations and track rendering results.
+        Create a renderer that will produce Python bindings and C shim code for a collection of CUDA struct declarations.
 
         Parameters:
-            decls (list[Struct]): List of parsed struct declarations to render.
-            specs (dict[str, tuple[type | None, type | None, os.PathLike]]): Per-struct rendering specifications mapping struct name to a tuple of (parent Numba type or None, data model type or None, header path).
-            default_header (os.PathLike | str | None): Fallback header path to use when a struct's header is not provided in `specs`.
-            struct_prefix_removal (list[str] | None): Optional list of name prefixes to remove from struct names when generating python-facing identifiers; empty list if not provided.
-            excludes (list[str]): Names of structs to skip during rendering.
+            decls: Struct declarations to render.
+            specs: Mapping from struct name to (parent Numba type or None, data model type or None, header path); used to override per-struct rendering options.
+            default_header: Fallback header path to use when a struct's header is absent from `specs`.
+            struct_prefix_removal: Optional list of name prefixes to strip from struct names when generating Python-facing identifiers.
+            excludes: Names of structs to skip during rendering.
+            function_argument_intents: Optional mapping that supplies per-struct or per-function argument intent overrides (controls reference/pointer handling, out-returns, and intent plans) used by per-method and constructor renderers.
 
-        Side effects:
-            Initializes internal accumulators `._python_rendered` and `._c_rendered` and stores provided configuration on the instance.
         """
         self._decls = decls
         self._specs = specs

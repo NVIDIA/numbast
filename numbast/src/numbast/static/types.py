@@ -44,22 +44,19 @@ def reset_types():
 
 
 def to_numba_type_str(ty: str):
-    """Converts C type string into numba type string.
+    """
+    Map a C/C++ type string to its corresponding Numba type string.
 
-    This function closely mirrors that in `numbast.types.to_numba_type`.
-    In addition to conversion, this function also adds the corresponding
-    type import lines to Numba for the converted types to the renderer's
-    cache for import statements.
+    This also records any required Numba/CUDA type imports in BaseRenderer so generated code can import the mapped types.
 
-    Parameter
-    ---------
-    ty: str
-        A string representing a C type
+    Parameters:
+        ty (str): C/C++ type name (may include pointers '*' or fixed-size array syntax like 'T[4]').
 
-    Return
-    ------
-    numba_ty: str
-        The corresponding string representing a Numba type
+    Returns:
+        str: The corresponding Numba type expression (e.g., "int64", "CPointer(int64)", "UniTuple(float32, 4)").
+
+    Raises:
+        TypeNotFoundError: If `ty` has no known mapping to a Numba type.
     """
 
     if ty == "cudaRoundMode":
@@ -113,10 +110,15 @@ def to_numba_type_str(ty: str):
 
 def to_numba_arg_type_str(ast_type) -> str:
     """
-    Convert an ast_canopy Type to a Numba type string suitable for *argument* typing.
+    Convert an AST Canopy Type to the corresponding Numba type string for use in function argument typing.
 
-    Note: this function intentionally does *not* automatically map C++ reference
-    parameters (T& / T&&) to pointer types. Reference exposure is controlled by
-    higher-level binding configuration (see `numbast.intent.ArgIntent`).
+    Parameters:
+        ast_type: An AST Canopy Type object; its unqualified, non-reference type name is used to determine the mapped Numba type.
+
+    Returns:
+        A string representing the Numba type suitable for argument annotations.
+
+    Note:
+        This function does not map C++ reference parameters (T& / T&&) to pointer types. Reference exposure is handled by higher-level binding configuration (e.g., numbast.intent.ArgIntent).
     """
     return to_numba_type_str(ast_type.unqualified_non_ref_type_name)
