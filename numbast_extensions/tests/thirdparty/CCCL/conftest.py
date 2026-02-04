@@ -6,7 +6,6 @@ import pytest
 
 import ast_canopy
 from numbast import bind_cxx_class_templates  # type: ignore[attr-defined]
-
 from cuda.pathfinder import find_nvidia_header_directory
 from numba.cuda.cudadrv.runtime import get_version
 from numba import cuda

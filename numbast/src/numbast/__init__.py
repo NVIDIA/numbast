@@ -10,6 +10,10 @@ from numbast.class_template import (
     bind_cxx_class_templates,
 )
 from numbast.function import bind_cxx_function, bind_cxx_functions
+from numbast.function_template import (
+    bind_cxx_function_template,
+    bind_cxx_function_templates,
+)
 from numbast.enum import bind_cxx_enum, bind_cxx_enums
 from numbast.shim_writer import MemoryShimWriter, FileShimWriter
 
@@ -27,6 +31,8 @@ __all__ = [
     "bind_cxx_enums",
     "bind_cxx_function",
     "bind_cxx_functions",
+    "bind_cxx_function_template",
+    "bind_cxx_function_templates",
     "bind_cxx_struct",
     "bind_cxx_structs",
     "bind_cxx_class_template_specialization",
