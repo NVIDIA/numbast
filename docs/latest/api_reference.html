@@ -1191,24 +1191,28 @@ For each PTX, a separate cuda.PTXSource object is created.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></span></dt>
-<dd><p>Create bindings for a C++ struct.</p>
+<dd><p>Bind a C++ class template specialization into Numba and return the corresponding Numba instance type.</p>
+<p>This registers the C++ name-to-Numba-type mapping, installs a StructModel for the instantiated type, registers attribute and method typing templates, and binds constructors so the specialization can be used from Numba.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>shim_writer</strong> (<em>ShimWriterBase</em>) – The shim writer to write the shim layer code.</p></li>
-<li><p><strong>struct_decl</strong> (<a class="reference internal" href="#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><em>Struct</em></a>) – Declaration of the struct type in CXX</p></li>
-<li><p><strong>parent_type</strong> (<em>nbtypes.Type</em><em>, </em><em>optional</em>) – Parent type of the Python API, by default nbtypes.Type</p></li>
-<li><p><strong>data_model</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – Data model for the struct, by default StructModel</p></li>
-<li><p><strong>aliases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>]</em><em>, </em><em>optional</em>) – Mappings from the name of the struct to a list of aliases.
-For example in C++: typedef A B; typedef A C; then
-aliases = {“A”: [“B”, “C”]}</p></li>
+<li><p><strong>shim_writer</strong> – ShimWriterBase
+Utility used to emit shim-layer code for bound methods.</p></li>
+<li><p><strong>struct_decl</strong> – ClassTemplateSpecialization
+Parsed C++ class template specialization declaration to bind.</p></li>
+<li><p><strong>instance_type_ref</strong> – nbtypes.Type
+The Numba TypeRef representing the instantiated template; its .instance_type is the returned type.</p></li>
+<li><p><strong>aliases</strong> – dict[str, list[str]], optional
+Optional name aliases for the C++ type (e.g., typedefs) to register to the same Numba type.</p></li>
+<li><p><strong>arg_intent</strong> – dict | None, optional
+Optional per-argument intent overrides to influence method parameter/return typing.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>S</strong> (<em>object</em>) – The Python API of the struct.</p></li>
-<li><p><strong>shim</strong> (<em>str</em>) – The generated shim layer code for struct methods.</p></li>
-</ul>
+<dd class="field-even"><p><dl class="simple">
+<dt>nbtypes.Type</dt><dd><p>The Numba instance type for the bound class template specialization (instance_type_ref.instance_type).</p>
+</dd>
+</dl>
 </p>
 </dd>
 </dl>
@@ -1289,22 +1293,26 @@ aliases = {“A”: [“B”, “C”]}</p></li>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></span></dt>
-<dd><p>Create bindings for a C++ function.</p>
+<dd><p>Create Python bindings for a C++ function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>shim_writer</strong> (<em>ShimWriter</em>) – The shim writer to write the generated shim layer code.</p></li>
-<li><p><strong>func_decl</strong> (<a class="reference internal" href="#ast_canopy.decl.Function" title="ast_canopy.decl.Function"><em>Function</em></a>) – Declaration of the function in CXX</p></li>
-<li><p><strong>skip_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>) – Skip functions with this prefix. Has no effect if None or empty.</p></li>
-<li><p><strong>skip_non_device</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Skip non device functions. Default to True.</p></li>
-<li><p><strong>exclude</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><em>set</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – A set of function names to exclude. Default to empty set.</p></li>
+<li><p><strong>shim_writer</strong> (<em>ShimWriter</em>) – Writer that emits the generated C/C++ shim code.</p></li>
+<li><p><strong>func_decl</strong> (<a class="reference internal" href="#ast_canopy.decl.Function" title="ast_canopy.decl.Function"><em>Function</em></a>) – C++ function declaration to bind.</p></li>
+<li><p><strong>skip_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>) – If provided, skip functions whose names start with this prefix.</p></li>
+<li><p><strong>skip_non_device</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If True, skip functions not marked for device or host_device execution.</p></li>
+<li><p><strong>exclude</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><em>set</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – Names of functions to exclude from binding.</p></li>
+<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><em>None</em>) – Optional explicit intent overrides that control which C++ reference
+parameters are exposed as inputs, outputs, or inout pointers and which parameters are
+promoted to out-returns.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>func</strong> – The Numba-CUDA-callable Python API for the function.</p>
+<dd class="field-even"><p>The Numba-CUDA-callable Python binding object for the function, or <cite>None</cite>
+if the function is skipped or not exposed.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a> or None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1394,25 +1402,34 @@ aliases = {“A”: [“B”, “C”]}</p></li>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></span></dt>
-<dd><p>Create bindings for a C++ struct.</p>
+<dd><p>Create and register a Numba API type and associated bindings for a C++ struct.</p>
+<p>Binds the struct type, its data model, public fields, methods, constructors, and conversion operators into the Numba type system and registers any provided aliases.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>shim_writer</strong> (<em>ShimWriter</em>) – The shim writer to write the shim layer code.</p></li>
-<li><p><strong>struct_decl</strong> (<a class="reference internal" href="#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><em>Struct</em></a>) – Declaration of the struct type in CXX</p></li>
-<li><p><strong>parent_type</strong> (<em>nbtypes.Type</em><em>, </em><em>optional</em>) – Parent type of the Python API, by default nbtypes.Type</p></li>
-<li><p><strong>data_model</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – Data model for the struct, by default StructModel</p></li>
-<li><p><strong>aliases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>]</em><em>, </em><em>optional</em>) – Mappings from the name of the struct to a list of aliases.
-For example in C++: typedef A B; typedef A C; then
-aliases = {“A”: [“B”, “C”]}</p></li>
+<li><p><strong>shim_writer</strong> – ShimWriter
+Writer used to emit generated shim-layer code for method/ctor bindings.</p></li>
+<li><p><strong>struct_decl</strong> – Struct
+Parsed C++ struct declaration to bind.</p></li>
+<li><p><strong>parent_type</strong> – type, optional
+Base class for the generated Numba frontend type (defaults to nbtypes.Type).</p></li>
+<li><p><strong>data_model</strong> – type, optional
+Data model class to use for the struct (defaults to StructModel; can be PrimitiveModel).</p></li>
+<li><p><strong>aliases</strong> – dict[str, list[str]], optional
+Mapping from the struct’s canonical name to alternate names that should resolve to the same type.</p></li>
+<li><p><strong>arg_intent</strong> – dict | None, optional
+Optional overrides that guide argument intent (in/out/inout) and influence method overload lowering.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>S</strong> (<em>object</em>) – The Python API of the struct.</p></li>
-<li><p><strong>shim</strong> (<em>str</em>) – The generated shim layer code for struct methods.</p></li>
-</ul>
+<dd class="field-even"><p><dl class="simple">
+<dt>object</dt><dd><p>The Python-facing Numba API type for the bound C++ struct.</p>
+</dd>
+</dl>
 </p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>S</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1432,21 +1449,20 @@ aliases = {“A”: [“B”, “C”]}</p></li>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a><span class="p"><span class="pre">]</span></span></span></span></dt>
-<dd><p>Create bindings for a list of C++ structs.</p>
+<dd><p>Create Python API bindings for a sequence of C++ struct declarations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>shim_writer</strong> (<em>ShimWriter</em>) – The shim writer to write the shim layer code.</p></li>
-<li><p><strong>structs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference internal" href="#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><em>Struct</em></a><em>]</em>) – List of declarations of the struct types in CXX</p></li>
-<li><p><strong>parent_type</strong> (<em>nbtypes.Type</em><em>, </em><em>optional</em>) – Parent type of the Python API, by default nbtypes.Type</p></li>
-<li><p><strong>data_model</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>, </em><em>optional</em>) – Data model for the struct, by default StructModel</p></li>
-<li><p><strong>aliases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>]</em><em>, </em><em>optional</em>) – Mappings from the name of the struct to a list of aliases.
-For example in C++: typedef A B; typedef A C; then
-aliases = {“A”: [“B”, “C”]}</p></li>
+<li><p><strong>shim_writer</strong> (<em>ShimWriter</em>) – Writer used to emit shim-layer code for each binding.</p></li>
+<li><p><strong>structs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference internal" href="#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><em>Struct</em></a><em>]</em>) – C++ struct declarations to bind.</p></li>
+<li><p><strong>parent_types</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>]</em><em>, </em><em>optional</em>) – Mapping from struct name to the Python API base type to use for that struct.</p></li>
+<li><p><strong>data_models</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em>]</em><em>, </em><em>optional</em>) – Mapping from struct name to the data model class to use (e.g., StructModel or PrimitiveModel).</p></li>
+<li><p><strong>aliases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>]</em><em>, </em><em>optional</em>) – Mapping from a struct name to alternative names (aliases) to consult when a struct is unnamed; used to look up parent_types and data_models.</p></li>
+<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><em>None</em><em>, </em><em>optional</em>) – Optional per-struct/method argument intent overrides that influence parameter and return typing for method bindings.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The Python APIs of the structs.</p>
+<dd class="field-even"><p>The created Python API types (one per input struct).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a>]</p>
