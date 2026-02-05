@@ -65,6 +65,7 @@ ConcreteTypeCache: dict[object, nbtypes.TypeRef] = {}
 _TEMPLATED_METHOD_LOWERING_CACHE: set[
     tuple[str, nbtypes.Type, tuple[nbtypes.Type, ...]]
 ] = set()
+_DEFAULT_TEMPLATE_ARG = object()
 
 
 class MetaType(nbtypes.Type):
@@ -1074,10 +1075,17 @@ def _bind_tparams(
 def _rewrite_typer_signature(decl: ClassTemplate, typer):
     """Rewrites the typer signature to match class template arglist"""
     param_names = list(decl.tparam_dict.keys())
-    params = [
-        inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-        for name in param_names
-    ]
+    required = decl.num_min_required_args
+    params = []
+    for idx, name in enumerate(param_names):
+        default = (
+            inspect.Parameter.empty if idx < required else _DEFAULT_TEMPLATE_ARG
+        )
+        params.append(
+            inspect.Parameter(
+                name, inspect.Parameter.POSITIONAL_OR_KEYWORD, default=default
+            )
+        )
     pubsig = inspect.Signature(params)
     typer.__signature__ = pubsig
 
