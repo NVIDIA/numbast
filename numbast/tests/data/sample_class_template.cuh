@@ -26,3 +26,10 @@ public:
 private:
   T t2;
 };
+
+template <typename T, int N = 5> struct DefaultParam {
+  T t;
+  __device__ DefaultParam(T t) : t(t) {}
+
+  __device__ T add_default() { return static_cast<T>(t + static_cast<T>(N)); }
+};

@@ -102,6 +102,25 @@ def test_sample_class_template_with_fields(decl, shim_writer):
     assert (out == [256, 256, 128]).all()
 
 
+def test_class_template_default_param(decl, shim_writer):
+    T = np.int32
+    DefaultParam = next(api for api in decl if api.__name__ == "DefaultParam")
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(inp, out):
+        i = cuda.grid(1)
+        if i >= out.size:
+            return
+        default_t = DefaultParam(T=T)
+        default_obj = default_t(inp[i])
+        out[i] = default_obj.add_default()
+
+    x = np.arange(1, 9, dtype=T)
+    out = np.zeros_like(x)
+    kernel[1, 32](x, out)
+    np.testing.assert_array_equal(out, x + 5)
+
+
 @pytest.mark.parametrize(
     "intent_kind",
     [
