@@ -27,6 +27,13 @@ from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
 
+CXX_FLAG_SETS: dict[str, list[str]] = {
+    "cuda-header-parsing-flags": [
+        "-nocudainc",
+        "-nocudalib",
+    ]
+}
+
 
 def _get_shim_include_dir() -> str:
     """Return the absolute path to the local shim include directory"""
@@ -55,6 +62,11 @@ class Declarations:
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
     return [f"-I{path}" for path in paths]
+
+
+def _is_cuda_header(source_file_path: str) -> bool:
+    header_name = os.path.basename(source_file_path)
+    return header_name.startswith("cuda") and header_name.endswith(".h")
 
 
 def get_default_compiler_search_paths(clang_binary: str | None) -> list[str]:
@@ -343,6 +355,7 @@ def parse_declarations_from_source(
     defines: list[str] = [],
     verbose: bool = False,
     bypass_parse_error: bool = False,
+    cuda_header_mode: bool = False,
 ) -> Declarations:
     """Given a source file, parse all top-level declarations from it and return
     a ``Declarations`` object containing lists of declaration objects found in
@@ -384,6 +397,12 @@ def parse_declarations_from_source(
     bypass_parse_error : bool, optional
         If True, bypass parse error and continue generating bindings.
 
+    cuda_header_mode : bool, optional
+        If True, enable ``cuda-header-parsing-flags`` when parsing CUDA
+        headers (e.g. ``cuda.h``). This mode disables Clang's implicit CUDA
+        include injection so declarations are attributed to the provided
+        header path.
+
     Returns
     -------
     Declarations
@@ -404,6 +423,22 @@ def parse_declarations_from_source(
 
     if not os.path.exists(source_file_path):
         raise FileNotFoundError(f"File not found: {source_file_path}")
+
+    cuda_header_parsing_flags: list[str] = []
+    if cuda_header_mode and _is_cuda_header(source_file_path):
+        cuda_header_parsing_flags = CXX_FLAG_SETS["cuda-header-parsing-flags"]
+
+        # Prefer the source header directory so include resolution keeps the
+        # declaration locations anchored to the vendored CUDA header.
+        source_include_dir = os.path.dirname(source_file_path)
+        if (
+            source_include_dir
+            and source_include_dir not in cudatoolkit_include_dirs
+        ):
+            cudatoolkit_include_dirs = [
+                source_include_dir,
+                *cudatoolkit_include_dirs,
+            ]
 
     for p in additional_includes:
         if not isinstance(p, str):
@@ -435,8 +470,8 @@ def parse_declarations_from_source(
     command_line_options = [
         "clang++",
         *clang_verbose_flag,
-        "--cuda-device-only",
         "-xcuda",
+        *cuda_header_parsing_flags,
         f"--cuda-path={cuda_path}",
         f"--cuda-gpu-arch={compute_capability}",
         f"-std={cxx_standard}",
