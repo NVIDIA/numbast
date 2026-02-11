@@ -10,6 +10,10 @@ name = "ast_canopy"
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
+[project.optional-dependencies]
+cu13 = ["cuda-toolkit[cudart, crt, curand, cccl]"]
+
+
 [tool.scikit-build]
 cmake.targets = ["pylibastcanopy"]
 wheel.license-files = ["../LICENSE"]
