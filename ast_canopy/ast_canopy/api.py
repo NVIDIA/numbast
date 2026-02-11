@@ -183,7 +183,7 @@ def get_cuda_path_for_clang() -> str | None:
 
         return True
 
-    cudaruntime_dir = get_cuda_include_dir_for_clang()["cudart"]
+    cudaruntime_dir = get_cuda_include_dir_for_clang().get("cudart", None)
     if cudaruntime_dir:
         root = os.path.dirname(cudaruntime_dir)
         if _validate_root(root):
