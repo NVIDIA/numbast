@@ -342,10 +342,10 @@ def parse_declarations_from_source(
     source_file_path: str,
     files_to_retain: list[str],
     compute_capability: str,
-    cudatoolkit_include_dirs: list[str] = [],
+    cudatoolkit_include_dirs: list[str] | None = None,
     cxx_standard: str = "gnu++17",
-    additional_includes: list[str] = [],
-    defines: list[str] = [],
+    additional_includes: list[str] | None = None,
+    defines: list[str] | None = None,
     verbose: bool = False,
     bypass_parse_error: bool = False,
     cuda_header_mode: bool = False,
@@ -400,6 +400,13 @@ def parse_declarations_from_source(
     Declarations
         See ``Declarations`` struct definition for details.
     """
+
+    if cudatoolkit_include_dirs is None:
+        cudatoolkit_include_dirs = []
+    if additional_includes is None:
+        additional_includes = []
+    if defines is None:
+        defines = []
 
     clang_verbose_flag = ["--verbose"] if verbose else []
 
