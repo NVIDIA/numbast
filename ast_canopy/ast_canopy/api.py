@@ -64,11 +64,6 @@ def paths_to_include_flags(paths: list[str]) -> list[str]:
     return [f"-I{path}" for path in paths]
 
 
-def _is_cuda_header(source_file_path: str) -> bool:
-    header_name = os.path.basename(source_file_path)
-    return header_name.startswith("cuda") and header_name.endswith(".h")
-
-
 def get_default_compiler_search_paths(clang_binary: str | None) -> list[str]:
     """Compile an empty CUDA file with the given clang binary in verbose mode and parse the
     output to extract the default system header search paths.
@@ -398,10 +393,9 @@ def parse_declarations_from_source(
         If True, bypass parse error and continue generating bindings.
 
     cuda_header_mode : bool, optional
-        If True, enable ``cuda-header-parsing-flags`` when parsing CUDA
-        headers (e.g. ``cuda.h``). This mode disables Clang's implicit CUDA
-        include injection so declarations are attributed to the provided
-        header path.
+        If True, enable ``cuda-header-parsing-flags``. This mode disables
+        Clang's implicit CUDA include injection so declarations are attributed
+        to the provided header path.
 
     Returns
     -------
@@ -425,7 +419,7 @@ def parse_declarations_from_source(
         raise FileNotFoundError(f"File not found: {source_file_path}")
 
     cuda_header_parsing_flags: list[str] = []
-    if cuda_header_mode and _is_cuda_header(source_file_path):
+    if cuda_header_mode:
         cuda_header_parsing_flags = CXX_FLAG_SETS["cuda-header-parsing-flags"]
 
         # Prefer the source header directory so include resolution keeps the
