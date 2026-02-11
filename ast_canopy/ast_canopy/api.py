@@ -27,12 +27,10 @@ from ast_canopy.fdcap_min import capture_fd, STREAMFD
 
 logger = logging.getLogger(f"AST_Canopy.{__name__}")
 
-CXX_FLAG_SETS: dict[str, list[str]] = {
-    "cuda-header-parsing-flags": [
-        "-nocudainc",
-        "-nocudalib",
-    ]
-}
+_CUDA_HEADER_PARSING_FLAGS: list[str] = [
+    "-nocudainc",
+    "-nocudalib",
+]
 
 
 def _get_shim_include_dir() -> str:
@@ -420,7 +418,7 @@ def parse_declarations_from_source(
 
     cuda_header_parsing_flags: list[str] = []
     if cuda_header_mode:
-        cuda_header_parsing_flags = CXX_FLAG_SETS["cuda-header-parsing-flags"]
+        cuda_header_parsing_flags = _CUDA_HEADER_PARSING_FLAGS
 
         # Prefer the source header directory so include resolution keeps the
         # declaration locations anchored to the vendored CUDA header.
