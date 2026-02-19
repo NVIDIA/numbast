@@ -4,6 +4,14 @@
     "url": "https://nvidia.github.io/numbast/latest/"
   },
   {
+    "version": "0.5.4",
+    "url": "https://nvidia.github.io/numbast/0.5.4/"
+  },
+  {
+    "version": "0.5.3",
+    "url": "https://nvidia.github.io/numbast/0.5.3/"
+  },
+  {
     "version": "0.5.2",
     "url": "https://nvidia.github.io/numbast/0.5.2/"
   }
