@@ -44,15 +44,13 @@ class TestBlockScan:
             tid = cuda.threadIdx.x
 
             # Instantiate BlockScan for a 1D block
-            block_scan_t = BlockScan(
+            block_scan = BlockScan(
                 T=int32,
                 BLOCK_DIM_X=num_threads_per_block,
                 ALGORITHM="cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
                 BLOCK_DIM_Y=1,
                 BLOCK_DIM_Z=1,
             )
-
-            block_scan = block_scan_t()
 
             x = d_input[tid]
 

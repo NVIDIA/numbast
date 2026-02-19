@@ -55,13 +55,17 @@ from numbast.utils import (
 )
 from numbast.callconv import FunctionCallConv
 from numbast.shim_writer import ShimWriterBase
-from numbast.deduction import deduce_templated_overloads
+from numbast.deduction import (
+    deduce_templated_overloads,
+    deduce_templated_overloads_with_mappings,
+)
 from numbast.overload_selection import _select_templated_overload
 
 
 logger = logging.getLogger(__name__)
 
 ConcreteTypeCache: dict[object, nbtypes.TypeRef] = {}
+ConcreteTypeDeclCache: dict[object, ClassTemplateSpecialization] = {}
 _TEMPLATED_METHOD_LOWERING_CACHE: set[
     tuple[str, nbtypes.Type, tuple[nbtypes.Type, ...]]
 ] = set()
@@ -982,7 +986,7 @@ def struct_type_from_instantiation(
     header_path: str,
     *,
     arg_intent: dict | None = None,
-):
+) -> tuple[nbtypes.TypeRef, ClassTemplateSpecialization]:
     # Clang determines to populate all members of an instantiated class based
     # on whether an explicit instantitation definition exists. The following
     # code snippet creates such instantiation.
@@ -1011,7 +1015,7 @@ template class {instance.angled_targs_str_as_c()};
         shim_writer, decl, instance_type_ref, arg_intent=arg_intent
     )
 
-    return instance_type_ref
+    return instance_type_ref, decl
 
 
 def _bind_tparams(
@@ -1055,15 +1059,275 @@ def _bind_tparams(
     return res
 
 
-def _rewrite_typer_signature(decl: ClassTemplate, typer):
-    """Rewrites the typer signature to match class template arglist"""
-    param_names = list(decl.tparam_dict.keys())
-    params = [
-        inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-        for name in param_names
+def _split_ctor_and_tparam_kwargs(
+    decl: ClassTemplate, kwargs: dict[str, nbtypes.Type]
+) -> tuple[dict[str, nbtypes.Type], dict[str, nbtypes.Type]]:
+    """Split call keyword arguments into constructor kwargs and template kwargs.
+
+    We require template-parameter keywords to appear after constructor keywords.
+    This keeps lowering deterministic because constructor runtime arguments remain
+    a stable prefix of the call argument list.
+    """
+    ctor_kwargs: dict[str, nbtypes.Type] = {}
+    tparam_kwargs: dict[str, nbtypes.Type] = {}
+    tparam_names = set(decl.tparam_dict.keys())
+
+    seen_tparam_keyword = False
+    for name, value in kwargs.items():
+        if name in tparam_names:
+            seen_tparam_keyword = True
+            tparam_kwargs[name] = value
+        else:
+            if seen_tparam_keyword:
+                raise TypingError(
+                    "Constructor keyword arguments must appear before "
+                    "template-parameter keywords."
+                )
+            ctor_kwargs[name] = value
+
+    return ctor_kwargs, tparam_kwargs
+
+
+def _bind_ctor_call_args(
+    ctor: StructMethod,
+    positional_args: tuple[nbtypes.Type, ...],
+    ctor_kwargs: dict[str, nbtypes.Type],
+) -> tuple[nbtypes.Type, ...]:
+    """Bind a call-site argument list to a constructor's parameter order."""
+    params = ctor.params
+    n_params = len(params)
+
+    if len(positional_args) > n_params:
+        raise TypeError(
+            f"{ctor.qual_name}: expected at most {n_params} constructor args, "
+            f"got {len(positional_args)} positional args."
+        )
+
+    bound: list[nbtypes.Type | None] = [None] * n_params
+    for i, arg in enumerate(positional_args):
+        bound[i] = arg
+
+    name_to_index = {
+        param.name: i for i, param in enumerate(params) if param.name
+    }
+    last_kw_param_index = len(positional_args) - 1
+
+    for kw_name, kw_value in ctor_kwargs.items():
+        idx = name_to_index.get(kw_name)
+        if idx is None:
+            raise TypeError(
+                f"{ctor.qual_name}: unexpected constructor keyword argument "
+                f"'{kw_name}'."
+            )
+        if idx < len(positional_args):
+            raise TypeError(
+                f"{ctor.qual_name}: constructor argument '{kw_name}' was "
+                "already provided positionally."
+            )
+        if bound[idx] is not None:
+            raise TypeError(
+                f"{ctor.qual_name}: duplicate constructor argument '{kw_name}'."
+            )
+        if idx < last_kw_param_index:
+            raise TypeError(
+                f"{ctor.qual_name}: constructor keyword arguments must follow "
+                "constructor parameter declaration order."
+            )
+        last_kw_param_index = idx
+        bound[idx] = kw_value
+
+    missing = [
+        params[i].name or f"arg{i}"
+        for i, value in enumerate(bound)
+        if value is None
     ]
-    pubsig = inspect.Signature(params)
-    typer.__signature__ = pubsig
+    if missing:
+        raise TypeError(
+            f"{ctor.qual_name}: missing constructor argument(s): "
+            f"{', '.join(missing)}."
+        )
+
+    return tuple(value for value in bound if value is not None)
+
+
+def _get_ctor_candidates_from_template_record(
+    record: Any,
+) -> list[StructMethod]:
+    """Collect constructor candidates from a class-template record.
+
+    AST-Canopy exposes constructors for concrete specializations via
+    ``constructors()``, but some versions expose class-template constructors
+    only in ``record.methods`` with a constructor ``method_kind``.
+    """
+    ctors = [
+        ctor for ctor in record.constructors() if not ctor.is_move_constructor
+    ]
+    if ctors:
+        return ctors
+
+    ctor_kinds = {
+        pylibastcanopy.method_kind.default_constructor,
+        pylibastcanopy.method_kind.copy_constructor,
+        pylibastcanopy.method_kind.move_constructor,
+        pylibastcanopy.method_kind.converting_constructor,
+        pylibastcanopy.method_kind.other_constructor,
+    }
+    methods = getattr(record, "methods", [])
+    return [
+        method
+        for method in methods
+        if method.kind in ctor_kinds and not method.is_move_constructor
+    ]
+
+
+def _merge_explicit_and_deduced_targs(
+    decl: ClassTemplate,
+    explicit_targs: dict[str, Any],
+    deduced_type_mapping: dict[str, str],
+) -> dict[str, Any]:
+    """Merge explicit template args with deduced type template arguments."""
+    merged = dict(explicit_targs)
+
+    for tparam in decl.template_parameters:
+        if tparam.kind != pylibastcanopy.template_param_kind.type_:
+            continue
+
+        deduced_cxx_ty = deduced_type_mapping.get(tparam.name)
+        if deduced_cxx_ty is None:
+            placeholder_name = getattr(
+                getattr(tparam, "type_", None), "name", None
+            )
+            if placeholder_name:
+                deduced_cxx_ty = deduced_type_mapping.get(placeholder_name)
+        if deduced_cxx_ty is None:
+            continue
+
+        deduced_nb_ty = to_numba_type(deduced_cxx_ty)
+        if deduced_nb_ty is nbtypes.undefined or isinstance(
+            deduced_nb_ty, nbtypes.Opaque
+        ):
+            raise TypingError(
+                "Failed to map deduced C++ template type "
+                f"'{deduced_cxx_ty}' for template parameter "
+                f"'{tparam.name}' to a Numba type."
+            )
+
+        explicit_ty = merged.get(tparam.name)
+        if explicit_ty is not None and explicit_ty != deduced_nb_ty:
+            raise TypingError(
+                "Template parameter conflict for "
+                f"'{tparam.name}': explicitly provided {explicit_ty} but "
+                f"deduced {deduced_nb_ty} from constructor arguments."
+            )
+
+        merged[tparam.name] = deduced_nb_ty
+
+    tparam_names = [tp.name for tp in decl.template_parameters]
+    required_names = tparam_names[: decl.num_min_required_args]
+    missing_required = [name for name in required_names if name not in merged]
+    if missing_required:
+        raise TypingError(
+            "Missing required template parameter(s): "
+            f"{', '.join(missing_required)}."
+        )
+
+    provided_positions = [
+        i for i, name in enumerate(tparam_names) if name in merged
+    ]
+    if not provided_positions:
+        return {}
+
+    last_provided = max(provided_positions)
+    missing_prefix = [
+        tparam_names[i]
+        for i in range(last_provided + 1)
+        if tparam_names[i] not in merged
+    ]
+    if missing_prefix:
+        raise TypingError(
+            "Cannot skip template parameter(s) "
+            f"{', '.join(missing_prefix)} while providing later template "
+            "parameters. Supply all template parameters up to the last one "
+            "you provide/deduce."
+        )
+
+    return {name: merged[name] for name in tparam_names[: last_provided + 1]}
+
+
+def _get_or_bind_concrete_type(
+    *,
+    cache_key: object,
+    instance: nbtypes.Type,
+    shim_writer: ShimWriterBase,
+    header_path: str,
+    arg_intent: dict | None,
+) -> tuple[nbtypes.TypeRef, ClassTemplateSpecialization, bool]:
+    """Get or create a bound concrete class-template specialization."""
+    if cache_key in ConcreteTypeCache and cache_key in ConcreteTypeDeclCache:
+        return (
+            ConcreteTypeCache[cache_key],
+            ConcreteTypeDeclCache[cache_key],
+            False,
+        )
+
+    instance_type_ref, specialization_decl = struct_type_from_instantiation(
+        instance,
+        shim_writer,
+        header_path,
+        arg_intent=arg_intent,
+    )
+    ConcreteTypeCache[cache_key] = instance_type_ref
+    ConcreteTypeDeclCache[cache_key] = specialization_decl
+    return instance_type_ref, specialization_decl, True
+
+
+def _ensure_ctor_callconv(
+    *,
+    specialization_decl: ClassTemplateSpecialization,
+    ctor_index: int,
+    instance_type: nbtypes.Type,
+    shim_writer: ShimWriterBase,
+    ctor_callconv_cache: dict[
+        tuple[nbtypes.Type, tuple[nbtypes.Type, ...]], FunctionCallConv
+    ],
+) -> tuple[FunctionCallConv, tuple[nbtypes.Type, ...]]:
+    """Build (or reuse) constructor callconv for a concrete specialization."""
+    ctors = [
+        ctor
+        for ctor in specialization_decl.constructors()
+        if not ctor.is_move_constructor
+    ]
+    if ctor_index >= len(ctors):
+        raise TypingError(
+            "Failed to resolve constructor overload index "
+            f"{ctor_index} for specialization {specialization_decl.qual_name}."
+        )
+    ctor = ctors[ctor_index]
+    ctor_param_types = tuple(to_numba_arg_type(arg) for arg in ctor.param_types)
+    cache_key = (instance_type, ctor_param_types)
+    cached = ctor_callconv_cache.get(cache_key)
+    if cached is not None:
+        return cached, ctor_param_types
+
+    mangled_name = deduplicate_overloads(ctor.mangled_name)
+    shim_func_name = f"{mangled_name}_nbst"
+    shim = make_struct_ctor_shim(
+        shim_name=shim_func_name,
+        struct_name=specialization_decl.qual_name,
+        params=ctor.params,
+    )
+    arg_is_ref = [
+        bool(t.is_left_reference() or t.is_right_reference())
+        for t in ctor.param_types
+    ]
+    ctor_cc = FunctionCallConv(
+        mangled_name,
+        shim_writer,
+        shim,
+        arg_is_ref=arg_is_ref,
+    )
+    ctor_callconv_cache[cache_key] = ctor_cc
+    return ctor_cc, ctor_param_types
 
 
 def _register_meta_type(
@@ -1072,6 +1336,13 @@ def _register_meta_type(
     ctd: ClassTemplate,
     shim_writer: ShimWriterBase,
     header_path: str,
+    ctor_callconv_cache: dict[
+        tuple[nbtypes.Type, tuple[nbtypes.Type, ...]], FunctionCallConv
+    ],
+    ctor_lowering_cache: dict[
+        tuple[nbtypes.Type, tuple[nbtypes.Type, ...]],
+        tuple[FunctionCallConv, int, tuple[nbtypes.Type, ...]],
+    ],
     *,
     arg_intent: dict | None = None,
 ):
@@ -1085,36 +1356,167 @@ def _register_meta_type(
             decl=ctd,
             shim_writer=shim_writer,
             header_path=header_path,
+            ctor_callconv_cache=ctor_callconv_cache,
+            ctor_lowering_cache=ctor_lowering_cache,
             arg_intent=arg_intent,
         ):
             def typer(*args, **kwargs):
-                targs = _bind_tparams(decl, *args, **kwargs)
+                # Fold keyword-only template/constructor call styles into a
+                # positionalized pysig that Numba's CallableTemplate expects.
+                typer.pysig = inspect.Signature(
+                    parameters=[
+                        inspect.Parameter(
+                            f"p{i}",
+                            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        )
+                        for i in range(len(args))
+                    ]
+                    + [
+                        inspect.Parameter(
+                            name,
+                            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        )
+                        for name in kwargs
+                    ]
+                )
+
+                ctor_kwargs, tparam_kwargs = _split_ctor_and_tparam_kwargs(
+                    decl, kwargs
+                )
+                explicit_targs = _bind_tparams(decl, **tparam_kwargs)
+
+                constructors = _get_ctor_candidates_from_template_record(
+                    decl.record
+                )
+                if not constructors:
+                    raise TypingError(
+                        f"No usable constructors found for {decl.record.qual_name}."
+                    )
+
+                candidate_bind_errors: list[str] = []
+                viable: list[
+                    tuple[
+                        nbtypes.Type,
+                        tuple[nbtypes.Type, ...],
+                        FunctionCallConv,
+                        int,
+                        bool,
+                    ]
+                ] = []
+                full_call_arg_types = tuple(args) + tuple(kwargs.values())
                 ConcreteType = concrete_typing()
-                instance = ConcreteType(meta_type, **targs)
-                unique_id = instance.name
                 intent_key = _normalize_arg_intent(arg_intent)
-                cache_key = (
-                    (unique_id, intent_key)
-                    if intent_key is not None
-                    else unique_id
+
+                for ctor_index, ctor in enumerate(constructors):
+                    try:
+                        ctor_call_args = _bind_ctor_call_args(
+                            ctor, tuple(args), ctor_kwargs
+                        )
+                    except TypeError as exc:
+                        candidate_bind_errors.append(str(exc))
+                        continue
+
+                    ctor_template = FunctionTemplate(
+                        decl.template_parameters,
+                        decl.num_min_required_args,
+                        ctor,
+                        ctor.qual_name,
+                        decl.parse_entry_point,
+                    )
+                    specialized_with_mappings, _ = (
+                        deduce_templated_overloads_with_mappings(
+                            qualname=ctor.qual_name,
+                            overloads=[ctor_template],
+                            args=ctor_call_args,
+                            overrides=None,
+                        )
+                    )
+                    if not specialized_with_mappings:
+                        continue
+
+                    _, deduced_type_mapping = specialized_with_mappings[0]
+                    try:
+                        merged_targs = _merge_explicit_and_deduced_targs(
+                            decl,
+                            explicit_targs,
+                            deduced_type_mapping,
+                        )
+                    except TypingError as exc:
+                        candidate_bind_errors.append(str(exc))
+                        continue
+
+                    instance = ConcreteType(meta_type, **merged_targs)
+                    unique_id = instance.name
+                    cache_key = (
+                        (unique_id, intent_key)
+                        if intent_key is not None
+                        else unique_id
+                    )
+                    (
+                        instance_type_ref,
+                        specialization_decl,
+                        created,
+                    ) = _get_or_bind_concrete_type(
+                        cache_key=cache_key,
+                        instance=instance,
+                        shim_writer=shim_writer,
+                        header_path=header_path,
+                        arg_intent=arg_intent,
+                    )
+                    ctor_cc, ctor_param_types = _ensure_ctor_callconv(
+                        specialization_decl=specialization_decl,
+                        ctor_index=ctor_index,
+                        instance_type=instance_type_ref.instance_type,
+                        shim_writer=shim_writer,
+                        ctor_callconv_cache=ctor_callconv_cache,
+                    )
+                    viable.append(
+                        (
+                            instance_type_ref.instance_type,
+                            ctor_param_types,
+                            ctor_cc,
+                            len(ctor_param_types),
+                            created,
+                        )
+                    )
+
+                if not viable:
+                    detail = (
+                        f" Candidate bind errors: {candidate_bind_errors[0]}"
+                        if candidate_bind_errors
+                        else ""
+                    )
+                    raise TypingError(
+                        "No viable constructor/template-parameter binding found "
+                        f"for {decl.record.qual_name} with {len(args)} positional "
+                        f"and {len(kwargs)} keyword arguments.{detail}"
+                    )
+
+                if len(viable) > 1:
+                    raise TypingError(
+                        "Ambiguous constructor selection for "
+                        f"{decl.record.qual_name}: {len(viable)} viable "
+                        "constructor/template bindings."
+                    )
+
+                (
+                    instance_type,
+                    _ctor_param_types,
+                    ctor_cc,
+                    ctor_arg_count,
+                    created,
+                ) = viable[0]
+
+                if created:
+                    self.context.refresh()
+
+                ctor_lowering_cache[(instance_type, full_call_arg_types)] = (
+                    ctor_cc,
+                    ctor_arg_count,
+                    _ctor_param_types,
                 )
+                return instance_type
 
-                if cache_key in ConcreteTypeCache:
-                    return ConcreteTypeCache[cache_key]
-
-                instance_type_ref = struct_type_from_instantiation(
-                    instance,
-                    shim_writer,
-                    header_path,
-                    arg_intent=arg_intent,
-                )
-
-                ConcreteTypeCache[cache_key] = instance_type_ref
-
-                self.context.refresh()
-                return instance_type_ref
-
-            _rewrite_typer_signature(decl, typer)
             return typer
 
     register_global(stub, nbtypes.Function(MetaType_template_decl))
@@ -1139,10 +1541,37 @@ def bind_cxx_class_template(
         def __init__(self, dmm, fe_type):
             OpaqueModel.__init__(self, dmm, fe_type)
 
-    # MetaType Lowering, NO-OP
+    ctor_callconv_cache: dict[
+        tuple[nbtypes.Type, tuple[nbtypes.Type, ...]], FunctionCallConv
+    ] = {}
+    ctor_lowering_cache: dict[
+        tuple[nbtypes.Type, tuple[nbtypes.Type, ...]],
+        tuple[FunctionCallConv, int, tuple[nbtypes.Type, ...]],
+    ] = {}
+
+    # Class-template constructor lowering:
+    # typing records which concrete constructor callconv to use for a given
+    # (return_type, call-arg-types) pair; lowering retrieves and invokes it.
     @lower_builtin(TC, nbtypes.VarArg(nbtypes.Any))
-    def lower_noop(context, builder, sig, args):
-        return context.get_constant(nbtypes.int32, 0)
+    def lower_ctor_dispatch(
+        context,
+        builder,
+        sig,
+        args,
+        ctor_lowering_cache=ctor_lowering_cache,
+    ):
+        key = (sig.return_type, tuple(sig.args))
+        lowered = ctor_lowering_cache.get(key)
+        if lowered is None:
+            raise TypingError(
+                "Missing constructor lowering for class template "
+                f"{class_template_decl.record.qual_name} with return type "
+                f"{sig.return_type} and args {tuple(sig.args)}."
+            )
+
+        ctor_cc, ctor_arg_count, _ = lowered
+        ctor_sig = nb_signature(sig.return_type, *sig.args[:ctor_arg_count])
+        return ctor_cc(builder, context, ctor_sig, args[:ctor_arg_count])
 
     _register_meta_type(
         TC,
@@ -1150,6 +1579,8 @@ def bind_cxx_class_template(
         class_template_decl,
         shim_writer,
         header_path,
+        ctor_callconv_cache,
+        ctor_lowering_cache,
         arg_intent=arg_intent,
     )
 

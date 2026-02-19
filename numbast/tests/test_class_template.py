@@ -15,6 +15,7 @@ import cffi
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_class_templates, MemoryShimWriter
 from numbast.class_template import _make_templated_method_shim_arg_strings
+from numba.core.errors import TypingError
 
 
 import pytest
@@ -71,8 +72,7 @@ def test_sample_class_template_simple(decl, shim_writer):
     def kern(arr_in, arr_out):
         i = cuda.grid(1)
 
-        block_scan_t = BlockScan(T=T, BLOCK_DIM_X=128)
-        block_scan = block_scan_t()
+        block_scan = BlockScan(T=T, BLOCK_DIM_X=128)
 
         ptr_out = ffi.from_buffer(arr_out[i:])
         block_scan.InclusiveSum(arr_in[i], ptr_out)
@@ -83,21 +83,19 @@ def test_sample_class_template_simple(decl, shim_writer):
 
 
 def test_sample_class_template_with_fields(decl, shim_writer):
-    T = np.int32
     Foo = decl[1]
 
     @cuda.jit(link=shim_writer.links())
-    def kernel(out):
-        foo_t = Foo(T=T, N=128)
-
-        foo = foo_t(256)
+    def kernel(inp, out):
+        foo = Foo(t=inp[0], N=128)
 
         out[0] = foo.t
         out[1] = foo.get_t()
         out[2] = foo.get_t2()
 
     out = np.zeros((3,), dtype="int32")
-    kernel[1, 1](out)
+    inp = np.array([256], dtype="int32")
+    kernel[1, 1](inp, out)
 
     assert (out == [256, 256, 128]).all()
 
@@ -134,8 +132,7 @@ def test_class_template_arg_intent_regular_method(intent_kind):
             i = cuda.grid(1)
             if i >= out.size:
                 return
-            block_scan_t = BlockScan(T=T, BLOCK_DIM_X=128)
-            block_scan = block_scan_t()
+            block_scan = BlockScan(T=T, BLOCK_DIM_X=128)
             out[i] = block_scan.AddToRef(inp[i])
 
     else:
@@ -145,8 +142,7 @@ def test_class_template_arg_intent_regular_method(intent_kind):
             i = cuda.grid(1)
             if i >= out.size:
                 return
-            block_scan_t = BlockScan(T=T, BLOCK_DIM_X=128)
-            block_scan = block_scan_t()
+            block_scan = BlockScan(T=T, BLOCK_DIM_X=128)
             out_ptr = ffi.from_buffer(out[i:])
             block_scan.AddToRef(inp[i], out_ptr)
 
@@ -191,8 +187,7 @@ class TestTemplatedClassTemplatedMethod:
             if i >= out.size:
                 return
 
-            tmix_t = TMix(T=T, N=7)
-            tmix = tmix_t()
+            tmix = TMix(T=T, N=7)
 
             out_ptr = ffi.from_buffer(out[i:])
             tmix.AddConstDefault(x[i], out_ptr)
@@ -237,8 +232,7 @@ class TestTemplatedClassTemplatedMethod:
                 i = cuda.grid(1)
                 if i >= out.size:
                     return
-                tmix_t = TMix(T=T, N=7)
-                tmix = tmix_t()
+                tmix = TMix(T=T, N=7)
                 out[i] = tmix.AddConstRef(inp[i])
 
         else:
@@ -248,8 +242,7 @@ class TestTemplatedClassTemplatedMethod:
                 i = cuda.grid(1)
                 if i >= out.size:
                     return
-                tmix_t = TMix(T=T, N=7)
-                tmix = tmix_t()
+                tmix = TMix(T=T, N=7)
                 out_ptr = ffi.from_buffer(out[i:])
                 tmix.AddConstRef(inp[i], out_ptr)
 
@@ -290,3 +283,160 @@ def test_templated_method_array_ref_non_numeric_size(tmp_path):
 
     assert formal_args_str == ",int (&arg0)[N]"
     assert actual_args_str == "arg0"
+
+
+def test_class_template_ctor_overloads_positional_and_keyword_bindings(
+    tmp_path,
+):
+    source = textwrap.dedent(
+        """\
+        #pragma once
+        template <typename T, int N>
+        struct OverloadedCtor {
+            T value;
+            __device__ OverloadedCtor(T x) : value(static_cast<T>(x + N)) {}
+            __device__ OverloadedCtor(T x, T y)
+                : value(static_cast<T>(x + y + N)) {}
+            __device__ T get() { return value; }
+        };
+        """
+    )
+    header_path = tmp_path / "overloaded_ctor_template.cuh"
+    header_path.write_text(source, encoding="utf-8")
+
+    decls = parse_declarations_from_source(
+        str(header_path),
+        [str(header_path)],
+        "sm_80",
+        verbose=False,
+    )
+    shim_writer = MemoryShimWriter(f'#include "{header_path}"')
+    apis = bind_cxx_class_templates(
+        decls.class_templates,
+        header_path=str(header_path),
+        shim_writer=shim_writer,
+    )
+    OverloadedCtor = apis[0]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel_single(inp, out):
+        i = cuda.grid(1)
+        if i >= out.size:
+            return
+        obj = OverloadedCtor(inp[i], N=3)
+        out[i] = obj.get()
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel_mixed(inp, out):
+        i = cuda.grid(1)
+        if i >= out.size:
+            return
+        obj = OverloadedCtor(inp[i], y=inp[i], N=3)
+        out[i] = obj.get()
+
+    inp = np.arange(1, 9, dtype=np.int32)
+    out_single = np.zeros_like(inp)
+    out_mixed = np.zeros_like(inp)
+    kernel_single[1, 32](inp, out_single)
+    kernel_mixed[1, 32](inp, out_mixed)
+
+    np.testing.assert_array_equal(out_single, inp + 3)
+    np.testing.assert_array_equal(out_mixed, 2 * inp + 3)
+
+
+def test_class_template_template_params_not_positional(decl, shim_writer):
+    Foo = decl[1]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(inp, out):
+        foo = Foo(inp[0], 128)
+        out[0] = foo.get_t()
+
+    inp = np.array([1], dtype=np.int32)
+    out = np.zeros((1,), dtype=np.int32)
+    with pytest.raises(
+        TypingError,
+        match=r"expected at most 1 constructor args, got 2 positional args",
+    ):
+        kernel[1, 1](inp, out)
+
+
+def test_class_template_ctor_kwargs_before_template_kwargs(decl, shim_writer):
+    Foo = decl[1]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(inp, out):
+        foo = Foo(N=128, t=inp[0])
+        out[0] = foo.get_t()
+
+    inp = np.array([1], dtype=np.int32)
+    out = np.zeros((1,), dtype=np.int32)
+    with pytest.raises(
+        TypingError,
+        match="Constructor keyword arguments must appear before template-parameter keywords",
+    ):
+        kernel[1, 1](inp, out)
+
+
+def test_class_template_explicit_vs_deduced_tparam_conflict(decl, shim_writer):
+    Foo = decl[1]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(inp, out):
+        foo = Foo(t=inp[0], N=128, T=np.float32)
+        out[0] = foo.get_t()
+
+    inp = np.array([1], dtype=np.int32)
+    out = np.zeros((1,), dtype=np.float32)
+    with pytest.raises(
+        TypingError, match="Template parameter conflict for 'T'"
+    ):
+        kernel[1, 1](inp, out)
+
+
+def test_class_template_ambiguous_constructor_error(tmp_path):
+    source = textwrap.dedent(
+        """\
+        #pragma once
+        template <typename T, int N>
+        struct Ambig {
+            T value;
+            __device__ Ambig(T x) : value(x) {}
+            __device__ Ambig(const T& x)
+                : value(static_cast<T>(x + 1)) {}
+            __device__ T get() { return value; }
+        };
+        """
+    )
+    header_path = tmp_path / "ambiguous_ctor_template.cuh"
+    header_path.write_text(source, encoding="utf-8")
+
+    decls = parse_declarations_from_source(
+        str(header_path),
+        [str(header_path)],
+        "sm_80",
+        verbose=False,
+    )
+    shim_writer = MemoryShimWriter(f'#include "{header_path}"')
+    apis = bind_cxx_class_templates(
+        decls.class_templates,
+        header_path=str(header_path),
+        shim_writer=shim_writer,
+    )
+    Ambig = apis[0]
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(inp, out):
+        i = cuda.grid(1)
+        if i >= out.size:
+            return
+        obj = Ambig(inp[i], N=7)
+        out[i] = obj.get()
+
+    inp = np.arange(1, 9, dtype=np.int32)
+    out = np.zeros_like(inp)
+    with pytest.raises(
+        TypingError,
+        match="Ambiguous constructor selection for Ambig",
+    ):
+        kernel[1, 32](inp, out)
