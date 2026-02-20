@@ -13,14 +13,28 @@ import cffi
 
 
 from ast_canopy import parse_declarations_from_source
-from numbast import bind_cxx_class_templates, MemoryShimWriter
-from numbast.class_template import _make_templated_method_shim_arg_strings
+from numbast import (
+    bind_cxx_class_templates,
+    MemoryShimWriter,
+    clear_concrete_type_caches,
+)
+from numbast.class_template import (
+    _make_templated_method_shim_arg_strings,
+    _get_ctor_candidates_from_template_record,
+)
 from numba.core.errors import TypingError
 
 
 import pytest
 
 ffi = cffi.FFI()
+
+
+@pytest.fixture(autouse=True)
+def _reset_class_template_caches():
+    clear_concrete_type_caches()
+    yield
+    clear_concrete_type_caches()
 
 
 @pytest.fixture
@@ -416,6 +430,16 @@ def test_class_template_ambiguous_constructor_error(tmp_path):
         [str(header_path)],
         "sm_80",
         verbose=False,
+    )
+    ambig_template = next(
+        ct for ct in decls.class_templates if ct.record.name == "Ambig"
+    )
+    parsed_ctors = _get_ctor_candidates_from_template_record(
+        ambig_template.record
+    )
+    assert len(parsed_ctors) >= 2, (
+        "Expected parser to preserve both Ambig constructors; "
+        "constructor deduplication would invalidate this ambiguity test."
     )
     shim_writer = MemoryShimWriter(f'#include "{header_path}"')
     apis = bind_cxx_class_templates(

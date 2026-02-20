@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from collections import defaultdict
 from tempfile import NamedTemporaryFile
 import inspect
@@ -12,24 +12,24 @@ import warnings
 from ast_canopy import pylibastcanopy
 
 from numba.cuda import types as nbtypes
-from numba.core.extending import (
+from numba.cuda.extending import (
     register_model,
     make_attribute_wrapper,
     lower_builtin,
 )
-from numba.core.typing import signature as nb_signature
+from numba.cuda.typing import signature as nb_signature
 from numba.cuda.typing.templates import (
     ConcreteTemplate,
     AttributeTemplate,
     CallableTemplate,
     AbstractTemplate,
 )
-from numba.core.datamodel.models import StructModel, OpaqueModel
+from numba.cuda.datamodel.models import StructModel, OpaqueModel
 from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 from numba.cuda.core.imputils import numba_typeref_ctor
-from numba.core.typing.npydecl import parse_dtype
-from numba.core.errors import RequireLiteralValue, TypingError
+from numba.cuda.typing.npydecl import parse_dtype
+from numba.cuda.core.errors import RequireLiteralValue, TypingError
 
 from ast_canopy.api import parse_declarations_from_source
 from ast_canopy.decl import (
@@ -69,6 +69,12 @@ ConcreteTypeDeclCache: dict[object, ClassTemplateSpecialization] = {}
 _TEMPLATED_METHOD_LOWERING_CACHE: set[
     tuple[str, nbtypes.Type, tuple[nbtypes.Type, ...]]
 ] = set()
+
+
+def clear_concrete_type_caches() -> None:
+    """Clear class-template concrete type caches."""
+    ConcreteTypeCache.clear()
+    ConcreteTypeDeclCache.clear()
 
 
 class MetaType(nbtypes.Type):
@@ -1110,7 +1116,7 @@ def _bind_ctor_call_args(
     name_to_index = {
         param.name: i for i, param in enumerate(params) if param.name
     }
-    last_kw_param_index = len(positional_args) - 1
+    last_bound_index = len(positional_args) - 1
 
     for kw_name, kw_value in ctor_kwargs.items():
         idx = name_to_index.get(kw_name)
@@ -1128,12 +1134,12 @@ def _bind_ctor_call_args(
             raise TypeError(
                 f"{ctor.qual_name}: duplicate constructor argument '{kw_name}'."
             )
-        if idx < last_kw_param_index:
+        if idx < last_bound_index:
             raise TypeError(
                 f"{ctor.qual_name}: constructor keyword arguments must follow "
                 "constructor parameter declaration order."
             )
-        last_kw_param_index = idx
+        last_bound_index = idx
         bound[idx] = kw_value
 
     missing = [
@@ -1147,7 +1153,7 @@ def _bind_ctor_call_args(
             f"{', '.join(missing)}."
         )
 
-    return tuple(value for value in bound if value is not None)
+    return cast(tuple[nbtypes.Type, ...], tuple(bound))
 
 
 def _get_ctor_candidates_from_template_record(
@@ -1281,10 +1287,130 @@ def _get_or_bind_concrete_type(
     return instance_type_ref, specialization_decl, True
 
 
+def _ctor_signature_key(
+    ctor: StructMethod,
+) -> tuple[tuple[str, bool, bool], ...]:
+    """Build a stable constructor identity signature from parameter types."""
+    return tuple(
+        (
+            param.unqualified_non_ref_type_name,
+            bool(param.is_left_reference()),
+            bool(param.is_right_reference()),
+        )
+        for param in ctor.param_types
+    )
+
+
+def _resolve_specialization_ctor(
+    *,
+    specialization_decl: ClassTemplateSpecialization,
+    template_ctor: StructMethod,
+    ctor_call_args: tuple[nbtypes.Type, ...] | None = None,
+) -> StructMethod:
+    """Resolve specialization ctor by identity, not by positional index."""
+    specialization_ctors = [
+        ctor
+        for ctor in specialization_decl.constructors()
+        if not ctor.is_move_constructor
+    ]
+    if not specialization_ctors:
+        raise TypingError(
+            "No usable constructors found for specialization "
+            f"{specialization_decl.qual_name}."
+        )
+
+    template_mangled_name = getattr(template_ctor, "mangled_name", None)
+    template_sig = _ctor_signature_key(template_ctor)
+    template_ref_mask = tuple(
+        bool(param.is_left_reference() or param.is_right_reference())
+        for param in template_ctor.param_types
+    )
+
+    if template_mangled_name:
+        mangled_matches = [
+            ctor
+            for ctor in specialization_ctors
+            if ctor.mangled_name == template_mangled_name
+        ]
+        if len(mangled_matches) == 1:
+            return mangled_matches[0]
+        if len(mangled_matches) > 1:
+            sig_matches = [
+                ctor
+                for ctor in mangled_matches
+                if _ctor_signature_key(ctor) == template_sig
+            ]
+            if len(sig_matches) == 1:
+                return sig_matches[0]
+
+    if ctor_call_args is not None:
+        call_matches = []
+        for ctor in specialization_ctors:
+            ctor_param_types = tuple(
+                to_numba_arg_type(arg) for arg in ctor.param_types
+            )
+            if ctor_param_types == ctor_call_args:
+                call_matches.append(ctor)
+        if len(call_matches) == 1:
+            return call_matches[0]
+        if len(call_matches) > 1:
+            ref_matches = [
+                ctor
+                for ctor in call_matches
+                if tuple(
+                    bool(
+                        param.is_left_reference() or param.is_right_reference()
+                    )
+                    for param in ctor.param_types
+                )
+                == template_ref_mask
+            ]
+            if len(ref_matches) == 1:
+                return ref_matches[0]
+
+    sig_matches = [
+        ctor
+        for ctor in specialization_ctors
+        if _ctor_signature_key(ctor) == template_sig
+    ]
+    if len(sig_matches) == 1:
+        return sig_matches[0]
+
+    template_qual_name = getattr(template_ctor, "qual_name", None)
+    if template_qual_name:
+        qual_matches = [
+            ctor
+            for ctor in specialization_ctors
+            if ctor.qual_name == template_qual_name
+        ]
+        if len(qual_matches) == 1:
+            return qual_matches[0]
+
+    ref_matches = [
+        ctor
+        for ctor in specialization_ctors
+        if len(tuple(ctor.param_types)) == len(tuple(template_ctor.param_types))
+        and tuple(
+            bool(param.is_left_reference() or param.is_right_reference())
+            for param in ctor.param_types
+        )
+        == template_ref_mask
+    ]
+    if len(ref_matches) == 1:
+        return ref_matches[0]
+
+    raise TypingError(
+        "Failed to resolve constructor for specialization "
+        f"{specialization_decl.qual_name} from template constructor "
+        f"{getattr(template_ctor, 'qual_name', '<unknown>')}."
+    )
+
+
 def _ensure_ctor_callconv(
     *,
     specialization_decl: ClassTemplateSpecialization,
-    ctor_index: int,
+    template_ctor: StructMethod,
+    ctor_call_args: tuple[nbtypes.Type, ...],
     instance_type: nbtypes.Type,
     shim_writer: ShimWriterBase,
     ctor_callconv_cache: dict[
@@ -1292,17 +1418,11 @@ def _ensure_ctor_callconv(
     ],
 ) -> tuple[FunctionCallConv, tuple[nbtypes.Type, ...]]:
     """Build (or reuse) constructor callconv for a concrete specialization."""
-    ctors = [
-        ctor
-        for ctor in specialization_decl.constructors()
-        if not ctor.is_move_constructor
-    ]
-    if ctor_index >= len(ctors):
-        raise TypingError(
-            "Failed to resolve constructor overload index "
-            f"{ctor_index} for specialization {specialization_decl.qual_name}."
-        )
-    ctor = ctors[ctor_index]
+    ctor = _resolve_specialization_ctor(
+        specialization_decl=specialization_decl,
+        template_ctor=template_ctor,
+        ctor_call_args=ctor_call_args,
+    )
     ctor_param_types = tuple(to_numba_arg_type(arg) for arg in ctor.param_types)
     cache_key = (instance_type, ctor_param_types)
     cached = ctor_callconv_cache.get(cache_key)
@@ -1346,6 +1466,8 @@ def _register_meta_type(
     *,
     arg_intent: dict | None = None,
 ):
+    ConcreteType = concrete_typing()
+
     @register
     class MetaType_template_decl(CallableTemplate):
         key = stub
@@ -1404,10 +1526,9 @@ def _register_meta_type(
                     ]
                 ] = []
                 full_call_arg_types = tuple(args) + tuple(kwargs.values())
-                ConcreteType = concrete_typing()
                 intent_key = _normalize_arg_intent(arg_intent)
 
-                for ctor_index, ctor in enumerate(constructors):
+                for ctor in constructors:
                     try:
                         ctor_call_args = _bind_ctor_call_args(
                             ctor, tuple(args), ctor_kwargs
@@ -1465,7 +1586,8 @@ def _register_meta_type(
                     )
                     ctor_cc, ctor_param_types = _ensure_ctor_callconv(
                         specialization_decl=specialization_decl,
-                        ctor_index=ctor_index,
+                        template_ctor=ctor,
+                        ctor_call_args=ctor_call_args,
                         instance_type=instance_type_ref.instance_type,
                         shim_writer=shim_writer,
                         ctor_callconv_cache=ctor_callconv_cache,
