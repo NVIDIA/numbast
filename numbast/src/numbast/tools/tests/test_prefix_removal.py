@@ -18,9 +18,6 @@ def test_prefix_removal(run_in_isolated_folder, arch_str):
     symbols = res["symbols"]
     alls = symbols["__all__"]
 
-    binding_path = res["binding_path"]
-    print(f"{binding_path=}")
-
     assert run_result.exit_code == 0
 
     # Verify that the function is exposed as "foo" (without the "prefix_" prefix)

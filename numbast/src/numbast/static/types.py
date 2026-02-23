@@ -34,7 +34,7 @@ _VALID_ENUM_UNDERLYING_INTEGER_TYPES = {
 def register_enum_type_str(
     ctype_enum_name: str,
     enum_name: str,
-    underlying_integer_type: str = "int64",
+    underlying_numba_int_type: str = "int64",
 ):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
@@ -42,19 +42,19 @@ def register_enum_type_str(
     Parameters:
         ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
         enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).
-        underlying_integer_type (str): The underlying integer type to use for the enum.
+        underlying_numba_int_type (str): The underlying Numba integer type to use for the enum.
     """
     global CTYPE_TO_NBTYPE_STR
 
-    if underlying_integer_type not in _VALID_ENUM_UNDERLYING_INTEGER_TYPES:
+    if underlying_numba_int_type not in _VALID_ENUM_UNDERLYING_INTEGER_TYPES:
         raise ValueError(
             "Invalid enum underlying integer type: "
-            f"{underlying_integer_type!r}. Expected one of "
+            f"{underlying_numba_int_type!r}. Expected one of "
             f"{sorted(_VALID_ENUM_UNDERLYING_INTEGER_TYPES)}."
         )
 
     CTYPE_TO_NBTYPE_STR[ctype_enum_name] = (
-        f"IntEnumMember({enum_name}, {underlying_integer_type})"
+        f"IntEnumMember({enum_name}, {underlying_numba_int_type})"
     )
 
 
