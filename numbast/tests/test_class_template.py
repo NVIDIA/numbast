@@ -22,7 +22,7 @@ from numbast.class_template import (
     _make_templated_method_shim_arg_strings,
     _get_ctor_candidates_from_template_record,
 )
-from numba.core.errors import TypingError
+from numba.cuda.core.errors import TypingError
 
 
 import pytest

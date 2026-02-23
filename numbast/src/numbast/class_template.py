@@ -30,6 +30,7 @@ from numba.cuda.cudaimpl import lower
 from numba.cuda.core.imputils import numba_typeref_ctor
 from numba.cuda.typing.npydecl import parse_dtype
 from numba.cuda.core.errors import RequireLiteralValue, TypingError
+from numba.core.errors import LoweringError
 
 from ast_canopy.api import parse_declarations_from_source
 from ast_canopy.decl import (
@@ -1174,7 +1175,6 @@ def _get_ctor_candidates_from_template_record(
     ctor_kinds = {
         pylibastcanopy.method_kind.default_constructor,
         pylibastcanopy.method_kind.copy_constructor,
-        pylibastcanopy.method_kind.move_constructor,
         pylibastcanopy.method_kind.converting_constructor,
         pylibastcanopy.method_kind.other_constructor,
     }
@@ -1685,7 +1685,7 @@ def bind_cxx_class_template(
         key = (sig.return_type, tuple(sig.args))
         lowered = ctor_lowering_cache.get(key)
         if lowered is None:
-            raise TypingError(
+            raise LoweringError(
                 "Missing constructor lowering for class template "
                 f"{class_template_decl.record.qual_name} with return type "
                 f"{sig.return_type} and args {tuple(sig.args)}."
