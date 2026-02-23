@@ -1,6 +1,7 @@
 [tool.codespell]
 # ignore short words, as they are mostly abbreviations
 ignore-regex = "\\b(.{1,4})\\b"
+skip = "ast_canopy/tests/host/cuda_headers/include/cuda.h"
 builtin = "clear"
 quiet-level = 3
 
