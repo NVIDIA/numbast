@@ -19,10 +19,22 @@ _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
 
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
+_VALID_ENUM_UNDERLYING_INTEGER_TYPES = {
+    "int8",
+    "int16",
+    "int32",
+    "int64",
+    "uint8",
+    "uint16",
+    "uint32",
+    "uint64",
+}
+
 
 def register_enum_type_str(
     ctype_enum_name: str,
     enum_name: str,
+    underlying_numba_int_type: str = "int64",
 ):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
@@ -30,10 +42,20 @@ def register_enum_type_str(
     Parameters:
         ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
         enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).
+        underlying_numba_int_type (str): The underlying Numba integer type to use for the enum.
     """
     global CTYPE_TO_NBTYPE_STR
 
-    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
+    if underlying_numba_int_type not in _VALID_ENUM_UNDERLYING_INTEGER_TYPES:
+        raise ValueError(
+            "Invalid enum underlying integer type: "
+            f"{underlying_numba_int_type!r}. Expected one of "
+            f"{sorted(_VALID_ENUM_UNDERLYING_INTEGER_TYPES)}."
+        )
+
+    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = (
+        f"IntEnumMember({enum_name}, {underlying_numba_int_type})"
+    )
 
 
 def reset_types():
@@ -44,22 +66,19 @@ def reset_types():
 
 
 def to_numba_type_str(ty: str):
-    """Converts C type string into numba type string.
+    """
+    Map a C/C++ type string to its corresponding Numba type string.
 
-    This function closely mirrors that in `numbast.types.to_numba_type`.
-    In addition to conversion, this function also adds the corresponding
-    type import lines to Numba for the converted types to the renderer's
-    cache for import statements.
+    This also records any required Numba/CUDA type imports in BaseRenderer so generated code can import the mapped types.
 
-    Parameter
-    ---------
-    ty: str
-        A string representing a C type
+    Parameters:
+        ty (str): C/C++ type name (may include pointers '*' or fixed-size array syntax like 'T[4]').
 
-    Return
-    ------
-    numba_ty: str
-        The corresponding string representing a Numba type
+    Returns:
+        str: The corresponding Numba type expression (e.g., "int64", "CPointer(int64)", "UniTuple(float32, 4)").
+
+    Raises:
+        TypeNotFoundError: If `ty` has no known mapping to a Numba type.
     """
 
     if ty == "cudaRoundMode":
@@ -113,10 +132,15 @@ def to_numba_type_str(ty: str):
 
 def to_numba_arg_type_str(ast_type) -> str:
     """
-    Convert an ast_canopy Type to a Numba type string suitable for *argument* typing.
+    Convert an AST Canopy Type to the corresponding Numba type string for use in function argument typing.
 
-    Note: this function intentionally does *not* automatically map C++ reference
-    parameters (T& / T&&) to pointer types. Reference exposure is controlled by
-    higher-level binding configuration (see `numbast.intent.ArgIntent`).
+    Parameters:
+        ast_type: An AST Canopy Type object; its unqualified, non-reference type name is used to determine the mapped Numba type.
+
+    Returns:
+        A string representing the Numba type suitable for argument annotations.
+
+    Note:
+        This function does not map C++ reference parameters (T& / T&&) to pointer types. Reference exposure is handled by higher-level binding configuration (e.g., numbast.intent.ArgIntent).
     """
     return to_numba_type_str(ast_type.unqualified_non_ref_type_name)

@@ -17,8 +17,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "numba>=0.59.0",
-  "numba-cuda>=0.21.0,<0.28.0",
+  "numba-cuda>=0.25.0",
   "ast_canopy>=0.5.0",
   "pyyaml",
   "click",
@@ -38,12 +37,12 @@ repository = "https://github.com/NVIDIA/numbast"
 [project.optional-dependencies]
 dev = ["ruff"]
 docs = ["sphinx>=7.0", "sphinx-copybutton>=0.5.2"]
-test-cu12 = ["pytest", "cffi", "numba-cuda[cu12]>=0.21.0,<0.28.0"]
+test-cu12 = ["pytest", "cffi", "numba-cuda[cu12]>=0.25.0"]
 test-cu13 = [
   "pytest",
   "cffi",
   "cuda-toolkit[cudart,crt,curand,cccl,nvcc]==13.*",
-  "numba-cuda[cu13]>=0.21.0,<0.28.0",
+  "numba-cuda[cu13]>=0.25.0",
 ]
 
 
