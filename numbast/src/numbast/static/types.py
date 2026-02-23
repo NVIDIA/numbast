@@ -19,6 +19,17 @@ _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
 
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
+_VALID_ENUM_UNDERLYING_INTEGER_TYPES = {
+    "int8",
+    "int16",
+    "int32",
+    "int64",
+    "uint8",
+    "uint16",
+    "uint32",
+    "uint64",
+}
+
 
 def register_enum_type_str(
     ctype_enum_name: str,
@@ -34,6 +45,13 @@ def register_enum_type_str(
         underlying_integer_type (str): The underlying integer type to use for the enum.
     """
     global CTYPE_TO_NBTYPE_STR
+
+    if underlying_integer_type not in _VALID_ENUM_UNDERLYING_INTEGER_TYPES:
+        raise ValueError(
+            "Invalid enum underlying integer type: "
+            f"{underlying_integer_type!r}. Expected one of "
+            f"{sorted(_VALID_ENUM_UNDERLYING_INTEGER_TYPES)}."
+        )
 
     CTYPE_TO_NBTYPE_STR[ctype_enum_name] = (
         f"IntEnumMember({enum_name}, {underlying_integer_type})"

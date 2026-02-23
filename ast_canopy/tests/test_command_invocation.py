@@ -21,7 +21,9 @@ def test_parse_declarations_falls_back_to_clangpp(monkeypatch, tmp_path):
         enums=[],
     )
 
-    monkeypatch.setattr(api, "check_clang_binary", lambda: None)
+    monkeypatch.setattr(
+        api, "check_clang_binary", lambda clang_binary=None: None
+    )
     monkeypatch.setattr(
         api, "get_clang_resource_dir", lambda clang_binary: "/lib/clang/20/"
     )
@@ -30,6 +32,7 @@ def test_parse_declarations_falls_back_to_clangpp(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(api, "get_cuda_include_dir_for_clang", lambda: {})
     monkeypatch.setattr(api, "get_cuda_path_for_clang", lambda: "/tmp/cuda")
+    monkeypatch.setattr(api, "_get_shim_include_dir", lambda: "/tmp/shim")
 
     def _fake_parse(command_line_options, files_to_retain, bypass_parse_error):
         captured["command_line_options"] = command_line_options
@@ -50,7 +53,9 @@ def test_value_from_constexpr_uses_detected_clang_binary(monkeypatch):
     captured: dict[str, list[str]] = {}
 
     monkeypatch.setattr(
-        api, "check_clang_binary", lambda: "/usr/bin/custom-clang++"
+        api,
+        "check_clang_binary",
+        lambda clang_binary=None: "/usr/bin/custom-clang++",
     )
     monkeypatch.setattr(
         api, "get_clang_resource_dir", lambda clang_binary: "/lib/clang/20/"

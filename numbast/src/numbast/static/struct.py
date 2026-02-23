@@ -358,9 +358,9 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
 
             signatures.append(renderer.signature_str)
 
-        self._render_typing(signatures)
-
-        self._python_rendered += self._struct_ctor_typing_rendered
+        if signatures:
+            self._render_typing(signatures)
+            self._python_rendered += self._struct_ctor_typing_rendered
 
     @property
     def python_rendered(self) -> str:
