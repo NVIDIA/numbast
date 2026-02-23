@@ -43,7 +43,7 @@ requirements:
     - cuda-cudart-dev
     - python
     - numba >=0.59
-    - numba-cuda >=0.21.0,<0.23.0
+    - numba-cuda >=0.25.0
     - numbast >=0.2.0
 
   test:
