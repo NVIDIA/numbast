@@ -16,7 +16,8 @@ from numbast.static.renderer import (
     get_shim,
     get_callconv_utils,
 )
-from numbast.static.types import to_numba_type_str
+from numbast.static.types import to_numba_type_str, to_numba_arg_type_str
+from numbast.intent import ArgIntent, compute_intent_plan
 from numbast.utils import make_function_shim, _apply_prefix_removal
 from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
 
@@ -109,6 +110,10 @@ def impl(context, builder, sig, args):
         itanium_mangled_name="{mangled_name}",
         shim_writer=shim_writer,
         shim_code=shim_raw_str,
+        arg_is_ref={arg_is_ref},
+        intent_plan={intent_plan},
+        out_return_types={out_return_types},
+        cxx_return_type={cxx_return_type},
     )
     return callconv(builder, context, sig, args)
 """
@@ -135,7 +140,25 @@ def {func_name}():
     The API maybe empty because operator reuses `operator.X` handles.
     """
 
-    def __init__(self, decl: Function, header_path: str, use_cooperative: bool):
+    def __init__(
+        self,
+        decl: Function,
+        header_path: str,
+        use_cooperative: bool,
+        function_argument_intents: dict | None = None,
+    ):
+        """
+        Initialize the renderer for a static (non-operator) C++/CUDA function binding and compute type/intent metadata used for shim and lowering generation.
+
+        Parameters:
+            decl (Function): Parsed function declaration to render.
+            header_path (str): Path to the header where the function is declared; used for shim includes.
+            use_cooperative (bool): Whether the generated lowering should include cooperative launch support.
+            function_argument_intents (dict | None): Optional mapping from function name to intent overrides that influence visible argument types, pointer wrappers, and out-return handling. When provided, an intent plan is computed and used to derive visible parameter indices, argument Numba type strings, return type tuple rendering, and rendered intent-plan metadata.
+
+        Raises:
+            MangledFunctionNameConflictError: If the declaration's mangled name has already been registered (duplicate shim name).
+        """
         super().__init__(decl)
 
         if decl.mangled_name in function_mangled_name_registry:
@@ -146,16 +169,118 @@ def {func_name}():
         self._header_path = header_path
         self._use_cooperative = use_cooperative
 
-        self._argument_numba_types = [
-            to_numba_type_str(arg.unqualified_non_ref_type_name)
-            for arg in self._decl.param_types
-        ]
-        self._argument_numba_types_str = ", ".join(self._argument_numba_types)
+        overrides = None
+        if function_argument_intents:
+            overrides = function_argument_intents.get(self._decl.name)
 
-        self._return_numba_type = to_numba_type_str(
+        self._cxx_return_type = to_numba_type_str(
             self._decl.return_type.unqualified_non_ref_type_name
         )
-        self._return_numba_type_str = str(self._return_numba_type)
+        self._cxx_return_type_str = str(self._cxx_return_type)
+
+        if overrides is None:
+            self._argument_numba_types = [
+                to_numba_arg_type_str(arg) for arg in self._decl.param_types
+            ]
+            self._argument_numba_types_str = ", ".join(
+                self._argument_numba_types
+            )
+            self._arg_is_ref = [
+                bool(t.is_left_reference() or t.is_right_reference())
+                for t in self._decl.param_types
+            ]
+            self._return_numba_type_str = self._cxx_return_type_str
+            self._intent_plan_rendered = "None"
+            self._out_return_types_rendered = "None"
+            self._cxx_return_type_rendered = "None"
+        else:
+            plan = compute_intent_plan(
+                params=self._decl.params,
+                param_types=self._decl.param_types,
+                overrides=overrides,
+                allow_out_return=True,
+            )
+            self._arg_is_ref = None
+
+            # Visible argument types in original order
+            self._argument_numba_types = []
+            for orig_idx in plan.visible_param_indices:
+                base = to_numba_type_str(
+                    self._decl.param_types[
+                        orig_idx
+                    ].unqualified_non_ref_type_name
+                )
+                if plan.intents[orig_idx].value in ("inout_ptr", "out_ptr"):
+                    BaseRenderer._try_import_numba_type("CPointer")
+                    self._argument_numba_types.append(f"CPointer({base})")
+                else:
+                    self._argument_numba_types.append(base)
+            self._argument_numba_types_str = ", ".join(
+                self._argument_numba_types
+            )
+
+            out_return_types = [
+                to_numba_type_str(
+                    self._decl.param_types[i].unqualified_non_ref_type_name
+                )
+                for i in plan.out_return_indices
+            ]
+            if out_return_types:
+                self.Imports.add("from numba import types")
+                if self._cxx_return_type_str == "void":
+                    if len(out_return_types) == 1:
+                        self._return_numba_type_str = out_return_types[0]
+                    else:
+                        outs = ", ".join(out_return_types)
+                        self._return_numba_type_str = f"types.Tuple(({outs},))"
+                else:
+                    outs = ", ".join(
+                        [self._cxx_return_type_str, *out_return_types]
+                    )
+                    self._return_numba_type_str = f"types.Tuple(({outs},))"
+            else:
+                self._return_numba_type_str = self._cxx_return_type_str
+
+            def _tuple_literal(items: list[str]) -> str:
+                """
+                Builds a Python tuple literal from a list of string expressions.
+
+                Parameters:
+                    items (list[str]): String representations of tuple elements.
+
+                Returns:
+                    tuple_literal (str): A Python tuple literal. For an empty list returns "()"; for a single element returns "(element,)" (includes the trailing comma); otherwise returns "(elem1, elem2, ...)".
+                """
+                if not items:
+                    return "()"
+                if len(items) == 1:
+                    return f"({items[0]},)"
+                return f"({', '.join(items)})"
+
+            intents_str = _tuple_literal(
+                [
+                    f"ArgIntent.{i.value if i != ArgIntent.in_ else 'in_'}"
+                    for i in plan.intents
+                ]
+            )
+            visible_str = repr(plan.visible_param_indices)
+            out_str = repr(plan.out_return_indices)
+            mask_str = repr(plan.pass_ptr_mask)
+            self._intent_plan_rendered = (
+                "IntentPlan("
+                f"intents={intents_str}, "
+                f"visible_param_indices={visible_str}, "
+                f"out_return_indices={out_str}, "
+                f"pass_ptr_mask={mask_str}"
+                ")"
+            )
+            if out_return_types:
+                self._out_return_types_rendered = (
+                    "[" + ", ".join(out_return_types) + "]"
+                )
+            else:
+                self._out_return_types_rendered = "None"
+            self._cxx_return_type_rendered = self._cxx_return_type_str
 
         # Cache the unique shim name
         self._deduplicated_shim_name = f"{decl.mangled_name}_nbst"
@@ -167,8 +292,13 @@ def {func_name}():
 
     @property
     def _signature_cases(self):
-        """The python string that declares the signature of this function."""
-        return_type_name = str(self._return_numba_type)
+        """
+        Constructs the Python typing signature string for this function.
+
+        Returns:
+            str: The signature string formatted as "signature(<return_type>, <param_types>)", where <return_type> is the function's return type and <param_types> is a comma-separated list of argument types.
+        """
+        return_type_name = str(self._return_numba_type_str)
         param_types_str = ", ".join(str(t) for t in self._argument_numba_types)
         return self.signature_template.format(
             return_type=return_type_name, param_types=param_types_str
@@ -195,7 +325,15 @@ def {func_name}():
         self.ShimFunctions.append(self._c_ext_shim_rendered)
 
     def _render_lowering(self):
-        """Render lowering codes for this struct constructor."""
+        """
+        Render the Numba lowering function for this declaration and store it on the renderer.
+
+        Adds the necessary numba typing import and populates the lowering template with
+        the function name, parameter and return typing, cooperative-launch snippet
+        (if enabled), argument reference flags, intent plan, out-return types, and
+        C++ return-type information, then assigns the rendered string to
+        `self._lowering_rendered`.
+        """
 
         self.Imports.add("from numba.cuda.typing import signature")
 
@@ -209,6 +347,10 @@ def {func_name}():
             mangled_name=self._decl.mangled_name,
             return_type=self._return_numba_type_str,
             use_cooperative=use_cooperative,
+            arg_is_ref=self._arg_is_ref,
+            intent_plan=self._intent_plan_rendered,
+            out_return_types=self._out_return_types_rendered,
+            cxx_return_type=self._cxx_return_type_rendered,
         )
 
     def _render_scoped_lower(self):
@@ -287,8 +429,26 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
     _py_op_name: str
     """Name of the corresponding python operator converted from C++."""
 
-    def __init__(self, decl: Function, header_path: str):
-        super().__init__(decl, header_path, use_cooperative=False)
+    def __init__(
+        self,
+        decl: Function,
+        header_path: str,
+        function_argument_intents: dict | None = None,
+    ):
+        """
+        Initialize an overloaded-operator renderer and record the Python operator mapping.
+
+        Parameters:
+            decl: Function declaration representing the overloaded C++ operator to render.
+            header_path: Path to the C/C++ header used when generating the C shim.
+            function_argument_intents: Optional mapping of per-function argument/return intent overrides that influence how argument and return types are rendered.
+        """
+        super().__init__(
+            decl,
+            header_path,
+            use_cooperative=False,
+            function_argument_intents=function_argument_intents,
+        )
 
         self._py_op = decl.overloaded_operator_to_python_operator
         self._py_op_name = f"operator.{self._py_op.__name__}"
@@ -331,6 +491,7 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
         header_path: str,
         use_cooperative: bool,
         function_prefix_removal: list[str] = [],
+        function_argument_intents: dict | None = None,
     ):
         """
         Initialize the non-operator function renderer, compute the Python-facing function name by removing configured prefixes, and update tracked function symbols accordingly.
@@ -344,7 +505,12 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
         Notes:
             This initializer replaces the original C++ name in the renderer's tracked function symbols with the computed Python name.
         """
-        super().__init__(decl, header_path, use_cooperative)
+        super().__init__(
+            decl,
+            header_path,
+            use_cooperative,
+            function_argument_intents=function_argument_intents,
+        )
         self._python_func_name = _apply_prefix_removal(
             decl.name, function_prefix_removal
         )
@@ -427,7 +593,25 @@ class {op_typing_name}(ConcreteTemplate):
         skip_prefix: str | None = None,
         cooperative_launch_required: list[str] = [],
         function_prefix_removal: list[str] = [],
+        function_argument_intents: dict | None = None,
     ):
+        """
+        Initialize the renderer for a collection of CUDA/C++ function declarations and configure rendering options.
+
+        Parameters:
+            decls (list[Function]): Function declarations to render.
+            header_path (str): Path to the C++ header used for generating C shims.
+            excludes (list[str]): Function names to exclude from rendering.
+            skip_non_device (bool): If True, skip functions that are not device-callable.
+            skip_prefix (str | None): If set, skip functions whose names start with this prefix.
+            cooperative_launch_required (list[str]): Regex patterns; functions whose names match any pattern will be rendered to require cooperative launch.
+            function_prefix_removal (list[str]): Prefixes to strip from C++ function names when exposing Python-visible names.
+            function_argument_intents (dict | None): Optional per-function intent overrides that affect argument/return handling and resulting signatures.
+
+        The constructor also initializes internal caches and accumulators used during rendering:
+        - _func_typing_signature_cache and _op_typing_signature_cache for typing signatures,
+        - _python_rendered and _c_rendered for assembled Python and C output.
+        """
         self._decls = decls
         self._header_path = header_path
         self._excludes = excludes
@@ -435,6 +619,7 @@ class {op_typing_name}(ConcreteTemplate):
         self._skip_prefix = skip_prefix
         self._cooperative_launch_required = cooperative_launch_required
         self._function_prefix_removal = function_prefix_removal
+        self._function_argument_intents = function_argument_intents or {}
 
         self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(
             list
@@ -468,13 +653,27 @@ class {op_typing_name}(ConcreteTemplate):
     def _create_operator_renderer(
         self, decl: Function
     ) -> StaticOverloadedOperatorRenderer | None:
-        """Create a renderer for overloaded operators."""
+        """
+        Create a renderer for an overloaded operator declaration.
+
+        Returns a StaticOverloadedOperatorRenderer for the given operator declaration, or `None` when the operator should be skipped (copy-assignment), when a referenced type is missing, or when a mangled-name conflict is detected; in the latter two cases a warning is emitted.
+
+        Parameters:
+            decl (Function): The function declaration representing the operator.
+
+        Returns:
+            StaticOverloadedOperatorRenderer | None: The renderer instance, or `None` if the operator is not renderable.
+        """
         if decl.is_copy_assignment_operator():
             # copy assignment operator, do not support in Numba / Python, skip
             return None
 
         try:
-            return StaticOverloadedOperatorRenderer(decl, self._header_path)
+            return StaticOverloadedOperatorRenderer(
+                decl,
+                self._header_path,
+                function_argument_intents=self._function_argument_intents,
+            )
         except TypeNotFoundError as e:
             warn(
                 f"Skipping operator {decl.name} in {self._header_path} due to missing type {e.type_name}"
@@ -500,6 +699,7 @@ class {op_typing_name}(ConcreteTemplate):
                 self._header_path,
                 use_cooperative,
                 self._function_prefix_removal,
+                function_argument_intents=self._function_argument_intents,
             )
         except TypeNotFoundError as e:
             warn(

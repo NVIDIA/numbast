@@ -82,7 +82,7 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           role-duration-seconds: 43200 # 12h
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
@@ -90,6 +90,8 @@ jobs:
       - name: Setup proxy cache
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
+        with:
+          enable-apt: true
       - name: Cache build dependencies
         uses: actions/cache@v5
         with:
@@ -132,7 +134,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload PyPi wheels artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pypi-wheels-${{ matrix.ARCH }}
           path: final-dist/*.whl

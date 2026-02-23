@@ -11,6 +11,8 @@ template <typename T, int BLOCK_DIM_X> struct BlockScan {
   void __device__ InclusiveSum(T input, T *output) {
     printf("BlockScan InclusiveSum called\n");
   }
+
+  __device__ void AddToRef(T input, T &out) { out = static_cast<T>(input + 1); }
 };
 
 template <int N, typename T> class Foo {
@@ -23,4 +25,11 @@ public:
 
 private:
   T t2;
+};
+
+template <typename T, int N = 5> struct DefaultParam {
+  T t;
+  __device__ DefaultParam(T t) : t(t) {}
+
+  __device__ T add_default() { return static_cast<T>(t + static_cast<T>(N)); }
 };

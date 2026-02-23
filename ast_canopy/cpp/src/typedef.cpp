@@ -16,6 +16,10 @@ namespace ast_canopy {
 Typedef::Typedef(const clang::TypedefDecl *TD,
                  std::unordered_map<int64_t, std::string> *record_id_to_name) {
   name = TD->getNameAsString();
+  qual_name = TD->getQualifiedNameAsString();
+  if (qual_name.empty()) {
+    qual_name = name;
+  }
   clang::QualType qd = TD->getUnderlyingType();
   clang::RecordDecl *underlying_record_decl = qd->getAsCXXRecordDecl();
 

@@ -37,7 +37,7 @@ repos:
       - id: codespell
         additional_dependencies:
           - tomli
-        args: ["--toml", "pyproject.toml"]
+        args: ["--toml", "pyproject.toml", "--ignore-words-list", "inout,thirdparty"]
   - repo: https://github.com/google/yamlfmt
     rev: v0.16.0
     hooks:

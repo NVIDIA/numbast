@@ -13,7 +13,8 @@ from numba.cuda.cudaimpl import lower
 from ast_canopy.pylibastcanopy import execution_space
 from ast_canopy.decl import Function
 
-from numbast.types import to_numba_type
+from numbast.types import to_numba_type, to_numba_arg_type
+from numbast.intent import compute_intent_plan
 from numbast.utils import (
     deduplicate_overloads,
     make_function_shim,
@@ -42,22 +43,20 @@ func_obj_registry: dict[str, object] = defaultdict(make_new_func_obj)
 
 
 def bind_cxx_operator_overload_function(
-    shim_writer: ShimWriter, func_decl: Function
+    shim_writer: ShimWriter,
+    func_decl: Function,
+    *,
+    arg_intent: dict | None = None,
 ) -> object:
-    """Create bindings for a C++ operator-overload function.
+    """
+    Create a Numba-callable binding for a C++ operator-overload function.
 
-    Parameters
-    ----------
-    shim_writer : ShimWriter
-        The shim writer to write the generated shim layer code.
+    Parameters:
+        func_decl (Function): C++ function declaration to bind.
+        arg_intent (dict | None): Optional mapping that customizes argument intent (e.g., which reference parameters are treated as input, output, or inout). When provided, intent controls visible parameter/pointer treatment and out-return composition.
 
-    func_decl : Function
-        The declaration of the function in C++.
-
-    Returns
-    -------
-    shim_call : object
-        The Numba-CUDA-callable Python API for the function.
+    Returns:
+        FunctionCallConv | None: A callable wrapper used during lowering that performs the bound call, or `None` when the operator is unsupported (e.g., copy assignment operators).
     """
     if func_decl.is_copy_assignment_operator():
         # copy assignment operator, do not support in Numba / Python, skip
@@ -66,9 +65,10 @@ def bind_cxx_operator_overload_function(
     return_type = to_numba_type(
         func_decl.return_type.unqualified_non_ref_type_name
     )
-    param_types = [
-        to_numba_type(arg.unqualified_non_ref_type_name)
-        for arg in func_decl.param_types
+    param_types = [to_numba_arg_type(arg) for arg in func_decl.param_types]
+    arg_is_ref = [
+        bool(t.is_left_reference() or t.is_right_reference())
+        for t in func_decl.param_types
     ]
 
     return_type_name = func_decl.return_type.unqualified_non_ref_type_name
@@ -99,10 +99,24 @@ def bind_cxx_operator_overload_function(
     class op_decl(ConcreteTemplate):
         cases = [nb_signature(return_type, *param_types)]
 
-    func_cc = FunctionCallConv(mangled_name, shim_writer, shim)
+    func_cc = FunctionCallConv(
+        mangled_name, shim_writer, shim, arg_is_ref=arg_is_ref
+    )
 
     @lower(py_op, *param_types)
     def impl(context, builder, sig, args):
+        """
+        Delegate lowering to the captured FunctionCallConv instance `func_cc`.
+
+        Parameters:
+            context: Numba lowering context used during compilation.
+            builder: LLVM IR builder used to emit instructions.
+            sig: The function signature being lowered.
+            args: Sequence of lowered argument values passed to the call.
+
+        Returns:
+            The lowered native value(s) produced by `func_cc`.
+        """
         return func_cc(builder, context, sig, args)
 
     return func_cc
@@ -113,28 +127,31 @@ def bind_cxx_non_operator_function(
     func_decl: Function,
     skip_prefix: str | None,
     exclude: set[str],
+    *,
+    arg_intent: dict | None = None,
 ) -> object:
-    """Create bindings for a C++ non-operator function.
+    """
+    Create a Python-callable binding for a C++ non-operator function.
+
+    Optionally uses an arg_intent override to control which C++ reference parameters are exposed as pointer parameters or returned as out-returns; when no overrides are provided, reference parameters are treated as input-only values.
 
     Parameters
     ----------
     shim_writer : ShimWriter
-        The shim writer to write the generated shim layer code.
-
+        Writer used to emit the generated shim layer code.
     func_decl : Function
-        The declaration of the function in C++.
-
+        C++ function declaration to bind.
     skip_prefix : str | None
-        Skip functions with this prefix. Has no effect if None or empty.
-
+        If provided, skip functions whose names start with this prefix.
     exclude : set[str]
-        A set of function names to exclude.
-
+        Set of function names to exclude from binding.
+    arg_intent : dict | None, optional
+        Optional per-function intent overrides that specify visibility and in/out semantics for reference parameters.
 
     Returns
     -------
-    func : object
-        The Python-callable API for the function.
+    object
+        The Python-callable function object registered for the bound C++ function, or `None` if the function is skipped.
     """
     global overload_registry
 
@@ -144,13 +161,64 @@ def bind_cxx_non_operator_function(
         # Non public API
         return None
 
-    return_type = to_numba_type(
+    cxx_return_type = to_numba_type(
         func_decl.return_type.unqualified_non_ref_type_name
     )
-    param_types = [
-        to_numba_type(arg.unqualified_non_ref_type_name)
-        for arg in func_decl.param_types
-    ]
+
+    overrides = arg_intent.get(func_decl.name) if arg_intent else None
+    if overrides is None:
+        # Backward-compatible default: refs are input-only values.
+        return_type = cxx_return_type
+        param_types = [to_numba_arg_type(arg) for arg in func_decl.param_types]
+        arg_is_ref = [
+            bool(t.is_left_reference() or t.is_right_reference())
+            for t in func_decl.param_types
+        ]
+        intent_plan = None
+        out_return_types = None
+    else:
+        # Opt-in: user controls which reference args are exposed as pointers or out-returns.
+        intent_plan = compute_intent_plan(
+            params=func_decl.params,
+            param_types=func_decl.param_types,
+            overrides=overrides,
+            allow_out_return=True,
+        )
+
+        # Visible param types in original order
+        param_types = []
+        for orig_idx in intent_plan.visible_param_indices:
+            base = to_numba_type(
+                func_decl.param_types[orig_idx].unqualified_non_ref_type_name
+            )
+            if intent_plan.intents[orig_idx].value in ("inout_ptr", "out_ptr"):
+                param_types.append(nbtypes.CPointer(base))
+            else:
+                param_types.append(base)
+
+        out_return_types = [
+            to_numba_type(
+                func_decl.param_types[i].unqualified_non_ref_type_name
+            )
+            for i in intent_plan.out_return_indices
+        ]
+
+        if out_return_types:
+            if cxx_return_type == nbtypes.void:
+                if len(out_return_types) == 1:
+                    return_type = out_return_types[0]
+                else:
+                    return_type = nbtypes.Tuple(tuple(out_return_types))
+            else:
+                return_type = nbtypes.Tuple(
+                    tuple([cxx_return_type, *out_return_types])
+                )
+        else:
+            return_type = cxx_return_type
+
+        # In intentful mode, pass-through pointers are controlled by intent_plan,
+        # not by whether the C++ parameter is a reference.
+        arg_is_ref = None
 
     # python handle
     func = func_obj_registry[func_decl.name]
@@ -175,7 +243,15 @@ def bind_cxx_non_operator_function(
         shim_func_name, func_decl.name, return_type_name, func_decl.params
     )
 
-    func_cc = FunctionCallConv(mangled_name, shim_writer, shim)
+    func_cc = FunctionCallConv(
+        mangled_name,
+        shim_writer,
+        shim,
+        arg_is_ref=arg_is_ref,
+        intent_plan=intent_plan,
+        out_return_types=out_return_types,
+        cxx_return_type=cxx_return_type,
+    )
 
     # Lowering
     @lower(func, *param_types)
@@ -191,30 +267,25 @@ def bind_cxx_function(
     skip_prefix: str | None = None,
     skip_non_device: bool = True,
     exclude: set[str] = set(),
+    *,
+    arg_intent: dict | None = None,
 ) -> object:
-    """Create bindings for a C++ function.
+    """
+    Create Python bindings for a C++ function.
 
-    Parameters
-    ----------
-    shim_writer : ShimWriter
-        The shim writer to write the generated shim layer code.
+    Parameters:
+        shim_writer (ShimWriter): Writer that emits the generated C/C++ shim code.
+        func_decl (Function): C++ function declaration to bind.
+        skip_prefix (str | None): If provided, skip functions whose names start with this prefix.
+        skip_non_device (bool): If True, skip functions not marked for device or host_device execution.
+        exclude (set[str]): Names of functions to exclude from binding.
+        arg_intent (dict | None): Optional explicit intent overrides that control which C++ reference
+            parameters are exposed as inputs, outputs, or inout pointers and which parameters are
+            promoted to out-returns.
 
-    func_decl : Function
-        Declaration of the function in CXX
-
-    skip_prefix : str | None
-        Skip functions with this prefix. Has no effect if None or empty.
-
-    skip_non_device : bool
-        Skip non device functions. Default to True.
-
-    exclude : set[str]
-        A set of function names to exclude. Default to empty set.
-
-    Returns
-    -------
-    func : object
-        The Numba-CUDA-callable Python API for the function.
+    Returns:
+        object or None: The Numba-CUDA-callable Python binding object for the function, or `None`
+        if the function is skipped or not exposed.
     """
 
     if skip_non_device and func_decl.exec_space not in {
@@ -226,10 +297,16 @@ def bind_cxx_function(
         return None
 
     if func_decl.is_overloaded_operator():
-        return bind_cxx_operator_overload_function(shim_writer, func_decl)
+        return bind_cxx_operator_overload_function(
+            shim_writer, func_decl, arg_intent=arg_intent
+        )
     elif not func_decl.is_operator:
         return bind_cxx_non_operator_function(
-            shim_writer, func_decl, skip_prefix=skip_prefix, exclude=exclude
+            shim_writer,
+            func_decl,
+            skip_prefix=skip_prefix,
+            exclude=exclude,
+            arg_intent=arg_intent,
         )
 
     return None
@@ -241,6 +318,8 @@ def bind_cxx_functions(
     skip_prefix: str | None = None,
     skip_non_device: bool = True,
     exclude: set[str] = set(),
+    *,
+    arg_intent: dict | None = None,
 ) -> list[object]:
     """Create bindings for a list of C++ functions.
 
@@ -275,6 +354,7 @@ def bind_cxx_functions(
             skip_prefix=skip_prefix,
             skip_non_device=skip_non_device,
             exclude=exclude,
+            arg_intent=arg_intent,
         )
         # overloaded operator (e.g. "+") do not need to have a separate API
         # as they are called directly from the Python operator.

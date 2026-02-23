@@ -19,7 +19,7 @@ def test_ctpsd_unparsed_in_structs(sample_ctsd):
 
     # At this stage, assert that the ctpsd is not parsed.
     assert len(ctsd) == 1
-    assert ctsd[0].name == "BlockScan<int, 128>"
+    assert ctsd[0].specialized_name == "BlockScan<int, 128>"
 
     assert len(ctsd[0].fields) == 0
     assert len(ctsd[0].methods) == 2

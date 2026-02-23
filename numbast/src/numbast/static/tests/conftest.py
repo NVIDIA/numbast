@@ -23,11 +23,28 @@ def data_folder():
 
 @pytest.fixture(scope="function")
 def make_binding(tmpdir, data_folder):
+    """
+    Return a factory that generates static Python bindings for a C/C++ header into the given temporary directory.
+
+    Parameters:
+        tmpdir (os.PathLike | py.path.local): Directory where generated binding files will be written.
+        data_folder (Callable[[str], str]): Function that maps a header filename to its full path within the test data folder.
+
+    Returns:
+        Callable[[str, dict[str, type], dict[str, type], str, dict | None], dict]:
+            A factory function with signature
+                (header_name, types, datamodels, cc="sm_80", function_argument_intents=None) -> dict
+            The factory generates bindings for `header_name` and returns a dictionary with:
+                - "src": the generated Python source code as a string.
+                - "bindings": a dict populated by executing the generated source.
+    """
+
     def _make_binding(
         header_name: str,
         types: dict[str, type],
         datamodels: dict[str, type],
         cc: str = "sm_80",
+        function_argument_intents: dict | None = None,
     ):
         clear_base_renderer_cache()
         clear_function_apis_registry()
@@ -41,6 +58,7 @@ def make_binding(tmpdir, data_folder):
             datamodels=datamodels,
             separate_registry=False,
         )
+        cfg.function_argument_intents = function_argument_intents or {}
         _static_binding_generator(cfg, tmpdir)
 
         basename = header_name.split(".")[0]

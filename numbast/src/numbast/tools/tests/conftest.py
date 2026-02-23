@@ -14,6 +14,16 @@ from jinja2 import Environment, FileSystemLoader
 from click.testing import CliRunner
 
 from numbast.tools.static_binding_generator import static_binding_generator
+from numbast.static.renderer import clear_base_renderer_cache
+from numbast.static.function import clear_function_apis_registry
+
+
+@pytest.fixture(autouse=True)
+def reset_state():
+    """Reset global state before each test to avoid cross-test pollution."""
+    clear_base_renderer_cache()
+    clear_function_apis_registry()
+    yield
 
 
 @pytest.fixture

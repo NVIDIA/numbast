@@ -101,6 +101,11 @@ class Config:
         By default, the new typing and target registries are added to the existing
         typing and target context. When set to true, user should add the registries
         to the typing and target context manually. Default to False.
+    function_argument_intents : dict[str, dict[str|int, str|dict]]
+        Optional per-function argument intent overrides. Keys are function names
+        (including qualified method names like "Struct.method" if desired). Values
+        map parameter name (str) or 0-based index (int) to an intent string
+        ("in", "inout_ptr", "out_ptr", "out_return") or a dict containing "intent".
     """
 
     entry_point: str
@@ -120,14 +125,35 @@ class Config:
     module_callbacks: dict[str, str]
     skip_prefix: str | None
     separate_registry: bool
+    function_argument_intents: dict
 
     def __init__(self, config_dict: dict):
-        """Initialize Config from a dictionary.
+        """
+        Initialize a Config object from a configuration dictionary.
 
-        Parameters
-        ----------
-        config_dict : dict
-            Dictionary containing configuration values.
+        Parameters:
+            config_dict (dict): Mapping of configuration keys to values. Expected keys include:
+                - "Entry Point": path to the source file to process.
+                - "GPU Arch": list of GPU architectures (at most one supported).
+                - "File List": list of files to retain.
+                - "Types": mapping of type names to numba type strings.
+                - "Data Models": mapping of datamodel names to numba datamodel strings.
+                - "Exclude": mapping with optional "Function" and "Struct" lists.
+                - "Clang Include Paths": list of include paths for clang.
+                - "Additional Import": list of additional import statements/paths.
+                - "Shim Include Override": optional shim include override value.
+                - "Predefined Macros": list of predefined macros.
+                - "Output Name": optional output filename.
+                - "Cooperative Launch Required Functions Regex": list of regex patterns.
+                - "API Prefix Removal": mapping of API names to prefix(es) to remove.
+                - "Module Callbacks": mapping of module callback specifications.
+                - "Skip Prefix": optional prefix to skip.
+                - "Use Separate Registry": boolean flag.
+                - "Function Argument Intents": mapping of function argument intent specifications.
+
+        Raises:
+            NotImplementedError: if more than one GPU architecture is provided.
+            ValueError: if required files or include paths referenced by the configuration do not exist, or if any provided regex is invalid.
         """
         self.entry_point = config_dict["Entry Point"]
         self.gpu_arch = config_dict["GPU Arch"]
@@ -177,6 +203,10 @@ class Config:
 
         self.separate_registry = config_dict.get("Use Separate Registry", False)
 
+        self.function_argument_intents = (
+            config_dict.get("Function Argument Intents", {}) or {}
+        )
+
         # TODO: support multiple GPU architectures
         if len(self.gpu_arch) > 1:
             raise NotImplementedError(
@@ -224,8 +254,20 @@ class Config:
         module_callbacks: dict[str, str] | None = None,
         skip_prefix: str | None = None,
         separate_registry: bool = False,
+        function_argument_intents: dict | None = None,
     ) -> "Config":
-        """Create a Config instance from individual parameters instead of a config file."""
+        """
+        Construct a Config from explicit parameters instead of a YAML file.
+
+        Parameters:
+            function_argument_intents (dict | None): Mapping from function names to argument-intent specifications used by renderers; defaults to an empty dict if omitted.
+            cooperative_launch_required_functions_regex (list[str] | None): Regular expression patterns that identify functions requiring cooperative launch handling; defaults to an empty list if omitted.
+            api_prefix_removal (dict[str, list[str]] | None): Mapping of API names to lists of symbol-name prefixes to remove when generating bindings; defaults to an empty dict if omitted.
+            module_callbacks (dict[str, str] | None): Mapping of callback identifiers to their fully qualified callable names to be invoked from the generated module; defaults to an empty dict if omitted.
+
+        Returns:
+            Config: A Config instance populated with the provided parameters (types and datamodels are converted to their type names in the underlying config dictionary).
+        """
         if types is None:
             raise ValueError("Types must be provided")
         if datamodels is None:
@@ -252,6 +294,7 @@ class Config:
             "Module Callbacks": module_callbacks or {},
             "Skip Prefix": skip_prefix,
             "Separate Registry": separate_registry,
+            "Function Argument Intents": function_argument_intents or {},
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -373,17 +416,19 @@ def _generate_structs(
     data_models,
     struct_prefix_removal,
     excludes,
+    function_argument_intents: dict | None = None,
 ):
     """
-    Render struct declarations into the Python source for struct bindings.
+    Render struct declarations into generated Python source for struct bindings.
 
     Parameters:
-        struct_decls (list): List of struct declaration objects to render.
+        struct_decls (list): Struct declaration objects to render.
         header_path (str): Path to the original header file associated with the declarations.
-        types (dict): Mapping from struct name to corresponding numba type object (or None).
-        data_models (dict): Mapping from struct name to corresponding numba datamodel object (or None).
-        struct_prefix_removal (list): List of name prefixes to remove from struct identifiers when rendering.
-        excludes (list): List of struct names to exclude from rendering.
+        types (dict): Mapping from struct name to the corresponding numba type object, if available.
+        data_models (dict): Mapping from struct name to the corresponding numba datamodel object, if available.
+        struct_prefix_removal (list): Name prefixes to remove from struct identifiers when rendering.
+        excludes (list): Struct names to exclude from rendering.
+        function_argument_intents (dict | None): Optional mapping describing argument intent metadata to influence rendering (defaults to an empty dict).
 
     Returns:
         str: Rendered source code for the struct bindings.
@@ -400,6 +445,7 @@ def _generate_structs(
         specs,
         struct_prefix_removal=struct_prefix_removal,
         excludes=excludes,
+        function_argument_intents=function_argument_intents or {},
     )
 
     return SSR.render_as_str(with_imports=False, with_shim_stream=False)
@@ -412,17 +458,19 @@ def _generate_functions(
     cooperative_launch_functions: list[str],
     function_prefix_removal: list[str],
     skip_prefix: str | None,
+    function_argument_intents: dict | None = None,
 ) -> str:
     """
-    Render Python bindings for the provided function declarations.
+    Render the function-binding source for the given function declarations.
 
     Parameters:
         func_decls (list[Function]): Parsed function declarations to render.
         header_path (str): Path to the original header file used for the shim stream.
         excludes (list[str]): Function names to exclude from rendering.
-        cooperative_launch_functions (list[str]): Regex patterns or exact names identifying functions that require cooperative launch handling.
-        function_prefix_removal (list[str]): List of prefixes to strip from function names when generating bindings.
+        cooperative_launch_functions (list[str]): Regex patterns or exact names identifying functions that require cooperative-launch handling.
+        function_prefix_removal (list[str]): Prefixes to strip from function names when generating bindings.
         skip_prefix (str | None): If provided, skip generating bindings for functions whose names start with this prefix.
+        function_argument_intents (dict | None): Mapping from function names to argument-intent specifications used to guide parameter handling during rendering.
 
     Returns:
         binding_source (str): Generated source code for the functions section (imports and shim stream are omitted).
@@ -435,6 +483,7 @@ def _generate_functions(
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
         skip_prefix=skip_prefix,
+        function_argument_intents=function_argument_intents or {},
     )
 
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
@@ -494,14 +543,11 @@ def _static_binding_generator(
     bypass_parse_error: bool = False,
 ) -> str:
     """
-    Generate static Python bindings for a CUDA C++ header using the provided configuration.
+    Generate static Python bindings for a CUDA C++ header according to the provided configuration.
 
     Parameters:
-        config (Config): Configuration containing entry point, parsing and rendering options.
-        output_dir (str): Directory where the generated binding file will be written.
-        log_generates (bool): If True, print counts and lists of declarations that will be generated.
-        cfg_file_path (str | None): Path to the config file used to produce these bindings (used for reproducible metadata); may be None.
-        sbg_params (dict[str, str]): Extra parameters to include in the generator metadata.
+        cfg_file_path (str | None): Path to the YAML config used to produce these bindings; used for reproducible metadata and may be None.
+        sbg_params (dict[str, str]): Additional key/value parameters to embed in the generator metadata.
         bypass_parse_error (bool): If True, continue generation when source parsing reports recoverable errors.
 
     Returns:
@@ -562,6 +608,7 @@ def _static_binding_generator(
         config.datamodels,
         config.api_prefix_removal.get("Struct", []),
         config.exclude_structs,
+        config.function_argument_intents,
     )
 
     function_bindings = _generate_functions(
@@ -571,6 +618,7 @@ def _static_binding_generator(
         config.cooperative_launch_required_functions_regex,
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
+        config.function_argument_intents,
     )
 
     registry_setup_str = registry_setup(config.separate_registry)

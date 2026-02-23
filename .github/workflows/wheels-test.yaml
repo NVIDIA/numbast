@@ -78,12 +78,12 @@ jobs:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }} # GPU jobs must set this container env variable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         name: Download binary wheels
         with:
           name: pypi-wheels-${{ matrix.ARCH }}
@@ -91,10 +91,12 @@ jobs:
       - name: Setup proxy cache
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
+        with:
+          enable-apt: true
       - name: Ensure GPU is working
         run: nvidia-smi
       - name: Set up Python ${{ matrix.PY_VER }}
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: ${{ matrix.PY_VER }}
           allow-prereleases: true
@@ -133,3 +135,6 @@ jobs:
       - name: Test numbast wheels
         run: |
           python -m pytest numbast/
+      - name: Run numbast_extensions third-party CCCL tests
+        run: |
+          python -m pytest numbast_extensions/tests/thirdparty/CCCL/
