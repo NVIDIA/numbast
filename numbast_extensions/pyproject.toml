@@ -9,13 +9,13 @@ build-backend = "setuptools.build_meta"
 name = "numbast_extensions"
 dynamic = ["version"]
 description = "Numba extensions for exotic data types in Numba, built with Numbast"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
 ]
-dependencies = ["numba-cuda>=0.21.0,<0.23.0", "numbast>=0.2.0"]
+dependencies = ["numba-cuda>=0.26.0", "numbast>=0.2.0"]
 
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"
