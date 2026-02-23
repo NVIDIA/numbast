@@ -346,7 +346,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
                 )
             except TypeNotFoundError as e:
                 warnings.warn(
-                    f"{e._type_name} is not known to Numbast. Skipping "
+                    f"{e.type_name} is not known to Numbast. Skipping "
                     f"binding for {str(ctor_decl)}"
                 )
                 continue
@@ -358,9 +358,9 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
 
             signatures.append(renderer.signature_str)
 
-        self._render_typing(signatures)
-
-        self._python_rendered += self._struct_ctor_typing_rendered
+        if signatures:
+            self._render_typing(signatures)
+            self._python_rendered += self._struct_ctor_typing_rendered
 
     @property
     def python_rendered(self) -> str:
@@ -534,13 +534,20 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
         """Render all struct constructors."""
 
         for convop_decl in self._convop_decls:
-            renderer = StaticStructConversionOperatorRenderer(
-                struct_name=self._struct_name,
-                struct_type_class=self._struct_type_class,
-                struct_type_name=self._struct_type_name,
-                header_path=self._header_path,
-                convop_decl=convop_decl,
-            )
+            try:
+                renderer = StaticStructConversionOperatorRenderer(
+                    struct_name=self._struct_name,
+                    struct_type_class=self._struct_type_class,
+                    struct_type_name=self._struct_type_name,
+                    header_path=self._header_path,
+                    convop_decl=convop_decl,
+                )
+            except TypeNotFoundError as e:
+                warnings.warn(
+                    f"{e.type_name} is not known to Numbast. Skipping "
+                    f"binding for {str(convop_decl)}"
+                )
+                continue
             renderer._render()
 
             self._python_rendered += renderer._python_rendered

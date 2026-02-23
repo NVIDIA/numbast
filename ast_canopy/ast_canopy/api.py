@@ -5,6 +5,7 @@ import subprocess
 import os
 import tempfile
 import logging
+import shutil
 from typing import Any
 from dataclasses import dataclass
 import warnings
@@ -258,15 +259,10 @@ def get_cuda_include_dir_for_clang() -> dict[str, str]:
     return paths
 
 
-def check_clang_binary() -> str | None:
-    """Check if clang++ is installed in the system."""
-    output = subprocess.run(
-        ["which", "clang++"], capture_output=True, text=True
-    )
-    if output.returncode != 0:
-        return None
-
-    return output.stdout.strip()
+def check_clang_binary(clang_binary: str | None = None) -> str | None:
+    """Resolve the given clang binary from PATH and return its path."""
+    clang_binary = clang_binary if clang_binary is not None else "clang++"
+    return shutil.which(clang_binary)
 
 
 def get_clang_resource_dir(clang_binary: str | None) -> str:
@@ -343,6 +339,7 @@ def parse_declarations_from_source(
     defines: list[str] = [],
     verbose: bool = False,
     bypass_parse_error: bool = False,
+    clang_binary: str | None = None,
 ) -> Declarations:
     """Given a source file, parse all top-level declarations from it and return
     a ``Declarations`` object containing lists of declaration objects found in
@@ -384,6 +381,14 @@ def parse_declarations_from_source(
     bypass_parse_error : bool, optional
         If True, bypass parse error and continue generating bindings.
 
+    clang_binary : str | None, optional
+        Path to a specific clang binary to use.
+        If None, ast_canopy attempts to resolve `clang++` from PATH. When that
+        resolution fails, a warning is emitted and command invocation falls
+        back to the bare `clang++` string.
+        If a non-None value is provided but cannot be resolved, a
+        ``RuntimeError`` is raised.
+
     Returns
     -------
     Declarations
@@ -417,7 +422,20 @@ def parse_declarations_from_source(
 
     _validate_compute_capability(compute_capability)
 
-    clang_binary = check_clang_binary()
+    orig_clang_binary = clang_binary
+    clang_binary = check_clang_binary(clang_binary)
+
+    if orig_clang_binary is not None and clang_binary is None:
+        raise RuntimeError(
+            f"Unable to resolve requested clang binary: {orig_clang_binary!r}. "
+            "Please provide a valid clang++ executable path or name."
+        )
+
+    if clang_binary is None:
+        warnings.warn(
+            "Unable to resolve 'clang++' from PATH. Falling back to bare "
+            "'clang++' for command invocation."
+        )
 
     clang_resource_dir = get_clang_resource_dir(clang_binary)
 
@@ -433,7 +451,7 @@ def parse_declarations_from_source(
     # 3. CUDA Toolkit include directories
     # 4. Additional include directories
     command_line_options = [
-        "clang++",
+        clang_binary if clang_binary is not None else "clang++",
         *clang_verbose_flag,
         "--cuda-device-only",
         "-xcuda",
@@ -500,6 +518,7 @@ def value_from_constexpr_vardecl(
     compute_capability: str,
     cxx_standard: str = "gnu++17",
     verbose: bool = False,
+    clang_binary: str | None = None,
 ) -> bindings.ConstExprVar | None:
     """Extract the value from a constexpr ``VarDecl`` with the given name.
 
@@ -520,6 +539,14 @@ def value_from_constexpr_vardecl(
     verbose : bool, optional
         If True, print the stderr from clang++ invocation.
 
+    clang_binary : str | None, optional
+        Path to a specific clang binary to use.
+        If None, ast_canopy attempts to resolve `clang++` from PATH. When that
+        resolution fails, a warning is emitted and command invocation falls
+        back to the bare `clang++` string.
+        If a non-None value is provided but cannot be resolved, a
+        ``RuntimeError`` is raised.
+
     Returns
     -------
     ConstExprVar | None
@@ -530,7 +557,20 @@ def value_from_constexpr_vardecl(
         f.write(source)
         f.flush()
 
-        clang_binary = check_clang_binary()
+        orig_clang_binary = clang_binary
+        clang_binary = check_clang_binary(clang_binary)
+
+        if orig_clang_binary is not None and clang_binary is None:
+            raise RuntimeError(
+                f"Unable to resolve requested clang binary: {orig_clang_binary!r}. "
+                "Please provide a valid clang++ executable path or name."
+            )
+
+        if clang_binary is None:
+            warnings.warn(
+                "Unable to resolve 'clang++' from PATH. Falling back to bare "
+                "'clang++' for command invocation."
+            )
 
         clang_resource_dir = get_clang_resource_dir(clang_binary)
 
@@ -546,7 +586,7 @@ def value_from_constexpr_vardecl(
         cuda_path = get_cuda_path_for_clang()
 
         command_line_options = [
-            "clang++",
+            clang_binary if clang_binary is not None else "clang++",
             "--cuda-device-only",
             "-xcuda",
             f"--cuda-path={cuda_path}",
