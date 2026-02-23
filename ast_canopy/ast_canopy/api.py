@@ -433,7 +433,7 @@ def parse_declarations_from_source(
     # 3. CUDA Toolkit include directories
     # 4. Additional include directories
     command_line_options = [
-        clang_binary if not None else "clang++",
+        clang_binary if clang_binary is not None else "clang++",
         *clang_verbose_flag,
         "--cuda-device-only",
         "-xcuda",
@@ -546,7 +546,7 @@ def value_from_constexpr_vardecl(
         cuda_path = get_cuda_path_for_clang()
 
         command_line_options = [
-            "clang++",
+            clang_binary if clang_binary is not None else "clang++",
             "--cuda-device-only",
             "-xcuda",
             f"--cuda-path={cuda_path}",

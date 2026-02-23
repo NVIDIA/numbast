@@ -346,7 +346,7 @@ register_global({struct_name}, Function({struct_ctor_template_name}))
                 )
             except TypeNotFoundError as e:
                 warnings.warn(
-                    f"{e._type_name} is not known to Numbast. Skipping "
+                    f"{e.type_name} is not known to Numbast. Skipping "
                     f"binding for {str(ctor_decl)}"
                 )
                 continue
@@ -544,7 +544,7 @@ class StaticStructConversionOperatorsRenderer(BaseRenderer):
                 )
             except TypeNotFoundError as e:
                 warnings.warn(
-                    f"{e._type_name} is not known to Numbast. Skipping "
+                    f"{e.type_name} is not known to Numbast. Skipping "
                     f"binding for {str(convop_decl)}"
                 )
                 continue

@@ -23,6 +23,7 @@ CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 def register_enum_type_str(
     ctype_enum_name: str,
     enum_name: str,
+    underlying_integer_type: str = "int64",
 ):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
@@ -34,7 +35,9 @@ def register_enum_type_str(
     """
     global CTYPE_TO_NBTYPE_STR
 
-    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
+    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = (
+        f"IntEnumMember({enum_name}, {underlying_integer_type})"
+    )
 
 
 def reset_types():
