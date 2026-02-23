@@ -17,7 +17,6 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "numba>=0.59.0",
   "numba-cuda>=0.25.0",
   "ast_canopy>=0.5.0",
   "pyyaml",
