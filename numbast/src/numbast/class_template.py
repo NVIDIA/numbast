@@ -1290,7 +1290,13 @@ def _get_or_bind_concrete_type(
 def _ctor_signature_key(
     ctor: StructMethod,
 ) -> tuple[tuple[str, bool, bool], ...]:
-    """Build a stable constructor identity signature from parameter types."""
+    """Build a normalized constructor signature for overload matching.
+
+    Each parameter contributes a tuple of:
+    ``(unqualified_non_ref_type_name, is_left_reference, is_right_reference)``.
+    The resulting tuple is stable and hashable, so it can be used to compare
+    template-level constructors with constructors on concrete specializations.
+    """
     return tuple(
         (
             param.unqualified_non_ref_type_name,
@@ -1307,7 +1313,24 @@ def _resolve_specialization_ctor(
     template_ctor: StructMethod,
     ctor_call_args: tuple[nbtypes.Type, ...] | None = None,
 ) -> StructMethod:
-    """Resolve specialization ctor by identity, not by positional index."""
+    """Resolve the concrete constructor for an instantiated class template.
+
+    Template deduction selects a constructor from the template-level declaration
+    (`template_ctor`), but lowering/shim generation must use the corresponding
+    constructor in the concrete specialization (`specialization_decl`).
+    Constructor order is not guaranteed to be stable across these views, so this
+    helper avoids positional matching and instead resolves by identity.
+
+    Matching strategy (most to least specific):
+    1. Exact mangled-name match, with parameter-signature tie-break.
+    2. Match by concrete call argument types (`ctor_call_args`), with reference
+       qualifier mask tie-break.
+    3. Match by normalized constructor parameter signature.
+    4. Match by qualified name.
+    5. Final fallback by parameter count + reference qualifier mask.
+
+    Raises `TypingError` when no unique constructor can be identified.
+    """
     specialization_ctors = [
         ctor
         for ctor in specialization_decl.constructors()
@@ -1417,7 +1440,13 @@ def _ensure_ctor_callconv(
         tuple[nbtypes.Type, tuple[nbtypes.Type, ...]], FunctionCallConv
     ],
 ) -> tuple[FunctionCallConv, tuple[nbtypes.Type, ...]]:
-    """Build (or reuse) constructor callconv for a concrete specialization."""
+    """Return a constructor callconv for a concrete specialization.
+
+    Resolves the specialization constructor corresponding to the template-level
+    constructor, derives its Numba parameter types, and uses
+    ``(instance_type, ctor_param_types)`` as a cache key. On cache miss, emits
+    the ctor shim/callconv and stores it in ``ctor_callconv_cache``.
+    """
     ctor = _resolve_specialization_ctor(
         specialization_decl=specialization_decl,
         template_ctor=template_ctor,
