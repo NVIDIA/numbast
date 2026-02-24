@@ -51,6 +51,7 @@ requirements:
     - cuda-nvrtc
     - cuda-version >=12.5
     - numba >=0.59
+    - numpy <2.4
     - python
     - numba-cuda >=0.21.0,<0.23.0
     - pyyaml

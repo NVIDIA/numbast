@@ -23,6 +23,7 @@ rapids-mamba-retry create -n test \
   cuda-version=${RAPIDS_CUDA_VERSION%.*} \
   cuda-nvrtc \
   numba >=0.59 \
+  "numpy<2.4" \
   "numba-cuda>=0.21.0,<0.23.0" \
   cuda-cudart-dev \
   python=${RAPIDS_PY_VERSION} \
