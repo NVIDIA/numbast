@@ -6,19 +6,9 @@ name = "numbast"
 channels = ["conda-forge", "numba", "nvidia"]
 platforms = ["linux-64"]
 
-[dependencies]
+[feature.required.dependencies]
 python = ">=3.10"
-cmake = ">=3.29"
-clangdev = ">=18,<22.0"
-pybind11 = "*"
-mypy = "*"
-pre-commit = "*"
-cxx-compiler = "*"
-scikit-build-core = "*"
-pip = "*"
-ninja = "*"
 pyyaml = "*"
-ruff = "*"
 click = "*"
 jinja2 = "*"
 
@@ -26,6 +16,18 @@ jinja2 = "*"
 pytest = "*"
 pytest-benchmark = "*"
 cffi = "*"
+mypy = "*"
+pre-commit = "*"
+ruff = "*"
+
+[feature.build.dependencies]
+cmake = ">=3.29"
+clangdev = ">=18,<22.0"
+pybind11 = "*"
+cxx-compiler = "*"
+scikit-build-core = "*"
+pip = "*"
+ninja = "*"
 
 [feature.docs.dependencies]
 sphinx = "*"
@@ -53,9 +55,27 @@ cuda-toolkit = "13.0.*"
 cuda-python = "13.0.*"
 
 [environments]
-default = { features = ["test", "docs", "cu13"], solve-group = "test-cu13" }
-test-cu12 = { features = ["test", "docs", "cu12"], solve-group = "test-cu12" }
-test-cu13 = { features = ["test", "docs", "cu13"], solve-group = "test-cu13" }
+default = { features = [
+  "required",
+  "build",
+  "test",
+  "docs",
+  "cu13",
+], solve-group = "test-cu13", no-default-feature = true }
+test-cu12 = { features = [
+  "required",
+  "build",
+  "test",
+  "docs",
+  "cu12",
+], solve-group = "test-cu12", no-default-feature = true }
+test-cu13 = { features = [
+  "required",
+  "build",
+  "test",
+  "docs",
+  "cu13",
+], solve-group = "test-cu13", no-default-feature = true }
 
 [target.linux.tasks.build-ast-canopy]
 cmd = ["bash", "$PIXI_PROJECT_ROOT/ast_canopy/build.sh"]
