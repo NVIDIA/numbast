@@ -8,6 +8,8 @@ from typing import Any
 
 from numbast.static.renderer import clear_base_renderer_cache
 from numbast.static.function import clear_function_apis_registry
+from numbast.static.function_template import clear_function_template_registry
+from numbast.static.class_template import clear_class_template_cache
 from numbast.tools.static_binding_generator import (
     _static_binding_generator,
     Config,
@@ -48,6 +50,8 @@ def make_binding(tmpdir, data_folder):
     ):
         clear_base_renderer_cache()
         clear_function_apis_registry()
+        clear_function_template_registry()
+        clear_class_template_cache()
 
         header_path = data_folder(header_name)
         cfg = Config.from_params(
