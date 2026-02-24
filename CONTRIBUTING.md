@@ -41,11 +41,13 @@ Remember, if you are unsure about anything, don't hesitate to comment on issues 
 
 ## Releases
 
-The release process for Numbast involves the following steps:
+### Mainline releases
 
-- Make sure your local main branch is top-of-tree.
+The mainline release process for Numbast involves the following steps:
+
+- Make sure your local `main` branch is top-of-tree.
 - Open a PR to update `VERSION` in repo root to the desired version.
-- Generate a short changelog with `git log v<PREVIOUS_VERSION>..HEAD --oneline --pretty=format:"- %s"`
+- Generate a short changelog with `git log v<PREVIOUS_VERSION>..HEAD --oneline --pretty=format:"- %s"`.
 - Put the changelog in the version update PR description.
 - Once `main` is updated, tag the release:
 ```
@@ -62,6 +64,34 @@ v<VERSION>
 ```
 git push git@github.com:NVIDIA/numbast.git v<VERSION>
 ```
+
+### Patch releases from a previous tag
+
+For patch releases on an existing release line (for example, `0.6.x`):
+
+1. Create a maintenance branch from the previous release tag:
+```
+git checkout v<PREVIOUS_VERSION>
+git checkout -b <MAJOR.MINOR>.x-patch
+git push -u origin <MAJOR.MINOR>.x-patch
+```
+2. Use short-lived branches for fixes, and open PRs targeting `<MAJOR.MINOR>.x-patch`.
+3. Wait for CI and merge each fix PR into `<MAJOR.MINOR>.x-patch`.
+4. Open a PR that bumps repo-root `VERSION` to the patch version (for example `0.6.1`), targeting `<MAJOR.MINOR>.x-patch`.
+5. Wait for CI and merge the version bump PR.
+6. Create and push an annotated tag from the tip of `<MAJOR.MINOR>.x-patch`:
+```
+git checkout <MAJOR.MINOR>.x-patch && git pull
+git log v<PREVIOUS_VERSION>..HEAD --pretty=format:"- %s" > /tmp/numbast-v<NEW_VERSION>-changelog.txt
+printf "v<NEW_VERSION>\n\n" > /tmp/numbast-v<NEW_VERSION>-tag.txt
+cat /tmp/numbast-v<NEW_VERSION>-changelog.txt >> /tmp/numbast-v<NEW_VERSION>-tag.txt
+git tag -a v<NEW_VERSION> -F /tmp/numbast-v<NEW_VERSION>-tag.txt
+git push origin v<NEW_VERSION>
+```
+
+Notes:
+- Use branch names that do not start with `v` for maintenance branches (for example, `0.6.x-patch`) to avoid accidental release automation triggers.
+- Keep the PR changelog and tag annotation text consistent.
 
 ## Attribution
 Portions adopted from https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md

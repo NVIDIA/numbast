@@ -1,8 +1,8 @@
 # AGENTS
 
-## Skill: Publish a New Numbast Agent Version
+## Skill: Publish a New Numbast Mainline Version
 
-Use this skill when asked to publish a new version of the Numbast agent.
+Use this skill when asked to publish a new version of the Numbast agent from `main`.
 
 ### Required Inputs
 
@@ -43,3 +43,47 @@ Use this skill when asked to publish a new version of the Numbast agent.
 - Keep the PR changelog and tag annotation text consistent.
 - Use the `v<NEW_VERSION>` tag format exactly.
 - Use non-interactive tag creation (`-F`) so automation does not hang.
+
+## Skill: Publish a Numbast Patch Release Line
+
+Use this skill when asked to release a patch version from a previous tag (for example, from `v0.6.0` to `v0.6.1`).
+
+### Required Inputs
+
+- `NEW_VERSION` (for example, `0.6.1`)
+- `PREVIOUS_VERSION` (for example, `0.6.0`)
+- `PATCH_BRANCH` (for example, `0.6.x-patch`)
+
+### Steps
+
+1. Create and push a maintenance branch from the previous tag:
+   - `git checkout v<PREVIOUS_VERSION>`
+   - `git checkout -b PATCH_BRANCH`
+   - `git push -u origin PATCH_BRANCH`
+2. For each patch fix, use a short-lived branch based on `PATCH_BRANCH`, open a PR targeting `PATCH_BRANCH`, then wait for CI and merge.
+3. Create a version bump PR into `PATCH_BRANCH`:
+   - `git checkout PATCH_BRANCH && git pull`
+   - `git checkout -b bump-version-NEW_VERSION`
+   - `echo "NEW_VERSION" > VERSION`
+   - `git add VERSION && git commit -m "Bump Version to NEW_VERSION"`
+   - `git push -u origin bump-version-NEW_VERSION`
+   - Open a PR from `bump-version-NEW_VERSION` into `PATCH_BRANCH`.
+4. Wait until the version-bump PR is merged into `PATCH_BRANCH`.
+5. Refresh local `PATCH_BRANCH`:
+   - `git checkout PATCH_BRANCH && git pull`
+6. Generate and save the changelog for the patch line:
+   - `git log v<PREVIOUS_VERSION>..HEAD --pretty=format:"- %s" > /tmp/numbast-vNEW_VERSION-changelog.txt`
+7. Create the annotated tag file non-interactively:
+   - `printf "v<NEW_VERSION>\n\n" > /tmp/numbast-vNEW_VERSION-tag.txt`
+   - `cat /tmp/numbast-vNEW_VERSION-changelog.txt >> /tmp/numbast-vNEW_VERSION-tag.txt`
+8. Create and push the annotated tag:
+   - `git tag -a v<NEW_VERSION> -F /tmp/numbast-vNEW_VERSION-tag.txt`
+   - `git show v<NEW_VERSION>`
+   - `git push origin v<NEW_VERSION>`
+
+### Guardrails
+
+- Do not use maintenance branch names starting with `v` (for example, avoid `v0.6.x-*`).
+- Do not tag before the version bump PR is merged into `PATCH_BRANCH`.
+- Tag the tip of `PATCH_BRANCH`, not `main`, for patch releases.
+- Keep the patch PR changelog and tag annotation text consistent.
