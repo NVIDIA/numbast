@@ -3,13 +3,13 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="../" >
+<html lang="en" data-content_root="./" >
 
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>numbast.static &#8212; Numbast</title>
+    <title>Class template calls &#8212; Numbast</title>
   
   
   
@@ -28,27 +28,27 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
   
   <!-- So that users can add custom icons -->
-  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
 
 
-    <script src="../_static/documentation_options.js?v=2bd037f0"></script>
-    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
-    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
-    <script src="../_static/copybutton.js?v=35a8b989"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/numbast.static';</script>
+    <script src="_static/documentation_options.js?v=2bd037f0"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=35a8b989"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'template';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
@@ -57,13 +57,13 @@
             false;
         </script>
 
-    <link rel="canonical" href="docs/_autosummary/numbast.static.html" />
-    <link rel="icon" href="../_static/favicon.png"/>
+    <link rel="canonical" href="docs/template.html" />
+    <link rel="icon" href="_static/favicon.png"/>
 
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="numbast.static.callconv" href="numbast.static.callconv.html" />
-    <link rel="prev" title="ast_canopy.decl" href="ast_canopy.decl.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Supported declarations" href="supported_declarations.html" />
+    <link rel="prev" title="Dynamic binding generation" href="dynamic.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -92,7 +92,7 @@
   <dialog id="pst-search-dialog">
     
 <form class="bd-search d-flex align-items-center"
-      action="../search.html"
+      action="search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -128,7 +128,7 @@
     
   
 
-<a class="navbar-brand logo" href="../index.html">
+<a class="navbar-brand logo" href="index.html">
   
   
   
@@ -139,8 +139,8 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="Numbast - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="Numbast - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="Numbast - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="Numbast - Home"/>
   
   
     <p class="title logo__title">Numbast</p>
@@ -180,35 +180,35 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../overview.html">
+  <a class="nav-link nav-internal" href="overview.html">
     Overview
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../quickstart.html">
+  <a class="nav-link nav-internal" href="quickstart.html">
     Quickstart
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../install.html">
+  <a class="nav-link nav-internal" href="install.html">
     Install
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../static.html">
+  <a class="nav-link nav-internal" href="static.html">
     Static binding generation
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../dynamic.html">
+  <a class="nav-link nav-internal" href="dynamic.html">
     Dynamic binding generation
   </a>
 </li>
@@ -221,36 +221,36 @@
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../template.html">
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
     Class template calls
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../supported_declarations.html">
+  <a class="nav-link dropdown-item nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../ast_canopy_overview.html">
+  <a class="nav-link dropdown-item nav-internal" href="ast_canopy_overview.html">
     AST Canopy overview
   </a>
 </li>
 
 
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../faq.html">
+  <a class="nav-link dropdown-item nav-internal" href="faq.html">
     FAQ
   </a>
 </li>
 
 
-<li class=" current active">
-  <a class="nav-link dropdown-item nav-internal" href="../api_reference.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="api_reference.html">
     API reference
   </a>
 </li>
@@ -301,6 +301,10 @@
   
 
   
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
 </div>
 
     </header>
@@ -321,7 +325,7 @@
     
   
 
-<a class="navbar-brand logo" href="../index.html">
+<a class="navbar-brand logo" href="index.html">
   
   
   
@@ -332,8 +336,8 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="Numbast - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="Numbast - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="Numbast - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="Numbast - Home"/>
   
   
     <p class="title logo__title">Numbast</p>
@@ -379,70 +383,70 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../overview.html">
+  <a class="nav-link nav-internal" href="overview.html">
     Overview
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../quickstart.html">
+  <a class="nav-link nav-internal" href="quickstart.html">
     Quickstart
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../install.html">
+  <a class="nav-link nav-internal" href="install.html">
     Install
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../static.html">
+  <a class="nav-link nav-internal" href="static.html">
     Static binding generation
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../dynamic.html">
+  <a class="nav-link nav-internal" href="dynamic.html">
     Dynamic binding generation
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../template.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
     Class template calls
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../supported_declarations.html">
+  <a class="nav-link nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../ast_canopy_overview.html">
+  <a class="nav-link nav-internal" href="ast_canopy_overview.html">
     AST Canopy overview
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../faq.html">
+  <a class="nav-link nav-internal" href="faq.html">
     FAQ
   </a>
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="../api_reference.html">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api_reference.html">
     API reference
   </a>
 </li>
@@ -479,30 +483,30 @@
   <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../static.html">Static binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../template.html">Class template calls</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../supported_declarations.html">Supported declarations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../ast_canopy_overview.html">AST Canopy overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../api_reference.html">API reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="ast_canopy.decl.html">ast_canopy.decl</a></li>
-<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">numbast.static</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.enum.html">numbast.static.enum</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.function.html">numbast.static.function</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.renderer.html">numbast.static.renderer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.struct.html">numbast.static.struct</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.typedef.html">numbast.static.typedef</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.types.html">numbast.static.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Class template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.enum.html">numbast.static.enum</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function.html">numbast.static.function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.renderer.html">numbast.static.renderer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.struct.html">numbast.static.struct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.typedef.html">numbast.static.typedef</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.types.html">numbast.static.types</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
 </ul>
 </details></li>
 </ul>
@@ -537,14 +541,11 @@
   <ul class="bd-breadcrumbs">
     
     <li class="breadcrumb-item breadcrumb-home">
-      <a href="../index.html" class="nav-link" aria-label="Home">
+      <a href="index.html" class="nav-link" aria-label="Home">
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    
-    <li class="breadcrumb-item"><a href="../api_reference.html" class="nav-link">API reference</a></li>
-    
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">numbast.static</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Class template calls</span></li>
   </ul>
 </nav>
 </div>
@@ -561,44 +562,44 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-numbast.static">
-<span id="numbast-static"></span><h1>numbast.static<a class="headerlink" href="#module-numbast.static" title="Link to this heading">#</a></h1>
-<p class="rubric">Functions</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#numbast.static.reset_renderer" title="numbast.static.reset_renderer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_renderer</span></code></a>()</p></td>
-<td><p>Clear all renderer cache and api registries.</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="class-template-calls">
+<h1>Class template calls<a class="headerlink" href="#class-template-calls" title="Link to this heading">#</a></h1>
+<p>This page complements <a class="reference internal" href="dynamic.html"><span class="doc">Dynamic binding generation</span></a> with class template constructor usage and examples.</p>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
+<p>Class templates use a one-step constructor call form:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">TemplateClass</span><span class="p">(</span><span class="o">*</span><span class="n">ctor_args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctor_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">template_kwargs</span><span class="p">)</span>
+</pre></div>
 </div>
-<p class="rubric">Modules</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="numbast.static.callconv.html#module-numbast.static.callconv" title="numbast.static.callconv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">callconv</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="numbast.static.enum.html#module-numbast.static.enum" title="numbast.static.enum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enum</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="numbast.static.function.html#module-numbast.static.function" title="numbast.static.function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">function</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="numbast.static.renderer.html#module-numbast.static.renderer" title="numbast.static.renderer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">renderer</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="numbast.static.struct.html#module-numbast.static.struct" title="numbast.static.struct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">struct</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="numbast.static.typedef.html#module-numbast.static.typedef" title="numbast.static.typedef"><code class="xref py py-obj docutils literal notranslate"><span class="pre">typedef</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="numbast.static.types.html#module-numbast.static.types" title="numbast.static.types"><code class="xref py py-obj docutils literal notranslate"><span class="pre">types</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Given C++:</span>
+<span class="c1"># template &lt;typename T, int BLOCK_DIM_X&gt; struct BlockScan { __device__ BlockScan(); ... };</span>
+<span class="c1"># template &lt;int N, typename T&gt; class Foo { __device__ Foo(T t); ... };</span>
+<span class="n">apis</span> <span class="o">=</span> <span class="n">bind_cxx_class_templates</span><span class="p">(</span>
+    <span class="n">decls</span><span class="o">.</span><span class="n">class_templates</span><span class="p">,</span>
+    <span class="n">header_path</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+    <span class="n">shim_writer</span><span class="o">=</span><span class="n">shim_writer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">BlockScan</span><span class="p">,</span> <span class="n">Foo</span> <span class="o">=</span> <span class="n">apis</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">shim_writer</span><span class="o">.</span><span class="n">links</span><span class="p">())</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+    <span class="n">block_scan</span> <span class="o">=</span> <span class="n">BlockScan</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">BLOCK_DIM_X</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="n">foo</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="n">inp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">N</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>  <span class="c1"># T is deduced from constructor args.</span>
+    <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">foo</span><span class="o">.</span><span class="n">get_t</span><span class="p">()</span>
+</pre></div>
 </div>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Template parameters are provided by keyword name.</p></li>
+<li><p>Constructor keyword arguments must appear before template-parameter keywords.</p></li>
+<li><p>Explicit template kwargs are validated against deduced template types.</p></li>
+</ul>
+</section>
 </section>
 
 
@@ -612,20 +613,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="ast_canopy.decl.html"
+       href="dynamic.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">ast_canopy.decl</p>
+        <p class="prev-next-title">Dynamic binding generation</p>
       </div>
     </a>
     <a class="right-next"
-       href="numbast.static.callconv.html"
+       href="supported_declarations.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">numbast.static.callconv</p>
+        <p class="prev-next-title">Supported declarations</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -636,9 +637,27 @@
             
             
 
-<div class="bd-sidebar-secondary"></div>
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#usage">Usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
 
@@ -653,8 +672,8 @@
   
 
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
 
 
   <footer class="bd-footer">
@@ -664,8 +683,8 @@
       
         <div class="footer-item">
 <a class="footer-brand logo" href="https://www.nvidia.com">
-  <img src="../_static/nvidia-logo-horiz-rgb-1c-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA"/>
-  <img src="../_static/nvidia-logo-horiz-rgb-1c-wht-for-screen.svg" class="logo__image only-dark" alt="NVIDIA"/>
+  <img src="_static/nvidia-logo-horiz-rgb-1c-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA"/>
+  <img src="_static/nvidia-logo-horiz-rgb-1c-wht-for-screen.svg" class="logo__image only-dark" alt="NVIDIA"/>
 </a></div>
       
         <div class="footer-item">

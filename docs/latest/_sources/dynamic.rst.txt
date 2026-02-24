@@ -90,6 +90,11 @@ Numbast can generate and use bindings at runtime:
   kernel[1, 1](arr)
   np.testing.assert_allclose(arr, [3.0, np.sqrt(3.0)], rtol=1e-2)
 
+Class template calls
+--------------------
+
+For class template constructor usage and examples, see :doc:`template`.
+
 Guidance and best practices
 ---------------------------
 

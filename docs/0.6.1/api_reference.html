@@ -222,6 +222,13 @@
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
 <li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="template.html">
+    Class template calls
+  </a>
+</li>
+
+
+<li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
@@ -411,6 +418,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="template.html">
+    Class template calls
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
@@ -474,6 +488,7 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template.html">Class template calls</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
@@ -1198,36 +1213,34 @@ For each PTX, a separate cuda.PTXSource object is created.</p>
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">shim_writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ShimWriterBase</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">struct_decl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ast_canopy.decl.ClassTemplateSpecialization" title="ast_canopy.decl.ClassTemplateSpecialization"><span class="pre">ClassTemplateSpecialization</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">instance_type_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">instance_type_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TypeRef</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">aliases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">arg_intent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></span></dt>
-<dd><p>Bind a C++ class template specialization into Numba and return the corresponding Numba instance type.</p>
-<p>This registers the C++ name-to-Numba-type mapping, installs a StructModel for the instantiated type, registers attribute and method typing templates, and binds constructors so the specialization can be used from Numba.</p>
+<dd><p>Bind a C++ class-template specialization into Numba.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>shim_writer</strong> – ShimWriterBase
-Utility used to emit shim-layer code for bound methods.</p></li>
-<li><p><strong>struct_decl</strong> – ClassTemplateSpecialization
-Parsed C++ class template specialization declaration to bind.</p></li>
-<li><p><strong>instance_type_ref</strong> – nbtypes.Type
-The Numba TypeRef representing the instantiated template; its .instance_type is the returned type.</p></li>
-<li><p><strong>aliases</strong> – dict[str, list[str]], optional
-Optional name aliases for the C++ type (e.g., typedefs) to register to the same Numba type.</p></li>
-<li><p><strong>arg_intent</strong> – dict | None, optional
-Optional per-argument intent overrides to influence method parameter/return typing.</p></li>
+<li><p><strong>shim_writer</strong> (<em>ShimWriterBase</em>) – Shim-writer used to emit C++ bridge functions for constructors and
+methods.</p></li>
+<li><p><strong>struct_decl</strong> (<a class="reference internal" href="#ast_canopy.decl.ClassTemplateSpecialization" title="ast_canopy.decl.ClassTemplateSpecialization"><em>ClassTemplateSpecialization</em></a>) – Parsed AST declaration for the concrete class-template specialization.</p></li>
+<li><p><strong>instance_type_ref</strong> (<em>nbtypes.TypeRef</em>) – TypeRef representing the concrete specialization to register; the
+returned bound type is <code class="docutils literal notranslate"><span class="pre">instance_type_ref.instance_type</span></code>.</p></li>
+<li><p><strong>aliases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>]</em><em>, </em><em>optional</em>) – Mappings from the base struct name to a list of aliases.
+For example in C++: typedef A B; typedef A C; then
+aliases = {“A”: [“B”, “C”]}</p></li>
+<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><em>None</em><em>, </em><em>optional</em>) – Optional per-method argument-intent overrides used while binding
+regular and templated methods.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>nbtypes.Type</dt><dd><p>The Numba instance type for the bound class template specialization (instance_type_ref.instance_type).</p>
+<dd class="field-even"><p>The bound Numba instance type for this specialization.</p>
 </dd>
-</dl>
-</p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nbtypes.Type</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1482,6 +1495,12 @@ Optional overrides that guide argument intent (in/out/inout) and influence metho
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">numbast.</span></span><span class="sig-name descname"><span class="pre">clear_concrete_type_caches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span></dt>
+<dd><p>Clear class-template concrete type caches.</p>
 </dd></dl>
 
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
