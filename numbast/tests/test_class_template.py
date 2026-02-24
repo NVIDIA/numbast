@@ -123,8 +123,7 @@ def test_class_template_default_param(decl, shim_writer):
         i = cuda.grid(1)
         if i >= out.size:
             return
-        default_t = DefaultParam(T=T)
-        default_obj = default_t(inp[i])
+        default_obj = DefaultParam(inp[i], T=T)
         out[i] = default_obj.add_default()
 
     x = np.arange(1, 9, dtype=T)

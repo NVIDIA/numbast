@@ -1479,6 +1479,14 @@ def _ensure_ctor_callconv(
     return ctor_cc, ctor_param_types
 
 
+def _normalize_ctor_lowering_cache_key(
+    instance_type: nbtypes.Type,
+    call_arg_types: tuple[nbtypes.Type, ...],
+) -> tuple[nbtypes.Type, tuple[nbtypes.Type, ...]]:
+    """Normalize ctor-lowering cache keys used by typing and lowering."""
+    return (instance_type, tuple(call_arg_types))
+
+
 def _register_meta_type(
     stub: object,
     meta_type: nbtypes.Type,
@@ -1661,7 +1669,21 @@ def _register_meta_type(
                 if created:
                     self.context.refresh()
 
-                ctor_lowering_cache[(instance_type, full_call_arg_types)] = (
+                expected_key = (instance_type, full_call_arg_types)
+                normalized_key = _normalize_ctor_lowering_cache_key(
+                    instance_type, full_call_arg_types
+                )
+                if normalized_key != expected_key:
+                    logger.debug(
+                        "ctor_lowering_cache key mismatch while inserting: "
+                        "expected=(instance_type=%s, full_call_arg_types=%s), "
+                        "normalized=%s",
+                        instance_type,
+                        full_call_arg_types,
+                        normalized_key,
+                    )
+
+                ctor_lowering_cache[normalized_key] = (
                     ctor_cc,
                     ctor_arg_count,
                     _ctor_param_types,
@@ -1711,9 +1733,32 @@ def bind_cxx_class_template(
         args,
         ctor_lowering_cache=ctor_lowering_cache,
     ):
-        key = (sig.return_type, tuple(sig.args))
-        lowered = ctor_lowering_cache.get(key)
+        lowering_key = _normalize_ctor_lowering_cache_key(
+            sig.return_type, tuple(sig.args)
+        )
+        lowered = ctor_lowering_cache.get(lowering_key)
         if lowered is None:
+            related_expected_keys = [
+                key for key in ctor_lowering_cache if key[0] == sig.return_type
+            ]
+            if related_expected_keys:
+                for expected_key in related_expected_keys:
+                    if expected_key != lowering_key:
+                        logger.debug(
+                            "ctor_lowering_cache key mismatch on lookup: "
+                            "expected_key=%s, lowering_key=%s",
+                            expected_key,
+                            lowering_key,
+                        )
+                logger.debug(
+                    "ctor_lowering_cache miss: lowering key built from "
+                    "(sig.return_type=%s, tuple(sig.args)=%s) is %s. "
+                    "Known expected keys for this instance type: %s",
+                    sig.return_type,
+                    tuple(sig.args),
+                    lowering_key,
+                    related_expected_keys,
+                )
             raise LoweringError(
                 "Missing constructor lowering for class template "
                 f"{class_template_decl.record.qual_name} with return type "
