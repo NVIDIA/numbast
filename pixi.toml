@@ -61,30 +61,42 @@ default = { features = [
   "test",
   "docs",
   "cu13",
-], solve-group = "test-cu13", no-default-feature = true }
+], solve-group = "test-cu13" }
 test-cu12 = { features = [
   "required",
   "build",
   "test",
   "docs",
   "cu12",
-], solve-group = "test-cu12", no-default-feature = true }
+], solve-group = "test-cu12" }
 test-cu13 = { features = [
   "required",
   "build",
   "test",
   "docs",
   "cu13",
-], solve-group = "test-cu13", no-default-feature = true }
+], solve-group = "test-cu13" }
 
 [target.linux.tasks.build-ast-canopy]
 cmd = ["bash", "$PIXI_PROJECT_ROOT/ast_canopy/build.sh"]
 
 [target.linux.tasks.install-numbast]
 cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast"]
+depends-on = [{ task = "build-ast-canopy" }]
 
 [target.linux.tasks.install-numbast-extensions]
 cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast_extensions"]
+depends-on = [{ task = "build-ast-canopy" }]
 
 [target.linux.tasks.test]
-cmd = ["pytest", "$PIXI_PROJECT_ROOT/ast_canopy", "$PIXI_PROJECT_ROOT/numbast"]
+cmd = [
+  "pytest",
+  "$PIXI_PROJECT_ROOT/ast_canopy",
+  "$PIXI_PROJECT_ROOT/numbast",
+  "$PIXI_PROJECT_ROOT/numbast_extensions",
+]
+depends-on = [
+  { task = "build-ast-canopy" },
+  { task = "install-numbast" },
+  { task = "install-numbast-extensions" },
+]
