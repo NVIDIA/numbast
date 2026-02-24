@@ -55,7 +55,7 @@ class TestBlockLoadStore:
 
         @cuda.jit(link=shim_writer.links())
         def try_block_load(d_input, d_output):
-            block_load_t = BlockLoad(
+            block_load = BlockLoad(
                 T=int32,
                 BLOCK_DIM_X=num_threads_per_block,
                 ITEMS_PER_THREAD=items_per_thread,
@@ -64,7 +64,7 @@ class TestBlockLoadStore:
                 BLOCK_DIM_Z=1,
             )
 
-            block_store_t = BlockStore(
+            block_store = BlockStore(
                 T=int32,
                 BLOCK_DIM_X=num_threads_per_block,
                 ITEMS_PER_THREAD=items_per_thread,
@@ -72,9 +72,6 @@ class TestBlockLoadStore:
                 BLOCK_DIM_Y=1,
                 BLOCK_DIM_Z=1,
             )
-
-            block_load = block_load_t()
-            block_store = block_store_t()
 
             thread_data = cuda.local.array(shape=items_per_thread, dtype=int32)
 

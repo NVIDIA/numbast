@@ -892,7 +892,7 @@ class {method_template_name}(ConcreteTemplate):
         self.Imports.add(
             "from numba.cuda.typing.templates import ConcreteTemplate"
         )
-        self.Imports.add("from numba.core.typing import signature")
+        self.Imports.add("from numba.cuda.typing import signature")
         # Lowering imports are added by sub-renderers
 
         # Render per-overload lowering and collect signatures

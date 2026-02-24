@@ -6,8 +6,8 @@ import os
 from click.testing import CliRunner
 
 import numpy as np
-import numba
 from numba import cuda
+from numba.cuda.core.errors import TypingError
 import pytest
 
 from numbast.tools.static_binding_generator import static_binding_generator
@@ -510,7 +510,7 @@ def implicit_conversion_kernel():
 
         kernel_pass[1, 1]()
 
-        with pytest.raises(numba.core.errors.TypingError):
+        with pytest.raises(TypingError):
             kernel_fail[1, 1]()
 
     return _lazy_kernel
