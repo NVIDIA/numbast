@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[workspace]
+name = "numbast"
+channels = ["conda-forge", "numba", "nvidia"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = ">=3.10"
+cmake = ">=3.29"
+clangdev = ">=18,<22.0"
+pybind11 = "*"
+mypy = "*"
+pre-commit = "*"
+cxx-compiler = "*"
+scikit-build-core = "*"
+pip = "*"
+ninja = "*"
+pyyaml = "*"
+ruff = "*"
+click = "*"
+jinja2 = "*"
+
+[feature.test.dependencies]
+pytest = "*"
+pytest-benchmark = "*"
+cffi = "*"
+
+[feature.docs.dependencies]
+sphinx = "*"
+sphinx-copybutton = "*"
+
+[feature.docs.pypi-dependencies]
+nvidia-sphinx-theme = "*"
+
+[feature.cu12.system-requirements]
+cuda = "12"
+
+[feature.cu12.dependencies]
+numba-cuda = ">=0.25.0"
+cuda-version = "12.9.*"
+cuda-toolkit = "12.9.*"
+cuda-python = "12.9.*"
+
+[feature.cu13.system-requirements]
+cuda = "13"
+
+[feature.cu13.dependencies]
+numba-cuda = ">=0.25.0"
+cuda-version = "13.0.*"
+cuda-toolkit = "13.0.*"
+cuda-python = "13.0.*"
+
+[environments]
+default = { features = ["test", "docs", "cu13"], solve-group = "test-cu13" }
+test-cu12 = { features = ["test", "docs", "cu12"], solve-group = "test-cu12" }
+test-cu13 = { features = ["test", "docs", "cu13"], solve-group = "test-cu13" }
+
+[target.linux.tasks.build-ast-canopy]
+cmd = ["bash", "$PIXI_PROJECT_ROOT/ast_canopy/build.sh"]
+
+[target.linux.tasks.install-numbast]
+cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast"]
+
+[target.linux.tasks.install-numbast-extensions]
+cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast_extensions"]
+
+[target.linux.tasks.test]
+cmd = ["pytest", "$PIXI_PROJECT_ROOT/ast_canopy", "$PIXI_PROJECT_ROOT/numbast"]

@@ -15,7 +15,7 @@ Requirements
 ------------
 
 - CUDA Toolkit headers installed and discoverable.
-- ``clangdev`` available (see ``conda/environment-[CUDA_VER].yaml``).
+- ``clangdev`` available (included in ``pixi.toml`` for ``test-cu12`` and ``test-cu13``).
 - A header entry point and a list of headers to retain.
 
 Configuration file
@@ -63,7 +63,7 @@ Use the CLI to generate a Python file:
 
 .. code-block:: bash
 
-  # from repo root (ensure conda env is active)
+  # from repo root (ensure a pixi test environment is active)
   python -m numbast --cfg-path config.yml --output-dir ./output
 
 This produces a module like ``./output/bindings_my_lib.py`` (or ``<entry_point>.py`` if ``output_name`` is not set).
