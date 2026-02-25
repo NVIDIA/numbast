@@ -1,15 +1,23 @@
 Install
 =======
 
-Prebuilt Conda packages are available. For development, we recommend installing from source with
-Pixi.
+Prebuilt packages are available on both PyPI and Conda. For most users, we recommend installing
+from PyPI. For development, we recommend installing from source with Pixi.
 
-Install via Conda
------------------
+Install via PyPI (recommended)
+------------------------------
 
 .. code-block:: bash
 
-  conda install Numbast
+  pip install numbast
+
+
+Install via Conda (alternative)
+-------------------------------
+
+.. code-block:: bash
+
+  conda install numbast
 
 
 From source with Pixi (recommended for development)
@@ -66,18 +74,28 @@ to reflect the installed package version (optional). You can enter one with
 Build Steps
 ^^^^^^^^^^^
 
-- Build all versions listed in ``docs/versions.json``:
+- Recommended: build all versions listed in ``docs/nv-versions.json`` via the Pixi task from
+  the repository root:
 
   .. code-block:: bash
 
-    cd docs
-    ./build_docs.sh
+    pixi run -e test-cu13 build-docs
 
 - Build only the latest version:
 
   .. code-block:: bash
 
+    pixi run -e test-cu13 build-docs latest-only
+
+  Replace ``test-cu13`` with ``test-cu12`` if needed.
+
+- Optional fallback (if you are already in a prepared shell environment):
+
+  .. code-block:: bash
+
     cd docs
+    ./build_docs.sh
+    # or
     ./build_docs.sh latest-only
 
 Artifacts are generated under:
@@ -90,4 +108,4 @@ Notes
 
 - The build script sets ``SPHINX_NUMBAST_VER`` automatically from the installed ``numbast`` package version,
   ``numbast/VERSION``, or top-level ``VERSION``. If none is found, it uses ``latest``.
-- Output also copies ``versions.json`` and creates a redirect ``index.html`` for convenience.
+- Output also copies ``nv-versions.json`` and creates a redirect ``index.html`` for convenience.

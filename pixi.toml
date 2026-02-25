@@ -92,6 +92,10 @@ depends-on = [{ task = "install-numbast" }]
 cmd = ["pytest", "$PIXI_PROJECT_ROOT/ast_canopy", "$PIXI_PROJECT_ROOT/numbast"]
 depends-on = [{ task = "build-ast-canopy" }, { task = "install-numbast" }]
 
+[target.linux.tasks.build-docs]
+cmd = ["bash", "$PIXI_PROJECT_ROOT/ci/build_docs.sh"]
+depends-on = [{ task = "install-numbast" }]
+
 [target.linux.tasks.test-extensions]
 cmd = ["pytest", "$PIXI_PROJECT_ROOT/numbast_extensions"]
 depends-on = [{ task = "install-numbast-extensions" }]
