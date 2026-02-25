@@ -161,3 +161,6 @@ jupyter_execute
 .nvcode/
 
 llvm.sh*
+
+# pixi
+.pixi/
