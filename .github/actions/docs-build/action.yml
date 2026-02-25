@@ -5,6 +5,10 @@ inputs:
     description: "Uploads the built docs as a workflow artifact (actions/upload-artifact)."
     required: false
     default: "true"
+  build_tagged_versions:
+    description: "If true, build versioned docs listed in docs/nv-versions.json."
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -32,11 +36,104 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         conda list -n docs-build
-    # Build all docs
+    - name: Resolve tagged docs matrix
+      if: ${{ inputs.build_tagged_versions == 'true' }}
+      id: tagged-versions
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        matrix=$(python - <<'PY'
+        import json
+        from pathlib import Path
+
+        entries = json.loads(Path("docs/nv-versions.json").read_text())
+        versions = []
+        for entry in entries:
+            version = str(entry.get("version", "")).strip()
+            if version and version != "latest":
+                versions.append(version)
+
+        print(json.dumps(versions))
+        PY
+        )
+        echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+    - name: Build tagged docs from matrix
+      if: ${{ inputs.build_tagged_versions == 'true' && steps.tagged-versions.outputs.matrix != '[]' }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        TAGGED_DOCS_MATRIX: ${{ steps.tagged-versions.outputs.matrix }}
+      run: |
+        tagged_docs_root="${RUNNER_TEMP}/numbast-tagged-docs"
+        rm -rf "${tagged_docs_root}"
+        mkdir -p "${tagged_docs_root}"
+
+        mapfile -t tagged_versions < <(python - <<'PY'
+        import json
+        import os
+
+        for version in json.loads(os.environ["TAGGED_DOCS_MATRIX"]):
+            print(version)
+        PY
+        )
+
+        original_ref=$(git rev-parse --verify HEAD)
+        restore_checkout() {
+          git checkout --force "${original_ref}" >/dev/null 2>&1 || true
+        }
+        trap restore_checkout EXIT
+
+        for version in "${tagged_versions[@]}"; do
+          tag="v${version}"
+
+          if ! git rev-parse --quiet --verify "${tag}^{commit}" >/dev/null; then
+            echo "error: tag '${tag}' does not exist"
+            exit 1
+          fi
+
+          echo "Building docs for ${tag}"
+          git checkout --detach "${tag}"
+          conda run -n docs-build bash ast_canopy/build.sh
+          conda run -n docs-build python -m pip install --pre --no-deps --force-reinstall ./numbast/
+          conda run -n docs-build env SPHINX_NUMBAST_VER="${version}" bash ci/build_docs.sh latest-only
+
+          version_output_dir="${tagged_docs_root}/${version}"
+          rm -rf "${version_output_dir}"
+          mkdir -p "${version_output_dir}"
+          cp -a "docs/build/html/latest/." "${version_output_dir}/"
+        done
+
+        trap - EXIT
+        restore_checkout
+    # Build docs for the current checkout (latest)
     - name: Build all docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
+        if [[ "${{ inputs.build_tagged_versions }}" == "true" ]]; then
+          conda run -n docs-build bash ast_canopy/build.sh
+          conda run -n docs-build python -m pip install --pre --no-deps --force-reinstall ./numbast/
+        fi
         conda run -n docs-build ci/build_docs.sh
+    - name: Copy tagged docs into final output
+      if: ${{ inputs.build_tagged_versions == 'true' && steps.tagged-versions.outputs.matrix != '[]' }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        TAGGED_DOCS_MATRIX: ${{ steps.tagged-versions.outputs.matrix }}
+      run: |
+        tagged_docs_root="${RUNNER_TEMP}/numbast-tagged-docs"
+        mapfile -t tagged_versions < <(python - <<'PY'
+        import json
+        import os
+
+        for version in json.loads(os.environ["TAGGED_DOCS_MATRIX"]):
+            print(version)
+        PY
+        )
+
+        for version in "${tagged_versions[@]}"; do
+          version_output_dir="docs/build/html/${version}"
+          rm -rf "${version_output_dir}"
+          mkdir -p "${version_output_dir}"
+          cp -a "${tagged_docs_root}/${version}/." "${version_output_dir}/"
+        done
     # Copy all docs to the right folder
     - name: Move docs to right folder
       shell: bash --noprofile --norc -euo pipefail {0}

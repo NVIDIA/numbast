@@ -73,6 +73,7 @@ jobs:
         uses: ./.github/actions/docs-build
         with:
           upload_workflow_artifact: "true"
+          build_tagged_versions: ${{ github.event_name == 'push' && !inputs.pr_number && !inputs.remove_pr_preview && 'true' || 'false' }}
       - name: Create empty directory for cleanup
         if: ${{ inputs.remove_pr_preview }}
         run: |
