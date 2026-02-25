@@ -61,7 +61,7 @@ default = { features = [
   "test",
   "docs",
   "cu13",
-], solve-group = "test-cu13" }
+], solve-group = "test-cu13" } # default intentionally mirrors test-cu13 for developer convenience.
 test-cu12 = { features = [
   "required",
   "build",
@@ -78,7 +78,7 @@ test-cu13 = { features = [
 ], solve-group = "test-cu13" }
 
 [target.linux.tasks.build-ast-canopy]
-cmd = ["bash", "$PIXI_PROJECT_ROOT/ast_canopy/build.sh"]
+cmd = ["bash", "$PIXI_PROJECT_ROOT/ast_canopy/build.sh", "--incremental"]
 
 [target.linux.tasks.install-numbast]
 cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast"]
@@ -86,17 +86,12 @@ depends-on = [{ task = "build-ast-canopy" }]
 
 [target.linux.tasks.install-numbast-extensions]
 cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast_extensions"]
-depends-on = [{ task = "build-ast-canopy" }]
+depends-on = [{ task = "install-numbast" }]
 
 [target.linux.tasks.test]
-cmd = [
-  "pytest",
-  "$PIXI_PROJECT_ROOT/ast_canopy",
-  "$PIXI_PROJECT_ROOT/numbast",
-  "$PIXI_PROJECT_ROOT/numbast_extensions",
-]
-depends-on = [
-  { task = "build-ast-canopy" },
-  { task = "install-numbast" },
-  { task = "install-numbast-extensions" },
-]
+cmd = ["pytest", "$PIXI_PROJECT_ROOT/ast_canopy", "$PIXI_PROJECT_ROOT/numbast"]
+depends-on = [{ task = "build-ast-canopy" }, { task = "install-numbast" }]
+
+[target.linux.tasks.test-extensions]
+cmd = ["pytest", "$PIXI_PROJECT_ROOT/numbast_extensions"]
+depends-on = [{ task = "install-numbast-extensions" }]

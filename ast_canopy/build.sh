@@ -14,6 +14,7 @@ BUILD_TYPE="Release"
 Editable_Mode="false"
 INSTALL="true"
 LLVM_LINKAGE="SHARED"
+CLEAN_BUILD="true"
 
 # Convert a colon-separated path list (env style) into a
 # semicolon-separated list (CMake style)
@@ -44,6 +45,7 @@ usage() {
     echo "  --develop           Install ast_canopy in editable mode"
     echo "  --debug             Build libastcanopy in debug mode"
     echo "  --llvm-linkage=TYPE Set LLVM linkage type (STATIC or SHARED, default: SHARED)"
+    echo "  --incremental       Reuse cpp/build for incremental builds (do not clean)"
     echo "  --no-install        Do not run install steps"
     echo "  --help              Show this help message"
     echo ""
@@ -60,6 +62,7 @@ usage() {
     echo "  ./build.sh --llvm-linkage=STATIC              # Build with static LLVM linking"
     echo "  ./build.sh --develop --debug                  # Build and install in editable and debug mode"
     echo "  ./build.sh --llvm-linkage=STATIC --debug      # Build with static LLVM and debug mode"
+    echo "  ./build.sh --incremental                      # Reuse existing cpp/build cache"
     echo "  ASTCANOPY_INSTALL_PATH=/custom/path ./build.sh # Install libastcanopy to custom path"
 }
 
@@ -80,6 +83,10 @@ while [[ $# -gt 0 ]]; do
                 usage
                 exit 1
             fi
+            shift
+            ;;
+        --incremental)
+            CLEAN_BUILD="false"
             shift
             ;;
         --no-install)
@@ -109,11 +116,15 @@ else
     echo "Ninja not found. Falling back to Unix Makefiles."
 fi
 
-# Clean the build cache
-echo "Cleaning ast_canopy/cpp/build cache..."
-rm -rf "${SCRIPT_DIR}/cpp/build"
-mkdir -p "${SCRIPT_DIR}/cpp/build"
-echo "Cache cleaned. Starting fresh build..."
+if [ "${CLEAN_BUILD}" = "true" ]; then
+    echo "Cleaning ast_canopy/cpp/build cache..."
+    rm -rf "${SCRIPT_DIR}/cpp/build"
+    mkdir -p "${SCRIPT_DIR}/cpp/build"
+    echo "Cache cleaned. Starting fresh build..."
+else
+    echo "Reusing ast_canopy/cpp/build cache for incremental build."
+    mkdir -p "${SCRIPT_DIR}/cpp/build"
+fi
 
 env
 echo ""
