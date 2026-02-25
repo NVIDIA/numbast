@@ -85,7 +85,7 @@ Build Steps
 
   .. code-block:: bash
 
-    pixi run -e test-cu13 build-docs -- latest-only
+    pixi run -e test-cu13 build-docs latest-only
 
   Replace ``test-cu13`` with ``test-cu12`` if needed.
 

@@ -10,7 +10,7 @@ Use Pixi from the repository root (recommended):
 Build only the latest version with:
 
 ```bash
-pixi run -e test-cu13 build-docs -- latest-only
+pixi run -e test-cu13 build-docs latest-only
 ```
 
 If you are already in a prepared shell environment, you can still run `./build_docs.sh`
