@@ -1,11 +1,19 @@
 Install
 =======
 
-Prebuilt Conda packages are available. For development, we recommend installing from source with
-Pixi.
+Prebuilt packages are available on both PyPI and Conda. For most users, we recommend installing
+from PyPI. For development, we recommend installing from source with Pixi.
 
-Install via Conda
------------------
+Install via PyPI (recommended)
+------------------------------
+
+.. code-block:: bash
+
+  pip install numbast
+
+
+Install via Conda (alternative)
+-------------------------------
 
 .. code-block:: bash
 
