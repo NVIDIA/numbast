@@ -34,18 +34,12 @@ def run_pytest(lib, test_dir):
 @click.option("--ast-canopy", is_flag=True, help="Run ast_canopy pytests.")
 @click.option("--numbast", is_flag=True, help="Run numbast pytests.")
 @click.option("--bf16", is_flag=True, help="Run bfloat16 pytests.")
-@click.option("--fp16", is_flag=True, help="Run fp16 pytests.")
-@click.option(
-    "--curand_device", is_flag=True, help="Run curand device binding pytests."
-)
 @click.option("--cccl", is_flag=True, help="Run CCCL (CUB) binding pytests.")
 @click.option("--all-tests", is_flag=True, help="Run all pytests.")
 def run(
     ast_canopy: bool,
     numbast: bool,
     bf16: bool,
-    fp16: bool,
-    curand_device: bool,
     cccl: bool,
     all_tests: bool,
 ):
@@ -55,7 +49,7 @@ def run(
     package. `--all-tests` option is mutually exclusive to all other options.
     """
     if all_tests:
-        if any([ast_canopy, numbast, bf16, fp16, curand_device, cccl]):
+        if any([ast_canopy, numbast, bf16, cccl]):
             raise ValueError(
                 "`all_tests` and any subpackage specs are mutual exclusive."
             )
@@ -73,17 +67,6 @@ def run(
                 "numbast_extensions/tests/static/test_static_bf16.py",
             ],
         )
-    if all_tests or fp16:
-        run_pytest(
-            "fp16",
-            [
-                "numbast_extensions/tests/test_fp16.py",
-                "numbast_extensions/tests/test_fp162.py",
-                "numbast_extensions/tests/static/test_static_fp16.py",
-            ],
-        )
-    if all_tests or curand_device:
-        run_pytest("curand_device", ["numbast_extensions/tests/test_curand.py"])
     if all_tests or cccl:
         run_pytest("cccl", ["numbast_extensions/tests/thirdparty/CCCL/"])
 
