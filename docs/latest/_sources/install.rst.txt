@@ -1,7 +1,8 @@
 Install
 =======
 
-Prebuilt Conda packages are available. For development, we recommend installing from source.
+Prebuilt Conda packages are available. For development, we recommend installing from source with
+Pixi.
 
 Install via Conda
 -----------------
@@ -11,25 +12,26 @@ Install via Conda
   conda install Numbast
 
 
-From source (recommended for development)
------------------------------------------
+From source with Pixi (recommended for development)
+---------------------------------------------------
 
-Numbast depends on LLVM's libClangTooling. For an easy development setup, we recommend
-installing ``clangdev`` via Conda. A recommended ``clangdev`` entry is already included in
-``conda/environment-[CUDA_VER].yaml``, so developing inside this Conda environment saves
-you from installing LLVM manually.
+Numbast depends on LLVM's libClangTooling. For an easy development setup, use the repository
+``pixi.toml``, which defines two CUDA test groups:
+
+- ``test-cu12`` (CUDA 12.9)
+- ``test-cu13`` (CUDA 13.0)
 
 .. code-block:: bash
 
-  # from repo root
-  conda env create -f conda/environment-[CUDA_VER].yaml
-  conda activate numbast
+  # from repo root, install one environment
+  pixi install -e test-cu12
+  # or
+  pixi install -e test-cu13
 
-  # build the C++ header parser
-  bash ast_canopy/build.sh
-
-  # install the Numbast Python package
-  pip install numbast/
+  # build and install local packages in the selected environment
+  pixi run -e test-cu12 build-ast-canopy
+  pixi run -e test-cu12 install-numbast
+  pixi run -e test-cu12 install-numbast-extensions
 
 
 Validate the installation (optional)
@@ -37,7 +39,9 @@ Validate the installation (optional)
 
 .. code-block:: bash
 
-  pytest ast_canopy/ numbast/
+  pixi run -e test-cu12 test
+
+Replace ``test-cu12`` with ``test-cu13`` if you are testing against CUDA 13.
 
 .. note::
   If you see errors like "cannot find header 'cuda.h'", please refer to :doc:`FAQ <faq>` for more details.
@@ -48,13 +52,15 @@ Building Documentation
 Dependencies
 ^^^^^^^^^^^^
 
-Use Conda to ensure consistent versions. From ``conda/environment-[CUDA_VER].yaml``, the doc-related dependencies are:
+Use Pixi to ensure consistent versions. In ``pixi.toml``, the ``docs`` feature includes:
 
 - sphinx
 - sphinx-copybutton
+- nvidia-sphinx-theme
 
-You also need Python and a working environment to import ``numbast`` if you want versioned builds to reflect the
-installed package version (optional).
+You also need Python and a working environment to import ``numbast`` if you want versioned builds
+to reflect the installed package version (optional). You can enter one with
+``pixi shell -e test-cu13``.
 
 
 Build Steps

@@ -564,36 +564,40 @@
                   
   <section id="install">
 <h1>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h1>
-<p>Prebuilt Conda packages are available. For development, we recommend installing from source.</p>
+<p>Prebuilt Conda packages are available. For development, we recommend installing from source with
+Pixi.</p>
 <section id="install-via-conda">
 <h2>Install via Conda<a class="headerlink" href="#install-via-conda" title="Link to this heading">#</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>Numbast
 </pre></div>
 </div>
 </section>
-<section id="from-source-recommended-for-development">
-<h2>From source (recommended for development)<a class="headerlink" href="#from-source-recommended-for-development" title="Link to this heading">#</a></h2>
-<p>Numbast depends on LLVM’s libClangTooling. For an easy development setup, we recommend
-installing <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> via Conda. A recommended <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> entry is already included in
-<code class="docutils literal notranslate"><span class="pre">conda/environment-[CUDA_VER].yaml</span></code>, so developing inside this Conda environment saves
-you from installing LLVM manually.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># from repo root</span>
-conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>conda/environment-<span class="o">[</span>CUDA_VER<span class="o">]</span>.yaml
-conda<span class="w"> </span>activate<span class="w"> </span>numbast
+<section id="from-source-with-pixi-recommended-for-development">
+<h2>From source with Pixi (recommended for development)<a class="headerlink" href="#from-source-with-pixi-recommended-for-development" title="Link to this heading">#</a></h2>
+<p>Numbast depends on LLVM’s libClangTooling. For an easy development setup, use the repository
+<code class="docutils literal notranslate"><span class="pre">pixi.toml</span></code>, which defines two CUDA test groups:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">test-cu12</span></code> (CUDA 12.9)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test-cu13</span></code> (CUDA 13.0)</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># from repo root, install one environment</span>
+pixi<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>test-cu12
+<span class="c1"># or</span>
+pixi<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>test-cu13
 
-<span class="c1"># build the C++ header parser</span>
-bash<span class="w"> </span>ast_canopy/build.sh
-
-<span class="c1"># install the Numbast Python package</span>
-pip<span class="w"> </span>install<span class="w"> </span>numbast/
+<span class="c1"># build and install local packages in the selected environment</span>
+pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span>test-cu12<span class="w"> </span>build-ast-canopy
+pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span>test-cu12<span class="w"> </span>install-numbast
+pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span>test-cu12<span class="w"> </span>install-numbast-extensions
 </pre></div>
 </div>
 </section>
 <section id="validate-the-installation-optional">
 <h2>Validate the installation (optional)<a class="headerlink" href="#validate-the-installation-optional" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>ast_canopy/<span class="w"> </span>numbast/
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span>test-cu12<span class="w"> </span><span class="nb">test</span>
 </pre></div>
 </div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">test-cu12</span></code> with <code class="docutils literal notranslate"><span class="pre">test-cu13</span></code> if you are testing against CUDA 13.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you see errors like “cannot find header ‘cuda.h’”, please refer to <a class="reference internal" href="faq.html"><span class="doc">FAQ</span></a> for more details.</p>
@@ -603,13 +607,15 @@ pip<span class="w"> </span>install<span class="w"> </span>numbast/
 <h2>Building Documentation<a class="headerlink" href="#building-documentation" title="Link to this heading">#</a></h2>
 <section id="dependencies">
 <h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">#</a></h3>
-<p>Use Conda to ensure consistent versions. From <code class="docutils literal notranslate"><span class="pre">conda/environment-[CUDA_VER].yaml</span></code>, the doc-related dependencies are:</p>
+<p>Use Pixi to ensure consistent versions. In <code class="docutils literal notranslate"><span class="pre">pixi.toml</span></code>, the <code class="docutils literal notranslate"><span class="pre">docs</span></code> feature includes:</p>
 <ul class="simple">
 <li><p>sphinx</p></li>
 <li><p>sphinx-copybutton</p></li>
+<li><p>nvidia-sphinx-theme</p></li>
 </ul>
-<p>You also need Python and a working environment to import <code class="docutils literal notranslate"><span class="pre">numbast</span></code> if you want versioned builds to reflect the
-installed package version (optional).</p>
+<p>You also need Python and a working environment to import <code class="docutils literal notranslate"><span class="pre">numbast</span></code> if you want versioned builds
+to reflect the installed package version (optional). You can enter one with
+<code class="docutils literal notranslate"><span class="pre">pixi</span> <span class="pre">shell</span> <span class="pre">-e</span> <span class="pre">test-cu13</span></code>.</p>
 </section>
 <section id="build-steps">
 <h3>Build Steps<a class="headerlink" href="#build-steps" title="Link to this heading">#</a></h3>
@@ -694,7 +700,7 @@ installed package version (optional).</p>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-conda">Install via Conda</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#from-source-recommended-for-development">From source (recommended for development)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#from-source-with-pixi-recommended-for-development">From source with Pixi (recommended for development)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validate-the-installation-optional">Validate the installation (optional)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-documentation">Building Documentation</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dependencies">Dependencies</a></li>

@@ -578,7 +578,7 @@ bindings without requiring Numbast at runtime.</p>
 <h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p>CUDA Toolkit headers installed and discoverable.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">clangdev</span></code> available (see <code class="docutils literal notranslate"><span class="pre">conda/environment-[CUDA_VER].yaml</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">clangdev</span></code> available in your development environment.</p></li>
 <li><p>A header entry point and a list of headers to retain.</p></li>
 </ul>
 </section>
@@ -621,7 +621,7 @@ bindings without requiring Numbast at runtime.</p>
 <section id="generate-the-binding">
 <h2>Generate the binding<a class="headerlink" href="#generate-the-binding" title="Link to this heading">#</a></h2>
 <p>Use the CLI to generate a Python file:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># from repo root (ensure conda env is active)</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># from repo root (ensure your development environment is active)</span>
 python<span class="w"> </span>-m<span class="w"> </span>numbast<span class="w"> </span>--cfg-path<span class="w"> </span>config.yml<span class="w"> </span>--output-dir<span class="w"> </span>./output
 </pre></div>
 </div>
