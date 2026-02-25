@@ -564,11 +564,17 @@
                   
   <section id="install">
 <h1>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h1>
-<p>Prebuilt Conda packages are available. For development, we recommend installing from source with
-Pixi.</p>
-<section id="install-via-conda">
-<h2>Install via Conda<a class="headerlink" href="#install-via-conda" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>Numbast
+<p>Prebuilt packages are available on both PyPI and Conda. For most users, we recommend installing
+from PyPI. For development, we recommend installing from source with Pixi.</p>
+<section id="install-via-pypi-recommended">
+<h2>Install via PyPI (recommended)<a class="headerlink" href="#install-via-pypi-recommended" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>numbast
+</pre></div>
+</div>
+</section>
+<section id="install-via-conda-alternative">
+<h2>Install via Conda (alternative)<a class="headerlink" href="#install-via-conda-alternative" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>numbast
 </pre></div>
 </div>
 </section>
@@ -620,14 +626,22 @@ to reflect the installed package version (optional). You can enter one with
 <section id="build-steps">
 <h3>Build Steps<a class="headerlink" href="#build-steps" title="Link to this heading">#</a></h3>
 <ul>
-<li><p>Build all versions listed in <code class="docutils literal notranslate"><span class="pre">docs/versions.json</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docs
-./build_docs.sh
+<li><p>Recommended: build all versions listed in <code class="docutils literal notranslate"><span class="pre">docs/nv-versions.json</span></code> via the Pixi task from
+the repository root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span>test-cu13<span class="w"> </span>build-docs
 </pre></div>
 </div>
 </li>
 <li><p>Build only the latest version:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span>test-cu13<span class="w"> </span>build-docs<span class="w"> </span>latest-only
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">test-cu13</span></code> with <code class="docutils literal notranslate"><span class="pre">test-cu12</span></code> if needed.</p>
+</li>
+<li><p>Optional fallback (if you are already in a prepared shell environment):</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docs
+./build_docs.sh
+<span class="c1"># or</span>
 ./build_docs.sh<span class="w"> </span>latest-only
 </pre></div>
 </div>
@@ -644,7 +658,7 @@ to reflect the installed package version (optional). You can enter one with
 <ul class="simple">
 <li><p>The build script sets <code class="docutils literal notranslate"><span class="pre">SPHINX_NUMBAST_VER</span></code> automatically from the installed <code class="docutils literal notranslate"><span class="pre">numbast</span></code> package version,
 <code class="docutils literal notranslate"><span class="pre">numbast/VERSION</span></code>, or top-level <code class="docutils literal notranslate"><span class="pre">VERSION</span></code>. If none is found, it uses <code class="docutils literal notranslate"><span class="pre">latest</span></code>.</p></li>
-<li><p>Output also copies <code class="docutils literal notranslate"><span class="pre">versions.json</span></code> and creates a redirect <code class="docutils literal notranslate"><span class="pre">index.html</span></code> for convenience.</p></li>
+<li><p>Output also copies <code class="docutils literal notranslate"><span class="pre">nv-versions.json</span></code> and creates a redirect <code class="docutils literal notranslate"><span class="pre">index.html</span></code> for convenience.</p></li>
 </ul>
 </section>
 </section>
@@ -699,7 +713,8 @@ to reflect the installed package version (optional). You can enter one with
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-conda">Install via Conda</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-pypi-recommended">Install via PyPI (recommended)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-conda-alternative">Install via Conda (alternative)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#from-source-with-pixi-recommended-for-development">From source with Pixi (recommended for development)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validate-the-installation-optional">Validate the installation (optional)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-documentation">Building Documentation</a><ul class="nav section-nav flex-column">
