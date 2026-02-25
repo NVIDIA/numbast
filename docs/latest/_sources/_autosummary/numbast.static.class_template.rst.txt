@@ -1,0 +1,19 @@
+numbast.static.class\_template
+==============================
+
+.. automodule:: numbast.static.class_template
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      bind_static_class_templates
+      clear_class_template_cache
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      StaticClassTemplatesRenderer
+   

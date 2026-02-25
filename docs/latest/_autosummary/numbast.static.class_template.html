@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>numbast.static.typedef &#8212; Numbast</title>
+    <title>numbast.static.class_template &#8212; Numbast</title>
   
   
   
@@ -48,7 +48,7 @@
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=35a8b989"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/numbast.static.typedef';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/numbast.static.class_template';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
@@ -57,13 +57,13 @@
             false;
         </script>
 
-    <link rel="canonical" href="docs/_autosummary/numbast.static.typedef.html" />
+    <link rel="canonical" href="docs/_autosummary/numbast.static.class_template.html" />
     <link rel="icon" href="../_static/favicon.png"/>
 
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="numbast.static.types" href="numbast.static.types.html" />
-    <link rel="prev" title="numbast.static.struct" href="numbast.static.struct.html" />
+    <link rel="next" title="numbast.static.enum" href="numbast.static.enum.html" />
+    <link rel="prev" title="numbast.static.callconv" href="numbast.static.callconv.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -492,13 +492,13 @@
 <li class="toctree-l2"><a class="reference internal" href="ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="numbast.static.html">numbast.static</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.class_template.html">numbast.static.class_template</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">numbast.static.class_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.enum.html">numbast.static.enum</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.function.html">numbast.static.function</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.function_template.html">numbast.static.function_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.renderer.html">numbast.static.renderer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.struct.html">numbast.static.struct</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">numbast.static.typedef</a></li>
+<li class="toctree-l3"><a class="reference internal" href="numbast.static.typedef.html">numbast.static.typedef</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.types.html">numbast.static.types</a></li>
 </ul>
 </details></li>
@@ -549,7 +549,7 @@
     
     <li class="breadcrumb-item"><a href="numbast.static.html" class="nav-link">numbast.static</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">numbast.static.typedef</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">numbast.static.class_template</span></li>
   </ul>
 </nav>
 </div>
@@ -566,13 +566,25 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-numbast.static.typedef">
-<span id="numbast-static-typedef"></span><h1>numbast.static.typedef<a class="headerlink" href="#module-numbast.static.typedef" title="Link to this heading">#</a></h1>
+  <section id="module-numbast.static.class_template">
+<span id="numbast-static-class-template"></span><h1>numbast.static.class_template<a class="headerlink" href="#module-numbast.static.class_template" title="Link to this heading">#</a></h1>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">render_aliases</span></code>(aliases)</p></td>
-<td><p>Generate python strings that creates alias for the given <cite>aliases</cite> dictionary.</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">bind_static_class_templates</span></code>(*, namespace, ...)</p></td>
+<td><p>Materialize and bind class templates into a generated static module namespace.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear_class_template_cache</span></code>()</p></td>
+<td><p>Clear the concrete type cache used by dynamic class-template binders.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">StaticClassTemplatesRenderer</span></code>(...[, ...])</p></td>
+<td><p>Render static bindings for class templates.</p></td>
 </tr>
 </tbody>
 </table>
@@ -590,20 +602,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="numbast.static.struct.html"
+       href="numbast.static.callconv.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">numbast.static.struct</p>
+        <p class="prev-next-title">numbast.static.callconv</p>
       </div>
     </a>
     <a class="right-next"
-       href="numbast.static.types.html"
+       href="numbast.static.enum.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">numbast.static.types</p>
+        <p class="prev-next-title">numbast.static.enum</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
