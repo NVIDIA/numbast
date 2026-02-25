@@ -17,7 +17,7 @@ Install via Conda (alternative)
 
 .. code-block:: bash
 
-  conda install Numbast
+  conda install numbast
 
 
 From source with Pixi (recommended for development)
