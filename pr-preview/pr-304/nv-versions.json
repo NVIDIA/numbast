@@ -1,0 +1,14 @@
+[
+  {
+    "version": "latest",
+    "url": "https://nvidia.github.io/numbast/latest/"
+  },
+  {
+    "version": "0.6.1",
+    "url": "https://nvidia.github.io/numbast/0.6.1/"
+  },
+  {
+    "version": "0.6.0",
+    "url": "https://nvidia.github.io/numbast/0.6.0/"
+  }
+]

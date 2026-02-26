@@ -1,0 +1,15 @@
+numbast.static.types
+====================
+
+.. automodule:: numbast.static.types
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      register_enum_type_str
+      reset_types
+      to_numba_arg_type_str
+      to_numba_type_str
+   
