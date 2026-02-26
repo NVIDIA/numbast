@@ -61,5 +61,5 @@ jobs:
     uses: ./.github/workflows/build-docs.yml
     with:
       is_release: false
-      pr_number: ${{ replace(github.ref_name, 'pull-request/', '') }}
+      pr_number: ${{ github.ref_name }}
       download_artifacts: true

@@ -79,25 +79,38 @@ jobs:
     outputs:
       preview_url: ${{ steps.set-preview-url.outputs.preview_url }}
     steps:
+      - name: Normalize PR number
+        id: normalize-pr-number
+        run: |
+          raw_pr_number="${{ inputs.pr_number }}"
+          if [ -z "${raw_pr_number}" ] && [ "${{ inputs.is_release }}" != "true" ]; then
+            raw_pr_number="${GITHUB_REF_NAME}"
+          fi
+          if echo "${raw_pr_number}" | grep -qE '^pull-request/[0-9]+$'; then
+            raw_pr_number="${raw_pr_number#pull-request/}"
+          fi
+          echo "pr_number=${raw_pr_number}" >> $GITHUB_OUTPUT
       - name: Validate inputs
         run: |
-          if [ "${{ inputs.remove_pr_preview }}" = "true" ] && [ -z "${{ inputs.pr_number }}" ]; then
+          normalized_pr_number="${{ steps.normalize-pr-number.outputs.pr_number }}"
+          if [ "${{ inputs.remove_pr_preview }}" = "true" ] && [ -z "${normalized_pr_number}" ]; then
             echo "Error: remove_pr_preview requires pr_number to be set"
             exit 1
           fi
-          if [ "${{ inputs.is_release }}" != "true" ] && [ "${{ inputs.remove_pr_preview }}" != "true" ] && [ -z "${{ inputs.pr_number }}" ]; then
+          if [ "${{ inputs.is_release }}" != "true" ] && [ "${{ inputs.remove_pr_preview }}" != "true" ] && [ -z "${normalized_pr_number}" ]; then
             echo "Error: PR preview deployment requires pr_number when is_release is false"
             exit 1
           fi
-          if [ -n "${{ inputs.pr_number }}" ] && ! echo "${{ inputs.pr_number }}" | grep -qE '^[0-9]+$'; then
-            echo "Error: pr_number must be numeric (got: '${{ inputs.pr_number }}')"
+          if [ -n "${normalized_pr_number}" ] && ! echo "${normalized_pr_number}" | grep -qE '^[0-9]+$'; then
+            echo "Error: pr_number must be numeric (got: '${normalized_pr_number}')"
             exit 1
           fi
       - name: Set preview URL
         id: set-preview-url
         run: |
-          if [ -n "${{ inputs.pr_number }}" ]; then
-            echo "preview_url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ inputs.pr_number }}/" >> $GITHUB_OUTPUT
+          normalized_pr_number="${{ steps.normalize-pr-number.outputs.pr_number }}"
+          if [ -n "${normalized_pr_number}" ]; then
+            echo "preview_url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${normalized_pr_number}/" >> $GITHUB_OUTPUT
           else
             echo "preview_url=" >> $GITHUB_OUTPUT
           fi
@@ -122,10 +135,11 @@ jobs:
       - name: Set commit message
         id: commit-msg
         run: |
+          normalized_pr_number="${{ steps.normalize-pr-number.outputs.pr_number }}"
           if [ "${{ inputs.remove_pr_preview }}" = "true" ]; then
-            echo "message=Clean up doc preview for PR ${{ inputs.pr_number }} (${{ github.sha }})" >> $GITHUB_OUTPUT
-          elif [ -n "${{ inputs.pr_number }}" ]; then
-            echo "message=Deploy doc preview for PR ${{ inputs.pr_number }} (${{ github.sha }})" >> $GITHUB_OUTPUT
+            echo "message=Clean up doc preview for PR ${normalized_pr_number} (${{ github.sha }})" >> $GITHUB_OUTPUT
+          elif [ -n "${normalized_pr_number}" ]; then
+            echo "message=Deploy doc preview for PR ${normalized_pr_number} (${{ github.sha }})" >> $GITHUB_OUTPUT
           else
             echo "message=Deploy main docs (${{ github.sha }})" >> $GITHUB_OUTPUT
           fi
@@ -145,27 +159,27 @@ jobs:
           keep_files: true
           commit_message: "Deploy .nojekyll to disable Jekyll processing"
       - name: Deploy PR preview to GitHub Pages
-        if: ${{ !inputs.is_release && !inputs.remove_pr_preview && inputs.pr_number }}
+        if: ${{ !inputs.is_release && !inputs.remove_pr_preview && steps.normalize-pr-number.outputs.pr_number }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
           publish_branch: gh-pages
-          destination_dir: pr-preview/pr-${{ inputs.pr_number }}
+          destination_dir: pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}
           keep_files: true
           commit_message: ${{ steps.commit-msg.outputs.message }}
       - name: Comment PR with preview URL
-        if: ${{ !inputs.is_release && !inputs.remove_pr_preview && inputs.pr_number }}
+        if: ${{ !inputs.is_release && !inputs.remove_pr_preview && steps.normalize-pr-number.outputs.pr_number }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: pr-preview
-          number: ${{ inputs.pr_number }}
+          number: ${{ steps.normalize-pr-number.outputs.pr_number }}
           skip_unchanged: true
           message: |
             Doc Preview CI
             :---:
             | :rocket: View pre-built docs at
-            | https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ inputs.pr_number }}/
+            | https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}/
             | <br>Preview will be ready when GitHub Pages deployment finishes.
       - name: Deploy to GitHub Pages
         if: ${{ inputs.is_release && !inputs.remove_pr_preview }}
