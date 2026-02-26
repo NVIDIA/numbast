@@ -1,10 +1,33 @@
 name: Deploy Numbast Documentation
 on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      destination_dir:
+        description: "Destination directory for deployment"
+        required: false
+        default: "docs"
+        type: string
+      pr_number:
+        description: "PR number for preview URL generation"
+        required: false
+        default: ""
+        type: string
+      remove_pr_preview:
+        description: "If true, deploy empty folder to remove PR preview"
+        required: false
+        default: false
+        type: boolean
+      is_release:
+        description: "If true, deploy to docs root. If false, deploy PR preview."
+        required: false
+        default: true
+        type: boolean
+      download_artifacts:
+        description: "If true, try to download built wheel artifacts before docs build."
+        required: false
+        default: false
+        type: boolean
   # Reusable workflow for PR previews
   workflow_call:
     inputs:
@@ -23,12 +46,23 @@ on:
         required: false
         default: false
         type: boolean
+      is_release:
+        description: "If true, deploy to docs root. If false, deploy PR preview."
+        required: false
+        default: false
+        type: boolean
+      download_artifacts:
+        description: "If true, try to download built wheel artifacts before docs build."
+        required: false
+        default: false
+        type: boolean
     outputs:
       preview_url:
         description: "The URL where the PR preview is deployed"
         value: ${{ jobs.build-and-deploy.outputs.preview_url }}
 # Sets permissions of the GITHUB_TOKEN to allow GitHub Pages deployment and PR comments
 permissions:
+  actions: read
   contents: write
   pull-requests: write
   pages: write
@@ -49,6 +83,10 @@ jobs:
         run: |
           if [ "${{ inputs.remove_pr_preview }}" = "true" ] && [ -z "${{ inputs.pr_number }}" ]; then
             echo "Error: remove_pr_preview requires pr_number to be set"
+            exit 1
+          fi
+          if [ "${{ inputs.is_release }}" != "true" ] && [ "${{ inputs.remove_pr_preview }}" != "true" ] && [ -z "${{ inputs.pr_number }}" ]; then
+            echo "Error: PR preview deployment requires pr_number when is_release is false"
             exit 1
           fi
           if [ -n "${{ inputs.pr_number }}" ] && ! echo "${{ inputs.pr_number }}" | grep -qE '^[0-9]+$'; then
@@ -73,6 +111,8 @@ jobs:
         uses: ./.github/actions/docs-build
         with:
           upload_workflow_artifact: "true"
+          latest_only: "true"
+          download_artifacts: ${{ inputs.download_artifacts && 'true' || 'false' }}
       - name: Create empty directory for cleanup
         if: ${{ inputs.remove_pr_preview }}
         run: |
@@ -90,12 +130,12 @@ jobs:
             echo "message=Deploy main docs (${{ github.sha }})" >> $GITHUB_OUTPUT
           fi
       - name: Deploy .nojekyll to docs root
-        if: ${{ github.event_name == 'push' && !inputs.pr_number }} # Only create .nojekyll for main docs deployment
+        if: ${{ inputs.is_release && !inputs.remove_pr_preview }} # Only create .nojekyll for main docs deployment
         run: |
           mkdir -p _nojekyll
           touch _nojekyll/.nojekyll
       - name: Ensure Jekyll is disabled for GitHub Pages
-        if: ${{ github.event_name == 'push' && !inputs.pr_number }} # Only deploy .nojekyll for main docs, not PR previews
+        if: ${{ inputs.is_release && !inputs.remove_pr_preview }} # Only deploy .nojekyll for main docs, not PR previews
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -104,8 +144,31 @@ jobs:
           destination_dir: docs
           keep_files: true
           commit_message: "Deploy .nojekyll to disable Jekyll processing"
+      - name: Deploy PR preview to GitHub Pages
+        if: ${{ !inputs.is_release && !inputs.remove_pr_preview && inputs.pr_number }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          publish_branch: gh-pages
+          destination_dir: pr-preview/pr-${{ inputs.pr_number }}
+          keep_files: true
+          commit_message: ${{ steps.commit-msg.outputs.message }}
+      - name: Comment PR with preview URL
+        if: ${{ !inputs.is_release && !inputs.remove_pr_preview && inputs.pr_number }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-preview
+          number: ${{ inputs.pr_number }}
+          skip_unchanged: true
+          message: |
+            Doc Preview CI
+            :---:
+            | :rocket: View pre-built docs at
+            | https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ inputs.pr_number }}/
+            | <br>Preview will be ready when GitHub Pages deployment finishes.
       - name: Deploy to GitHub Pages
-        if: ${{ github.event_name == 'push' && !inputs.pr_number }} # Don't deploy doc previews for now to avoid overflowing gh-pages branch
+        if: ${{ inputs.is_release && !inputs.remove_pr_preview }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -114,5 +177,3 @@ jobs:
           destination_dir: ${{ inputs.destination_dir || 'docs' }}
           keep_files: true
           commit_message: ${{ steps.commit-msg.outputs.message }}
-
-# PR comment steps omitted for now to match CCCL template

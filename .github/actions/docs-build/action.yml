@@ -5,6 +5,14 @@ inputs:
     description: "Uploads the built docs as a workflow artifact (actions/upload-artifact)."
     required: false
     default: "true"
+  latest_only:
+    description: "If true, only refresh docs/build/html/latest."
+    required: false
+    default: "false"
+  download_artifacts:
+    description: "If true, try to install from previously-built wheel artifacts."
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -17,13 +25,40 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         conda install -n docs-build -c conda-forge clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make cuda-cudart -y
+    - name: Download previously-built wheel artifacts
+      if: ${{ inputs.download_artifacts == 'true' }}
+      continue-on-error: true
+      uses: actions/download-artifact@v7
+      with:
+        pattern: pypi-wheels-*
+        merge-multiple: true
+        path: wheels
+    - name: Show downloaded wheel artifacts
+      if: ${{ inputs.download_artifacts == 'true' }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        ls -lahR wheels || true
     - name: Install Python dependencies for docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         conda run -n docs-build python -m pip install --upgrade pip
-        # Build and install Numbast from Source
-        conda run -n docs-build ast_canopy/build.sh
-        conda run -n docs-build python -m pip install --pre numbast/
+        installed_from_artifacts="false"
+        if [[ "${{ inputs.download_artifacts }}" == "true" ]] && compgen -G "wheels/*.whl" > /dev/null; then
+          set +e
+          conda run -n docs-build python -m pip install --no-index --find-links=./wheels ast_canopy numbast
+          artifact_install_rc=$?
+          set -e
+          if [[ "${artifact_install_rc}" == "0" ]]; then
+            installed_from_artifacts="true"
+          else
+            echo "Wheel artifact install failed; falling back to source build."
+          fi
+        fi
+        if [[ "${installed_from_artifacts}" != "true" ]]; then
+          # Fallback: Build and install Numbast from source.
+          conda run -n docs-build ast_canopy/build.sh
+          conda run -n docs-build python -m pip install --pre numbast/
+        fi
         # Minimum dependencies for Numba-CUDA to run
         conda run -n docs-build python -m pip install cuda-python cuda-core
         # Install Sphinx dependencies
@@ -36,7 +71,11 @@ runs:
     - name: Build all docs
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        conda run -n docs-build ci/build_docs.sh
+        if [[ "${{ inputs.latest_only }}" == "true" ]]; then
+          conda run -n docs-build ci/build_docs.sh latest-only
+        else
+          conda run -n docs-build ci/build_docs.sh
+        fi
     # Copy all docs to the right folder
     - name: Move docs to right folder
       shell: bash --noprofile --norc -euo pipefail {0}

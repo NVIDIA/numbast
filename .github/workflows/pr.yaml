@@ -16,6 +16,7 @@ jobs:
       - test-conda
       - build-wheels
       - test-wheels
+      - docs-preview
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
   checks:
@@ -51,3 +52,14 @@ jobs:
     uses: ./.github/workflows/wheels-test.yaml
     with:
       build_type: pull-request
+  docs-preview:
+    name: Build Docs Preview
+    needs:
+      - test-conda
+      - test-wheels
+    secrets: inherit
+    uses: ./.github/workflows/build-docs.yml
+    with:
+      is_release: false
+      pr_number: ${{ replace(github.ref_name, 'pull-request/', '') }}
+      download_artifacts: true

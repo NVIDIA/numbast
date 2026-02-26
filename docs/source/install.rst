@@ -60,7 +60,7 @@ installed package version (optional).
 Build Steps
 ^^^^^^^^^^^
 
-- Build all versions listed in ``docs/versions.json``:
+- Build docs for the current installed ``numbast`` version:
 
   .. code-block:: bash
 
@@ -82,6 +82,6 @@ Artifacts are generated under:
 Notes
 ^^^^^
 
-- The build script sets ``SPHINX_NUMBAST_VER`` automatically from the installed ``numbast`` package version,
-  ``numbast/VERSION``, or top-level ``VERSION``. If none is found, it uses ``latest``.
-- Output also copies ``versions.json`` and creates a redirect ``index.html`` for convenience.
+- The build script sets ``SPHINX_NUMBAST_VER`` from the installed ``numbast`` package version unless
+  ``SPHINX_NUMBAST_VER`` is provided explicitly.
+- Output also copies ``versions.json`` and ``nv-versions.json``, and creates a redirect ``index.html``.
