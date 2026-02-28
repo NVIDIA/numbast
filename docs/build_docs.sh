@@ -16,10 +16,14 @@ fi
 # If there's a post release (ex: .post1) we don't want it to show up in the
 # version selector or directory structure.
 if [[ -z "${SPHINX_NUMBAST_VER}" ]]; then
-    export SPHINX_NUMBAST_VER=$(python -c "from importlib.metadata import version; \
-                                           ver = '.'.join(str(version('numbast')).split('.')[:3]); \
-                                           print(ver)" \
-                                | awk -F'+' '{print $1}')
+    SPHINX_NUMBAST_VER=$(python -c "from importlib.metadata import version; \
+                                    ver = '.'.join(str(version('numbast')).split('.')[:3]).split('+')[0]; \
+                                    print(ver)")
+    if [[ -z "${SPHINX_NUMBAST_VER}" ]]; then
+        echo "Failed to determine SPHINX_NUMBAST_VER from numbast package version" >&2
+        exit 1
+    fi
+    export SPHINX_NUMBAST_VER
 fi
 
 # build the docs (in parallel)
@@ -27,7 +31,7 @@ SPHINXOPTS="-j 4 -d build/.doctrees" make html
 
 # for debugging/developing (conf.py), please comment out the above line and
 # use the line below instead, as we must build in serial to avoid getting
-# obsecure Sphinx errors
+# obscure Sphinx errors
 #SPHINXOPTS="-v" make html
 
 # to support version dropdown menu

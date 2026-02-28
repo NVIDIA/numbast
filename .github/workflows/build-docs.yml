@@ -110,7 +110,7 @@ jobs:
         run: |
           normalized_pr_number="${{ steps.normalize-pr-number.outputs.pr_number }}"
           if [ -n "${normalized_pr_number}" ]; then
-            echo "preview_url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${normalized_pr_number}/" >> $GITHUB_OUTPUT
+            echo "preview_url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/pr-preview/pr-${normalized_pr_number}/" >> $GITHUB_OUTPUT
           else
             echo "preview_url=" >> $GITHUB_OUTPUT
           fi
@@ -150,7 +150,7 @@ jobs:
           touch _nojekyll/.nojekyll
       - name: Ensure Jekyll is disabled for GitHub Pages
         if: ${{ inputs.is_release && !inputs.remove_pr_preview }} # Only deploy .nojekyll for main docs, not PR previews
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_nojekyll
@@ -160,12 +160,12 @@ jobs:
           commit_message: "Deploy .nojekyll to disable Jekyll processing"
       - name: Deploy PR preview to GitHub Pages
         if: ${{ !inputs.is_release && !inputs.remove_pr_preview && steps.normalize-pr-number.outputs.pr_number }}
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
           publish_branch: gh-pages
-          destination_dir: pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}
+          destination_dir: docs/pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}
           keep_files: true
           commit_message: ${{ steps.commit-msg.outputs.message }}
       - name: Comment PR with preview URL
@@ -179,11 +179,11 @@ jobs:
             Doc Preview CI
             :---:
             | :rocket: View pre-built docs at
-            | https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}/
+            | https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}/
             | <br>Preview will be ready when GitHub Pages deployment finishes.
       - name: Deploy to GitHub Pages
         if: ${{ inputs.is_release && !inputs.remove_pr_preview }}
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
