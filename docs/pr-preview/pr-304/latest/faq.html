@@ -1,0 +1,928 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>FAQ &#8212; Numbast</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="_static/documentation_options.js?v=2bd037f0"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=35a8b989"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'faq';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.6.1';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="docs/faq.html" />
+    <link rel="icon" href="_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API reference" href="api_reference.html" />
+    <link rel="prev" title="AST Canopy overview" href="ast_canopy_overview.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="Numbast - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="Numbast - Home"/>
+  
+  
+    <p class="title logo__title">Numbast</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="install.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="static.html">
+    Static binding generation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="dynamic.html">
+    Dynamic binding generation
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="template.html">
+    Class template calls
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="supported_declarations.html">
+    Supported declarations
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="ast_canopy_overview.html">
+    AST Canopy overview
+  </a>
+</li>
+
+
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    FAQ
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="api_reference.html">
+    API reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="Numbast - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="Numbast - Home"/>
+  
+  
+    <p class="title logo__title">Numbast</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="install.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="static.html">
+    Static binding generation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="dynamic.html">
+    Dynamic binding generation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="template.html">
+    Class template calls
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="supported_declarations.html">
+    Supported declarations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="ast_canopy_overview.html">
+    AST Canopy overview
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    FAQ
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api_reference.html">
+    API reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template.html">Class template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">FAQ</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.enum.html">numbast.static.enum</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function.html">numbast.static.function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function_template.html">numbast.static.function_template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.renderer.html">numbast.static.renderer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.struct.html">numbast.static.struct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.typedef.html">numbast.static.typedef</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.types.html">numbast.static.types</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">FAQ</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="faq">
+<h1>FAQ<a class="headerlink" href="#faq" title="Link to this heading">#</a></h1>
+<section id="cuda-headers-and-include-paths">
+<h2>CUDA headers and include paths<a class="headerlink" href="#cuda-headers-and-include-paths" title="Link to this heading">#</a></h2>
+<p><strong>Why does AST Canopy need to find CUDA C/C++ headers?</strong></p>
+<p>AST Canopy uses Clang’s CUDA mode to parse the CUDA C++ header. This mode requires the CUDA directory passed
+via the <cite>–cuda-path</cite> flag, and the CUDA include directories passed via the <cite>-I</cite> flag.</p>
+<p><strong>How does AST Canopy find CUDA C/C++ headers?</strong></p>
+<p>AST Canopy relies on <a class="reference external" href="https://nvidia.github.io/cuda-python/cuda-pathfinder/latest/">cuda.pathfinder</a> to
+locate the CUDA Toolkit header directory (e.g., the folder containing <code class="docutils literal notranslate"><span class="pre">cuda.h</span></code>). Internally this uses
+<code class="docutils literal notranslate"><span class="pre">cuda.pathfinder.find_nvidia_header_directory()</span></code>, which probes several common locations and environment
+variables so you usually don’t need to configure anything.</p>
+<section id="what-is-searched-high-level">
+<h3>What is searched (high level)<a class="headerlink" href="#what-is-searched-high-level" title="Link to this heading">#</a></h3>
+<p>This is a high level overview of the search paths, for more details, please refer to the <a class="reference external" href="https://nvidia.github.io/cuda-python/cuda-pathfinder/latest/">cuda.pathfinder documentation</a>.</p>
+<ul class="simple">
+<li><p><strong>Pip installed CUDA Toolkit</strong>: If you installed the CUDA Toolkit via pip (e.g., <code class="docutils literal notranslate"><span class="pre">cuda-toolkit[cudart,nvcc]</span></code>),
+headers are typically in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/</span></code>.</p></li>
+<li><p><strong>Conda environments</strong>: If you installed the Toolkit via Conda (e.g., <code class="docutils literal notranslate"><span class="pre">cudatoolkit</span></code>), headers are typically in
+<code class="docutils literal notranslate"><span class="pre">$CONDA_PREFIX/include</span></code>.</p></li>
+<li><p><strong>Explicit environment variables</strong>: If <code class="docutils literal notranslate"><span class="pre">CUDA_HOME</span></code> or <code class="docutils literal notranslate"><span class="pre">CUDA_PATH</span></code> is set, their <code class="docutils literal notranslate"><span class="pre">include</span></code> subdirectory is
+used (e.g., <code class="docutils literal notranslate"><span class="pre">$CUDA_HOME/include</span></code>).</p></li>
+</ul>
+</section>
+<section id="conda-vs-pip-nuances">
+<h3>Conda vs. pip nuances<a class="headerlink" href="#conda-vs-pip-nuances" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>pip (runtime-focused)</strong>: Packages like <code class="docutils literal notranslate"><span class="pre">cuda-toolkit[cudart,nvcc]</span></code> ship the CUDA headers. But they have different
+layouts in either CUDA 12 or CUDA 13. See the next section for more details.</p></li>
+<li><p><strong>Conda (recommended for headers)</strong>: The <code class="docutils literal notranslate"><span class="pre">cuda-toolkit</span></code> package commonly includes header files, so
+<code class="docutils literal notranslate"><span class="pre">cuda.pathfinder</span></code> will find them in <code class="docutils literal notranslate"><span class="pre">$CONDA_PREFIX/include</span></code>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We recommend using only one package management system for a single CUDA installation.</p>
+</div>
+</section>
+<section id="cuda-12-vs-cuda-13-considerations">
+<h3>CUDA 12 vs. CUDA 13 considerations<a class="headerlink" href="#cuda-12-vs-cuda-13-considerations" title="Link to this heading">#</a></h3>
+<p>Main difference between CUDA 12 and CUDA 13 is the layout of headers in pip installed CUDA Toolkit.</p>
+<p><strong>Runtime headers</strong>:</p>
+<ul class="simple">
+<li><p><strong>CUDA 12</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cuda_runtime/include</span></code></p></li>
+<li><p><strong>CUDA 13</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cu13/include</span></code></p></li>
+</ul>
+<p><strong>CCCL headers</strong>:</p>
+<ul class="simple">
+<li><p><strong>CUDA 12</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cuda_cccl/include</span></code></p></li>
+<li><p><strong>CUDA 13</strong>: Headers are found in <code class="docutils literal notranslate"><span class="pre">site-packages/nvidia/cu13/include/cccl</span></code></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For CUDA 12, since the site-package directory is non-standard, clang++ is unable to use the site-package directory
+as <cite>–cuda-path</cite>. Instead, please install the system-wide CUDA Toolkit to corresponding version and set
+<code class="docutils literal notranslate"><span class="pre">CUDA_HOME</span></code> to the system-wide Toolkit root.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">texture_fetch_functions.h</span></code> was removed in CUDA 13. Upstream Clang 22 adds a guard in
+<code class="docutils literal notranslate"><span class="pre">__clang_cuda_runtime_wrapper.h</span></code> to avoid including it when compiling against CUDA 13+. Until that
+change lands in your host Clang, AST Canopy ships a small shim header that conditionally forwards to
+<code class="docutils literal notranslate"><span class="pre">texture_fetch_functions.h</span></code> only for CUDA &lt; 13. This avoids errors when using Clang 20/21 with CUDA 13.</p>
+</div>
+</section>
+</section>
+<section id="clang-requirements-host-headers-and-resources">
+<h2>Clang requirements (host headers and resources)<a class="headerlink" href="#clang-requirements-host-headers-and-resources" title="Link to this heading">#</a></h2>
+<p><strong>What are the minimum host-side requirements to parse CUDA headers?</strong></p>
+<p>AST Canopy drives Clang in CUDA mode. Even for device-only parsing, Clang needs two host-side components:</p>
+<ul class="simple">
+<li><p>libstdc++ C++ headers (for headers like <code class="docutils literal notranslate"><span class="pre">&lt;cstdlib&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;cmath&gt;</span></code> used via CUDA wrappers). In principle,
+use the supported libstdc++ versions listed by clang.</p></li>
+<li><p>Clang “resource directory” headers (<code class="docutils literal notranslate"><span class="pre">&lt;resource&gt;/include</span></code> and <code class="docutils literal notranslate"><span class="pre">include/cuda_wrappers</span></code> containing
+<code class="docutils literal notranslate"><span class="pre">__clang_cuda_runtime_wrapper.h</span></code> and friends).</p></li>
+</ul>
+<p>You do not need to link libstdc++ for device-only parsing, but their headers must be discoverable.</p>
+<section id="environment-specific-discovery">
+<h3>Environment-specific discovery<a class="headerlink" href="#environment-specific-discovery" title="Link to this heading">#</a></h3>
+<p>We use Clang’s driver logic (in-process) to compute the same include search paths that <code class="docutils literal notranslate"><span class="pre">clang++</span></code> would pass to
+<code class="docutils literal notranslate"><span class="pre">cc1</span></code>. How the headers are found depends on your environment:</p>
+<section id="pip-wheel-bare-metal-system-toolchain">
+<h4>1. Pip wheel/bare-metal (system toolchain)<a class="headerlink" href="#pip-wheel-bare-metal-system-toolchain" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Install system C++ headers (e.g., <code class="docutils literal notranslate"><span class="pre">libstdc++-&lt;version&gt;-dev</span></code> on Debian/Ubuntu) and Clang resource headers
+(e.g., <code class="docutils literal notranslate"><span class="pre">libclang-common-20-dev</span></code>).</p></li>
+<li><p>AST Canopy invokes Clang’s driver API with your host triple to discover C++ standard library include dirs and system
+C headers. On Linux this is typically libstdc++ by default (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/include/c++/&lt;ver&gt;</span></code>, multiarch dirs,
+<code class="docutils literal notranslate"><span class="pre">/usr/include</span></code>) along with the resource includes.</p></li>
+</ul>
+</section>
+<section id="conda-environments-conda-forge-toolchains">
+<h4>2. Conda environments (conda-forge toolchains)<a class="headerlink" href="#conda-environments-conda-forge-toolchains" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Conda packages (e.g., <code class="docutils literal notranslate"><span class="pre">clangdev</span></code> + <code class="docutils literal notranslate"><span class="pre">cxx-compiler</span></code>) may include a GCC with its own libstdc++ headers.</p></li>
+<li><p>We point the driver to the Conda <code class="docutils literal notranslate"><span class="pre">clang++</span></code> (via program path/InstalledDir) so it reads the adjacent config and
+discovers sibling GCC/libstdc++ directories automatically. This reproduces the same include list you see from
+running <code class="docutils literal notranslate"><span class="pre">clang++</span> <span class="pre">-###</span></code> inside the environment.</p></li>
+</ul>
+</section>
+<section id="custom-clang-binary">
+<h4>3. Custom Clang binary<a class="headerlink" href="#custom-clang-binary" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">clang++</span></code> binary location usually includes Clang config file to instruct the driver to discover host resources. User
+may also specify a custom clang++ binary path to driver discovery explicitly.</p>
+<ul class="simple">
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">ASTCANOPY_CLANG_BIN</span></code> to a specific <code class="docutils literal notranslate"><span class="pre">clang++</span></code> path if you want to direct discovery through a custom
+installation.</p></li>
+</ul>
+</section>
+</section>
+<section id="notes">
+<h3>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-resource-dir</span></code> only affects Clang’s builtin headers (including <code class="docutils literal notranslate"><span class="pre">cuda_wrappers</span></code>); it does not provide C++
+standard library headers.</p></li>
+<li><p>AST Canopy does not enforce a specific standard library: the driver chooses based on the toolchain and flags. To use
+libc++, ensure its headers are installed (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/include/c++/v1</span></code> or Conda <code class="docutils literal notranslate"><span class="pre">libcxx-devel</span></code>) and pass
+<code class="docutils literal notranslate"><span class="pre">-stdlib=libc++</span></code>; otherwise libstdc++ is typically selected by default on Linux.</p></li>
+<li><p>AST Canopy is linked against Clang 20. For host resources, please use corresponding Clang version.</p></li>
+</ul>
+</section>
+</section>
+<section id="generated-bindings-and-numba-cuda-version-requirements">
+<h2>Generated bindings and Numba-CUDA version requirements<a class="headerlink" href="#generated-bindings-and-numba-cuda-version-requirements" title="Link to this heading">#</a></h2>
+<p><strong>What version of numba-cuda do generated bindings require?</strong></p>
+<p>Bindings generated by Numbast have specific version requirements for <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> at runtime. The version of
+Numbast used to generate the bindings determines the compatible <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> versions.</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id1">
+<caption><span class="caption-text">Numbast to numba-cuda compatibility</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Numbast Version</p></th>
+<th class="head"><p>Required numba-cuda Version</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0.7.0 (current dev)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&gt;=0.25.0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>0.6.0</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&gt;=0.21.0,&lt;0.23.0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>0.5.x</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&gt;=0.20.1,&lt;0.21.0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Why do generated bindings have version requirements?</strong></p>
+<p>Numbast generates Python code that uses Numba-CUDA’s internal APIs. These APIs can change between releases, so
+bindings generated with a specific version of Numbast are tested against a specific range of <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> versions.</p>
+<p><strong>How do I ensure compatibility?</strong></p>
+<p><em>For dynamic binding generation:</em></p>
+<ul class="simple">
+<li><p>The correct <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> version constraints are automatically enforced at the package dependency level
+and managed by your package manager (pip or conda). When you install Numbast, compatible versions of
+<code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> are installed automatically via the dependencies specified in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> and Conda
+environment files.</p></li>
+</ul>
+<p><em>For static binding generation:</em></p>
+<ul class="simple">
+<li><p>When distributing generated bindings, document the required <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> version range in your package
+dependencies so users can install a compatible version.</p></li>
+<li><p>Generated static bindings (see <a class="reference internal" href="static.html"><span class="doc">Static binding generation</span></a>) can be regenerated with newer
+versions of Numbast if you need to support newer <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> releases.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These version restrictions may be relaxed or removed once <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> releases a stable 1.0 version with
+stabilized public APIs. Until then, bindings are tested against specific version ranges to ensure compatibility.</p>
+</div>
+</section>
+<section id="c-enum-binding-generation-notes">
+<h2>C++ Enum Binding Generation Notes<a class="headerlink" href="#c-enum-binding-generation-notes" title="Link to this heading">#</a></h2>
+<p><strong>Why do Numbast bindings treat C++ enums as ``int64`` in Numba?</strong></p>
+<p>Numba represents Python <code class="docutils literal notranslate"><span class="pre">IntEnum</span></code> values using <code class="docutils literal notranslate"><span class="pre">IntEnumMember(...,</span> <span class="pre">int64)</span></code> (i.e., enum values are lowered as
+64-bit integers). Numbast follows this convention in both dynamic and static binding generation so that Python-side
+typing and lowering are consistent.</p>
+<p><strong>But C++ enums can have different underlying integer types. Why don’t we track and truncate to that type in lowering?</strong></p>
+<p>Numbast does not keep a per-enum “underlying integer type” registry and does not perform explicit truncation during
+lowering because the device-side shim is compiled by NVRTC, and the shim call site is where C++ type checking happens.
+Even though the Python/Numba side lowers enum values as 64-bit integers, NVRTC can resolve the target enum type and emit
+the appropriate conversion when the shim calls the original function that takes the C++ enum parameter. This means we
+don’t need to track per-enum underlying integer types in Python or add special-case truncation/casting logic in Numbast
+lowering.</p>
+<p>If you are binding code that depends on unusual enum representations or non-standard ABIs, you may need a custom
+adapter. For typical CUDA device code, this approach keeps the implementation simpler and avoids maintaining extra
+metadata for every enum type.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="ast_canopy_overview.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">AST Canopy overview</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="api_reference.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda-headers-and-include-paths">CUDA headers and include paths</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-searched-high-level">What is searched (high level)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conda-vs-pip-nuances">Conda vs. pip nuances</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda-12-vs-cuda-13-considerations">CUDA 12 vs. CUDA 13 considerations</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#clang-requirements-host-headers-and-resources">Clang requirements (host headers and resources)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-specific-discovery">Environment-specific discovery</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pip-wheel-bare-metal-system-toolchain">1. Pip wheel/bare-metal (system toolchain)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#conda-environments-conda-forge-toolchains">2. Conda environments (conda-forge toolchains)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#custom-clang-binary">3. Custom Clang binary</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generated-bindings-and-numba-cuda-version-requirements">Generated bindings and Numba-CUDA version requirements</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#c-enum-binding-generation-notes">C++ Enum Binding Generation Notes</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+<a class="footer-brand logo" href="https://www.nvidia.com">
+  <img src="_static/nvidia-logo-horiz-rgb-1c-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA"/>
+  <img src="_static/nvidia-logo-horiz-rgb-1c-wht-for-screen.svg" class="logo__image only-dark" alt="NVIDIA"/>
+</a></div>
+      
+        <div class="footer-item">
+
+<div class="footer-links">
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-policy/">Privacy Policy</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/">Your Privacy Choices</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/terms-of-service/">Terms of Service</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/accessibility/">Accessibility</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/company-policies/">Corporate Policies</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/product-security/">Product Security</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/contact/">Contact</a>
+  
+  
+  
+</div>
+</div>
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2023-2025, NVIDIA.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+  </body>
+</html>
