@@ -15,7 +15,7 @@ Requirements
 ------------
 
 - CUDA Toolkit headers installed and discoverable.
-- ``clangdev`` available (see ``conda/environment-[CUDA_VER].yaml``).
+- ``clangdev`` available in your development environment.
 - Access to the CUDA C++ headers you want to bind.
 
 Example

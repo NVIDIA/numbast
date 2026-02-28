@@ -1,15 +1,19 @@
 # Build the documentation
 
-1. Install the `numbast` package of the version that we need to document.
-2. Ensure the version is included in [`nv-versions.json`](./nv-versions.json) and [`versions.json`](./versions.json).
-3. Build the docs with `./build_docs.sh`.
-4. The html artifacts should be available under both `./build/html/latest` and `./build/html/<version>`.
+Use Pixi from the repository root (recommended):
 
-You can build only the latest version with:
+1. Install one environment (first time only): `pixi install -e test-cu13` (or `test-cu12`).
+2. Ensure the version is included in `docs/nv-versions.json` (and `docs/versions.json` if needed).
+3. Build the docs with `pixi run -e test-cu13 build-docs`.
+4. The HTML artifacts will be under both `docs/build/html/latest` and `docs/build/html/<version>`.
+
+Build only the latest version with:
 
 ```bash
-./build_docs.sh latest-only
+pixi run -e test-cu13 build-docs latest-only
 ```
 
-To publish the docs with the built version, it is important to note that the html files of older versions
-should be kept intact, in order for the version selection (through `nv-versions.json`) to work.
+If you are already in a prepared shell environment, you can still run `./build_docs.sh`
+(or `./build_docs.sh latest-only`) from `docs/`.
+
+To publish docs, keep older `docs/build/html/<version>` directories intact for the version switcher.
