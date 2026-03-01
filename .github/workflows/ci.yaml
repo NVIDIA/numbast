@@ -32,3 +32,13 @@ jobs:
     uses: ./.github/workflows/wheels-test.yaml
     with:
       build_type: branch
+  build-docs:
+    name: Build Docs
+    needs:
+      - test-conda
+      - test-wheels
+    secrets: inherit
+    uses: ./.github/workflows/build-docs.yml
+    with:
+      is_release: true
+      download_artifacts: true

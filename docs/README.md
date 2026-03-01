@@ -3,7 +3,7 @@
 Use Pixi from the repository root (recommended):
 
 1. Install one environment (first time only): `pixi install -e test-cu13` (or `test-cu12`).
-2. Ensure the version is included in `docs/nv-versions.json`.
+2. Ensure the version is included in `docs/nv-versions.json` (and `docs/versions.json` if needed).
 3. Build the docs with `pixi run -e test-cu13 build-docs`.
 4. The HTML artifacts will be under both `docs/build/html/latest` and `docs/build/html/<version>`.
 
