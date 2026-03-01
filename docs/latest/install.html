@@ -486,6 +486,11 @@
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Install</a></li>
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="template.html">Class template calls</a></li>
@@ -568,20 +573,21 @@
 <h1>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h1>
 <p>Prebuilt packages are available on both PyPI and Conda. For most users, we recommend installing
 from PyPI. For development, we recommend installing from source with Pixi.</p>
+</section>
 <section id="install-via-pypi-recommended">
-<h2>Install via PyPI (recommended)<a class="headerlink" href="#install-via-pypi-recommended" title="Link to this heading">#</a></h2>
+<h1>Install via PyPI (recommended)<a class="headerlink" href="#install-via-pypi-recommended" title="Link to this heading">#</a></h1>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>numbast
 </pre></div>
 </div>
 </section>
 <section id="install-via-conda-alternative">
-<h2>Install via Conda (alternative)<a class="headerlink" href="#install-via-conda-alternative" title="Link to this heading">#</a></h2>
+<h1>Install via Conda (alternative)<a class="headerlink" href="#install-via-conda-alternative" title="Link to this heading">#</a></h1>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>numbast
 </pre></div>
 </div>
 </section>
 <section id="from-source-with-pixi-recommended-for-development">
-<h2>From source with Pixi (recommended for development)<a class="headerlink" href="#from-source-with-pixi-recommended-for-development" title="Link to this heading">#</a></h2>
+<h1>From source with Pixi (recommended for development)<a class="headerlink" href="#from-source-with-pixi-recommended-for-development" title="Link to this heading">#</a></h1>
 <p>Numbast depends on LLVM’s libClangTooling. For an easy development setup, use the repository
 <code class="docutils literal notranslate"><span class="pre">pixi.toml</span></code>, which defines two CUDA test groups:</p>
 <ul class="simple">
@@ -601,7 +607,7 @@ pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span
 </div>
 </section>
 <section id="validate-the-installation-optional">
-<h2>Validate the installation (optional)<a class="headerlink" href="#validate-the-installation-optional" title="Link to this heading">#</a></h2>
+<h1>Validate the installation (optional)<a class="headerlink" href="#validate-the-installation-optional" title="Link to this heading">#</a></h1>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span>test-cu12<span class="w"> </span><span class="nb">test</span>
 </pre></div>
 </div>
@@ -612,9 +618,9 @@ pixi<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span
 </div>
 </section>
 <section id="building-documentation">
-<h2>Building Documentation<a class="headerlink" href="#building-documentation" title="Link to this heading">#</a></h2>
+<h1>Building Documentation<a class="headerlink" href="#building-documentation" title="Link to this heading">#</a></h1>
 <section id="dependencies">
-<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">#</a></h3>
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">#</a></h2>
 <p>Use Pixi to ensure consistent versions. In <code class="docutils literal notranslate"><span class="pre">pixi.toml</span></code>, the <code class="docutils literal notranslate"><span class="pre">docs</span></code> feature includes:</p>
 <ul class="simple">
 <li><p>sphinx</p></li>
@@ -626,7 +632,7 @@ to reflect the installed package version (optional). You can enter one with
 <code class="docutils literal notranslate"><span class="pre">pixi</span> <span class="pre">shell</span> <span class="pre">-e</span> <span class="pre">test-cu13</span></code>.</p>
 </section>
 <section id="build-steps">
-<h3>Build Steps<a class="headerlink" href="#build-steps" title="Link to this heading">#</a></h3>
+<h2>Build Steps<a class="headerlink" href="#build-steps" title="Link to this heading">#</a></h2>
 <ul>
 <li><p>Recommended: build all versions listed in <code class="docutils literal notranslate"><span class="pre">docs/nv-versions.json</span></code> via the Pixi task from
 the repository root:</p>
@@ -652,17 +658,17 @@ the repository root:</p>
 <p>Artifacts are generated under:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">docs/build/html/latest</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">docs/build/html/&lt;version&gt;</span></code> where <code class="docutils literal notranslate"><span class="pre">&lt;version&gt;</span></code> comes from <code class="docutils literal notranslate"><span class="pre">SPHINX_NUMBAST_VER</span></code> or detected package/version files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/build/html/&lt;version&gt;</span></code> where <code class="docutils literal notranslate"><span class="pre">&lt;version&gt;</span></code> comes from
+<code class="docutils literal notranslate"><span class="pre">SPHINX_NUMBAST_VER</span></code> or the installed <code class="docutils literal notranslate"><span class="pre">numbast</span></code> package version.</p></li>
 </ul>
 </section>
 <section id="notes">
-<h3>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h3>
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p>The build script sets <code class="docutils literal notranslate"><span class="pre">SPHINX_NUMBAST_VER</span></code> automatically from the installed <code class="docutils literal notranslate"><span class="pre">numbast</span></code> package version,
-<code class="docutils literal notranslate"><span class="pre">numbast/VERSION</span></code>, or top-level <code class="docutils literal notranslate"><span class="pre">VERSION</span></code>. If none is found, it uses <code class="docutils literal notranslate"><span class="pre">latest</span></code>.</p></li>
-<li><p>Output also copies <code class="docutils literal notranslate"><span class="pre">nv-versions.json</span></code> and creates a redirect <code class="docutils literal notranslate"><span class="pre">index.html</span></code> for convenience.</p></li>
+<li><p>The build script sets <code class="docutils literal notranslate"><span class="pre">SPHINX_NUMBAST_VER</span></code> from the installed <code class="docutils literal notranslate"><span class="pre">numbast</span></code> package version unless
+<code class="docutils literal notranslate"><span class="pre">SPHINX_NUMBAST_VER</span></code> is provided explicitly.</p></li>
+<li><p>Output also copies <code class="docutils literal notranslate"><span class="pre">versions.json</span></code> and <code class="docutils literal notranslate"><span class="pre">nv-versions.json</span></code>, and creates a redirect <code class="docutils literal notranslate"><span class="pre">index.html</span></code>.</p></li>
 </ul>
-</section>
 </section>
 </section>
 
@@ -715,17 +721,19 @@ the repository root:</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-pypi-recommended">Install via PyPI (recommended)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-conda-alternative">Install via Conda (alternative)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#from-source-with-pixi-recommended-for-development">From source with Pixi (recommended for development)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validate-the-installation-optional">Validate the installation (optional)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-documentation">Building Documentation</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dependencies">Dependencies</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#build-steps">Build Steps</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Install</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-pypi-recommended">Install via PyPI (recommended)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#install-via-conda-alternative">Install via Conda (alternative)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#from-source-with-pixi-recommended-for-development">From source with Pixi (recommended for development)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#validate-the-installation-optional">Validate the installation (optional)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#building-documentation">Building Documentation</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dependencies">Dependencies</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-steps">Build Steps</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
 </ul>
 </li>
 </ul>
+
   </nav></div>
 
 </div></div>
