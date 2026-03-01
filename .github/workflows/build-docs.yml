@@ -110,7 +110,7 @@ jobs:
         run: |
           normalized_pr_number="${{ steps.normalize-pr-number.outputs.pr_number }}"
           if [ -n "${normalized_pr_number}" ]; then
-            echo "preview_url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/pr-preview/pr-${normalized_pr_number}/" >> $GITHUB_OUTPUT
+            echo "preview_url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${normalized_pr_number}/" >> $GITHUB_OUTPUT
           else
             echo "preview_url=" >> $GITHUB_OUTPUT
           fi
@@ -179,7 +179,7 @@ jobs:
             Doc Preview CI
             :---:
             | :rocket: View pre-built docs at
-            | https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}/
+            | https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ steps.normalize-pr-number.outputs.pr_number }}/
             | <br>Preview will be ready when GitHub Pages deployment finishes.
       - name: Deploy to GitHub Pages
         if: ${{ inputs.is_release && !inputs.remove_pr_preview }}
