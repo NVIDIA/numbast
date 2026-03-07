@@ -29,7 +29,7 @@ echo "Build completed successfully!"
 
 # Now build the python wheels
 export CMAKE_PREFIX_PATH="${CMAKE_INSTALL_PREFIX}:${CMAKE_PREFIX_PATH}"
-for py_ver in 3.10 3.11 3.12 3.13; do
+for py_ver in 3.10 3.11 3.12 3.13 3.14; do
   python"${py_ver}" -m pip wheel -w dist -v --disable-pip-version-check .
 done
 
@@ -39,7 +39,9 @@ auditwheel repair -w ../final-dist dist/*.whl
 
 # Now build the numbast python wheels
 cd ../numbast
-python3.13 -m pip wheel -w dist -v \
+# numbast is a pure-Python wheel, so one build on the newest
+# supported interpreter is sufficient.
+python3.14 -m pip wheel -w dist -v \
   --disable-pip-version-check \
   --find-links=../final-dist \
   --pre \
