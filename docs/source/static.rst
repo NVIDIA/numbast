@@ -21,40 +21,42 @@ Requirements
 Configuration file
 ------------------
 
-Create a YAML config describing what to generate. Example:
+The static-binding config contract is defined in
+``numbast/src/numbast/tools/static_binding_generator.schema.yaml``.
+The docs section below is generated from that schema at build time to avoid
+drift between implementation and documentation.
+
+Minimal config example:
 
 .. code-block:: yaml
 
   # file: config.yml
-  entry_point: /path/to/library/header.hpp
-  retain_list:
+  Entry Point: /path/to/library/header.hpp
+  File List:
     - /path/to/library/header.hpp
     - /path/to/library/other_deps.hpp
 
-  gpu_arch: ["sm_80"]
+  GPU Arch: ["sm_80"]
 
-  # Optional controls
-  exclude_functions: []
-  exclude_structs: []
-  clang_includes_paths:
+  # Optional controls (subset)
+  Exclude:
+    Function: []
+    Struct: []
+  Clang Include Paths:
     - /extra/include/dirs
-  additional_imports:
+  Additional Import:
     - from numba import types
-  predefined_macros:
+  Predefined Macros:
     - SOME_MACRO=1
-  output_name: bindings_my_lib.py
-  cooperative_launch_required_functions_regex: []
-  api_prefix_removal:
+  Output Name: bindings_my_lib.py
+  Cooperative Launch Required Functions Regex: []
+  API Prefix Removal:
     Function: ["lib_"]
-  module_callbacks:
-    setup: |
-      def _setup():
-          pass
-    teardown: |
-      def _teardown():
-          pass
-  skip_prefix: null
-  separate_registry: false
+  Module Callbacks:
+    setup: "lambda x: print('setup')"
+    teardown: "lambda x: print('teardown')"
+  Skip Prefix: null
+  Use Separate Registry: false
 
 Generate the binding
 --------------------
@@ -84,3 +86,8 @@ Notes and tips
 - Use the same CUDA version (or backward compatible) between generation and target runtime environments.
 - If multiple GPU architectures are needed, run the generator once per architecture.
 - If your environment has ``ruff`` formatter installed, Numbast will attempt to run it on generated bindings.
+
+Config Schema Reference
+=======================
+
+.. include:: generated/static_binding_schema_reference.rst
