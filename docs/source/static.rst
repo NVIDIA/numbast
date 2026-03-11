@@ -26,22 +26,23 @@ The static-binding config contract is defined in
 The docs section below is generated from that schema at build time to avoid
 drift between implementation and documentation.
 
-Minimal config example:
+Config example:
 
 .. code-block:: yaml
 
   # file: config.yml
+
+  # --- Required fields ---
   Entry Point: /path/to/library/header.hpp
   File List:
     - /path/to/library/header.hpp
     - /path/to/library/other_deps.hpp
-
   GPU Arch: ["sm_80"]
 
-  # Optional controls (subset)
+  # --- Optional fields ---
   Exclude:
-    Function: []
-    Struct: []
+    Function: ["internal_helper", "deprecated_api"]
+    Struct: ["__InternalState"]
   Clang Include Paths:
     - /extra/include/dirs
   Additional Import:
@@ -49,14 +50,11 @@ Minimal config example:
   Predefined Macros:
     - SOME_MACRO=1
   Output Name: bindings_my_lib.py
-  Cooperative Launch Required Functions Regex: []
   API Prefix Removal:
     Function: ["lib_"]
   Module Callbacks:
     setup: "lambda x: print('setup')"
     teardown: "lambda x: print('teardown')"
-  Skip Prefix: null
-  Use Separate Registry: false
 
 Generate the binding
 --------------------

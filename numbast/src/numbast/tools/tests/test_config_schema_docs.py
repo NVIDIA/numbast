@@ -79,7 +79,8 @@ def test_generate_schema_reference_from_yaml_schema(tmp_path):
     )
 
     rendered = output_path.read_text(encoding="utf-8")
-    assert "Top-level keys" in rendered
+    assert "Required keys" in rendered
+    assert "Optional keys" in rendered
     assert "``Entry Point``" in rendered
     assert "``Use Separate Registry``" in rendered
     assert "Raw schema" in rendered

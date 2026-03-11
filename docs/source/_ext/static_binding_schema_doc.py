@@ -97,32 +97,33 @@ def _append_wrapped(
     lines.extend(wrapped.splitlines())
 
 
-def _render_properties_list(
+def _render_properties_deflist(
     lines: list[str],
     properties: dict[str, Any],
-    required_keys: set[str],
+    indent: str = "",
 ) -> None:
+    body_indent = indent + "   "
     for key, spec in properties.items():
         if not isinstance(spec, dict):
             continue
 
-        required_label = "required" if key in required_keys else "optional"
         type_label = _format_type(spec)
         description = _normalize_text(
             spec.get("description", "No description.")
         )
-        line = f"``{key}`` ({required_label}, type: ``{type_label}``): "
-        line += description
 
+        lines.append(f"{indent}``{key}`` : ``{type_label}``")
+
+        body = description
         if "default" in spec:
             default_value = _format_default(spec["default"])
-            line += f" Default: ``{default_value}``."
+            body += f" Default: ``{default_value}``."
 
         _append_wrapped(
             lines,
-            line,
-            initial_indent="- ",
-            subsequent_indent="  ",
+            body,
+            initial_indent=body_indent,
+            subsequent_indent=body_indent,
         )
 
         constraints = _format_constraints(spec)
@@ -130,9 +131,11 @@ def _render_properties_list(
             _append_wrapped(
                 lines,
                 f"Constraints: {constraints}.",
-                initial_indent="  - ",
-                subsequent_indent="    ",
+                initial_indent=body_indent,
+                subsequent_indent=body_indent,
             )
+
+        lines.append("")
 
 
 def render_static_binding_schema_reference(
@@ -149,28 +152,42 @@ def render_static_binding_schema_reference(
         raise ValueError("Schema 'required' must be a list.")
     required_set = set(required_keys)
 
+    required_props = {k: v for k, v in properties.items() if k in required_set}
+    optional_props = {
+        k: v for k, v in properties.items() if k not in required_set
+    }
+
     lines: list[str] = [
         "This section is generated directly from:",
         f"``{schema_repo_path}``",
         "",
-        "Top-level keys",
+        "Required keys",
         "--------------",
         "",
     ]
 
-    _render_properties_list(lines, properties, required_set)
+    _render_properties_deflist(lines, required_props)
+
+    lines.extend(
+        [
+            "Optional keys",
+            "--------------",
+            "",
+        ]
+    )
+
+    _render_properties_deflist(lines, optional_props)
 
     nested = [
         (key, spec)
-        for key, spec in properties.items()
+        for key, spec in optional_props.items()
         if isinstance(spec, dict) and isinstance(spec.get("properties"), dict)
     ]
     if nested:
         lines.extend(
             [
-                "",
-                "Nested object keys",
-                "------------------",
+                "Optional nested keys",
+                "^^^^^^^^^^^^^^^^^^^^",
                 "",
             ]
         )
@@ -178,9 +195,7 @@ def render_static_binding_schema_reference(
             lines.append(f".. rubric:: ``{key}``")
             lines.append("")
             child_properties = spec.get("properties", {})
-            child_required = set(spec.get("required", []))
-            _render_properties_list(lines, child_properties, child_required)
-            lines.append("")
+            _render_properties_deflist(lines, child_properties)
 
     lines.extend(
         [

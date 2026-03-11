@@ -1,70 +1,112 @@
 This section is generated directly from:
 ``numbast/src/numbast/tools/static_binding_generator.schema.yaml``
 
-Top-level keys
+Required keys
 --------------
 
-- ``Name`` (optional, type: ``string``): Optional config metadata field.
-- ``Version`` (optional, type: ``string | number``): Optional config metadata field.
-- ``Entry Point`` (required, type: ``string``): Path to the input CUDA C/C++ header file.
-- ``GPU Arch`` (required, type: ``array``): Target GPU architecture list. Exactly one architecture is currently
-  supported per run.
-  - Constraints: min items: 1; max items: 1; item type: ``string``.
-- ``File List`` (required, type: ``array``): Header files to retain while parsing. Declarations from other transitively
-  included files are ignored in generated output.
-  - Constraints: min items: 1; item type: ``string``.
-- ``Types`` (optional, type: ``object``): Mapping of struct names to Numba type class names. Default: ``{}``.
-- ``Data Models`` (optional, type: ``object``): Mapping of struct names to Numba datamodel class names. Default: ``{}``.
-- ``Exclude`` (optional, type: ``object``): Declaration names to skip during binding generation. Default: ``{}``.
-  - Constraints: no unspecified sub-keys.
-- ``Clang Include Paths`` (optional, type: ``array``): Additional include search paths for Clang parsing. Default:
-  ``[]``.
-  - Constraints: item type: ``string``.
-- ``Additional Import`` (optional, type: ``array``): Extra Python import statements injected into the generated file.
-  Default: ``[]``.
-  - Constraints: item type: ``string``.
-- ``Shim Include Override`` (optional, type: ``string | null``): Override value used to compose the generated shim
-  include line. If unset, the entry-point path is used. Default: ``null``.
-- ``Predefined Macros`` (optional, type: ``array``): Macros defined before parsing and prepended in shim generation.
-  Default: ``[]``.
-  - Constraints: item type: ``string``.
-- ``Output Name`` (optional, type: ``string | null``): Output binding filename. Defaults to `<entry-point-basename>.py`.
-  Default: ``null``.
-- ``Cooperative Launch Required Functions Regex`` (optional, type: ``array``): Regex patterns. Matching function names
-  are generated with cooperative launch handling. Default: ``[]``.
-  - Constraints: item type: ``string``.
-- ``API Prefix Removal`` (optional, type: ``object``): Prefixes removed from rendered declaration names. Default:
-  ``{}``.
-  - Constraints: no unspecified sub-keys.
-- ``Module Callbacks`` (optional, type: ``object``): Optional module-level shim callback assignments. Default: ``{}``.
-  - Constraints: no unspecified sub-keys.
-- ``Skip Prefix`` (optional, type: ``string | null``): Skip generating bindings for functions whose names start with
-  this prefix. Default: ``null``.
-- ``Use Separate Registry`` (optional, type: ``boolean``): Generate separate typing/target registries instead of reusing
-  Numba CUDA's global registries. Default: ``false``.
-- ``Function Argument Intents`` (optional, type: ``object``): Per-function argument intent overrides. Function keys map
-  to parameter-name or parameter-index entries. Default: ``{}``.
+``Entry Point`` : ``string``
+   Path to the input CUDA C/C++ header file.
 
-Nested object keys
-------------------
+``GPU Arch`` : ``array``
+   Target GPU architecture list. Exactly one architecture is currently supported per run.
+   Constraints: min items: 1; max items: 1; item type: ``string``.
+
+``File List`` : ``array``
+   Header files to retain while parsing. Declarations from other transitively included files are ignored in generated
+   output.
+   Constraints: min items: 1; item type: ``string``.
+
+Optional keys
+--------------
+
+``Name`` : ``string``
+   Optional config metadata field.
+
+``Version`` : ``string | number``
+   Optional config metadata field.
+
+``Types`` : ``object``
+   Mapping of struct names to Numba type class names. Default: ``{}``.
+
+``Data Models`` : ``object``
+   Mapping of struct names to Numba datamodel class names. Default: ``{}``.
+
+``Exclude`` : ``object``
+   Declaration names to skip during binding generation. Default: ``{}``.
+   Constraints: no unspecified sub-keys.
+
+``Clang Include Paths`` : ``array``
+   Additional include search paths for Clang parsing. Default: ``[]``.
+   Constraints: item type: ``string``.
+
+``Additional Import`` : ``array``
+   Extra Python import statements injected into the generated file. Default: ``[]``.
+   Constraints: item type: ``string``.
+
+``Shim Include Override`` : ``string | null``
+   Override value used to compose the generated shim include line. If unset, the entry-point path is used. Default:
+   ``null``.
+
+``Predefined Macros`` : ``array``
+   Macros defined before parsing and prepended in shim generation. Default: ``[]``.
+   Constraints: item type: ``string``.
+
+``Output Name`` : ``string | null``
+   Output binding filename. Defaults to `<entry-point-basename>.py`. Default: ``null``.
+
+``Cooperative Launch Required Functions Regex`` : ``array``
+   Regex patterns. Matching function names are generated with cooperative launch handling. Default: ``[]``.
+   Constraints: item type: ``string``.
+
+``API Prefix Removal`` : ``object``
+   Prefixes removed from rendered declaration names. Default: ``{}``.
+   Constraints: no unspecified sub-keys.
+
+``Module Callbacks`` : ``object``
+   Optional module-level shim callback assignments. Default: ``{}``.
+   Constraints: no unspecified sub-keys.
+
+``Skip Prefix`` : ``string | null``
+   Skip generating bindings for functions whose names start with this prefix. Default: ``null``.
+
+``Use Separate Registry`` : ``boolean``
+   Generate separate typing/target registries instead of reusing Numba CUDA's global registries. Default: ``false``.
+
+``Function Argument Intents`` : ``object``
+   Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. Default:
+   ``{}``.
+
+Optional nested keys
+^^^^^^^^^^^^^^^^^^^^
 
 .. rubric:: ``Exclude``
 
-- ``Function`` (optional, type: ``array``): Function names to exclude. Default: ``[]``.
-  - Constraints: item type: ``string``.
-- ``Struct`` (optional, type: ``array``): Struct names to exclude. Default: ``[]``.
-  - Constraints: item type: ``string``.
+``Function`` : ``array``
+   Function names to exclude. Default: ``[]``.
+   Constraints: item type: ``string``.
+
+``Struct`` : ``array``
+   Struct names to exclude. Default: ``[]``.
+   Constraints: item type: ``string``.
 
 .. rubric:: ``API Prefix Removal``
 
-- ``Function`` (optional, type: ``oneOf(string, array)``): Prefix(es) removed from generated function names.
-- ``Struct`` (optional, type: ``oneOf(string, array)``): Prefix(es) removed from generated struct names.
-- ``Enum`` (optional, type: ``oneOf(string, array)``): Prefix(es) removed from generated enum names and values.
+``Function`` : ``oneOf(string, array)``
+   Prefix(es) removed from generated function names.
+
+``Struct`` : ``oneOf(string, array)``
+   Prefix(es) removed from generated struct names.
+
+``Enum`` : ``oneOf(string, array)``
+   Prefix(es) removed from generated enum names and values.
 
 .. rubric:: ``Module Callbacks``
 
-- ``setup`` (optional, type: ``string``): Python expression for setup callback.
-- ``teardown`` (optional, type: ``string``): Python expression for teardown callback.
+``setup`` : ``string``
+   Python expression for setup callback.
+
+``teardown`` : ``string``
+   Python expression for teardown callback.
 
 Raw schema
 ----------
