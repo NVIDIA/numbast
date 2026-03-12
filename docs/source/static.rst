@@ -66,7 +66,7 @@ Use the CLI to generate a Python file:
   # from repo root (ensure conda env is active)
   python -m numbast --cfg-path config.yml --output-dir ./output
 
-This produces a module like ``./output/bindings_my_lib.py`` (or ``<entry_point>.py`` if ``output_name`` is not set).
+This produces a module like ``./output/bindings_my_lib.py`` (or ``<entry_point>.py`` if ``Output Name`` is not set).
 
 Distribute and use
 ------------------
