@@ -14,7 +14,6 @@ _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
 } | {
     "bool": "bool_",
     "void": "void",
-    "cudaRoundMode": "IntEnumMember(cudaRoundMode, int64)",
 }
 
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
@@ -80,13 +79,6 @@ def to_numba_type_str(ty: str):
     Raises:
         TypeNotFoundError: If `ty` has no known mapping to a Numba type.
     """
-
-    if ty == "cudaRoundMode":
-        BaseRenderer.Imports.add(
-            "from cuda.bindings.runtime import cudaRoundMode"
-        )
-        BaseRenderer._try_import_numba_type("IntEnumMember")
-        return CTYPE_TO_NBTYPE_STR[ty]
 
     if ty == "__nv_bfloat16":
         BaseRenderer._try_import_numba_type("__nv_bfloat16")
