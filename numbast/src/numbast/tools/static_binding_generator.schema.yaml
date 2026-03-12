@@ -21,6 +21,8 @@ properties:
   Entry Point:
     type: string
     description: Path to the input CUDA C/C++ header file.
+    examples:
+      - /usr/local/cuda/include/cufp8.hpp
   GPU Arch:
     type: array
     minItems: 1
@@ -31,6 +33,8 @@ properties:
     description: >
       Target GPU architecture list. Exactly one architecture is currently supported per run.
 
+    examples:
+      - ["sm_80"]
   File List:
     type: array
     minItems: 1
@@ -39,23 +43,33 @@ properties:
     description: >
       Header files to retain while parsing. Declarations from other transitively included files are ignored in generated output.
 
+    examples:
+      - - /usr/local/cuda/include/cufp8.hpp
+        - /usr/local/cuda/include/cufp8_conversions.hpp
   Types:
     type: object
     default: {}
     additionalProperties:
       type: string
     description: Mapping of struct names to Numba type class names.
+    examples:
+      - {"__nv_fp8_e4m3": "FP8e4m3Type"}
   Data Models:
     type: object
     default: {}
     additionalProperties:
       type: string
     description: Mapping of struct names to Numba datamodel class names.
+    examples:
+      - {"__nv_fp8_e4m3": "FP8e4m3Model"}
   Exclude:
     type: object
     default: {}
     additionalProperties: false
     description: Declaration names to skip during binding generation.
+    examples:
+      - Function: ["internal_helper"]
+        Struct: ["__InternalState"]
     properties:
       Function:
         type: array
@@ -63,40 +77,56 @@ properties:
         items:
           type: string
         description: Function names to exclude.
+        examples:
+          - ["internal_helper", "deprecated_api"]
       Struct:
         type: array
         default: []
         items:
           type: string
         description: Struct names to exclude.
+        examples:
+          - ["__InternalState"]
   Clang Include Paths:
     type: array
     default: []
     items:
       type: string
     description: Additional include search paths for Clang parsing.
+    examples:
+      - - /usr/local/cuda/include
+        - /opt/extra/include
   Additional Import:
     type: array
     default: []
     items:
       type: string
     description: Extra Python import statements injected into the generated file.
+    examples:
+      - - "from nvshmem.bindings import module_init"
   Shim Include Override:
     type: [string, "null"]
     default: null
     description: >
       Override value used to compose the generated shim include line. If unset, the entry-point path is used.
 
+    examples:
+      - "cufp8.hpp"
   Predefined Macros:
     type: array
     default: []
     items:
       type: string
     description: Macros defined before parsing and prepended in shim generation.
+    examples:
+      - - SOME_MACRO=1
+        - ENABLE_FEATURE
   Output Name:
     type: [string, "null"]
     default: null
     description: Output binding filename. Defaults to `<entry-point-basename>.py`.
+    examples:
+      - bindings_my_lib.py
   Cooperative Launch Required Functions Regex:
     type: array
     default: []
@@ -105,11 +135,17 @@ properties:
     description: >
       Regex patterns. Matching function names are generated with cooperative launch handling.
 
+    examples:
+      - - "^cg_.*"
   API Prefix Removal:
     type: object
     default: {}
     additionalProperties: false
     description: Prefixes removed from rendered declaration names.
+    examples:
+      - Function: ["lib_"]
+        Struct: ["lib_"]
+        Enum: ["LIB_"]
     properties:
       Function:
         oneOf:
@@ -118,6 +154,8 @@ properties:
             items:
               type: string
         description: Prefix(es) removed from generated function names.
+        examples:
+          - ["lib_", "mylib_"]
       Struct:
         oneOf:
           - type: string
@@ -125,6 +163,8 @@ properties:
             items:
               type: string
         description: Prefix(es) removed from generated struct names.
+        examples:
+          - ["lib_"]
       Enum:
         oneOf:
           - type: string
@@ -132,34 +172,51 @@ properties:
             items:
               type: string
         description: Prefix(es) removed from generated enum names and values.
+        examples:
+          - ["LIB_"]
   Module Callbacks:
     type: object
     default: {}
     additionalProperties: false
     description: Optional module-level shim callback assignments.
+    examples:
+      - setup: "lambda mod: print('loaded', mod)"
+        teardown: "lambda mod: print('unloaded', mod)"
     properties:
       setup:
         type: string
         description: Python expression for setup callback.
+        examples:
+          - "lambda mod: print('loaded', mod)"
       teardown:
         type: string
         description: Python expression for teardown callback.
+        examples:
+          - "lambda mod: print('unloaded', mod)"
   Skip Prefix:
     type: [string, "null"]
     default: null
     description: Skip generating bindings for functions whose names start with this prefix.
+    examples:
+      - "__internal_"
   Use Separate Registry:
     type: boolean
     default: false
     description: >
       Generate separate typing/target registries instead of reusing Numba CUDA's global registries.
 
+    examples:
+      - true
   Function Argument Intents:
     type: object
     default: {}
     description: >
       Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
 
+    examples:
+      - my_function:
+          result: out_ptr
+          0: in
     additionalProperties:
       type: object
       additionalProperties:

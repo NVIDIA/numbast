@@ -53,27 +53,27 @@ def _format_default(value: Any) -> str:
     return dumped.replace("\n", " ")
 
 
-def _format_constraints(spec: dict[str, Any]) -> str:
+def _collect_constraints(spec: dict[str, Any]) -> list[str]:
     constraints: list[str] = []
 
     if "enum" in spec:
         allowed = ", ".join(f"``{value}``" for value in spec["enum"])
-        constraints.append(f"allowed values: {allowed}")
+        constraints.append(f"Allowed values: {allowed}")
     if "pattern" in spec:
-        constraints.append(f"pattern ``{spec['pattern']}``")
+        constraints.append(f"Pattern: ``{spec['pattern']}``")
     if "minItems" in spec:
-        constraints.append(f"min items: {spec['minItems']}")
+        constraints.append(f"Min items: {spec['minItems']}")
     if "maxItems" in spec:
-        constraints.append(f"max items: {spec['maxItems']}")
+        constraints.append(f"Max items: {spec['maxItems']}")
 
     items = spec.get("items")
     if isinstance(items, dict):
-        constraints.append(f"item type: ``{_format_type(items)}``")
+        constraints.append(f"Item type: ``{_format_type(items)}``")
 
     if spec.get("additionalProperties") is False:
-        constraints.append("no unspecified sub-keys")
+        constraints.append("No unspecified sub-keys")
 
-    return "; ".join(constraints)
+    return constraints
 
 
 def _normalize_text(value: Any) -> str:
@@ -114,26 +114,40 @@ def _render_properties_deflist(
 
         lines.append(f"{indent}``{key}`` : ``{type_label}``")
 
-        body = description
-        if "default" in spec:
-            default_value = _format_default(spec["default"])
-            body += f" Default: ``{default_value}``."
-
         _append_wrapped(
             lines,
-            body,
+            description,
             initial_indent=body_indent,
             subsequent_indent=body_indent,
         )
 
-        constraints = _format_constraints(spec)
+        if "default" in spec:
+            default_value = _format_default(spec["default"])
+            lines.append("")
+            lines.append(f"{body_indent}Default: ``{default_value}``.")
+
+        constraints = _collect_constraints(spec)
         if constraints:
-            _append_wrapped(
-                lines,
-                f"Constraints: {constraints}.",
-                initial_indent=body_indent,
-                subsequent_indent=body_indent,
-            )
+            lines.append("")
+            lines.append(f"{body_indent}Constraints:")
+            lines.append("")
+            for constraint in constraints:
+                lines.append(f"{body_indent}- {constraint}")
+
+        examples = spec.get("examples")
+        if isinstance(examples, list) and examples:
+            lines.append("")
+            lines.append(f"{body_indent}Example:")
+            lines.append("")
+            lines.append(f"{body_indent}.. code-block:: yaml")
+            lines.append("")
+            for example in examples:
+                dumped = yaml.safe_dump(
+                    {key: example}, default_flow_style=False, sort_keys=False
+                ).rstrip()
+                for dump_line in dumped.splitlines():
+                    lines.append(f"{body_indent}   {dump_line}")
+            lines.append("")
 
         lines.append("")
 
