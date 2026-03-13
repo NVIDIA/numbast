@@ -1,4 +1,27 @@
 import os
+import sys
+from pathlib import Path
+
+SOURCE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SOURCE_DIR.parents[1]
+sys.path.insert(0, str(SOURCE_DIR / "_ext"))
+
+from static_binding_schema_doc import (  # noqa: E402
+    generate_static_binding_schema_reference,
+)
+
+STATIC_BINDING_SCHEMA_REPO_PATH = (
+    "numbast/src/numbast/tools/static_binding_generator.schema.yaml"
+)
+STATIC_BINDING_SCHEMA_PATH = REPO_ROOT / STATIC_BINDING_SCHEMA_REPO_PATH
+STATIC_BINDING_SCHEMA_RST_PATH = (
+    SOURCE_DIR / "generated" / "static_binding_schema_reference.rst"
+)
+generate_static_binding_schema_reference(
+    schema_path=STATIC_BINDING_SCHEMA_PATH,
+    output_path=STATIC_BINDING_SCHEMA_RST_PATH,
+    schema_repo_path=STATIC_BINDING_SCHEMA_REPO_PATH,
+)
 
 # -- Project information -----------------------------------------------------
 
