@@ -169,3 +169,6 @@ llvm.sh*
 .cursor/
 .gh-cache/
 .pre-commit-cache/
+.virtualenv-app-data
+
+.worktrees/
