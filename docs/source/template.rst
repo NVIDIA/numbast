@@ -41,6 +41,9 @@ Function templates are bound as normal callable Python handles:
 
 .. code-block:: python
 
+  # Given C++:
+  # template <typename T> __device__ T add(T a, T b);
+  # template <typename T> __device__ T add(T a, T b, T c);
   funcs = bind_cxx_function_templates(
       function_templates=decls.function_templates,
       shim_writer=shim_writer,

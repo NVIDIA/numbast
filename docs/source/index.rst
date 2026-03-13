@@ -9,9 +9,9 @@ Numbast Documentation
    quickstart
    install
    static
-   argument_intents
    dynamic
    template
+   argument_intents
    supported_declarations
    ast_canopy_overview
    faq
