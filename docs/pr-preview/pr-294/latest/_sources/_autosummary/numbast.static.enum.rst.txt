@@ -1,0 +1,13 @@
+numbast.static.enum
+===================
+
+.. automodule:: numbast.static.enum
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      StaticEnumRenderer
+      StaticEnumsRenderer
+   
