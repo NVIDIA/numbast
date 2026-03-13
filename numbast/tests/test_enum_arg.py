@@ -9,10 +9,10 @@ from numba import cuda
 
 import cffi
 
+from cuda.pathfinder import find_nvidia_header_directory
+
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_enums, bind_cxx_functions, MemoryShimWriter
-
-from cuda.bindings.runtime import cudaRoundMode
 
 import pytest
 
@@ -21,7 +21,12 @@ import pytest
 def _sample_enums():
     DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
     p = os.path.join(DATA_FOLDER, "sample_enum.cuh")
-    decls = parse_declarations_from_source(p, [p], "sm_80", verbose=True)
+
+    cudart_folder = find_nvidia_header_directory("cudart")
+    device_types_h = os.path.join(cudart_folder, "device_types.h")
+    decls = parse_declarations_from_source(
+        p, [p, device_types_h], "sm_80", verbose=True
+    )
     funcs = decls.functions
     enums = decls.enums
     shim_writer = MemoryShimWriter(f'#include "{p}"')
@@ -49,8 +54,8 @@ def shim_writer(_sample_enums):
 
 def test_enum_arg(enum_bindings, func_bindings, shim_writer):
     ffi = cffi.FFI()
-    eat = func_bindings[0]
-    Fruit = enum_bindings[0]
+    eat = [f for f in func_bindings if f.__name__ == "eat"][0]
+    Fruit = [e for e in enum_bindings if e.__name__ == "Fruit"][0]
 
     @cuda.jit(link=shim_writer.links())
     def kernel(out):
@@ -70,6 +75,10 @@ def test_enum_arg(enum_bindings, func_bindings, shim_writer):
 def test_cudaRoundMode_arg(enum_bindings, func_bindings, shim_writer):
     ffi = cffi.FFI()
     test_cudaRoundMode = func_bindings[1]
+
+    cudaRoundMode = [e for e in enum_bindings if e.__name__ == "cudaRoundMode"][
+        0
+    ]
 
     @cuda.jit(link=shim_writer.links())
     def kernel(out):

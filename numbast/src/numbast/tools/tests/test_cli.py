@@ -516,7 +516,7 @@ def implicit_conversion_kernel():
     return _lazy_kernel
 
 
-def test_implit_ctor_lowering(tmpdir, implicit_conversion_kernel, arch_str):
+def test_implicit_ctor_lowering(tmpdir, implicit_conversion_kernel, arch_str):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data_ctor_lowering.cuh")
 

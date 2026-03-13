@@ -47,72 +47,19 @@ from numbast.tools.yaml_tags import string_constructor
 config.CUDA_USE_NVIDIA_BINDING = True
 
 VERBOSE = True
+STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
+    os.path.dirname(__file__), "static_binding_generator.schema.yaml"
+)
 
 # Register custom YAML constructor for !join tag
 yaml.add_constructor("!numbast_join", string_constructor)
 
 
 class Config:
-    """Configuration File for Static Binding Generation.
+    """Configuration object for static binding generation.
 
-    Attributes
-    ----------
-    entry_point : str
-        Path to the input CUDA header file.
-    gpu_arch: list[str]
-        The list of GPU architectures to generate bindings for. Currently, only
-        one architecture per run is supported. Must be under pattern
-        `sm_<compute_capability>`. Required.
-    retain_list : list[str]
-        List of file names to keep parsing. The list of files from which the
-        declarations are retained in the final generated binding output. Bindings
-        that exist in other source, which may get transitively included in the
-        declaration, are ignored in bindings output.
-    types : dict[str, type]
-        A dictionary that maps struct names to their Numba types.
-    datamodels : dict[str, type]
-        A dictionary that maps struct names to their Numba data models.
-    exclude_functions : list[str]
-        List of function names to exclude from the bindings.
-    exclude_structs : list[str]
-        List of struct names to exclude from the bindings.
-    clang_includes_paths : list[str]
-        List of additional include paths to use when parsing the header file.
-    additional_imports : list[str]
-        The list of additional imports to add to the binding file.
-    shim_include_override : str | None
-        Override the include line of the shim function to specified string.
-        If not specified, default to `#include <path_to_entry_point>`.
-    predefined_macros : list[str]
-        List of macros defined prior to parsing the header and prefixing shim functions.
-    output_name : str | None
-        The name of the output binding file, default None. When set to None, use
-        the same name as input file (renamed with .py extension).
-    cooperative_launch_required_functions_regex : list[str]
-        The list of regular expressions. When any function name matches any of these
-        regex patterns, the function should cause the kernel to be launched with
-        cooperative launch.
-    api_prefix_removal : dict[str, list[str]]
-        Dictionary mapping declaration types to lists of prefixes to remove from names.
-        For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
-        Acceptable keywords: ["Struct", "Function", "Enum"]. Value types are lists of prefix
-        strings. Specifically, prefixes in enums are also applicable to enum values.
-    module_callbacks : dict[str, str]
-        Dictionary containing setup and teardown callbacks for the module.
-        Expected keys: "setup", "teardown". Each value is a string callback function.
-    skip_prefix : str | None
-        Do not generate bindings for any functions that start with this prefix.
-        Has no effect if left unspecified.
-    separate_registry : bool
-        If true, use a separate typing and target registry for the generated binding.
-        By default, the new typing and target registries are added to the existing
-        typing and target context. When set to true, user should add the registries
-        to the typing and target context manually. Default to False.
-    function_argument_intents : dict[str, dict[str|int, str|dict]]
-        Optional per-function argument intent overrides. Keys are function names
-        (including qualified method names like "Struct.method" if desired). Values
-        map parameter name (str) or 0-based index (int) to an intent string
-        ("in", "inout_ptr", "out_ptr", "out_return") or a dict containing "intent".
+    The canonical list of YAML keys, value types, defaults, and constraints is
+    defined in :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH`.
     """
 
     entry_point: str
@@ -139,24 +86,9 @@ class Config:
         Initialize a Config object from a configuration dictionary.
 
         Parameters:
-            config_dict (dict): Mapping of configuration keys to values. Expected keys include:
-                - "Entry Point": path to the source file to process.
-                - "GPU Arch": list of GPU architectures (at most one supported).
-                - "File List": list of files to retain.
-                - "Types": mapping of type names to numba type strings.
-                - "Data Models": mapping of datamodel names to numba datamodel strings.
-                - "Exclude": mapping with optional "Function" and "Struct" lists.
-                - "Clang Include Paths": list of include paths for clang.
-                - "Additional Import": list of additional import statements/paths.
-                - "Shim Include Override": optional shim include override value.
-                - "Predefined Macros": list of predefined macros.
-                - "Output Name": optional output filename.
-                - "Cooperative Launch Required Functions Regex": list of regex patterns.
-                - "API Prefix Removal": mapping of API names to prefix(es) to remove.
-                - "Module Callbacks": mapping of module callback specifications.
-                - "Skip Prefix": optional prefix to skip.
-                - "Use Separate Registry": boolean flag.
-                - "Function Argument Intents": mapping of function argument intent specifications.
+            config_dict (dict): Mapping of configuration keys to values.
+                See :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH` for the
+                authoritative schema documentation.
 
         Raises:
             NotImplementedError: if more than one GPU architecture is provided.
@@ -300,7 +232,7 @@ class Config:
             "API Prefix Removal": api_prefix_removal or {},
             "Module Callbacks": module_callbacks or {},
             "Skip Prefix": skip_prefix,
-            "Separate Registry": separate_registry,
+            "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
         }
 
