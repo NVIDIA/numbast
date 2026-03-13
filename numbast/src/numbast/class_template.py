@@ -29,7 +29,12 @@ from numba.cuda.cudadecl import register_global, register, register_attr
 from numba.cuda.cudaimpl import lower
 from numba.cuda.core.imputils import numba_typeref_ctor
 from numba.cuda.typing.npydecl import parse_dtype
-from numba.cuda.core.errors import RequireLiteralValue, TypingError
+
+try:
+    # Newer Numba stacks expose these in numba.core.errors.
+    from numba.core.errors import RequireLiteralValue, TypingError
+except ImportError:
+    from numba.cuda.core.errors import RequireLiteralValue, TypingError
 from numba.core.errors import LoweringError
 
 from ast_canopy.api import parse_declarations_from_source
