@@ -35,7 +35,9 @@ done
 
 # Ensure auditwheeel can see the ast_canopy library before repairing the wheels
 export LD_LIBRARY_PATH="${CMAKE_INSTALL_PREFIX}/lib64"
-auditwheel repair -w ../final-dist dist/*.whl
+echo "dist/ contents before auditwheel repair:"
+ls -1 dist/
+auditwheel repair -w ../final-dist dist/ast_canopy*.whl
 
 # Now build the numbast python wheels
 cd ../numbast

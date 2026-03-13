@@ -31,6 +31,10 @@ repos:
     rev: 'v20.1.0'
     hooks:
       - id: clang-format
+        exclude: |
+          (?x)^(
+              ast_canopy/tests/host/cuda_headers/include/cuda.h
+          )$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
