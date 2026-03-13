@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 import numpy as np
 from numba import cuda
-from numba.cuda.core.errors import TypingError
+from numba.core.errors import TypingError
 import pytest
 
 from numbast.tools.static_binding_generator import static_binding_generator
@@ -516,7 +516,7 @@ def implicit_conversion_kernel():
     return _lazy_kernel
 
 
-def test_implit_ctor_lowering(tmpdir, implicit_conversion_kernel, arch_str):
+def test_implicit_ctor_lowering(tmpdir, implicit_conversion_kernel, arch_str):
     subdir = tmpdir.mkdir("sub")
     data = os.path.join(os.path.dirname(__file__), "data_ctor_lowering.cuh")
 
