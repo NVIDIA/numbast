@@ -101,6 +101,10 @@ Notes
   reference parameters (``T&`` / ``T&&``).
 - In ``Function Argument Intents``, parameter overrides can be keyed by
   parameter name or 0-based parameter index.
+
+  .. code-block:: yaml
+
+    0: inout_ptr  # demonstrates 0-based parameter indexing for overrides
 - ``out_return`` removes that parameter from visible arguments.
 - If C++ has a non-``void`` return and one or more ``out_return`` parameters,
   Numbast returns ``types.Tuple((cxx_return, out1, ...))``.

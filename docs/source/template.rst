@@ -67,7 +67,7 @@ Argument deduction
 - Explicit template kwargs are validated against deduced types, and conflicts
   raise typing errors.
 - Constructor keyword arguments must appear before template-parameter keywords.
-- Function-template overload and template-parameter deduction is performed from
+- Function-template overload and template-parameter deduction are performed from
   call argument types at typing time.
 - Argument-intent overrides can change visible call arguments and therefore
   affect deduction behavior; see :doc:`/argument_intents`.
