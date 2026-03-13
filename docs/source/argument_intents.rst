@@ -2,8 +2,9 @@ Argument intents
 ================
 
 Argument intents control how C++ parameters are exposed in generated Numba
-bindings. They are configured through ``Function Argument Intents`` in static
-binding config.
+bindings. You can configure them statically with ``Function Argument Intents``
+in binding config files or programmatically with ``arg_intent`` when calling
+the template/API.
 
 C++ source of truth
 -------------------
