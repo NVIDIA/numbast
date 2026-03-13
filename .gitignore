@@ -164,3 +164,8 @@ llvm.sh*
 
 # pixi
 .pixi/
+
+.ci-artifacts/
+.cursor/
+.gh-cache/
+.pre-commit-cache/
