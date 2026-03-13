@@ -9,6 +9,7 @@ Numbast Documentation
    quickstart
    install
    static
+   argument_intents
    dynamic
    template
    supported_declarations

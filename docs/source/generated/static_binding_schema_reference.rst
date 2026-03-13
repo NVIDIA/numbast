@@ -263,7 +263,8 @@ Optional keys
 
 
 ``Function Argument Intents`` : ``object``
-   Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
+   Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
+   :doc:`/argument_intents` for intent semantics and generated signature behavior.
 
    Default: ``{}``.
 
@@ -596,6 +597,7 @@ Raw schema
        default: {}
        description: >
          Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
+         See :doc:`/argument_intents` for intent semantics and generated signature behavior.
        examples:
          - my_function:
              result: out_ptr

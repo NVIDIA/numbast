@@ -25,6 +25,8 @@ The static-binding config contract is defined in
 ``numbast/src/numbast/tools/static_binding_generator.schema.yaml``.
 The docs section below is generated from that schema at build time to avoid
 drift between implementation and documentation.
+For details on ``Function Argument Intents`` semantics and generated signatures,
+see :doc:`/argument_intents`.
 
 Config example:
 

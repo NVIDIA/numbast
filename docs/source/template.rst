@@ -1,19 +1,20 @@
+Template calls
+==============
+
+This page complements :doc:`dynamic` with class-template and function-template
+usage patterns.
+
 Class template calls
-====================
+--------------------
 
-This page complements :doc:`dynamic` with class template constructor usage and examples.
-
-Usage
------
-
-Class templates use a one-step constructor call form:
+Class templates use a one-step constructor form:
 
 .. code-block:: python
 
   obj = TemplateClass(*ctor_args, **ctor_kwargs, **template_kwargs)
 
-Example
--------
+Class template example
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -33,9 +34,37 @@ Example
       foo = Foo(t=inp[0], N=128)  # T is deduced from constructor args.
       out[0] = foo.get_t()
 
-Notes
------
+Function template calls
+-----------------------
 
-- Template parameters are provided by keyword name.
+Function templates are bound as normal callable Python handles:
+
+.. code-block:: python
+
+  funcs = bind_cxx_function_templates(
+      function_templates=decls.function_templates,
+      shim_writer=shim_writer,
+  )
+  add = next(f for f in funcs if f.__name__ == "add")
+
+Function template example
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+  @cuda.jit(link=shim_writer.links())
+  def kernel(x, y, z, out):
+      out[0] = add(x[0], y[0])        # picks 2-arg overload
+      out[1] = add(x[0], y[0], z[0])  # picks 3-arg overload
+
+Argument deduction
+------------------
+
+- Class template type parameters can be deduced from constructor arguments.
+- Explicit template kwargs are validated against deduced types, and conflicts
+  raise typing errors.
 - Constructor keyword arguments must appear before template-parameter keywords.
-- Explicit template kwargs are validated against deduced template types.
+- Function-template overload and template-parameter deduction is performed from
+  call argument types at typing time.
+- Argument-intent overrides can change visible call arguments and therefore
+  affect deduction behavior; see :doc:`/argument_intents`.
