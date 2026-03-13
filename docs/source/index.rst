@@ -10,6 +10,7 @@ Numbast Documentation
    install
    static
    dynamic
+   template
    supported_declarations
    ast_canopy_overview
    faq

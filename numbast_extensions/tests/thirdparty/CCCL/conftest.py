@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import re
 import pytest
 
 import ast_canopy
@@ -44,10 +45,46 @@ def _get_cccl_include_path():
     return cccl_path
 
 
+def _read_cub_version(cccl_include_path):
+    """Return CUB version tuple from cub/version.cuh.
+
+    CUB_VERSION is encoded as MMMmmmpp (major/minor/subminor).
+    """
+    version_header = os.path.join(cccl_include_path, "cub", "version.cuh")
+    if not os.path.exists(version_header):
+        return None
+
+    with open(version_header, encoding="utf-8") as f:
+        text = f.read()
+
+    match = re.search(r"^#define\s+CUB_VERSION\s+(\d+)\b", text, re.MULTILINE)
+    if not match:
+        return None
+
+    value = int(match.group(1))
+    major = value // 100000
+    minor = (value // 100) % 1000
+    patch = value % 100
+    return (major, minor, patch)
+
+
 @pytest.fixture(scope="module")
 def cccl_include_path():
     """Fixture providing the CCCL include directory path."""
     return _get_cccl_include_path()
+
+
+@pytest.fixture(scope="module")
+def use_new_cccl_template_keyword_names(cccl_include_path):
+    """Whether CCCL uses camel-case template parameter identifiers.
+
+    CUB 3.2+ (shipped with CUDA 13.2+) renames identifiers like:
+    BLOCK_DIM_X -> BlockDimX, ALGORITHM -> Algorithm.
+    """
+    version = _read_cub_version(cccl_include_path)
+    if version is None:
+        return False
+    return version >= (3, 2, 0)
 
 
 @pytest.fixture(scope="module")

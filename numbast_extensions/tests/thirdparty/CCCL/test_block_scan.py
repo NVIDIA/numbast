@@ -17,7 +17,9 @@ class TestBlockScan:
     """Tests for CUB BlockScan operations."""
 
     @pytest.fixture(scope="class")
-    def block_scan_bindings(self, block_scan_header):
+    def block_scan_bindings(
+        self, block_scan_header, use_new_cccl_template_keyword_names
+    ):
         """Create BlockScan bindings."""
         shim_writer = MemoryShimWriter(f"#include <{block_scan_header}>")
 
@@ -31,36 +33,63 @@ class TestBlockScan:
         if BlockScan is None:
             pytest.skip("Failed to create BlockScan bindings")
 
-        return BlockScan, shim_writer
+        return BlockScan, shim_writer, use_new_cccl_template_keyword_names
 
     def test_inclusive_sum(self, block_scan_bindings):
         """Test BlockScan InclusiveSum operation."""
-        BlockScan, shim_writer = block_scan_bindings
+        (
+            BlockScan,
+            shim_writer,
+            use_new_cccl_template_keyword_names,
+        ) = block_scan_bindings
 
         num_threads_per_block = 32
 
-        @cuda.jit(link=shim_writer.links())
-        def try_block_scan(d_input, d_output):
-            tid = cuda.threadIdx.x
+        if use_new_cccl_template_keyword_names:
 
-            # Instantiate BlockScan for a 1D block
-            block_scan_t = BlockScan(
-                T=int32,
-                BLOCK_DIM_X=num_threads_per_block,
-                ALGORITHM="cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
-                BLOCK_DIM_Y=1,
-                BLOCK_DIM_Z=1,
-            )
+            @cuda.jit(link=shim_writer.links())
+            def try_block_scan(d_input, d_output):
+                tid = cuda.threadIdx.x
 
-            block_scan = block_scan_t()
+                # Instantiate BlockScan for a 1D block
+                block_scan = BlockScan(
+                    T=int32,
+                    BlockDimX=num_threads_per_block,
+                    Algorithm="cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
+                    BlockDimY=1,
+                    BlockDimZ=1,
+                )
 
-            x = d_input[tid]
+                x = d_input[tid]
 
-            # Inclusive scan (sum) across the block
-            out = block_scan.InclusiveSum(x)
+                # Inclusive scan (sum) across the block
+                out = block_scan.InclusiveSum(x)
 
-            # Write the output back to global memory
-            d_output[tid] = out
+                # Write the output back to global memory
+                d_output[tid] = out
+
+        else:
+
+            @cuda.jit(link=shim_writer.links())
+            def try_block_scan(d_input, d_output):
+                tid = cuda.threadIdx.x
+
+                # Instantiate BlockScan for a 1D block
+                block_scan = BlockScan(
+                    T=int32,
+                    BLOCK_DIM_X=num_threads_per_block,
+                    ALGORITHM="cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
+                    BLOCK_DIM_Y=1,
+                    BLOCK_DIM_Z=1,
+                )
+
+                x = d_input[tid]
+
+                # Inclusive scan (sum) across the block
+                out = block_scan.InclusiveSum(x)
+
+                # Write the output back to global memory
+                d_output[tid] = out
 
         d_input = cuda.to_device(
             np.arange(1, 1 + num_threads_per_block, dtype=np.int32)

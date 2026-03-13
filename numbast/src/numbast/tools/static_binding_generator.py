@@ -17,7 +17,12 @@ import numba.types
 import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
-from ast_canopy.decl import Function, Struct
+from ast_canopy.decl import (
+    ClassTemplate,
+    Function,
+    FunctionTemplate,
+    Struct,
+)
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
 from numbast.static import reset_renderer
@@ -33,6 +38,8 @@ from numbast.static.struct import StaticStructsRenderer
 from numbast.static.function import (
     StaticFunctionsRenderer,
 )
+from numbast.static.function_template import StaticFunctionTemplatesRenderer
+from numbast.static.class_template import StaticClassTemplatesRenderer
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
 from numbast.tools.yaml_tags import string_constructor
@@ -40,72 +47,19 @@ from numbast.tools.yaml_tags import string_constructor
 config.CUDA_USE_NVIDIA_BINDING = True
 
 VERBOSE = True
+STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
+    os.path.dirname(__file__), "static_binding_generator.schema.yaml"
+)
 
 # Register custom YAML constructor for !join tag
 yaml.add_constructor("!numbast_join", string_constructor)
 
 
 class Config:
-    """Configuration File for Static Binding Generation.
+    """Configuration object for static binding generation.
 
-    Attributes
-    ----------
-    entry_point : str
-        Path to the input CUDA header file.
-    gpu_arch: list[str]
-        The list of GPU architectures to generate bindings for. Currently, only
-        one architecture per run is supported. Must be under pattern
-        `sm_<compute_capability>`. Required.
-    retain_list : list[str]
-        List of file names to keep parsing. The list of files from which the
-        declarations are retained in the final generated binding output. Bindings
-        that exist in other source, which may get transitively included in the
-        declaration, are ignored in bindings output.
-    types : dict[str, type]
-        A dictionary that maps struct names to their Numba types.
-    datamodels : dict[str, type]
-        A dictionary that maps struct names to their Numba data models.
-    exclude_functions : list[str]
-        List of function names to exclude from the bindings.
-    exclude_structs : list[str]
-        List of struct names to exclude from the bindings.
-    clang_includes_paths : list[str]
-        List of additional include paths to use when parsing the header file.
-    additional_imports : list[str]
-        The list of additional imports to add to the binding file.
-    shim_include_override : str | None
-        Override the include line of the shim function to specified string.
-        If not specified, default to `#include <path_to_entry_point>`.
-    predefined_macros : list[str]
-        List of macros defined prior to parsing the header and prefixing shim functions.
-    output_name : str | None
-        The name of the output binding file, default None. When set to None, use
-        the same name as input file (renamed with .py extension).
-    cooperative_launch_required_functions_regex : list[str]
-        The list of regular expressions. When any function name matches any of these
-        regex patterns, the function should cause the kernel to be launched with
-        cooperative launch.
-    api_prefix_removal : dict[str, list[str]]
-        Dictionary mapping declaration types to lists of prefixes to remove from names.
-        For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
-        Acceptable keywords: ["Struct", "Function", "Enum"]. Value types are lists of prefix
-        strings. Specifically, prefixes in enums are also applicable to enum values.
-    module_callbacks : dict[str, str]
-        Dictionary containing setup and teardown callbacks for the module.
-        Expected keys: "setup", "teardown". Each value is a string callback function.
-    skip_prefix : str | None
-        Do not generate bindings for any functions that start with this prefix.
-        Has no effect if left unspecified.
-    separate_registry : bool
-        If true, use a separate typing and target registry for the generated binding.
-        By default, the new typing and target registries are added to the existing
-        typing and target context. When set to true, user should add the registries
-        to the typing and target context manually. Default to False.
-    function_argument_intents : dict[str, dict[str|int, str|dict]]
-        Optional per-function argument intent overrides. Keys are function names
-        (including qualified method names like "Struct.method" if desired). Values
-        map parameter name (str) or 0-based index (int) to an intent string
-        ("in", "inout_ptr", "out_ptr", "out_return") or a dict containing "intent".
+    The canonical list of YAML keys, value types, defaults, and constraints is
+    defined in :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH`.
     """
 
     entry_point: str
@@ -132,24 +86,9 @@ class Config:
         Initialize a Config object from a configuration dictionary.
 
         Parameters:
-            config_dict (dict): Mapping of configuration keys to values. Expected keys include:
-                - "Entry Point": path to the source file to process.
-                - "GPU Arch": list of GPU architectures (at most one supported).
-                - "File List": list of files to retain.
-                - "Types": mapping of type names to numba type strings.
-                - "Data Models": mapping of datamodel names to numba datamodel strings.
-                - "Exclude": mapping with optional "Function" and "Struct" lists.
-                - "Clang Include Paths": list of include paths for clang.
-                - "Additional Import": list of additional import statements/paths.
-                - "Shim Include Override": optional shim include override value.
-                - "Predefined Macros": list of predefined macros.
-                - "Output Name": optional output filename.
-                - "Cooperative Launch Required Functions Regex": list of regex patterns.
-                - "API Prefix Removal": mapping of API names to prefix(es) to remove.
-                - "Module Callbacks": mapping of module callback specifications.
-                - "Skip Prefix": optional prefix to skip.
-                - "Use Separate Registry": boolean flag.
-                - "Function Argument Intents": mapping of function argument intent specifications.
+            config_dict (dict): Mapping of configuration keys to values.
+                See :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH` for the
+                authoritative schema documentation.
 
         Raises:
             NotImplementedError: if more than one GPU architecture is provided.
@@ -293,7 +232,7 @@ class Config:
             "API Prefix Removal": api_prefix_removal or {},
             "Module Callbacks": module_callbacks or {},
             "Skip Prefix": skip_prefix,
-            "Separate Registry": separate_registry,
+            "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
         }
 
@@ -489,6 +428,61 @@ def _generate_functions(
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
+def _generate_function_templates(
+    function_template_decls: list[FunctionTemplate],
+    excludes: list[str],
+    skip_prefix: str | None,
+    function_argument_intents: dict | None = None,
+) -> str:
+    """
+    Render static bindings for function templates.
+
+    Parameters:
+        function_template_decls (list[FunctionTemplate]): Parsed function-template declarations to render.
+        excludes (list[str]): Function-template names to exclude.
+        skip_prefix (str | None): Optional prefix used to skip function-template names.
+        function_argument_intents (dict | None): Optional argument-intent overrides.
+
+    Returns:
+        str: Generated source code for function-template bindings.
+    """
+    SFTR = StaticFunctionTemplatesRenderer(
+        function_template_decls,
+        excludes=excludes,
+        skip_prefix=skip_prefix,
+        skip_non_device=True,
+        function_argument_intents=function_argument_intents or {},
+    )
+    return SFTR.render_as_str(with_imports=False, with_shim_stream=False)
+
+
+def _generate_class_templates(
+    class_template_decls: list[ClassTemplate],
+    header_path: str,
+    excludes: list[str],
+    function_argument_intents: dict | None = None,
+) -> str:
+    """
+    Render static bindings for class templates.
+
+    Parameters:
+        class_template_decls (list[ClassTemplate]): Parsed class-template declarations to render.
+        header_path (str): Header path used for template specialization parsing at runtime.
+        excludes (list[str]): Class-template names (short or qualified) to exclude.
+        function_argument_intents (dict | None): Optional argument-intent overrides.
+
+    Returns:
+        str: Generated source code for class-template bindings.
+    """
+    SCTR = StaticClassTemplatesRenderer(
+        class_template_decls,
+        header_path=header_path,
+        excludes=excludes,
+        function_argument_intents=function_argument_intents or {},
+    )
+    return SCTR.render_as_str(with_imports=False, with_shim_stream=False)
+
+
 def _generate_enums(
     enum_decls: list[Enum], enum_prefix_removal: list[str] = []
 ):
@@ -508,7 +502,9 @@ def _generate_enums(
 
 def log_files_to_generate(
     functions: list[Function],
+    function_templates: list[FunctionTemplate],
     structs: list[Struct],
+    class_templates: list[ClassTemplate],
     enums: list[Enum],
     typedefs: list[Typedef],
 ):
@@ -516,7 +512,13 @@ def log_files_to_generate(
 
     click.echo("-" * 80)
     click.echo(
-        f"Generating bindings for {len(functions)} functions, {len(structs)} structs, {len(typedefs)} typedefs, {len(enums)} enums."
+        "Generating bindings for "
+        f"{len(functions)} functions, "
+        f"{len(function_templates)} function templates, "
+        f"{len(structs)} structs, "
+        f"{len(class_templates)} class templates, "
+        f"{len(typedefs)} typedefs, "
+        f"{len(enums)} enums."
     )
 
     click.echo("Enums: ")
@@ -530,8 +532,18 @@ def log_files_to_generate(
     )
     click.echo("Functions: ")
     click.echo("\n".join(f"  - {str(func)}" for func in functions))
+    click.echo("Function Templates: ")
+    click.echo(
+        "\n".join(
+            f"  - {templ.function.qual_name}" for templ in function_templates
+        )
+    )
     click.echo("\nStructs: ")
     click.echo("\n".join(f"  - {struct.name}" for struct in structs))
+    click.echo("Class Templates: ")
+    click.echo(
+        "\n".join(f"  - {templ.record.qual_name}" for templ in class_templates)
+    )
 
 
 def _static_binding_generator(
@@ -585,7 +597,9 @@ def _static_binding_generator(
     )
     structs = decls.structs
     functions = decls.functions
+    function_templates = decls.function_templates
     enums = decls.enums
+    class_templates = decls.class_templates
     typedefs = [
         td
         for td in decls.typedefs
@@ -593,7 +607,14 @@ def _static_binding_generator(
     ]
 
     if log_generates:
-        log_files_to_generate(functions, structs, enums, typedefs)
+        log_files_to_generate(
+            functions,
+            function_templates,
+            structs,
+            class_templates,
+            enums,
+            typedefs,
+        )
 
     aliases = _typedef_to_aliases(typedefs)
     rendered_aliases = render_aliases(aliases)
@@ -620,6 +641,25 @@ def _static_binding_generator(
         config.skip_prefix,
         config.function_argument_intents,
     )
+    class_template_bindings = _generate_class_templates(
+        class_templates,
+        entry_point,
+        config.exclude_structs,
+        config.function_argument_intents,
+    )
+    function_template_bindings = _generate_function_templates(
+        function_templates,
+        config.exclude_functions,
+        config.skip_prefix,
+        config.function_argument_intents,
+    )
+
+    if config.separate_registry and (function_templates or class_templates):
+        warnings.warn(
+            "Function/class template static bindings currently register into "
+            "Numba's default CUDA registries. "
+            "'Use Separate Registry' does not yet isolate template bindings."
+        )
 
     registry_setup_str = registry_setup(config.separate_registry)
 
@@ -684,6 +724,10 @@ def _static_binding_generator(
 {struct_bindings}
 # Functions:
 {function_bindings}
+# Class Templates:
+{class_template_bindings}
+# Function Templates:
+{function_template_bindings}
 # Aliases:
 {rendered_aliases}
 

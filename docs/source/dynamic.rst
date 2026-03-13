@@ -15,7 +15,7 @@ Requirements
 ------------
 
 - CUDA Toolkit headers installed and discoverable.
-- ``clangdev`` available (see ``conda/environment-[CUDA_VER].yaml``).
+- ``clangdev`` available in your development environment.
 - Access to the CUDA C++ headers you want to bind.
 
 Example
@@ -89,6 +89,11 @@ Numbast can generate and use bindings at runtime:
   arr = np.array([0.0, 0.0], dtype=np.float64)
   kernel[1, 1](arr)
   np.testing.assert_allclose(arr, [3.0, np.sqrt(3.0)], rtol=1e-2)
+
+Class template calls
+--------------------
+
+For class template constructor usage and examples, see :doc:`template`.
 
 Guidance and best practices
 ---------------------------

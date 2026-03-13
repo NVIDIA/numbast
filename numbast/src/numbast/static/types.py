@@ -14,15 +14,26 @@ _DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
 } | {
     "bool": "bool_",
     "void": "void",
-    "cudaRoundMode": "IntEnumMember(cudaRoundMode, int64)",
 }
 
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
+
+_VALID_ENUM_UNDERLYING_INTEGER_TYPES = {
+    "int8",
+    "int16",
+    "int32",
+    "int64",
+    "uint8",
+    "uint16",
+    "uint32",
+    "uint64",
+}
 
 
 def register_enum_type_str(
     ctype_enum_name: str,
     enum_name: str,
+    underlying_numba_int_type: str = "int64",
 ):
     """
     Register a mapping from a C++ enum type name to its corresponding Numba type string.
@@ -30,10 +41,20 @@ def register_enum_type_str(
     Parameters:
         ctype_enum_name (str): The C++ enum type name to register (as it appears in C/C++ headers).
         enum_name (str): The enum identifier to use inside the generated Numba type string (becomes the first argument to `IntEnumMember`).
+        underlying_numba_int_type (str): The underlying Numba integer type to use for the enum.
     """
     global CTYPE_TO_NBTYPE_STR
 
-    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = f"IntEnumMember({enum_name}, int64)"
+    if underlying_numba_int_type not in _VALID_ENUM_UNDERLYING_INTEGER_TYPES:
+        raise ValueError(
+            "Invalid enum underlying integer type: "
+            f"{underlying_numba_int_type!r}. Expected one of "
+            f"{sorted(_VALID_ENUM_UNDERLYING_INTEGER_TYPES)}."
+        )
+
+    CTYPE_TO_NBTYPE_STR[ctype_enum_name] = (
+        f"IntEnumMember({enum_name}, {underlying_numba_int_type})"
+    )
 
 
 def reset_types():
@@ -58,13 +79,6 @@ def to_numba_type_str(ty: str):
     Raises:
         TypeNotFoundError: If `ty` has no known mapping to a Numba type.
     """
-
-    if ty == "cudaRoundMode":
-        BaseRenderer.Imports.add(
-            "from cuda.bindings.runtime import cudaRoundMode"
-        )
-        BaseRenderer._try_import_numba_type("IntEnumMember")
-        return CTYPE_TO_NBTYPE_STR[ty]
 
     if ty == "__nv_bfloat16":
         BaseRenderer._try_import_numba_type("__nv_bfloat16")

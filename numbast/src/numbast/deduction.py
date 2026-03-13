@@ -263,7 +263,36 @@ def deduce_templated_overloads(
     Enable debug output by passing debug=True or setting the
     NUMBAST_TAD_DEBUG=1 environment variable.
     """
-    specialized: list[FunctionTemplate] = []
+    specialized_with_mappings, intent_errors = (
+        deduce_templated_overloads_with_mappings(
+            qualname=qualname,
+            overloads=overloads,
+            args=args,
+            overrides=overrides,
+            debug=debug,
+        )
+    )
+    specialized = [templ for templ, _ in specialized_with_mappings]
+    return specialized, intent_errors
+
+
+def deduce_templated_overloads_with_mappings(
+    *,
+    qualname: str,
+    overloads: list[FunctionTemplate],
+    args: tuple[nbtypes.Type, ...],
+    overrides: dict | None = None,
+    debug: bool | None = None,
+) -> tuple[list[tuple[FunctionTemplate, dict[str, str]]], list[Exception]]:
+    """
+    Perform template argument deduction and return deduced type mappings.
+
+    Each specialized overload is paired with a mapping from template type
+    placeholder name to deduced concrete C++ type string.
+    """
+    specialized_with_mappings: list[
+        tuple[FunctionTemplate, dict[str, str]]
+    ] = []
     intent_errors: list[Exception] = []
 
     _debug_print(
@@ -404,10 +433,17 @@ def deduce_templated_overloads(
             f"return={specialized_func.return_type.unqualified_non_ref_type_name}, "
             f"params={[p.type_.unqualified_non_ref_type_name for p in specialized_func.params]}",
         )
-        specialized.append(_clone_function_template(templ, specialized_func))
+        specialized_with_mappings.append(
+            (
+                _clone_function_template(templ, specialized_func),
+                dict(mapping),
+            )
+        )
 
     _debug_print(
         debug,
-        f"end: {qualname}, specialized={len(specialized)}, intent_errors={len(intent_errors)}",
+        "end: "
+        f"{qualname}, specialized={len(specialized_with_mappings)}, "
+        f"intent_errors={len(intent_errors)}",
     )
-    return specialized, intent_errors
+    return specialized_with_mappings, intent_errors

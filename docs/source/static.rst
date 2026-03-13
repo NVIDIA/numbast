@@ -15,46 +15,46 @@ Requirements
 ------------
 
 - CUDA Toolkit headers installed and discoverable.
-- ``clangdev`` available (see ``conda/environment-[CUDA_VER].yaml``).
+- ``clangdev`` available in your development environment.
 - A header entry point and a list of headers to retain.
 
 Configuration file
 ------------------
 
-Create a YAML config describing what to generate. Example:
+The static-binding config contract is defined in
+``numbast/src/numbast/tools/static_binding_generator.schema.yaml``.
+The docs section below is generated from that schema at build time to avoid
+drift between implementation and documentation.
+
+Config example:
 
 .. code-block:: yaml
 
   # file: config.yml
-  entry_point: /path/to/library/header.hpp
-  retain_list:
+
+  # --- Required fields ---
+  Entry Point: /path/to/library/header.hpp
+  File List:
     - /path/to/library/header.hpp
     - /path/to/library/other_deps.hpp
+  GPU Arch: ["sm_80"]
 
-  gpu_arch: ["sm_80"]
-
-  # Optional controls
-  exclude_functions: []
-  exclude_structs: []
-  clang_includes_paths:
+  # --- Optional fields ---
+  Exclude:
+    Function: ["internal_helper", "deprecated_api"]
+    Struct: ["__InternalState"]
+  Clang Include Paths:
     - /extra/include/dirs
-  additional_imports:
+  Additional Import:
     - from numba import types
-  predefined_macros:
+  Predefined Macros:
     - SOME_MACRO=1
-  output_name: bindings_my_lib.py
-  cooperative_launch_required_functions_regex: []
-  api_prefix_removal:
+  Output Name: bindings_my_lib.py
+  API Prefix Removal:
     Function: ["lib_"]
-  module_callbacks:
-    setup: |
-      def _setup():
-          pass
-    teardown: |
-      def _teardown():
-          pass
-  skip_prefix: null
-  separate_registry: false
+  Module Callbacks:
+    setup: "lambda x: print('setup')"
+    teardown: "lambda x: print('teardown')"
 
 Generate the binding
 --------------------
@@ -63,10 +63,10 @@ Use the CLI to generate a Python file:
 
 .. code-block:: bash
 
-  # from repo root (ensure conda env is active)
+  # from repo root (ensure your development environment is active)
   python -m numbast --cfg-path config.yml --output-dir ./output
 
-This produces a module like ``./output/bindings_my_lib.py`` (or ``<entry_point>.py`` if ``output_name`` is not set).
+This produces a module like ``./output/bindings_my_lib.py`` (or ``<entry_point>.py`` if ``Output Name`` is not set).
 
 Distribute and use
 ------------------
@@ -84,3 +84,8 @@ Notes and tips
 - Use the same CUDA version (or backward compatible) between generation and target runtime environments.
 - If multiple GPU architectures are needed, run the generator once per architecture.
 - If your environment has ``ruff`` formatter installed, Numbast will attempt to run it on generated bindings.
+
+Config Schema Reference
+=======================
+
+.. include:: generated/static_binding_schema_reference.rst

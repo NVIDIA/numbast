@@ -8,6 +8,7 @@ from numbast.class_template import (
     bind_cxx_class_template_specialization,
     bind_cxx_class_template,
     bind_cxx_class_templates,
+    clear_concrete_type_caches,
 )
 from numbast.function import bind_cxx_function, bind_cxx_functions
 from numbast.function_template import (
@@ -38,6 +39,7 @@ __all__ = [
     "bind_cxx_class_template_specialization",
     "bind_cxx_class_template",
     "bind_cxx_class_templates",
+    "clear_concrete_type_caches",
     "MemoryShimWriter",
     "FileShimWriter",
 ]

@@ -60,7 +60,7 @@ repos:
     rev: v0.24
     hooks:
       - id: validate-pyproject
-        additional_dependencies: ["validate-pyproject-schema-store[all]"]
+        additional_dependencies: ["validate-pyproject-schema-store[all]==2025.11.21"]
   - repo: https://github.com/PyCQA/doc8
     rev: v2.0.0
     hooks:

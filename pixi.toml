@@ -1,0 +1,101 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[workspace]
+name = "numbast"
+channels = ["conda-forge", "numba", "nvidia"]
+platforms = ["linux-64"]
+
+[feature.required.dependencies]
+python = ">=3.10"
+pyyaml = "*"
+click = "*"
+jinja2 = "*"
+
+[feature.test.dependencies]
+pytest = "*"
+pytest-benchmark = "*"
+cffi = "*"
+mypy = "*"
+pre-commit = "*"
+ruff = "*"
+
+[feature.build.dependencies]
+cmake = ">=3.29"
+clangdev = ">=18,<22.0"
+pybind11 = "*"
+cxx-compiler = "*"
+scikit-build-core = "*"
+pip = "*"
+ninja = "*"
+
+[feature.docs.dependencies]
+sphinx = "*"
+sphinx-copybutton = "*"
+
+[feature.docs.pypi-dependencies]
+nvidia-sphinx-theme = "*"
+
+[feature.cu12.system-requirements]
+cuda = "12"
+
+[feature.cu12.dependencies]
+numba-cuda = ">=0.25.0"
+cuda-version = "12.9.*"
+cuda-toolkit = "12.9.*"
+cuda-python = "12.9.*"
+
+[feature.cu13.system-requirements]
+cuda = "13"
+
+[feature.cu13.dependencies]
+numba-cuda = ">=0.25.0"
+cuda-version = "13.0.*"
+cuda-toolkit = "13.0.*"
+cuda-python = "13.0.*"
+
+[environments]
+default = { features = [
+  "required",
+  "build",
+  "test",
+  "docs",
+  "cu13",
+], solve-group = "test-cu13" } # default intentionally mirrors test-cu13 for developer convenience.
+test-cu12 = { features = [
+  "required",
+  "build",
+  "test",
+  "docs",
+  "cu12",
+], solve-group = "test-cu12" }
+test-cu13 = { features = [
+  "required",
+  "build",
+  "test",
+  "docs",
+  "cu13",
+], solve-group = "test-cu13" }
+
+[target.linux.tasks.build-ast-canopy]
+cmd = ["bash", "$PIXI_PROJECT_ROOT/ast_canopy/build.sh", "--incremental"]
+
+[target.linux.tasks.install-numbast]
+cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast"]
+depends-on = [{ task = "build-ast-canopy" }]
+
+[target.linux.tasks.install-numbast-extensions]
+cmd = ["pip", "install", "-e", "$PIXI_PROJECT_ROOT/numbast_extensions"]
+depends-on = [{ task = "install-numbast" }]
+
+[target.linux.tasks.test]
+cmd = ["pytest", "$PIXI_PROJECT_ROOT/ast_canopy", "$PIXI_PROJECT_ROOT/numbast"]
+depends-on = [{ task = "build-ast-canopy" }, { task = "install-numbast" }]
+
+[target.linux.tasks.build-docs]
+cmd = ["bash", "$PIXI_PROJECT_ROOT/ci/build_docs.sh"]
+depends-on = [{ task = "install-numbast" }]
+
+[target.linux.tasks.test-extensions]
+cmd = ["pytest", "$PIXI_PROJECT_ROOT/numbast_extensions"]
+depends-on = [{ task = "install-numbast-extensions" }]

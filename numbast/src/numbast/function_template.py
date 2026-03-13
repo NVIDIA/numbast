@@ -17,7 +17,7 @@ from numba.cuda.typing import signature as nb_signature
 from numba.cuda.typing.templates import AbstractTemplate
 from numba.cuda.cudadecl import register, register_global
 from numba.cuda.cudaimpl import lower
-from numba.core.errors import TypingError
+from numba.cuda.core.errors import TypingError
 
 from numbast.callconv import FunctionCallConv
 from numbast.deduction import deduce_templated_overloads

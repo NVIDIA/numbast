@@ -138,7 +138,9 @@ Numbast used to generate the bindings determines the compatible ``numba-cuda`` v
 
    * - Numbast Version
      - Required numba-cuda Version
-   * - 0.6.0 (current dev)
+   * - 0.7.0 (current dev)
+     - ``>=0.25.0``
+   * - 0.6.0
      - ``>=0.21.0,<0.23.0``
    * - 0.5.x
      - ``>=0.20.1,<0.21.0``
