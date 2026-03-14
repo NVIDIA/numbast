@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Class template calls &#8212; Numbast</title>
+    <title>Template calls &#8212; Numbast</title>
   
   
   
@@ -62,7 +62,7 @@
 
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Supported declarations" href="supported_declarations.html" />
+    <link rel="next" title="Argument intents" href="argument_intents.html" />
     <link rel="prev" title="Dynamic binding generation" href="dynamic.html" />
 
 
@@ -223,7 +223,14 @@
                     
 <li class=" current active">
   <a class="nav-link dropdown-item nav-internal" href="#">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -419,7 +426,14 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -494,7 +508,8 @@
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Class template calls</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
@@ -553,7 +568,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Class template calls</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Template calls</span></li>
   </ul>
 </nav>
 </div>
@@ -570,18 +585,18 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="class-template-calls">
-<h1>Class template calls<a class="headerlink" href="#class-template-calls" title="Link to this heading">#</a></h1>
-<p>This page complements <a class="reference internal" href="dynamic.html"><span class="doc">Dynamic binding generation</span></a> with class template constructor usage and examples.</p>
-<section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
-<p>Class templates use a one-step constructor call form:</p>
+  <section id="template-calls">
+<h1>Template calls<a class="headerlink" href="#template-calls" title="Link to this heading">#</a></h1>
+<p>This page complements <a class="reference internal" href="dynamic.html"><span class="doc">Dynamic binding generation</span></a> with class-template and function-template
+usage patterns.</p>
+<section id="class-template-calls">
+<h2>Class template calls<a class="headerlink" href="#class-template-calls" title="Link to this heading">#</a></h2>
+<p>Class templates use a one-step constructor form:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">TemplateClass</span><span class="p">(</span><span class="o">*</span><span class="n">ctor_args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctor_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">template_kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
-</section>
-<section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
+<section id="class-template-example">
+<h3>Class template example<a class="headerlink" href="#class-template-example" title="Link to this heading">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Given C++:</span>
 <span class="c1"># template &lt;typename T, int BLOCK_DIM_X&gt; struct BlockScan { __device__ BlockScan(); ... };</span>
 <span class="c1"># template &lt;int N, typename T&gt; class Foo { __device__ Foo(T t); ... };</span>
@@ -600,12 +615,41 @@
 </pre></div>
 </div>
 </section>
-<section id="notes">
-<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
+</section>
+<section id="function-template-calls">
+<h2>Function template calls<a class="headerlink" href="#function-template-calls" title="Link to this heading">#</a></h2>
+<p>Function templates are bound as normal callable Python handles:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Given C++:</span>
+<span class="c1"># template &lt;typename T&gt; __device__ T add(T a, T b);</span>
+<span class="c1"># template &lt;typename T&gt; __device__ T add(T a, T b, T c);</span>
+<span class="n">funcs</span> <span class="o">=</span> <span class="n">bind_cxx_function_templates</span><span class="p">(</span>
+    <span class="n">function_templates</span><span class="o">=</span><span class="n">decls</span><span class="o">.</span><span class="n">function_templates</span><span class="p">,</span>
+    <span class="n">shim_writer</span><span class="o">=</span><span class="n">shim_writer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">add</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;add&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="function-template-example">
+<h3>Function template example<a class="headerlink" href="#function-template-example" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">shim_writer</span><span class="o">.</span><span class="n">links</span><span class="p">())</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+    <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>        <span class="c1"># picks 2-arg overload</span>
+    <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># picks 3-arg overload</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="argument-deduction">
+<h2>Argument deduction<a class="headerlink" href="#argument-deduction" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p>Template parameters are provided by keyword name.</p></li>
+<li><p>Class template type parameters can be deduced from constructor arguments.</p></li>
+<li><p>Explicit template kwargs are validated against deduced types, and conflicts
+raise typing errors.</p></li>
 <li><p>Constructor keyword arguments must appear before template-parameter keywords.</p></li>
-<li><p>Explicit template kwargs are validated against deduced template types.</p></li>
+<li><p>Function-template overload and template-parameter deduction are performed from
+call argument types at typing time.</p></li>
+<li><p>Argument-intent overrides can change visible call arguments and therefore
+affect deduction behavior; see <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p></li>
 </ul>
 </section>
 </section>
@@ -630,11 +674,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="supported_declarations.html"
+       href="argument_intents.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Supported declarations</p>
+        <p class="prev-next-title">Argument intents</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -659,9 +703,15 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#usage">Usage</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-template-calls">Class template calls</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#class-template-example">Class template example</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#function-template-calls">Function template calls</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#function-template-example">Function template example</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#argument-deduction">Argument deduction</a></li>
 </ul>
   </nav></div>
 

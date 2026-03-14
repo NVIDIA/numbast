@@ -223,7 +223,14 @@
                     
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -419,7 +426,14 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="template.html">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -494,7 +508,8 @@
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Class template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
@@ -1216,7 +1231,19 @@ For each PTX, a separate cuda.PTXSource object is created.</p>
 </dl>
 
 <span class="sig-paren">)</span></dt>
-<dd></dd></dl>
+<dd><p>Create bindings for one C++ class template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>class_template_decl</strong> (<a class="reference internal" href="#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><em>ClassTemplate</em></a>) – Parsed C++ class-template declaration.</p></li>
+<li><p><strong>shim_writer</strong> (<em>ShimWriterBase</em>) – Shim writer used to emit constructor/method bridge shims.</p></li>
+<li><p><strong>header_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Header path used for specialization instantiation/parsing.</p></li>
+<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><em>None</em><em>, </em><em>optional</em>) – Optional argument-intent overrides for bound methods and templated
+methods. See <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a> for semantics.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py">
@@ -1277,7 +1304,8 @@ regular and templated methods.</p></li>
 <li><p><strong>shim_writer</strong> (<em>ShimWriter</em>) – The shim writer to write the shim layer code.</p></li>
 <li><p><strong>class_templates</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference internal" href="#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><em>ClassTemplate</em></a><em>]</em>) – List of declarations of the class template types in CXX</p></li>
 <li><p><strong>header_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The path to the header file containing the class template declarations.</p></li>
-<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Argument intent overrides to apply to bound methods.</p></li>
+<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Argument-intent overrides to apply to bound methods. See
+<a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1370,6 +1398,18 @@ if the function is skipped or not exposed.</p>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></span></dt>
 <dd><p>Create bindings for a (possibly overloaded) templated function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Function name used as the Python API handle.</p></li>
+<li><p><strong>overloads</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference internal" href="#ast_canopy.decl.FunctionTemplate" title="ast_canopy.decl.FunctionTemplate"><em>FunctionTemplate</em></a><em>]</em>) – Parsed C++ function-template overload declarations sharing <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p></li>
+<li><p><strong>shim_writer</strong> (<em>ShimWriterBase</em>) – Shim writer used to emit bridge shims for lowered overloads.</p></li>
+<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><em>None</em><em>, </em><em>optional</em>) – Optional argument-intent overrides for this function (looked up by
+<code class="docutils literal notranslate"><span class="pre">name</span></code>). See <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a> for intent semantics and
+generated return-shape behavior.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -1388,6 +1428,19 @@ if the function is skipped or not exposed.</p>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a><span class="p"><span class="pre">]</span></span></span></span></dt>
 <dd><p>Create bindings for a list of C++ function templates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>function_templates</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference internal" href="#ast_canopy.decl.FunctionTemplate" title="ast_canopy.decl.FunctionTemplate"><em>FunctionTemplate</em></a><em>]</em>) – Parsed C++ function-template declarations.</p></li>
+<li><p><strong>shim_writer</strong> (<em>ShimWriterBase</em>) – Shim writer used to emit bridge shims.</p></li>
+<li><p><strong>skip_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em><em>, </em><em>optional</em>) – Skip template functions whose names start with this prefix.</p></li>
+<li><p><strong>skip_non_device</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>default True</em>) – Skip templates that are not device-callable.</p></li>
+<li><p><strong>exclude</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><em>set</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>] </em><em>| </em><em>None</em><em>, </em><em>optional</em>) – Function names to exclude from binding.</p></li>
+<li><p><strong>arg_intent</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><em>None</em><em>, </em><em>optional</em>) – Optional per-function argument-intent overrides. See
+<a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">

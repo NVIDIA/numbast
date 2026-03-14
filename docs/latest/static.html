@@ -223,7 +223,14 @@
                     
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -419,7 +426,14 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="template.html">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -494,7 +508,8 @@
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Static binding generation</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Class template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
@@ -595,7 +610,9 @@ bindings without requiring Numbast at runtime.</p>
 <p>The static-binding config contract is defined in
 <code class="docutils literal notranslate"><span class="pre">numbast/src/numbast/tools/static_binding_generator.schema.yaml</span></code>.
 The docs section below is generated from that schema at build time to avoid
-drift between implementation and documentation.</p>
+drift between implementation and documentation.
+For details on <code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code> semantics and generated signatures,
+see <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p>
 <p>Config example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># file: config.yml</span>
 
@@ -841,7 +858,8 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
+<a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a> for intent semantics and generated signature behavior.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Function Argument Intents</span><span class="p">:</span>
@@ -1141,7 +1159,8 @@ output.</p>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.</span>
+<span class="w">      </span><span class="no">Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See</span>
+<span class="w">      </span><span class="no">:doc:`/argument_intents` for intent semantics and generated signature behavior.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">my_function</span><span class="p">:</span>

@@ -11,6 +11,7 @@ Numbast Documentation
    static
    dynamic
    template
+   argument_intents
    supported_declarations
    ast_canopy_overview
    faq
