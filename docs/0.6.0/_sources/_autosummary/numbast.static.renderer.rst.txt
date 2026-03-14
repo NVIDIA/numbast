@@ -1,0 +1,23 @@
+numbast.static.renderer
+=======================
+
+.. automodule:: numbast.static.renderer
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      clear_base_renderer_cache
+      get_all_exposed_symbols
+      get_rendered_imports
+      get_reproducible_info
+      get_shim
+      registry_setup
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BaseRenderer
+   
