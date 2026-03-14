@@ -15,9 +15,11 @@ Use this skill when asked to publish a new version of the Numbast agent from `ma
    - `git checkout main && git pull`
 2. Create a version-bump branch:
    - `git checkout -b bump-version-NEW_VERSION`
-3. Update the repo-root `VERSION` file to `NEW_VERSION`, then stage and commit:
-   - `echo "NEW_VERSION" > VERSION`
-   - `git add VERSION && git commit -m "chore: bump VERSION to NEW_VERSION"`
+3. Update release metadata to `NEW_VERSION`, then stage and commit:
+   - Update repo-root `VERSION` to `NEW_VERSION`
+   - Update `docs/versions.json` so the version map includes `NEW_VERSION`
+   - Update `docs/nv-versions.json` so the docs URL list includes `https://nvidia.github.io/numbast/NEW_VERSION/`
+   - `git add VERSION docs/versions.json docs/nv-versions.json && git commit -m "chore: bump VERSION to NEW_VERSION"`
 4. Push the branch:
    - `git push -u origin bump-version-NEW_VERSION`
 5. Generate and save a short changelog:
@@ -43,6 +45,7 @@ Use this skill when asked to publish a new version of the Numbast agent from `ma
 - Keep the PR changelog and tag annotation text consistent.
 - Use the `v<NEW_VERSION>` tag format exactly.
 - Use non-interactive tag creation (`-F`) so automation does not hang.
+- Ensure `VERSION`, `docs/versions.json`, and `docs/nv-versions.json` stay in sync for every release PR.
 
 ## Skill: Publish a Numbast Patch Release Line
 
@@ -64,8 +67,8 @@ Use this skill when asked to release a patch version from a previous tag (for ex
 3. Create a version bump PR into `PATCH_BRANCH`:
    - `git checkout PATCH_BRANCH && git pull`
    - `git checkout -b bump-version-NEW_VERSION`
-   - `echo "NEW_VERSION" > VERSION`
-   - `git add VERSION && git commit -m "Bump Version to NEW_VERSION"`
+   - Update `VERSION`, `docs/versions.json`, and `docs/nv-versions.json` for `NEW_VERSION`
+   - `git add VERSION docs/versions.json docs/nv-versions.json && git commit -m "Bump Version to NEW_VERSION"`
    - `git push -u origin bump-version-NEW_VERSION`
    - Open a PR from `bump-version-NEW_VERSION` into `PATCH_BRANCH`.
 4. Wait until the version-bump PR is merged into `PATCH_BRANCH`.
@@ -87,3 +90,4 @@ Use this skill when asked to release a patch version from a previous tag (for ex
 - Do not tag before the version bump PR is merged into `PATCH_BRANCH`.
 - Tag the tip of `PATCH_BRANCH`, not `main`, for patch releases.
 - Keep the patch PR changelog and tag annotation text consistent.
+- Ensure `VERSION`, `docs/versions.json`, and `docs/nv-versions.json` stay in sync for every release PR.
