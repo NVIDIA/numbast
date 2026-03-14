@@ -1738,6 +1738,20 @@ def bind_cxx_class_template(
     *,
     arg_intent: dict | None = None,
 ):
+    """Create bindings for one C++ class template.
+
+    Parameters
+    ----------
+    class_template_decl : ClassTemplate
+        Parsed C++ class-template declaration.
+    shim_writer : ShimWriterBase
+        Shim writer used to emit constructor/method bridge shims.
+    header_path : str
+        Header path used for specialization instantiation/parsing.
+    arg_intent : dict | None, optional
+        Optional argument-intent overrides for bound methods and templated
+        methods. See :doc:`/argument_intents` for semantics.
+    """
     # Stub class
     TC = type(class_template_decl.record.qual_name, (object,), {})
 
@@ -1849,7 +1863,8 @@ def bind_cxx_class_templates(
     header_path : str
         The path to the header file containing the class template declarations.
     arg_intent : dict, optional
-        Argument intent overrides to apply to bound methods.
+        Argument-intent overrides to apply to bound methods. See
+        :doc:`/argument_intents`.
 
     Returns
     -------

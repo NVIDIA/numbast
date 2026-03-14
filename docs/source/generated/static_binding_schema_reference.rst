@@ -263,7 +263,8 @@ Optional keys
 
 
 ``Function Argument Intents`` : ``object``
-   Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
+   Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
+   :doc:`/argument_intents` for intent semantics and generated signature behavior.
 
    Default: ``{}``.
 
@@ -415,9 +416,9 @@ Raw schema
          pattern: "^sm_[0-9]+$"
        description: >
          Target GPU architecture list. Exactly one architecture is currently supported per run.
+
        examples:
          - ["sm_80"]
-
      File List:
        type: array
        minItems: 1
@@ -426,10 +427,10 @@ Raw schema
        description: >
          Header files to retain while parsing. Declarations from other transitively included files are ignored in
          generated output.
+
        examples:
          - - /usr/local/cuda/include/cufp8.hpp
            - /usr/local/cuda/include/cufp8_conversions.hpp
-
      Types:
        type: object
        default: {}
@@ -493,9 +494,9 @@ Raw schema
        default: null
        description: >
          Override value used to compose the generated shim include line. If unset, the entry-point path is used.
+
        examples:
          - "cufp8.hpp"
-
      Predefined Macros:
        type: array
        default: []
@@ -518,9 +519,9 @@ Raw schema
          type: string
        description: >
          Regex patterns. Matching function names are generated with cooperative launch handling.
+
        examples:
          - - "^cg_.*"
-
      API Prefix Removal:
        type: object
        default: {}
@@ -588,19 +589,20 @@ Raw schema
        default: false
        description: >
          Generate separate typing/target registries instead of reusing Numba CUDA's global registries.
+
        examples:
          - true
-
      Function Argument Intents:
        type: object
        default: {}
        description: >
-         Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
+         Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
+         :doc:`/argument_intents` for intent semantics and generated signature behavior.
+
        examples:
          - my_function:
              result: out_ptr
              0: in
-
        additionalProperties:
          type: object
          additionalProperties:

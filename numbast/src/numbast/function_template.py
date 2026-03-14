@@ -194,7 +194,21 @@ def bind_cxx_function_template(
     shim_writer: ShimWriterBase,
     arg_intent: dict | None = None,
 ) -> object:
-    """Create bindings for a (possibly overloaded) templated function."""
+    """Create bindings for a (possibly overloaded) templated function.
+
+    Parameters
+    ----------
+    name : str
+        Function name used as the Python API handle.
+    overloads : list[FunctionTemplate]
+        Parsed C++ function-template overload declarations sharing ``name``.
+    shim_writer : ShimWriterBase
+        Shim writer used to emit bridge shims for lowered overloads.
+    arg_intent : dict | None, optional
+        Optional argument-intent overrides for this function (looked up by
+        ``name``). See :doc:`/argument_intents` for intent semantics and
+        generated return-shape behavior.
+    """
     overrides = arg_intent.get(name) if arg_intent else None
     intent_key = _normalize_overrides(overrides)
     func = func_obj_registry[(name, intent_key, shim_writer)]
@@ -380,7 +394,24 @@ def bind_cxx_function_templates(
     exclude: set[str] | None = None,
     arg_intent: dict | None = None,
 ) -> list[object]:
-    """Create bindings for a list of C++ function templates."""
+    """Create bindings for a list of C++ function templates.
+
+    Parameters
+    ----------
+    function_templates : list[FunctionTemplate]
+        Parsed C++ function-template declarations.
+    shim_writer : ShimWriterBase
+        Shim writer used to emit bridge shims.
+    skip_prefix : str | None, optional
+        Skip template functions whose names start with this prefix.
+    skip_non_device : bool, default True
+        Skip templates that are not device-callable.
+    exclude : set[str] | None, optional
+        Function names to exclude from binding.
+    arg_intent : dict | None, optional
+        Optional per-function argument-intent overrides. See
+        :doc:`/argument_intents`.
+    """
     exclude_names = exclude or set()
     overloads_by_name: dict[str, list[FunctionTemplate]] = defaultdict(list)
 
