@@ -222,7 +222,14 @@
                     
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -414,7 +421,14 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="template.html">
-    Class template calls
+    Template calls
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="argument_intents.html">
+    Argument intents
   </a>
 </li>
 
@@ -481,9 +495,16 @@
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
+
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Class template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
@@ -555,12 +576,15 @@
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html#next-steps">Next steps</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Install</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install.html#install-via-pypi-recommended">Install via PyPI (recommended)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#install-via-conda-alternative">Install via Conda (alternative)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#from-source-with-pixi-recommended-for-development">From source with Pixi (recommended for development)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#validate-the-installation-optional">Validate the installation (optional)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#building-documentation">Building Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#install-via-pypi-recommended">Install via PyPI (recommended)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#install-via-conda-alternative">Install via Conda (alternative)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#from-source-with-pixi-recommended-for-development">From source with Pixi (recommended for development)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#validate-the-installation-optional">Validate the installation (optional)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#building-documentation">Building Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#build-steps">Build Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#notes">Notes</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a><ul>
@@ -572,6 +596,12 @@
 <li class="toctree-l2"><a class="reference internal" href="static.html#notes-and-tips">Notes and tips</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="static.html#config-schema-reference">Config Schema Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="static.html#required-keys">Required keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="static.html#optional-keys">Optional keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="static.html#raw-schema">Raw schema</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="dynamic.html#when-to-use">When to use</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dynamic.html#requirements">Requirements</a></li>
@@ -581,10 +611,18 @@
 <li class="toctree-l2"><a class="reference internal" href="dynamic.html#differences-vs-static-generation">Differences vs static generation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Class template calls</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="template.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="template.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="template.html#notes">Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="template.html#class-template-calls">Class template calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="template.html#function-template-calls">Function template calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="template.html#argument-deduction">Argument deduction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="argument_intents.html#c-source-of-truth">C++ source of truth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="argument_intents.html#example-config">Example config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="argument_intents.html#intent-semantics">Intent semantics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="argument_intents.html#generated-python-signatures">Generated Python signatures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="argument_intents.html#notes">Notes</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a><ul>

@@ -1,5 +1,5 @@
 Install
-=======
+-------
 
 Prebuilt packages are available on both PyPI and Conda. For most users, we recommend installing
 from PyPI. For development, we recommend installing from source with Pixi.
@@ -101,11 +101,12 @@ Build Steps
 Artifacts are generated under:
 
 - ``docs/build/html/latest``
-- ``docs/build/html/<version>`` where ``<version>`` comes from ``SPHINX_NUMBAST_VER`` or detected package/version files.
+- ``docs/build/html/<version>`` where ``<version>`` comes from
+  ``SPHINX_NUMBAST_VER`` or the installed ``numbast`` package version.
 
 Notes
 ^^^^^
 
-- The build script sets ``SPHINX_NUMBAST_VER`` automatically from the installed ``numbast`` package version,
-  ``numbast/VERSION``, or top-level ``VERSION``. If none is found, it uses ``latest``.
-- Output also copies ``nv-versions.json`` and creates a redirect ``index.html`` for convenience.
+- The build script sets ``SPHINX_NUMBAST_VER`` from the installed ``numbast`` package version unless
+  ``SPHINX_NUMBAST_VER`` is provided explicitly.
+- Output also copies ``versions.json`` and ``nv-versions.json``, and creates a redirect ``index.html``.
