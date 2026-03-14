@@ -124,7 +124,7 @@ jobs:
         uses: ./.github/actions/docs-build
         with:
           upload_workflow_artifact: "true"
-          latest_only: "true"
+          latest_only: ${{ inputs.is_release && 'false' || 'true' }}
           download_artifacts: ${{ inputs.download_artifacts && 'true' || 'false' }}
       - name: Create empty directory for cleanup
         if: ${{ inputs.remove_pr_preview }}

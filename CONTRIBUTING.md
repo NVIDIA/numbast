@@ -47,6 +47,7 @@ The mainline release process for Numbast involves the following steps:
 
 - Make sure your local `main` branch is top-of-tree.
 - Open a PR to update `VERSION` in repo root to the desired version.
+- In the same PR, update `docs/nv-versions.json` and `docs/versions.json` to include the new release so the docs version picker includes it.
 - Generate a short changelog with `git log v<PREVIOUS_VERSION>..HEAD --oneline --pretty=format:"- %s"`.
 - Put the changelog in the version update PR description.
 - Once `main` is updated, tag the release:
@@ -64,6 +65,7 @@ v<VERSION>
 ```
 git push git@github.com:NVIDIA/numbast.git v<VERSION>
 ```
+- Verify docs deployment publishes `https://nvidia.github.io/numbast/<VERSION>/` and that `<VERSION>` appears in the docs version picker.
 
 ### Patch releases from a previous tag
 
@@ -77,7 +79,7 @@ git push -u origin <MAJOR.MINOR>.x-patch
 ```
 2. Use short-lived branches for fixes, and open PRs targeting `<MAJOR.MINOR>.x-patch`.
 3. Wait for CI and merge each fix PR into `<MAJOR.MINOR>.x-patch`.
-4. Open a PR that bumps repo-root `VERSION` to the patch version (for example `0.6.1`), targeting `<MAJOR.MINOR>.x-patch`.
+4. Open a PR that bumps repo-root `VERSION` to the patch version (for example `0.6.1`), and update `docs/nv-versions.json` plus `docs/versions.json` with that patch version, targeting `<MAJOR.MINOR>.x-patch`.
 5. Wait for CI and merge the version bump PR.
 6. Create and push an annotated tag from the tip of `<MAJOR.MINOR>.x-patch`:
 ```
@@ -88,6 +90,7 @@ cat /tmp/numbast-v<NEW_VERSION>-changelog.txt >> /tmp/numbast-v<NEW_VERSION>-tag
 git tag -a v<NEW_VERSION> -F /tmp/numbast-v<NEW_VERSION>-tag.txt
 git push origin v<NEW_VERSION>
 ```
+7. Verify docs deployment publishes `https://nvidia.github.io/numbast/<NEW_VERSION>/` and that `<NEW_VERSION>` appears in the docs version picker.
 
 Notes:
 - Use branch names that do not start with `v` for maintenance branches (for example, `0.6.x-patch`) to avoid accidental release automation triggers.
