@@ -62,8 +62,8 @@
 
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Dynamic binding generation" href="dynamic.html" />
-    <link rel="prev" title="Static binding generation" href="static.html" />
+    <link rel="next" title="Supported declarations" href="supported_declarations.html" />
+    <link rel="prev" title="Template calls" href="template.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -207,9 +207,9 @@
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
-    Argument intents
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="dynamic.html">
+    Dynamic binding generation
   </a>
 </li>
 
@@ -222,15 +222,15 @@
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="dynamic.html">
-    Dynamic binding generation
+  <a class="nav-link dropdown-item nav-internal" href="template.html">
+    Template calls
   </a>
 </li>
 
 
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Template calls
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    Argument intents
   </a>
 </li>
 
@@ -417,13 +417,6 @@
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
-    Argument intents
-  </a>
-</li>
-
-
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="dynamic.html">
     Dynamic binding generation
@@ -434,6 +427,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="template.html">
     Template calls
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Argument intents
   </a>
 </li>
 
@@ -507,9 +507,9 @@
 
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
 
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
@@ -588,8 +588,9 @@
   <section id="argument-intents">
 <h1>Argument intents<a class="headerlink" href="#argument-intents" title="Link to this heading">#</a></h1>
 <p>Argument intents control how C++ parameters are exposed in generated Numba
-bindings. They are configured through <code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code> in static
-binding config.</p>
+bindings. You can configure them statically with <code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code>
+in binding config files or programmatically with <code class="docutils literal notranslate"><span class="pre">arg_intent</span></code> when calling
+the template/API.</p>
 <section id="c-source-of-truth">
 <h2>C++ source of truth<a class="headerlink" href="#c-source-of-truth" title="Link to this heading">#</a></h2>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">RunningStats</span><span class="w"> </span><span class="p">{</span>
@@ -680,11 +681,15 @@ binding config.</p>
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
-<ul class="simple">
+<ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">inout_ptr</span></code>, <code class="docutils literal notranslate"><span class="pre">out_ptr</span></code>, and <code class="docutils literal notranslate"><span class="pre">out_return</span></code> are only supported on C++
 reference parameters (<code class="docutils literal notranslate"><span class="pre">T&amp;</span></code> / <code class="docutils literal notranslate"><span class="pre">T&amp;&amp;</span></code>).</p></li>
 <li><p>In <code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code>, parameter overrides can be keyed by
-parameter name or 0-based parameter index.</p></li>
+parameter name or 0-based parameter index.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">0</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inout_ptr</span><span class="w">  </span><span class="c1"># demonstrates 0-based parameter indexing for overrides</span>
+</pre></div>
+</div>
+</li>
 <li><p><code class="docutils literal notranslate"><span class="pre">out_return</span></code> removes that parameter from visible arguments.</p></li>
 <li><p>If C++ has a non-<code class="docutils literal notranslate"><span class="pre">void</span></code> return and one or more <code class="docutils literal notranslate"><span class="pre">out_return</span></code> parameters,
 Numbast returns <code class="docutils literal notranslate"><span class="pre">types.Tuple((cxx_return,</span> <span class="pre">out1,</span> <span class="pre">...))</span></code>.</p></li>
@@ -707,20 +712,20 @@ Numbast returns <code class="docutils literal notranslate"><span class="pre">typ
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="static.html"
+       href="template.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Static binding generation</p>
+        <p class="prev-next-title">Template calls</p>
       </div>
     </a>
     <a class="right-next"
-       href="dynamic.html"
+       href="supported_declarations.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Dynamic binding generation</p>
+        <p class="prev-next-title">Supported declarations</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

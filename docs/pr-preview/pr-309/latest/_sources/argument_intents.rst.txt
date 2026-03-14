@@ -2,8 +2,9 @@ Argument intents
 ================
 
 Argument intents control how C++ parameters are exposed in generated Numba
-bindings. They are configured through ``Function Argument Intents`` in static
-binding config.
+bindings. You can configure them statically with ``Function Argument Intents``
+in binding config files or programmatically with ``arg_intent`` when calling
+the template/API.
 
 C++ source of truth
 -------------------
@@ -100,6 +101,10 @@ Notes
   reference parameters (``T&`` / ``T&&``).
 - In ``Function Argument Intents``, parameter overrides can be keyed by
   parameter name or 0-based parameter index.
+
+  .. code-block:: yaml
+
+    0: inout_ptr  # demonstrates 0-based parameter indexing for overrides
 - ``out_return`` removes that parameter from visible arguments.
 - If C++ has a non-``void`` return and one or more ``out_return`` parameters,
   Numbast returns ``types.Tuple((cxx_return, out1, ...))``.

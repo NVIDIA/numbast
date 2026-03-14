@@ -41,6 +41,9 @@ Function templates are bound as normal callable Python handles:
 
 .. code-block:: python
 
+  # Given C++:
+  # template <typename T> __device__ T add(T a, T b);
+  # template <typename T> __device__ T add(T a, T b, T c);
   funcs = bind_cxx_function_templates(
       function_templates=decls.function_templates,
       shim_writer=shim_writer,
@@ -64,7 +67,7 @@ Argument deduction
 - Explicit template kwargs are validated against deduced types, and conflicts
   raise typing errors.
 - Constructor keyword arguments must appear before template-parameter keywords.
-- Function-template overload and template-parameter deduction is performed from
+- Function-template overload and template-parameter deduction are performed from
   call argument types at typing time.
 - Argument-intent overrides can change visible call arguments and therefore
   affect deduction behavior; see :doc:`/argument_intents`.
