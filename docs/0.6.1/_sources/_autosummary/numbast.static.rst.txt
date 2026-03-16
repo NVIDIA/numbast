@@ -16,11 +16,8 @@
    :toctree:
    :recursive:
 
-   callconv
-   class_template
    enum
    function
-   function_template
    renderer
    struct
    typedef

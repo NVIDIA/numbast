@@ -10,7 +10,6 @@ numbast.static.renderer
    
       clear_base_renderer_cache
       get_all_exposed_symbols
-      get_callconv_utils
       get_rendered_imports
       get_reproducible_info
       get_shim

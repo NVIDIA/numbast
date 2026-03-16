@@ -222,20 +222,6 @@
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
@@ -425,20 +411,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
@@ -500,27 +472,16 @@
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
-
-
-
-
-
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Static binding generation</a></li>
-
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
-<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.enum.html">numbast.static.enum</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function.html">numbast.static.function</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function_template.html">numbast.static.function_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.renderer.html">numbast.static.renderer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.struct.html">numbast.static.struct</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.typedef.html">numbast.static.typedef</a></li>
@@ -601,55 +562,54 @@ bindings without requiring Numbast at runtime.</p>
 <h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p>CUDA Toolkit headers installed and discoverable.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">clangdev</span></code> available in your development environment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">clangdev</span></code> available (see <code class="docutils literal notranslate"><span class="pre">conda/environment-[CUDA_VER].yaml</span></code>).</p></li>
 <li><p>A header entry point and a list of headers to retain.</p></li>
 </ul>
 </section>
 <section id="configuration-file">
 <h2>Configuration file<a class="headerlink" href="#configuration-file" title="Link to this heading">#</a></h2>
-<p>The static-binding config contract is defined in
-<code class="docutils literal notranslate"><span class="pre">numbast/src/numbast/tools/static_binding_generator.schema.yaml</span></code>.
-The docs section below is generated from that schema at build time to avoid
-drift between implementation and documentation.
-For details on <code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code> semantics and generated signatures,
-see <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p>
-<p>Config example:</p>
+<p>Create a YAML config describing what to generate. Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># file: config.yml</span>
-
-<span class="c1"># --- Required fields ---</span>
-<span class="nt">Entry Point</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/header.hpp</span>
-<span class="nt">File List</span><span class="p">:</span>
+<span class="nt">entry_point</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/header.hpp</span>
+<span class="nt">retain_list</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/header.hpp</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/other_deps.hpp</span>
-<span class="nt">GPU Arch</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sm_80&quot;</span><span class="p p-Indicator">]</span>
 
-<span class="c1"># --- Optional fields ---</span>
-<span class="nt">Exclude</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;internal_helper&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;deprecated_api&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">Struct</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;__InternalState&quot;</span><span class="p p-Indicator">]</span>
-<span class="nt">Clang Include Paths</span><span class="p">:</span>
+<span class="nt">gpu_arch</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sm_80&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="c1"># Optional controls</span>
+<span class="nt">exclude_functions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="nt">exclude_structs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="nt">clang_includes_paths</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/extra/include/dirs</span>
-<span class="nt">Additional Import</span><span class="p">:</span>
+<span class="nt">additional_imports</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">from numba import types</span>
-<span class="nt">Predefined Macros</span><span class="p">:</span>
+<span class="nt">predefined_macros</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SOME_MACRO=1</span>
-<span class="nt">Output Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
-<span class="nt">API Prefix Removal</span><span class="p">:</span>
+<span class="nt">output_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
+<span class="nt">cooperative_launch_required_functions_regex</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="nt">api_prefix_removal</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">]</span>
-<span class="nt">Module Callbacks</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">x:</span><span class="nv"> </span><span class="s">print(&#39;setup&#39;)&quot;</span>
-<span class="w">  </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">x:</span><span class="nv"> </span><span class="s">print(&#39;teardown&#39;)&quot;</span>
+<span class="nt">module_callbacks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">def _setup():</span>
+<span class="w">        </span><span class="no">pass</span>
+<span class="w">  </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">def _teardown():</span>
+<span class="w">        </span><span class="no">pass</span>
+<span class="nt">skip_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<span class="nt">separate_registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </pre></div>
 </div>
 </section>
 <section id="generate-the-binding">
 <h2>Generate the binding<a class="headerlink" href="#generate-the-binding" title="Link to this heading">#</a></h2>
 <p>Use the CLI to generate a Python file:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># from repo root (ensure your development environment is active)</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># from repo root (ensure conda env is active)</span>
 python<span class="w"> </span>-m<span class="w"> </span>numbast<span class="w"> </span>--cfg-path<span class="w"> </span>config.yml<span class="w"> </span>--output-dir<span class="w"> </span>./output
 </pre></div>
 </div>
-<p>This produces a module like <code class="docutils literal notranslate"><span class="pre">./output/bindings_my_lib.py</span></code> (or <code class="docutils literal notranslate"><span class="pre">&lt;entry_point&gt;.py</span></code> if <code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code> is not set).</p>
+<p>This produces a module like <code class="docutils literal notranslate"><span class="pre">./output/bindings_my_lib.py</span></code> (or <code class="docutils literal notranslate"><span class="pre">&lt;entry_point&gt;.py</span></code> if <code class="docutils literal notranslate"><span class="pre">output_name</span></code> is not set).</p>
 </section>
 <section id="distribute-and-use">
 <h2>Distribute and use<a class="headerlink" href="#distribute-and-use" title="Link to this heading">#</a></h2>
@@ -668,518 +628,6 @@ python<span class="w"> </span>-m<span class="w"> </span>numbast<span class="w"> 
 <li><p>If multiple GPU architectures are needed, run the generator once per architecture.</p></li>
 <li><p>If your environment has <code class="docutils literal notranslate"><span class="pre">ruff</span></code> formatter installed, Numbast will attempt to run it on generated bindings.</p></li>
 </ul>
-</section>
-</section>
-<section id="config-schema-reference">
-<h1>Config Schema Reference<a class="headerlink" href="#config-schema-reference" title="Link to this heading">#</a></h1>
-<p>This section is generated directly from:
-<code class="docutils literal notranslate"><span class="pre">numbast/src/numbast/tools/static_binding_generator.schema.yaml</span></code></p>
-<section id="required-keys">
-<h2>Required keys<a class="headerlink" href="#required-keys" title="Link to this heading">#</a></h2>
-<dl>
-<dt><code class="docutils literal notranslate"><span class="pre">Entry</span> <span class="pre">Point</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Path to the input CUDA C/C++ header file.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Entry Point</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include/cufp8.hpp</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">GPU</span> <span class="pre">Arch</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Target GPU architecture list. Exactly one architecture is currently supported per run.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Min items: 1</p></li>
-<li><p>Max items: 1</p></li>
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">GPU Arch</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sm_80</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">File</span> <span class="pre">List</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Header files to retain while parsing. Declarations from other transitively included files are ignored in generated
-output.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Min items: 1</p></li>
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">File List</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include/cufp8.hpp</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include/cufp8_conversions.hpp</span>
-</pre></div>
-</div>
-</dd>
-</dl>
-</section>
-<section id="optional-keys">
-<h2>Optional keys<a class="headerlink" href="#optional-keys" title="Link to this heading">#</a></h2>
-<dl>
-<dt><code class="docutils literal notranslate"><span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Optional config metadata field.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Version</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">number</span></code></span></dt><dd><p>Optional config metadata field.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Types</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Mapping of struct names to Numba type class names.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Types</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">__nv_fp8_e4m3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FP8e4m3Type</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Models</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Mapping of struct names to Numba datamodel class names.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Data Models</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">__nv_fp8_e4m3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FP8e4m3Model</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Exclude</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Declaration names to skip during binding generation.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>No unspecified sub-keys</p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Exclude</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Function</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">internal_helper</span>
-<span class="w">  </span><span class="nt">Struct</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">__InternalState</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Clang</span> <span class="pre">Include</span> <span class="pre">Paths</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Additional include search paths for Clang parsing.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Clang Include Paths</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/extra/include</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Additional</span> <span class="pre">Import</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Extra Python import statements injected into the generated file.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Additional Import</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">from nvshmem.bindings import module_init</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Shim</span> <span class="pre">Include</span> <span class="pre">Override</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Override value used to compose the generated shim include line. If unset, the entry-point path is used.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Shim Include Override</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cufp8.hpp</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Predefined</span> <span class="pre">Macros</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Macros defined before parsing and prepended in shim generation.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Predefined Macros</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SOME_MACRO=1</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ENABLE_FEATURE</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Output binding filename. Defaults to <cite>&lt;entry-point-basename&gt;.py</cite>.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Output Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Cooperative</span> <span class="pre">Launch</span> <span class="pre">Required</span> <span class="pre">Functions</span> <span class="pre">Regex</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Regex patterns. Matching function names are generated with cooperative launch handling.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Cooperative Launch Required Functions Regex</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">^cg_.*</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">API</span> <span class="pre">Prefix</span> <span class="pre">Removal</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Prefixes removed from rendered declaration names.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>No unspecified sub-keys</p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">API Prefix Removal</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Function</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lib_</span>
-<span class="w">  </span><span class="nt">Struct</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lib_</span>
-<span class="w">  </span><span class="nt">Enum</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LIB_</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Callbacks</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Optional module-level shim callback assignments.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>No unspecified sub-keys</p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Module Callbacks</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">loaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
-<span class="w">  </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">unloaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Skip</span> <span class="pre">Prefix</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Skip generating bindings for functions whose names start with this prefix.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Skip Prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">__internal_</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Use</span> <span class="pre">Separate</span> <span class="pre">Registry</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Generate separate typing/target registries instead of reusing Numba CUDA’s global registries.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Use Separate Registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
-<a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a> for intent semantics and generated signature behavior.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Function Argument Intents</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">my_function</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">result</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">out_ptr</span>
-<span class="w">    </span><span class="nt">0</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">in</span>
-</pre></div>
-</div>
-</dd>
-</dl>
-<section id="optional-nested-keys">
-<h3>Optional nested keys<a class="headerlink" href="#optional-nested-keys" title="Link to this heading">#</a></h3>
-<p class="rubric"><code class="docutils literal notranslate"><span class="pre">Exclude</span></code></p>
-<dl>
-<dt><code class="docutils literal notranslate"><span class="pre">Function</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Function names to exclude.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Function</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">internal_helper</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deprecated_api</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Struct</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Struct names to exclude.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
-<p>Constraints:</p>
-<ul class="simple">
-<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
-</ul>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Struct</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">__InternalState</span>
-</pre></div>
-</div>
-</dd>
-</dl>
-<p class="rubric"><code class="docutils literal notranslate"><span class="pre">API</span> <span class="pre">Prefix</span> <span class="pre">Removal</span></code></p>
-<dl>
-<dt><code class="docutils literal notranslate"><span class="pre">Function</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">oneOf(string,</span> <span class="pre">array)</span></code></span></dt><dd><p>Prefix(es) removed from generated function names.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Function</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lib_</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mylib_</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Struct</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">oneOf(string,</span> <span class="pre">array)</span></code></span></dt><dd><p>Prefix(es) removed from generated struct names.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Struct</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lib_</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Enum</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">oneOf(string,</span> <span class="pre">array)</span></code></span></dt><dd><p>Prefix(es) removed from generated enum names and values.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Enum</span><span class="p">:</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LIB_</span>
-</pre></div>
-</div>
-</dd>
-</dl>
-<p class="rubric"><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Callbacks</span></code></p>
-<dl>
-<dt><code class="docutils literal notranslate"><span class="pre">setup</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Python expression for setup callback.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">loaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
-</pre></div>
-</div>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">teardown</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Python expression for teardown callback.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">unloaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
-</pre></div>
-</div>
-</dd>
-</dl>
-</section>
-</section>
-<section id="raw-schema">
-<h2>Raw schema<a class="headerlink" href="#raw-schema" title="Link to this heading">#</a></h2>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</span>
-<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
-<span class="nt">$schema</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://json-schema.org/draft/2020-12/schema&quot;</span>
-<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Numbast Static Binding Generator Config</span>
-<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">  </span><span class="no">Canonical schema describing supported YAML keys and value shapes accepted by the Numbast static binding generator</span>
-<span class="w">  </span><span class="no">configuration loader.</span>
-
-<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nt">required</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Entry Point</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GPU Arch</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">File List</span>
-<span class="nt">properties</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Name</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Optional config metadata field.</span>
-<span class="w">  </span><span class="nt">Version</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">number</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Optional config metadata field.</span>
-<span class="w">  </span><span class="nt">Entry Point</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Path to the input CUDA C/C++ header file.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include/cufp8.hpp</span>
-<span class="w">  </span><span class="nt">GPU Arch</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">    </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">    </span><span class="nt">maxItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;^sm_[0-9]+$&quot;</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Target GPU architecture list. Exactly one architecture is currently supported per run.</span>
-
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sm_80&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">File List</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">    </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Header files to retain while parsing. Declarations from other transitively included files are ignored in</span>
-<span class="w">      </span><span class="no">generated output.</span>
-
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include/cufp8.hpp</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include/cufp8_conversions.hpp</span>
-<span class="w">  </span><span class="nt">Types</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mapping of struct names to Numba type class names.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;__nv_fp8_e4m3&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;FP8e4m3Type&quot;</span><span class="p p-Indicator">}</span>
-<span class="w">  </span><span class="nt">Data Models</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mapping of struct names to Numba datamodel class names.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;__nv_fp8_e4m3&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;FP8e4m3Model&quot;</span><span class="p p-Indicator">}</span>
-<span class="w">  </span><span class="nt">Exclude</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Declaration names to skip during binding generation.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;internal_helper&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">Struct</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;__InternalState&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">Function</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
-<span class="w">        </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Function names to exclude.</span>
-<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;internal_helper&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;deprecated_api&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">      </span><span class="nt">Struct</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
-<span class="w">        </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Struct names to exclude.</span>
-<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;__InternalState&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">Clang Include Paths</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
-<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Additional include search paths for Clang parsing.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/cuda/include</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/extra/include</span>
-<span class="w">  </span><span class="nt">Additional Import</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
-<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Extra Python import statements injected into the generated file.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;from</span><span class="nv"> </span><span class="s">nvshmem.bindings</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">module_init&quot;</span>
-<span class="w">  </span><span class="nt">Shim Include Override</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;null&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Override value used to compose the generated shim include line. If unset, the entry-point path is used.</span>
-
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;cufp8.hpp&quot;</span>
-<span class="w">  </span><span class="nt">Predefined Macros</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
-<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Macros defined before parsing and prepended in shim generation.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SOME_MACRO=1</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ENABLE_FEATURE</span>
-<span class="w">  </span><span class="nt">Output Name</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;null&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Output binding filename. Defaults to `&lt;entry-point-basename&gt;.py`.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
-<span class="w">  </span><span class="nt">Cooperative Launch Required Functions Regex</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
-<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Regex patterns. Matching function names are generated with cooperative launch handling.</span>
-
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;^cg_.*&quot;</span>
-<span class="w">  </span><span class="nt">API Prefix Removal</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefixes removed from rendered declaration names.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">Struct</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">Enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;LIB_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">Function</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix(es) removed from generated function names.</span>
-<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;mylib_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">      </span><span class="nt">Struct</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix(es) removed from generated struct names.</span>
-<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">      </span><span class="nt">Enum</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
-<span class="w">            </span><span class="nt">items</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix(es) removed from generated enum names and values.</span>
-<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;LIB_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">Module Callbacks</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Optional module-level shim callback assignments.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;loaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
-<span class="w">        </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;unloaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
-<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">setup</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Python expression for setup callback.</span>
-<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;loaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
-<span class="w">      </span><span class="nt">teardown</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Python expression for teardown callback.</span>
-<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;unloaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
-<span class="w">  </span><span class="nt">Skip Prefix</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;null&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Skip generating bindings for functions whose names start with this prefix.</span>
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;__internal_&quot;</span>
-<span class="w">  </span><span class="nt">Use Separate Registry</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Generate separate typing/target registries instead of reusing Numba CUDA&#39;s global registries.</span>
-
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">  </span><span class="nt">Function Argument Intents</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See</span>
-<span class="w">      </span><span class="no">:doc:`/argument_intents` for intent semantics and generated signature behavior.</span>
-
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">my_function</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">result</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">out_ptr</span>
-<span class="w">          </span><span class="nt">0</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">in</span>
-<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">            </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;in&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;inout_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_return&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
-<span class="w">            </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">              </span><span class="nt">intent</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;in&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;inout_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_return&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">            </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;intent&quot;</span><span class="p p-Indicator">]</span>
-</pre></div>
-</div>
 </section>
 </section>
 
@@ -1232,7 +680,6 @@ output.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Static binding generation</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use">When to use</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirements">Requirements</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration-file">Configuration file</a></li>
@@ -1240,18 +687,6 @@ output.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#distribute-and-use">Distribute and use</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-and-tips">Notes and tips</a></li>
 </ul>
-</li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#config-schema-reference">Config Schema Reference</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#required-keys">Required keys</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optional-keys">Optional keys</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#optional-nested-keys">Optional nested keys</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#raw-schema">Raw schema</a></li>
-</ul>
-</li>
-</ul>
-
   </nav></div>
 
 </div></div>

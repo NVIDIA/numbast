@@ -222,20 +222,6 @@
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
@@ -425,20 +411,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
@@ -500,27 +472,16 @@
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
-
-
-
-
-
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
-
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
-<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.enum.html">numbast.static.enum</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function.html">numbast.static.function</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function_template.html">numbast.static.function_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.renderer.html">numbast.static.renderer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.struct.html">numbast.static.struct</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.typedef.html">numbast.static.typedef</a></li>
@@ -723,13 +684,10 @@ Numbast used to generate the bindings determines the compatible <code class="doc
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>0.7.0 (current dev)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">&gt;=0.25.0</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>0.6.0</p></td>
+<tr class="row-even"><td><p>0.6.0 (current dev)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">&gt;=0.21.0,&lt;0.23.0</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p>0.5.x</p></td>
+<tr class="row-odd"><td><p>0.5.x</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">&gt;=0.20.1,&lt;0.21.0</span></code></p></td>
 </tr>
 </tbody>
@@ -758,23 +716,6 @@ versions of Numbast if you need to support newer <code class="docutils literal n
 <p>These version restrictions may be relaxed or removed once <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> releases a stable 1.0 version with
 stabilized public APIs. Until then, bindings are tested against specific version ranges to ensure compatibility.</p>
 </div>
-</section>
-<section id="c-enum-binding-generation-notes">
-<h2>C++ Enum Binding Generation Notes<a class="headerlink" href="#c-enum-binding-generation-notes" title="Link to this heading">#</a></h2>
-<p><strong>Why do Numbast bindings treat C++ enums as ``int64`` in Numba?</strong></p>
-<p>Numba represents Python <code class="docutils literal notranslate"><span class="pre">IntEnum</span></code> values using <code class="docutils literal notranslate"><span class="pre">IntEnumMember(...,</span> <span class="pre">int64)</span></code> (i.e., enum values are lowered as
-64-bit integers). Numbast follows this convention in both dynamic and static binding generation so that Python-side
-typing and lowering are consistent.</p>
-<p><strong>But C++ enums can have different underlying integer types. Why don’t we track and truncate to that type in lowering?</strong></p>
-<p>Numbast does not keep a per-enum “underlying integer type” registry and does not perform explicit truncation during
-lowering because the device-side shim is compiled by NVRTC, and the shim call site is where C++ type checking happens.
-Even though the Python/Numba side lowers enum values as 64-bit integers, NVRTC can resolve the target enum type and emit
-the appropriate conversion when the shim calls the original function that takes the C++ enum parameter. This means we
-don’t need to track per-enum underlying integer types in Python or add special-case truncation/casting logic in Numbast
-lowering.</p>
-<p>If you are binding code that depends on unusual enum representations or non-standard ABIs, you may need a custom
-adapter. For typical CUDA device code, this approach keeps the implementation simpler and avoids maintaining extra
-metadata for every enum type.</p>
 </section>
 </section>
 
@@ -844,7 +785,6 @@ metadata for every enum type.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generated-bindings-and-numba-cuda-version-requirements">Generated bindings and Numba-CUDA version requirements</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#c-enum-binding-generation-notes">C++ Enum Binding Generation Notes</a></li>
 </ul>
   </nav></div>
 

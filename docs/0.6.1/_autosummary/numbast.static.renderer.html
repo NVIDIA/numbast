@@ -63,7 +63,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="numbast.static.struct" href="numbast.static.struct.html" />
-    <link rel="prev" title="numbast.static.function_template" href="numbast.static.function_template.html" />
+    <link rel="prev" title="numbast.static.function" href="numbast.static.function.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -221,20 +221,6 @@
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../supported_declarations.html">
     Supported declarations
@@ -421,20 +407,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../supported_declarations.html">
     Supported declarations
   </a>
@@ -496,27 +468,16 @@
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Install</a></li>
-
-
-
-
-
 <li class="toctree-l1"><a class="reference internal" href="../static.html">Static binding generation</a></li>
-
 <li class="toctree-l1"><a class="reference internal" href="../dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../template.html">Template calls</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../api_reference.html">API reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="numbast.static.html">numbast.static</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.class_template.html">numbast.static.class_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.enum.html">numbast.static.enum</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.function.html">numbast.static.function</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.function_template.html">numbast.static.function_template</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">numbast.static.renderer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.struct.html">numbast.static.struct</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.typedef.html">numbast.static.typedef</a></li>
@@ -598,19 +559,16 @@
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_all_exposed_symbols</span></code>()</p></td>
 <td><p>Produce the code block that defines and exposes all symbol name lists and the module __all__.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_callconv_utils</span></code>()</p></td>
-<td><p>Render the code block for call convention utilities.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rendered_imports</span></code>([additional_imports])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rendered_imports</span></code>([additional_imports])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reproducible_info</span></code>(config_rel_path, cmd, ...)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reproducible_info</span></code>(config_rel_path, cmd, ...)</p></td>
 <td><p>Produce a reproducible information header composed of commented lines documenting versions, the generation command, generator parameters, and the config path.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shim</span></code>(shim_include[, predefined_macros, ...])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shim</span></code>(shim_include[, predefined_macros, ...])</p></td>
 <td><p>Render the code block for shim functions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry_setup</span></code>(use_separate_registry)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry_setup</span></code>(use_separate_registry)</p></td>
 <td><p>Get the registry setup code.</p></td>
 </tr>
 </tbody>
@@ -638,12 +596,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="numbast.static.function_template.html"
+       href="numbast.static.function.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">numbast.static.function_template</p>
+        <p class="prev-next-title">numbast.static.function</p>
       </div>
     </a>
     <a class="right-next"

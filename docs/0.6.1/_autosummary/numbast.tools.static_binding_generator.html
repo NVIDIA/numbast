@@ -222,20 +222,6 @@
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
 <li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="../argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../supported_declarations.html">
     Supported declarations
   </a>
@@ -421,20 +407,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../supported_declarations.html">
     Supported declarations
   </a>
@@ -496,27 +468,16 @@
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Install</a></li>
-
-
-
-
-
 <li class="toctree-l1"><a class="reference internal" href="../static.html">Static binding generation</a></li>
-
 <li class="toctree-l1"><a class="reference internal" href="../dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../template.html">Template calls</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../api_reference.html">API reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.class_template.html">numbast.static.class_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.enum.html">numbast.static.enum</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.function.html">numbast.static.function</a></li>
-<li class="toctree-l3"><a class="reference internal" href="numbast.static.function_template.html">numbast.static.function_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.renderer.html">numbast.static.renderer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.struct.html">numbast.static.struct</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.typedef.html">numbast.static.typedef</a></li>
@@ -592,7 +553,7 @@
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_files_to_generate</span></code>(functions, ...)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_files_to_generate</span></code>(functions, structs, ...)</p></td>
 <td><p>Console log the list of bindings to generate.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ruff_format_binding_file</span></code>(binding_file_path)</p></td>
@@ -605,7 +566,7 @@
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Config</span></code>(config_dict)</p></td>
-<td><p>Configuration object for static binding generation.</p></td>
+<td><p>Configuration File for Static Binding Generation.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">NumbaDataModelDictType</span></code>()</p></td>
 <td><p><cite>Click</cite> input type for dictionary mapping struct to Numba data model.</p></td>

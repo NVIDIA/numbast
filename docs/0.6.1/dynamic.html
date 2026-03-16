@@ -62,7 +62,7 @@
 
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Template calls" href="template.html" />
+    <link rel="next" title="Supported declarations" href="supported_declarations.html" />
     <link rel="prev" title="Static binding generation" href="static.html" />
 
 
@@ -221,20 +221,6 @@
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="supported_declarations.html">
     Supported declarations
@@ -425,20 +411,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="supported_declarations.html">
     Supported declarations
   </a>
@@ -500,27 +472,16 @@
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
-
-
-
-
-
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
-
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
-<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.enum.html">numbast.static.enum</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function.html">numbast.static.function</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function_template.html">numbast.static.function_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.renderer.html">numbast.static.renderer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.struct.html">numbast.static.struct</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.typedef.html">numbast.static.typedef</a></li>
@@ -601,7 +562,7 @@ Bindings are inserted into Numba’s registries on the fly, so you can immediate
 <h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p>CUDA Toolkit headers installed and discoverable.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">clangdev</span></code> available in your development environment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">clangdev</span></code> available (see <code class="docutils literal notranslate"><span class="pre">conda/environment-[CUDA_VER].yaml</span></code>).</p></li>
 <li><p>Access to the CUDA C++ headers you want to bind.</p></li>
 </ul>
 </section>
@@ -673,10 +634,6 @@ Bindings are inserted into Numba’s registries on the fly, so you can immediate
 </pre></div>
 </div>
 </section>
-<section id="class-template-calls">
-<h2>Class template calls<a class="headerlink" href="#class-template-calls" title="Link to this heading">#</a></h2>
-<p>For class template constructor usage and examples, see <a class="reference internal" href="template.html"><span class="doc">Template calls</span></a>.</p>
-</section>
 <section id="guidance-and-best-practices">
 <h2>Guidance and best practices<a class="headerlink" href="#guidance-and-best-practices" title="Link to this heading">#</a></h2>
 <ul class="simple">
@@ -716,11 +673,11 @@ compute capability of the current device.</p></li>
       </div>
     </a>
     <a class="right-next"
-       href="template.html"
+       href="supported_declarations.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Template calls</p>
+        <p class="prev-next-title">Supported declarations</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -748,7 +705,6 @@ compute capability of the current device.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use">When to use</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirements">Requirements</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-template-calls">Class template calls</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#guidance-and-best-practices">Guidance and best practices</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#differences-vs-static-generation">Differences vs static generation</a></li>
 </ul>

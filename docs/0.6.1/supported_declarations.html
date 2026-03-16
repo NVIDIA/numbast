@@ -63,7 +63,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="AST Canopy overview" href="ast_canopy_overview.html" />
-    <link rel="prev" title="Argument intents" href="argument_intents.html" />
+    <link rel="prev" title="Dynamic binding generation" href="dynamic.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -221,20 +221,6 @@
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
 <li class=" current active">
   <a class="nav-link dropdown-item nav-internal" href="#">
     Supported declarations
@@ -424,20 +410,6 @@
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="template.html">
-    Template calls
-  </a>
-</li>
-
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="argument_intents.html">
-    Argument intents
-  </a>
-</li>
-
-
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     Supported declarations
@@ -500,27 +472,16 @@
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
-
-
-
-
-
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
-
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
-<li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.enum.html">numbast.static.enum</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function.html">numbast.static.function</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function_template.html">numbast.static.function_template</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.renderer.html">numbast.static.renderer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.struct.html">numbast.static.struct</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.typedef.html">numbast.static.typedef</a></li>
@@ -677,68 +638,6 @@ and signatures so consumers can materialize concrete overloads.</p></li>
 </table>
 </div>
 </section>
-<section id="qualified-names-qual-name">
-<h2>Qualified names (<code class="docutils literal notranslate"><span class="pre">qual_name</span></code>)<a class="headerlink" href="#qualified-names-qual-name" title="Link to this heading">#</a></h2>
-<p>Many serialized declaration objects expose a <code class="docutils literal notranslate"><span class="pre">qual_name</span></code> attribute: the C++
-<em>qualified name</em> including enclosing scopes (namespaces and record scopes),
-using <code class="docutils literal notranslate"><span class="pre">::</span></code> as the separator.</p>
-<p>This is derived from Clang’s <code class="docutils literal notranslate"><span class="pre">Decl::getQualifiedNameAsString()</span></code> with small
-stability tweaks for anonymous records so downstream consumers always have a
-printable identifier.</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Declaration kind</p></th>
-<th class="head"><p>Example <code class="docutils literal notranslate"><span class="pre">qual_name</span></code></p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Function / method</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ns1::ns2::S::m</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>Record (struct/class)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ns1::ns2::S</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>Enum</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ns1::ns2::E</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>Typedef</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ns1::ns2::Alias</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>Function template / class template</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ns1::ns2::tf</span></code> / <code class="docutils literal notranslate"><span class="pre">ns1::ns2::Tpl</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<section id="notes-and-edge-cases">
-<h3>Notes and edge cases<a class="headerlink" href="#notes-and-edge-cases" title="Link to this heading">#</a></h3>
-<ul>
-<li><p><strong>Global scope</strong>: in the global scope (no namespace), <code class="docutils literal notranslate"><span class="pre">qual_name</span></code> is
-typically the unqualified identifier (e.g., <code class="docutils literal notranslate"><span class="pre">GlobalS</span></code>).</p></li>
-<li><p><strong>Anonymous namespace</strong>: Clang typically renders anonymous namespaces as
-<code class="docutils literal notranslate"><span class="pre">(anonymous</span> <span class="pre">namespace)</span></code> in qualified names. For example, a declaration
-<code class="docutils literal notranslate"><span class="pre">AnonNS_S</span></code> inside <code class="docutils literal notranslate"><span class="pre">namespace</span> <span class="pre">{</span> <span class="pre">...</span> <span class="pre">}</span></code> may have a qualified name like
-<code class="docutils literal notranslate"><span class="pre">(anonymous</span> <span class="pre">namespace)::AnonNS_S</span></code>.</p></li>
-<li><p><strong>Anonymous records in C-style typedefs</strong>: for patterns like</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="n">CStyleAnon</span><span class="p">;</span>
-</pre></div>
-</div>
-<p>the underlying record has no tag name and Clang may report an empty name.
-ast_canopy falls back to a placeholder <code class="docutils literal notranslate"><span class="pre">unnamed&lt;ID&gt;</span></code> for the <em>record’s</em>
-<code class="docutils literal notranslate"><span class="pre">name</span></code> so downstream always has something printable (note: <code class="docutils literal notranslate"><span class="pre">&lt;ID&gt;</span></code> is a
-Clang internal decl id and is not stable across runs).</p>
-<p>In this common pattern, Clang often treats the typedef name as the record’s
-user-visible qualified name; in that case you may observe:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">Typedef.qual_name</span> <span class="pre">==</span> <span class="pre">&quot;CStyleAnon&quot;</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Typedef.underlying_name</span></code> matching <code class="docutils literal notranslate"><span class="pre">unnamed&lt;ID&gt;</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Record.name</span></code> matching <code class="docutils literal notranslate"><span class="pre">unnamed&lt;ID&gt;</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Record.qual_name</span> <span class="pre">==</span> <span class="pre">&quot;CStyleAnon&quot;</span></code></p></li>
-</ul>
-</li>
-</ul>
-</section>
-</section>
 <section id="supported-argument-types">
 <h2>Supported argument types<a class="headerlink" href="#supported-argument-types" title="Link to this heading">#</a></h2>
 <p>The following argument types are supported for both standalone functions and
@@ -792,12 +691,12 @@ struct/class methods.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="argument_intents.html"
+       href="dynamic.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Argument intents</p>
+        <p class="prev-next-title">Dynamic binding generation</p>
       </div>
     </a>
     <a class="right-next"
@@ -834,10 +733,6 @@ struct/class methods.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions-and-operators">Functions and operators</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#templates">Templates</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-mapping">Example mapping</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#qualified-names-qual-name">Qualified names (<code class="docutils literal notranslate"><span class="pre">qual_name</span></code>)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-and-edge-cases">Notes and edge cases</a></li>
-</ul>
-</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-argument-types">Supported argument types</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#see-also">See also</a></li>
 </ul>
