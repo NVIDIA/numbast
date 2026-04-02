@@ -119,6 +119,8 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Mark workspace safe for Git invoked by python wheel build
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Build docs
         if: ${{ !inputs.remove_pr_preview }}
         uses: ./.github/actions/docs-build

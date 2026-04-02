@@ -87,6 +87,8 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
           fetch-depth: 0
+      - name: Mark workspace safe for Git invoked by python wheel build
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Setup proxy cache
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
