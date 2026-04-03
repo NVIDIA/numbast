@@ -86,7 +86,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: rapidsai/gha-tools
-          ref: main
+          ref: v0.0.198
           path: gha-tools
           fetch-depth: 1
       - uses: actions/upload-artifact@v6

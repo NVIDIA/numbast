@@ -9,7 +9,7 @@ chmod +x tools/rapids-*
 apt update
 apt install -y jq gh unzip curl gettext
 
-curl -fsSL "https://raw.githubusercontent.com/rapidsai/ci-imgs/main/context/condarc.tmpl" | \
+curl -fsSL "https://raw.githubusercontent.com/rapidsai/ci-imgs/v26.06.00a/context/condarc.tmpl" | \
 envsubst | tee ~/.condarc
 
 SCCACHE_VERSION="${SCCACHE_VER}" rapids-install-sccache
