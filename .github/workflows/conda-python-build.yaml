@@ -89,7 +89,7 @@ jobs:
           ref: v0.0.198
           path: gha-tools
           fetch-depth: 1
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: rapids-gha-tools
           path: gha-tools
