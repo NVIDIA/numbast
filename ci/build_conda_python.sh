@@ -4,6 +4,32 @@
 
 set -euo pipefail
 
+chmod +x tools/rapids-*
+
+apt update
+apt install -y jq gh unzip curl gettext
+
+curl -fsSL "https://raw.githubusercontent.com/rapidsai/ci-imgs/main/context/condarc.tmpl" | \
+envsubst | tee ~/.condarc
+
+SCCACHE_VERSION="${SCCACHE_VER}" rapids-install-sccache
+
+rapids-mamba-retry update --all -y -n base
+conda install -y conda-build
+
+# install expected Python version
+PYTHON_MAJOR_VERSION=${PYTHON_VERSION%%.*}
+PYTHON_MINOR_VERSION=${PYTHON_VERSION#*.}
+PYTHON_UPPER_BOUND="${PYTHON_MAJOR_VERSION}.$((PYTHON_MINOR_VERSION+1)).0a0"
+PYTHON_MINOR_PADDED=$(printf "%02d" "$PYTHON_MINOR_VERSION")
+PYTHON_VERSION_PADDED="${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_PADDED}"
+if [[ "$PYTHON_VERSION_PADDED" > "3.12" ]]; then
+    PYTHON_ABI_TAG="cp${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}"
+else
+    PYTHON_ABI_TAG="cpython"
+fi
+rapids-mamba-retry install -y -n base "python>=${PYTHON_VERSION},<${PYTHON_UPPER_BOUND}=*_${PYTHON_ABI_TAG}"
+
 source rapids-configure-sccache
 
 source rapids-date-string
@@ -32,3 +58,6 @@ rapids-conda-retry build conda/recipes/numbast
 rapids-conda-retry build conda/recipes/numbast_extensions
 
 sccache --show-adv-stats
+
+# find /opt -type d -name conda-bld
+ls -lh /tmp/conda-bld-output || true
