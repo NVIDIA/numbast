@@ -105,7 +105,7 @@ jobs:
     env:
       RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
     container:
-      image: condaforge/miniforge3:latest
+      image: condaforge/miniforge3:26.1.1-3
       env:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
     steps:
