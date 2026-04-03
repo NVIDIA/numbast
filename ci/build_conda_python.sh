@@ -58,6 +58,3 @@ rapids-conda-retry build conda/recipes/numbast
 rapids-conda-retry build conda/recipes/numbast_extensions
 
 sccache --show-adv-stats
-
-ls -lh "$RAPIDS_CONDA_BLD_OUTPUT_DIR" || { cat ~/.condarc && exit 1; }
-find "$RAPIDS_CONDA_BLD_OUTPUT_DIR"
