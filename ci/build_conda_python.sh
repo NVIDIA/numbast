@@ -4,6 +4,30 @@
 
 set -euo pipefail
 
+chmod +x gha-tools/tools/rapids-*
+
+apt update
+apt install -y jq gh unzip curl gettext
+
+curl -fsSL "https://raw.githubusercontent.com/rapidsai/ci-imgs/v26.06.00a/context/condarc.tmpl" | \
+envsubst | tee ~/.condarc
+
+SCCACHE_VERSION="${SCCACHE_VER}" rapids-install-sccache
+
+rapids-mamba-retry update --all -y -n base
+conda install -y conda-build
+
+# install expected Python version
+PYTHON_MAJOR_VERSION=${PYTHON_VERSION%%.*}
+PYTHON_MINOR_VERSION=${PYTHON_VERSION#*.}
+PYTHON_UPPER_BOUND="${PYTHON_MAJOR_VERSION}.$((PYTHON_MINOR_VERSION+1)).0a0"
+if [[ "${PYTHON_MINOR_VERSION}" -gt 12 ]]; then
+    PYTHON_ABI_TAG="cp${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}"
+else
+    PYTHON_ABI_TAG="cpython"
+fi
+rapids-mamba-retry install -y -n base "python>=${PYTHON_VERSION},<${PYTHON_UPPER_BOUND}=*_${PYTHON_ABI_TAG}"
+
 source rapids-configure-sccache
 
 source rapids-date-string
