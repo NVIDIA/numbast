@@ -57,21 +57,21 @@ jobs:
 
           # Please keep the matrices sorted in ascending order by the following:
           #
-          #     [ARCH, PY_VER, CUDA_VER, LINUX_VER]
+          #     [ARCH, PY_VER]
           #
           export MATRIX="
           # amd64
-          - { ARCH: 'amd64', PY_VER: '3.10', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'amd64', PY_VER: '3.14', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
+          - { ARCH: 'amd64', PY_VER: '3.10' }
+          - { ARCH: 'amd64', PY_VER: '3.11' }
+          - { ARCH: 'amd64', PY_VER: '3.12' }
+          - { ARCH: 'amd64', PY_VER: '3.13' }
+          - { ARCH: 'amd64', PY_VER: '3.14' }
           # arm64
-          - { ARCH: 'arm64', PY_VER: '3.10', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'arm64', PY_VER: '3.12', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'arm64', PY_VER: '3.13', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
-          - { ARCH: 'arm64', PY_VER: '3.14', CUDA_VER: '12.9.1', LINUX_VER: 'rockylinux8' }
+          - { ARCH: 'arm64', PY_VER: '3.10' }
+          - { ARCH: 'arm64', PY_VER: '3.11' }
+          - { ARCH: 'arm64', PY_VER: '3.12' }
+          - { ARCH: 'arm64', PY_VER: '3.13' }
+          - { ARCH: 'arm64', PY_VER: '3.14' }
           "
 
           MATRIX="$(
@@ -80,16 +80,34 @@ jobs:
           )"
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
+  fetch-gha-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: rapidsai/gha-tools
+          ref: v0.0.198
+          path: gha-tools
+          fetch-depth: 1
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rapids-gha-tools
+          path: gha-tools
+          if-no-files-found: error
   build:
-    needs: compute-matrix
+    needs:
+      - compute-matrix
+      - fetch-gha-tools
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
     runs-on: "linux-${{ matrix.ARCH }}-${{ inputs.node_type }}"
     env:
       RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+      RAPIDS_CONDA_BLD_OUTPUT_DIR: /tmp/conda-bld-output
+      RAPIDS_CONDA_BLD_ROOT_DIR: /tmp/conda-bld-workspace
     container:
-      image: rapidsai/ci-conda:cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}
+      image: condaforge/miniforge3:26.1.1-3
       env:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
     steps:
@@ -103,6 +121,15 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
           fetch-depth: 0
+      # One clone in fetch-gha-tools; matrix jobs only download the artifact into the mounted workspace.
+      - uses: actions/download-artifact@v6
+        with:
+          name: rapids-gha-tools
+          path: ${{ github.workspace }}
+      - name: Add RAPIDS gha-tools to PATH
+        run: echo "${GITHUB_WORKSPACE}/tools" | tee -a "${GITHUB_PATH}"
+      - name: Mark workspace safe for the git command
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Standardize repository information
         run: |
           echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
@@ -123,13 +150,16 @@ jobs:
       - name: Build Conda Package
         run: ${{ inputs.script }}
         env:
+          # renovate: datasource=github-releases depName=rapidsai/sccache
+          SCCACHE_VER: 0.14.0-rapids.1
           GH_TOKEN: ${{ github.token }}
+          PYTHON_VERSION: ${{ matrix.PY_VER }}
       - name: Upload conda repo
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: conda-repo-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
-          path: "/tmp/conda-bld-output"
+          path: ${{ env.RAPIDS_CONDA_BLD_OUTPUT_DIR }}
       - name: Publish Conda Package
         if: inputs.upload_to_conda
         run: "ci/upload_conda.sh"
