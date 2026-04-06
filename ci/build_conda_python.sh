@@ -4,9 +4,6 @@
 
 set -euo pipefail
 
-rapids-mamba-retry update --all -y -n base
-conda install -y conda-build
-
 # install expected Python version
 PYTHON_MAJOR_VERSION=${PYTHON_VERSION%%.*}
 PYTHON_MINOR_VERSION=${PYTHON_VERSION#*.}

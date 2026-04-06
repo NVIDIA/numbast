@@ -125,6 +125,12 @@ jobs:
           # renovate: datasource=github-releases depName=rapidsai/sccache
           SCCACHE_VERSION: 0.14.0-rapids.1
         run: rapids-install-sccache
+      - name: Update conda and install conda build
+        run: |
+          set -x
+          # Is update really needed?
+          rapids-mamba-retry update --all -y -n base
+          conda install -y conda-build
       - name: Standardize repository information
         run: |
           echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
