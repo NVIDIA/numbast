@@ -114,7 +114,6 @@ jobs:
           mkdir gha-tools
           curl -fsSL https://github.com/rapidsai/gha-tools/archive/refs/tags/v0.0.198.tar.gz | \
           tar -xz -C gha-tools --strip-components 1 -f -
-          ls -lh gha-tools/tools
       - name: Add RAPIDS gha-tools to PATH
         run: echo "${GITHUB_WORKSPACE}/gha-tools/tools" | tee -a "${GITHUB_PATH}"
       - name: Prepare conda rc file

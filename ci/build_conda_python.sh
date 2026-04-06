@@ -4,8 +4,6 @@
 
 set -euo pipefail
 
-# chmod +x gha-tools/tools/rapids-*
-
 SCCACHE_VERSION="${SCCACHE_VER}" rapids-install-sccache
 
 rapids-mamba-retry update --all -y -n base
