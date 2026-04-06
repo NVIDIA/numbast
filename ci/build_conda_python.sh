@@ -4,10 +4,7 @@
 
 set -euo pipefail
 
-chmod +x gha-tools/tools/rapids-*
-
-curl -fsSL "https://raw.githubusercontent.com/rapidsai/ci-imgs/v26.06.00a/context/condarc.tmpl" | \
-envsubst | tee ~/.condarc
+# chmod +x gha-tools/tools/rapids-*
 
 SCCACHE_VERSION="${SCCACHE_VER}" rapids-install-sccache
 
