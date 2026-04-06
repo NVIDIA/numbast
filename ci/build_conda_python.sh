@@ -4,8 +4,6 @@
 
 set -euo pipefail
 
-SCCACHE_VERSION="${SCCACHE_VER}" rapids-install-sccache
-
 rapids-mamba-retry update --all -y -n base
 conda install -y conda-build
 

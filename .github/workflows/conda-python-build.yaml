@@ -120,6 +120,11 @@ jobs:
         run: envsubst < ci/condarc.tmpl | tee ~/.condarc
       - name: Mark workspace safe for the git command
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install sccache
+        env:
+          # renovate: datasource=github-releases depName=rapidsai/sccache
+          SCCACHE_VERSION: 0.14.0-rapids.1
+        run: rapids-install-sccache
       - name: Standardize repository information
         run: |
           echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
@@ -140,8 +145,6 @@ jobs:
       - name: Build Conda Package
         run: ${{ inputs.script }}
         env:
-          # renovate: datasource=github-releases depName=rapidsai/sccache
-          SCCACHE_VER: 0.14.0-rapids.1
           GH_TOKEN: ${{ github.token }}
           PYTHON_VERSION: ${{ matrix.PY_VER }}
       - name: Upload conda repo
