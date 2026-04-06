@@ -6,9 +6,6 @@ set -euo pipefail
 
 chmod +x gha-tools/tools/rapids-*
 
-apt update
-apt install -y jq gh unzip curl gettext
-
 curl -fsSL "https://raw.githubusercontent.com/rapidsai/ci-imgs/v26.06.00a/context/condarc.tmpl" | \
 envsubst | tee ~/.condarc
 
