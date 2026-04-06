@@ -124,6 +124,7 @@ jobs:
         env:
           # renovate: datasource=github-releases depName=rapidsai/sccache
           SCCACHE_VERSION: 0.14.0-rapids.1
+          GH_TOKEN: ${{ github.token }}
         run: rapids-install-sccache
       - name: Update conda and install conda build
         run: |
