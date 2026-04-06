@@ -131,6 +131,19 @@ jobs:
           # Is update really needed?
           rapids-mamba-retry update --all -y -n base
           conda install -y conda-build
+      - name: Install python
+        env:
+          PYTHON_VERSION: ${{ matrix.PY_VER }}
+        run: |
+          PYTHON_MAJOR_VERSION=${PYTHON_VERSION%%.*}
+          PYTHON_MINOR_VERSION=${PYTHON_VERSION#*.}
+          PYTHON_UPPER_BOUND="${PYTHON_MAJOR_VERSION}.$((PYTHON_MINOR_VERSION+1)).0a0"
+          if [[ "${PYTHON_MINOR_VERSION}" -gt 12 ]]; then
+              PYTHON_ABI_TAG="cp${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}"
+          else
+              PYTHON_ABI_TAG="cpython"
+          fi
+          rapids-mamba-retry install -y -n base "python>=${PYTHON_VERSION},<${PYTHON_UPPER_BOUND}=*_${PYTHON_ABI_TAG}"
       - name: Standardize repository information
         run: |
           echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
@@ -152,7 +165,6 @@ jobs:
         run: ${{ inputs.script }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PYTHON_VERSION: ${{ matrix.PY_VER }}
       - name: Upload conda repo
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

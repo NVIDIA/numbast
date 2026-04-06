@@ -4,17 +4,6 @@
 
 set -euo pipefail
 
-# install expected Python version
-PYTHON_MAJOR_VERSION=${PYTHON_VERSION%%.*}
-PYTHON_MINOR_VERSION=${PYTHON_VERSION#*.}
-PYTHON_UPPER_BOUND="${PYTHON_MAJOR_VERSION}.$((PYTHON_MINOR_VERSION+1)).0a0"
-if [[ "${PYTHON_MINOR_VERSION}" -gt 12 ]]; then
-    PYTHON_ABI_TAG="cp${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}"
-else
-    PYTHON_ABI_TAG="cpython"
-fi
-rapids-mamba-retry install -y -n base "python>=${PYTHON_VERSION},<${PYTHON_UPPER_BOUND}=*_${PYTHON_ABI_TAG}"
-
 source rapids-configure-sccache
 
 source rapids-date-string
