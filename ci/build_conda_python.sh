@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# Verbose sccache logging (S3 errors, cache keys). Remove or unset after debugging.
+export SCCACHE_LOG=debug
+
 source rapids-configure-sccache
 
 source rapids-date-string
