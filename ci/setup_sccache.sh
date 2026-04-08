@@ -1,10 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Verbose sccache logging (S3 errors, cache keys). Remove or unset after debugging.
-export SCCACHE_LOG=debug
-exit 1
-
 export CMAKE_CUDA_COMPILER_LAUNCHER=sccache
 export CMAKE_CXX_COMPILER_LAUNCHER=sccache
 export CMAKE_C_COMPILER_LAUNCHER=sccache

@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-# Verbose sccache logging (S3 errors, cache keys). Remove or unset after debugging.
-export SCCACHE_LOG=debug
+# Maximum sccache verbosity (includes per-request / storage detail). Remove after debugging.
+export SCCACHE_LOG=trace
 
 source rapids-configure-sccache
 
