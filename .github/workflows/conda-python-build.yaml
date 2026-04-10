@@ -142,12 +142,12 @@ jobs:
           SCCACHE_VERSION: 0.14.0-rapids.1
           GH_TOKEN: ${{ github.token }}
         run: rapids-install-sccache
-      - name: Cache conda caches
-        id: cache-conda
-        uses: actions/cache@v5
-        with:
-          path: /opt/conda/pkgs
-          key: conda-cache-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
+      # - name: Cache conda caches
+      #   id: cache-conda
+      #   uses: actions/cache@v5
+      #   with:
+      #     path: /opt/conda/pkgs
+      #     key: conda-cache-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
       - name: Check conda cache
         if: steps.cache-conda.outputs.cache-hit == 'true'
         run: |
