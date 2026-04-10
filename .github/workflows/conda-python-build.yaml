@@ -148,11 +148,11 @@ jobs:
       #   with:
       #     path: /opt/conda/pkgs
       #     key: conda-cache-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
-      - name: Check conda cache
-        if: steps.cache-conda.outputs.cache-hit == 'true'
-        run: |
-          ls -lh /opt/conda/pkgs
-          du -sh /opt/conda/pkgs
+      # - name: Check conda cache
+      #   if: steps.cache-conda.outputs.cache-hit == 'true'
+      #   run: |
+      #     ls -lh /opt/conda/pkgs
+      #     du -sh /opt/conda/pkgs
       - name: Update conda and install conda build
         run: |
           set -x
@@ -194,7 +194,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: /github/home/.cache/sccache
-          key: sccache-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
+          key: 2-sccache-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
       - name: Check sccache
         if: steps.cache-sccache.outputs.cache-hit == 'true'
         run: |
