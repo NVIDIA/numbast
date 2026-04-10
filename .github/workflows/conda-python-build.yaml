@@ -27,6 +27,10 @@ on:
       upload_to_conda:
         type: boolean
         required: false
+      sccache_local_only:
+        description: "Use sccache on local disk only (no S3); use with Actions cache of ~/.cache/sccache to verify hits."
+        type: boolean
+        default: true
 defaults:
   run:
     shell: bash
@@ -90,6 +94,7 @@ jobs:
       RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
       RAPIDS_CONDA_BLD_OUTPUT_DIR: /tmp/conda-bld-output
       RAPIDS_CONDA_BLD_ROOT_DIR: /tmp/conda-bld-workspace
+      NUMBAST_SCCACHE_LOCAL_ONLY: ${{ inputs.sccache_local_only && '1' || '0' }}
     container:
       image: condaforge/miniforge3:26.1.1-3
       env:
@@ -105,10 +110,21 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
           fetch-depth: 0
+      - name: Cache apt archives
+        uses: actions/cache@v5
+        with:
+          path: /var/cache/apt/archives
+          key: apt-archives-${{ matrix.ARCH }}-${{ hashFiles('.github/workflows/conda-python-build.yaml') }}
+          restore-keys: |
+            apt-archives-${{ matrix.ARCH }}-
       - name: Install required packages
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          apt update
-          apt install -y jq gh unzip curl gettext
+          set -euo pipefail
+          rm -f /etc/apt/apt.conf.d/docker-clean
+          apt-get update
+          apt-get install -y jq gh unzip curl gettext
       - name: Add Rapids tools
         run: |
           mkdir gha-tools
@@ -126,6 +142,17 @@ jobs:
           SCCACHE_VERSION: 0.14.0-rapids.1
           GH_TOKEN: ${{ github.token }}
         run: rapids-install-sccache
+      # - name: Cache conda caches
+      #   id: cache-conda
+      #   uses: actions/cache@v5
+      #   with:
+      #     path: /opt/conda/pkgs
+      #     key: conda-cache-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
+      # - name: Check conda cache
+      #   if: steps.cache-conda.outputs.cache-hit == 'true'
+      #   run: |
+      #     ls -lh /opt/conda/pkgs
+      #     du -sh /opt/conda/pkgs
       - name: Update conda and install conda build
         run: |
           set -x
@@ -162,6 +189,18 @@ jobs:
           echo "GIT_DESCRIBE_TAG: ${GIT_DESCRIBE_TAG}"
           echo "git describe: $(git describe)"
           echo "git count commits since tag: $(git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count)"
+      - name: Cache sccache
+        id: cache-sccache
+        uses: actions/cache@v5
+        with:
+          path: /github/home/.cache/sccache
+          key: 2-sccache-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
+      - name: Check sccache
+        if: steps.cache-sccache.outputs.cache-hit == 'true'
+        run: |
+          set -x
+          ls -lh /github/home/.cache/sccache
+          du -sh /github/home/.cache/sccache
       - name: Build Conda Package
         run: ${{ inputs.script }}
         env:

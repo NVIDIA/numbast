@@ -4,7 +4,16 @@
 
 set -euo pipefail
 
+# Maximum sccache verbosity (includes per-request / storage detail). Remove after debugging.
+export SCCACHE_LOG=trace
+
 source rapids-configure-sccache
+
+# Disk-only cache (no S3). Set NUMBAST_SCCACHE_LOCAL_ONLY=1 from CI or locally.
+if [[ "${NUMBAST_SCCACHE_LOCAL_ONLY:-0}" == "1" ]]; then
+  unset SCCACHE_BUCKET SCCACHE_REGION SCCACHE_S3_KEY_PREFIX SCCACHE_S3_USE_SSL SCCACHE_S3_NO_CREDENTIALS
+  export SCCACHE_DIR="${SCCACHE_DIR:-${HOME}/.cache/sccache}"
+fi
 
 source rapids-date-string
 
