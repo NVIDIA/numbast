@@ -27,6 +27,10 @@ on:
       upload_to_conda:
         type: boolean
         required: false
+      sccache_local_only:
+        description: "Use sccache on local disk only (no S3); use with Actions cache of ~/.cache/sccache to verify hits."
+        type: boolean
+        default: true
 defaults:
   run:
     shell: bash
@@ -90,6 +94,7 @@ jobs:
       RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
       RAPIDS_CONDA_BLD_OUTPUT_DIR: /tmp/conda-bld-output
       RAPIDS_CONDA_BLD_ROOT_DIR: /tmp/conda-bld-workspace
+      NUMBAST_SCCACHE_LOCAL_ONLY: ${{ inputs.sccache_local_only && '1' || '0' }}
     container:
       image: condaforge/miniforge3:26.1.1-3
       env:
