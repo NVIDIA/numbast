@@ -91,6 +91,22 @@ NUMBA_TO_CTYPE_MAPS = {
 }
 
 
+def register_cxx_type(cxx_name: str, numba_type: nbtypes.Type):
+    """
+    Register an external C++ type in numbast's type registry.
+
+    After registration, ``to_numba_type(cxx_name)`` returns *numba_type*
+    instead of ``Opaque``. This is useful for binding types that were not
+    parsed by ast_canopy (e.g. third-party library types whose layout is
+    known but whose headers are too complex to parse).
+
+    Parameters:
+        cxx_name (str): The C++ type name as it appears in function signatures.
+        numba_type (nbtypes.Type): The Numba type to map it to.
+    """
+    CTYPE_MAPS[cxx_name] = numba_type
+
+
 def register_enum_type(
     cxx_name: str,
     e: type[Enum],

@@ -138,6 +138,7 @@ def bind_cxx_struct_ctor(
 
 def bind_cxx_struct_ctors(
     struct_decl: Struct,
+    struct_name: str,
     S: object,
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
@@ -149,6 +150,8 @@ def bind_cxx_struct_ctors(
 
     struct_decl: Struct
         The declaration of the struct in CXX
+    struct_name: str
+        The C++ name to use in shim code (may differ from struct_decl.name).
     S: object
         The Python API of the struct
     s_type: numba.types.Type
@@ -160,7 +163,7 @@ def bind_cxx_struct_ctors(
     ctor_params: list[list[Any]] = []
     for ctor in struct_decl.constructors():
         param_types = bind_cxx_struct_ctor(
-            ctor, struct_decl.name, s_type, S, shim_writer
+            ctor, struct_name, s_type, S, shim_writer
         )
         if param_types is not None:
             ctor_params.append(param_types)
@@ -226,17 +229,21 @@ def bind_cxx_struct_conversion_opeartor(
 
 
 def bind_cxx_struct_conversion_opeartors(
-    struct_decl: Struct, s_type: nbtypes.Type, shim_writer: ShimWriter
+    struct_decl: Struct,
+    struct_name: str,
+    s_type: nbtypes.Type,
+    shim_writer: ShimWriter,
 ):
     """Bind all conversion operators for a C++ struct."""
     for conv in struct_decl.conversion_operators():
         bind_cxx_struct_conversion_opeartor(
-            conv, struct_decl.name, s_type, shim_writer
+            conv, struct_name, s_type, shim_writer
         )
 
 
 def bind_cxx_struct_regular_method(
     struct_decl: Struct,
+    struct_name: str,
     method_decl: StructMethod,
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
@@ -266,7 +273,7 @@ def bind_cxx_struct_regular_method(
 
     overrides = None
     if arg_intent:
-        overrides = arg_intent.get(f"{struct_decl.name}.{method_decl.name}")
+        overrides = arg_intent.get(f"{struct_name}.{method_decl.name}")
 
     if overrides is None:
         param_types = [
@@ -336,7 +343,7 @@ def bind_cxx_struct_regular_method(
 
     shim = make_struct_regular_method_shim(
         shim_name=shim_func_name,
-        struct_name=struct_decl.name,
+        struct_name=struct_name,
         method_name=method_decl.name,
         return_type=method_decl.return_type.unqualified_non_ref_type_name,
         params=method_decl.params,
@@ -363,6 +370,7 @@ def bind_cxx_struct_regular_method(
 
 def bind_cxx_struct_regular_methods(
     struct_decl: Struct,
+    struct_name: str,
     s_type: nbtypes.Type,
     shim_writer: ShimWriter,
     *,
@@ -387,7 +395,12 @@ def bind_cxx_struct_regular_methods(
 
     for method in struct_decl.regular_member_functions():
         sig = bind_cxx_struct_regular_method(
-            struct_decl, method, s_type, shim_writer, arg_intent=arg_intent
+            struct_decl,
+            struct_name,
+            method,
+            s_type,
+            shim_writer,
+            arg_intent=arg_intent,
         )
         method_overloads[method.name].append(sig)
 
@@ -414,6 +427,7 @@ def bind_cxx_struct(
     ] = {},  # XXX: this should be just a list of aliases
     *,
     arg_intent: dict | None = None,
+    name: str | None = None,
 ) -> object:
     """
     Create and register a Numba API type and associated bindings for a C++ struct.
@@ -433,30 +447,38 @@ def bind_cxx_struct(
             Mapping from the struct's canonical name to alternate names that should resolve to the same type.
         arg_intent: dict | None, optional
             Optional overrides that guide argument intent (in/out/inout) and influence method overload lowering.
+        name: str | None, optional
+            Override the C++ name used for this struct in the Numba type system and shim code.
+            When provided, this name is used instead of struct_decl.name for type registration,
+            shim generation, and the Python API class name. Useful for binding class template
+            specializations where struct_decl.name is the unqualified template name (e.g. "Matrix")
+            but the shim needs the fully qualified specialization (e.g. "Eigen::Matrix<float,3,1>").
 
     Returns:
         S: object
             The Python-facing Numba API type for the bound C++ struct.
     """
 
+    struct_name = name if name is not None else struct_decl.name
+
     # Typing
     class S_type(parent_type):
         def __init__(self, decl):
-            super().__init__(name=f"{struct_decl.name}")
+            super().__init__(name=struct_name)
             self.alignof_ = struct_decl.alignof_
             self.bitwidth = struct_decl.sizeof_ * 8
 
     s_type = S_type(struct_decl)
 
     # Python API
-    S = type(struct_decl.name, (), {"_nbtype": s_type})
+    S = type(struct_name, (), {"_nbtype": s_type})
 
     # Any type that was parsed from C++ should be added to type record:
     # It also needs to happen before method typings - because copy constructors
     # needs to know the type of itself even if the definition is incomplete.
-    C2N[struct_decl.name] = s_type
-    if struct_decl.name in aliases:
-        for alias in aliases[struct_decl.name]:
+    C2N[struct_name] = s_type
+    if struct_name in aliases:
+        for alias in aliases[struct_name]:
             C2N[alias] = s_type
 
     # Data Model
@@ -487,7 +509,7 @@ def bind_cxx_struct(
         # Method, Attributes Typing and Lowering:
 
         method_templates = bind_cxx_struct_regular_methods(
-            struct_decl, s_type, shim_writer, arg_intent=arg_intent
+            struct_decl, struct_name, s_type, shim_writer, arg_intent=arg_intent
         )
 
         public_fields_tys = {
@@ -519,11 +541,13 @@ def bind_cxx_struct(
 
     # ----------------------------------------------------------------------------------
     # Constructors:
-    bind_cxx_struct_ctors(struct_decl, S, s_type, shim_writer)
+    bind_cxx_struct_ctors(struct_decl, struct_name, S, s_type, shim_writer)
 
     # ----------------------------------------------------------------------------------
     # Conversion operators:
-    bind_cxx_struct_conversion_opeartors(struct_decl, s_type, shim_writer)
+    bind_cxx_struct_conversion_opeartors(
+        struct_decl, struct_name, s_type, shim_writer
+    )
 
     # Return the handle to the type in Numba
     return S
