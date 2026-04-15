@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+# NUMBAST_RETVAL_ALIGN_FIX_APPLIED
 from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
 
@@ -107,6 +108,34 @@ class FunctionCallConv(BaseCallConv):
         else:
             retval_ty = context.get_value_type(cxx_return_type)
             retval_ptr = builder.alloca(retval_ty, name="retval")
+            # Enforce CUDA vector-type alignment on every alloca.
+            #
+            # Background: CUDA vector types (float2, float4, int4, …) are
+            # declared with __align__(N) in the CUDA headers, meaning the
+            # hardware and PTX ISA require the pointer to be N-byte aligned
+            # (float2 → 8 B, float4 → 16 B). When Numbast lowers these types
+            # into LLVM IR they become anonymous structs, e.g. float2 becomes
+            # {float, float}. LLVM computes the ABI alignment of a struct as
+            # the maximum alignment of its members — 4 B for a struct of
+            # floats — which is *less* than the CUDA-required 8 B. builder.alloca
+            # without an explicit alignment adopts that 4-byte default.
+            #
+            # The NVRTC-compiled shim accesses the slot with a vector
+            # instruction (e.g. ld/st.v2.f32 for float2) which requires
+            # 8-byte alignment. Passing a 4-byte-aligned pointer causes
+            # cudaErrorMisalignedAddress at runtime.
+            #
+            # Fix: after every alloca, raise the alignment to
+            #   max(abi_alignment(type), min(sizeof(type), 16))
+            # Taking the max with abi_alignment never reduces alignment below
+            # what LLVM already computed. min(sizeof, 16) captures the natural
+            # alignment for all standard CUDA vectors (float2=8, float4=16)
+            # while the cap at 16 prevents over-aligning large user structs
+            # that happen to be bigger than 16 bytes.
+            _dl = context.target_data
+            retval_ptr.align = max(
+                _dl.abi_alignment(retval_ty), min(_dl.abi_size(retval_ty), 16)
+            )
 
         # 2. Prepare arguments
         if self._intent_plan is None:
@@ -154,6 +183,10 @@ class FunctionCallConv(BaseCallConv):
                     ptrs.append(arg)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
+                    _dl = context.target_data
+                    ptr.align = max(  # see retval_ptr comment above
+                        _dl.abi_alignment(vty), min(_dl.abi_size(vty), 16)
+                    )
                     builder.store(
                         arg, ptr, align=getattr(argty, "alignof_", None)
                     )
@@ -175,6 +208,10 @@ class FunctionCallConv(BaseCallConv):
                     out_nbty = self._out_return_types[out_pos]
                     vty = context.get_value_type(out_nbty)
                     ptr = cgutils.alloca_once(builder, vty)
+                    _dl = context.target_data
+                    ptr.align = max(  # see retval_ptr comment above
+                        _dl.abi_alignment(vty), min(_dl.abi_size(vty), 16)
+                    )
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
                     out_return_ptrs.append((out_nbty, ptr))
@@ -194,6 +231,10 @@ class FunctionCallConv(BaseCallConv):
                     arg_pointer_types.append(vty)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
+                    _dl = context.target_data
+                    ptr.align = max(  # see retval_ptr comment above
+                        _dl.abi_alignment(vty), min(_dl.abi_size(vty), 16)
+                    )
                     builder.store(
                         arg, ptr, align=getattr(argty, "alignof_", None)
                     )
