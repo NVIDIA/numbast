@@ -108,34 +108,28 @@ class FunctionCallConv(BaseCallConv):
         else:
             retval_ty = context.get_value_type(cxx_return_type)
             retval_ptr = builder.alloca(retval_ty, name="retval")
-            # Enforce CUDA vector-type alignment on every alloca.
+            # Use the Numba type's alignof_ to set the alloca alignment.
             #
-            # Background: CUDA vector types (float2, float4, int4, …) are
-            # declared with __align__(N) in the CUDA headers, meaning the
-            # hardware and PTX ISA require the pointer to be N-byte aligned
-            # (float2 → 8 B, float4 → 16 B). When Numbast lowers these types
-            # into LLVM IR they become anonymous structs, e.g. float2 becomes
-            # {float, float}. LLVM computes the ABI alignment of a struct as
-            # the maximum alignment of its members — 4 B for a struct of
-            # floats — which is *less* than the CUDA-required 8 B. builder.alloca
-            # without an explicit alignment adopts that 4-byte default.
-            #
-            # The NVRTC-compiled shim accesses the slot with a vector
-            # instruction (e.g. ld/st.v2.f32 for float2) which requires
-            # 8-byte alignment. Passing a 4-byte-aligned pointer causes
+            # LLVM computes struct ABI alignment as the max alignment of its
+            # members.  For CUDA vector types (float2, float4, uchar4, …)
+            # declared with __align__(N) in the CUDA headers, N can exceed
+            # the member alignment: float2 is {float,float} with member
+            # alignment 4 B but __align__(8).  LLVM therefore assigns a 4 B
+            # alloca, while the NVRTC shim uses a vector instruction
+            # (ld/st.v2.f32) that requires 8 B alignment, causing
             # cudaErrorMisalignedAddress at runtime.
             #
-            # Fix: after every alloca, raise the alignment to
-            #   max(abi_alignment(type), min(sizeof(type), 16))
-            # Taking the max with abi_alignment never reduces alignment below
-            # what LLVM already computed. min(sizeof, 16) captures the natural
-            # alignment for all standard CUDA vectors (float2=8, float4=16)
-            # while the cap at 16 prevents over-aligning large user structs
-            # that happen to be bigger than 16 bytes.
-            _dl = context.target_data
-            retval_ptr.align = max(
-                _dl.abi_alignment(retval_ty), min(_dl.abi_size(retval_ty), 16)
-            )
+            # Numbast's struct binder already sets alignof_ on user-defined
+            # bound structs (propagated from ast_canopy).  For built-in CUDA
+            # vector types, callers must set alignof_ on the Numba type when
+            # registering it in CTYPE_MAPS.  When alignof_ is present it is
+            # used here, matching the convention already applied to loads and
+            # stores (getattr(argty, "alignof_", None)).  When absent, LLVM's
+            # default ABI alignment is used, which is correct for scalars and
+            # structs without an explicit __align__ attribute.
+            _nb_align = getattr(cxx_return_type, "alignof_", None)
+            if _nb_align is not None:
+                retval_ptr.align = _nb_align
 
         # 2. Prepare arguments
         if self._intent_plan is None:
@@ -183,12 +177,11 @@ class FunctionCallConv(BaseCallConv):
                     ptrs.append(arg)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
-                    _dl = context.target_data
-                    ptr.align = max(  # see retval_ptr comment above
-                        _dl.abi_alignment(vty), min(_dl.abi_size(vty), 16)
-                    )
+                    _nb_align = getattr(argty, "alignof_", None)
+                    if _nb_align is not None:
+                        ptr.align = _nb_align  # see retval_ptr comment above
                     builder.store(
-                        arg, ptr, align=getattr(argty, "alignof_", None)
+                        arg, ptr, align=_nb_align
                     )
                     ptrs.append(ptr)
         else:
@@ -208,10 +201,9 @@ class FunctionCallConv(BaseCallConv):
                     out_nbty = self._out_return_types[out_pos]
                     vty = context.get_value_type(out_nbty)
                     ptr = cgutils.alloca_once(builder, vty)
-                    _dl = context.target_data
-                    ptr.align = max(  # see retval_ptr comment above
-                        _dl.abi_alignment(vty), min(_dl.abi_size(vty), 16)
-                    )
+                    _nb_align = getattr(out_nbty, "alignof_", None)
+                    if _nb_align is not None:
+                        ptr.align = _nb_align  # see retval_ptr comment above
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
                     out_return_ptrs.append((out_nbty, ptr))
@@ -231,12 +223,11 @@ class FunctionCallConv(BaseCallConv):
                     arg_pointer_types.append(vty)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
-                    _dl = context.target_data
-                    ptr.align = max(  # see retval_ptr comment above
-                        _dl.abi_alignment(vty), min(_dl.abi_size(vty), 16)
-                    )
+                    _nb_align = getattr(argty, "alignof_", None)
+                    if _nb_align is not None:
+                        ptr.align = _nb_align  # see retval_ptr comment above
                     builder.store(
-                        arg, ptr, align=getattr(argty, "alignof_", None)
+                        arg, ptr, align=_nb_align
                     )
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
