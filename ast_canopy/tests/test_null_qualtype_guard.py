@@ -38,7 +38,10 @@ def test_dependent_member_types_do_not_crash(source_path):
     """Parsing must not segfault on deeply dependent member types even
     when Clang's type resolution falls back to null QualTypes."""
     decls = parse_declarations_from_source(
-        source_path, [source_path], "sm_80", bypass_parse_error=True,
+        source_path,
+        [source_path],
+        "sm_80",
+        bypass_parse_error=True,
     )
     assert decls is not None
 
@@ -47,7 +50,10 @@ def test_plain_struct_still_parsed(source_path):
     """The presence of dependent/null-type fields must not prevent
     surrounding non-dependent structs from being reported."""
     decls = parse_declarations_from_source(
-        source_path, [source_path], "sm_80", bypass_parse_error=True,
+        source_path,
+        [source_path],
+        "sm_80",
+        bypass_parse_error=True,
     )
     names = [s.name for s in decls.structs]
     assert "Plain" in names, names
