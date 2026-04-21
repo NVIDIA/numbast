@@ -38,8 +38,12 @@ void TypedefMatcher::run(const MatchFinder::MatchResult &Result) {
       std::cout << source_range << std::endl;
       std::cout << std::endl;
 #endif
-      payload->decls->typedefs.push_back(
-          Typedef(TD, payload->record_id_to_name));
+      try {
+        payload->decls->typedefs.push_back(
+            Typedef(TD, payload->record_id_to_name));
+      } catch (...) {
+        // Skip typedefs that cannot be processed.
+      }
     }
   }
 }

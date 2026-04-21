@@ -21,7 +21,7 @@ ClassTemplateSpecialization::ClassTemplateSpecialization(
   const auto &tparam_list = CTSD->getTemplateArgs();
   actual_template_arguments.reserve(tparam_list.size());
 
-  for (auto i = 0; i < tparam_list.size(); i++) {
+  for (unsigned i = 0; i < tparam_list.size(); i++) {
     const auto &targ = tparam_list[i];
 
     clang::TemplateArgument::ArgKind kind = targ.getKind();
@@ -70,7 +70,12 @@ ClassTemplateSpecialization::ClassTemplateSpecialization(
       break;
     }
     default:
-      throw std::runtime_error("Unsupported template argument kind");
+      // Gracefully handle template argument kinds we don't yet support
+      // (e.g. Pack, Template, Expression, NullPtr, StructuralValue).
+      // Use a placeholder string so downstream code still sees the right
+      // number of arguments.
+      actual_template_arguments.push_back("<unsupported>");
+      break;
     }
   }
 }

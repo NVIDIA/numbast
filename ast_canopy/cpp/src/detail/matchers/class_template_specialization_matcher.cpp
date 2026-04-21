@@ -44,9 +44,16 @@ void ClassTemplateSpecializationCallback::run(
 
   {
 
-    if (!CTSD->isImplicit())
-      payload->decls->class_template_specializations.push_back(
-          ClassTemplateSpecialization(CTSD));
+    if (!CTSD->isImplicit()) {
+      try {
+        payload->decls->class_template_specializations.push_back(
+            ClassTemplateSpecialization(CTSD));
+      } catch (...) {
+        // Skip specializations that cannot be processed (e.g. those with
+        // unsupported template argument kinds or dependent types that
+        // trigger issues during Record construction).
+      }
+    }
   }
 }
 

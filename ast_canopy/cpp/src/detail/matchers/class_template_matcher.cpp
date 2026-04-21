@@ -38,8 +38,15 @@ void ClassTemplateCallback::run(const MatchFinder::MatchResult &Result) {
     std::cout << CTD->getNameAsString() << std::endl;
 #endif
 
-    if (!CTD->isImplicit())
-      payload->decls->class_templates.push_back(ClassTemplate(CTD));
+    if (!CTD->isImplicit()) {
+      try {
+        payload->decls->class_templates.push_back(ClassTemplate(CTD));
+      } catch (...) {
+        // Skip class templates whose declarations cannot be fully processed
+        // (e.g. templates with unsupported parameter kinds or complex
+        // dependent types that trigger issues during construction).
+      }
+    }
   }
 }
 

@@ -55,8 +55,13 @@ void RecordCallback::run(const MatchFinder::MatchResult &Result) {
 
       auto &record_id_map = *payload->record_id_to_name;
       record_id_map[id] = rename_for_unnamed;
-      payload->decls->records.push_back(Record(
-          RD, RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE, rename_for_unnamed));
+      try {
+        payload->decls->records.push_back(Record(
+            RD, RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE, rename_for_unnamed));
+      } catch (...) {
+        // Skip records that cannot be fully processed (e.g. records with
+        // dependent child declarations that trigger issues).
+      }
 
 #ifndef NDEBUG
       std::string source_range =

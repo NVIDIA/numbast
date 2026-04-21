@@ -27,8 +27,14 @@ void FunctionCallback::run(const MatchFinder::MatchResult &Result) {
                   }))
 
   {
-    if (!FD->isImplicit())
-      payload->decls->functions.push_back(Function(FD));
+    if (!FD->isImplicit()) {
+      try {
+        payload->decls->functions.push_back(Function(FD));
+      } catch (...) {
+        // Skip functions that cannot be processed (e.g. those with
+        // dependent types or other issues during construction).
+      }
+    }
   }
 }
 

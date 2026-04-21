@@ -39,8 +39,13 @@ void FunctionTemplateCallback::run(const MatchFinder::MatchResult &Result) {
     std::cout << FTD->getNameAsString() << std::endl;
 #endif
 
-    if (!FTD->isImplicit())
-      payload->decls->function_templates.push_back(FunctionTemplate(FTD));
+    if (!FTD->isImplicit()) {
+      try {
+        payload->decls->function_templates.push_back(FunctionTemplate(FTD));
+      } catch (...) {
+        // Skip function templates that cannot be processed.
+      }
+    }
   }
 }
 

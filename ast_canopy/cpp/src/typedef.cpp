@@ -23,13 +23,33 @@ Typedef::Typedef(const clang::TypedefDecl *TD,
   clang::QualType qd = TD->getUnderlyingType();
   clang::RecordDecl *underlying_record_decl = qd->getAsCXXRecordDecl();
 
-  underlying_name = record_id_to_name->at(underlying_record_decl->getID());
+  if (underlying_record_decl) {
+    auto it = record_id_to_name->find(underlying_record_decl->getID());
+    if (it != record_id_to_name->end()) {
+      underlying_name = it->second;
+    } else {
+      // The underlying record was not captured by the record matcher (e.g. it
+      // is a class template instantiation, comes from a non-retained file, or
+      // lives inside a partial specialization).  Fall back to the name Clang
+      // gives us directly.
+      underlying_name = underlying_record_decl->getNameAsString();
+      if (underlying_name.empty()) {
+        underlying_name = underlying_record_decl->getQualifiedNameAsString();
+      }
+    }
+  } else {
+    // The underlying type is not a CXXRecordDecl (e.g. a built-in or
+    // dependent type).  Use the printed type name as a fallback.
+    underlying_name = qd.getAsString();
+  }
 
 #ifndef NDEBUG
 
-  std::cout << name << std::endl;
-  std::cout << underlying_record_decl->getNameAsString() << std::endl;
-  std::cout << underlying_record_decl->getID() << std::endl;
+  if (underlying_record_decl) {
+    std::cout << name << std::endl;
+    std::cout << underlying_record_decl->getNameAsString() << std::endl;
+    std::cout << underlying_record_decl->getID() << std::endl;
+  }
   std::cout << "TYPEDEF: "
             << "name: " << name << " underlying_name: " << underlying_name
             << std::endl;

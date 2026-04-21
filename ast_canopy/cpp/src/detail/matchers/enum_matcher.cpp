@@ -25,7 +25,12 @@ void EnumCallback::run(const MatchFinder::MatchResult &Result) {
 
   {
 
-    payload->decls->enums.push_back(Enum(ED));
+    try {
+      payload->decls->enums.push_back(Enum(ED));
+    } catch (...) {
+      // Skip enums that cannot be processed (e.g. forward-declared enums
+      // with no integer type).
+    }
   }
 }
 

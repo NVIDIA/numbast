@@ -18,26 +18,23 @@ namespace ast_canopy {
 Template::Template(const clang::TemplateParameterList *TPL)
     : num_min_required_args(TPL->getMinRequiredArguments()) {
 
-  std::transform(
-      TPL->begin(), TPL->end(), std::back_inserter(template_parameters),
-      [](const clang::NamedDecl *ND) {
-        if (const clang::TemplateTypeParmDecl *TPD =
-                clang::dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
-          return TemplateParam(TPD);
-        } else if (const clang::NonTypeTemplateParmDecl *TPD =
-                       clang::dyn_cast<clang::NonTypeTemplateParmDecl>(ND)) {
-          return TemplateParam(TPD);
-        } else if (const clang::TemplateDecl *TD =
-                       clang::dyn_cast<clang::TemplateDecl>(ND)) {
-          if (const clang::TemplateTemplateParmDecl *TPD =
-                  clang::dyn_cast<clang::TemplateTemplateParmDecl>(TD)) {
-            return TemplateParam(TPD);
-          }
-        }
-
-        // Shouldn't fall through
-        throw std::runtime_error(ND->getNameAsString() +
-                                 " is unknown template parameter type");
-      });
+  for (const clang::NamedDecl *ND : *TPL) {
+    if (const clang::TemplateTypeParmDecl *TPD =
+            clang::dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
+      template_parameters.push_back(TemplateParam(TPD));
+    } else if (const clang::NonTypeTemplateParmDecl *TPD =
+                   clang::dyn_cast<clang::NonTypeTemplateParmDecl>(ND)) {
+      template_parameters.push_back(TemplateParam(TPD));
+    } else if (const clang::TemplateTemplateParmDecl *TPD =
+                   clang::dyn_cast<clang::TemplateTemplateParmDecl>(ND)) {
+      // Template template parameters (e.g. template<template<class> class X>).
+      // Use the TemplateTemplateParmDecl overload which now handles this
+      // gracefully instead of throwing.
+      template_parameters.push_back(TemplateParam(TPD));
+    } else {
+      // Unknown template parameter kind -- skip it rather than crashing.
+      // This can happen with future Clang additions or unusual AST nodes.
+    }
+  }
 }
 } // namespace ast_canopy

@@ -9,6 +9,7 @@
 #include <clang/AST/DeclCXX.h>
 
 #include <algorithm>
+#include <limits>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -54,7 +55,12 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
     // Include all fields regardless of access specifier, downstream
     // tools needs all fields to create type with proper size and alignment.
     if (auto const *FD = clang::dyn_cast<clang::FieldDecl>(D)) {
-      fields.emplace_back(Field(FD, access));
+      try {
+        fields.emplace_back(Field(FD, access));
+      } catch (...) {
+        // Skip fields that cannot be processed (e.g. dependent types in
+        // uninstantiated templates).
+      }
     }
 
     // Skip Non-public function, nested class and template declarations
@@ -63,19 +69,36 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
       if (auto const *MD = clang::dyn_cast<clang::CXXMethodDecl>(D)) {
         if (MD->isImplicit())
           continue;
-        methods.emplace_back(Method(MD));
+        try {
+          methods.emplace_back(Method(MD));
+        } catch (...) {
+          // Skip methods that cannot be processed (e.g. methods with
+          // dependent types that cannot be mangled).
+        }
       }
 
       if (auto const *FTD = clang::dyn_cast<clang::FunctionTemplateDecl>(D)) {
-        templated_methods.emplace_back(FunctionTemplate(FTD));
+        try {
+          templated_methods.emplace_back(FunctionTemplate(FTD));
+        } catch (...) {
+          // Skip function templates that cannot be processed.
+        }
       }
 
       if (auto const *CTD = clang::dyn_cast<clang::ClassTemplateDecl>(D)) {
-        nested_class_templates.emplace_back(ClassTemplate(CTD));
+        try {
+          nested_class_templates.emplace_back(ClassTemplate(CTD));
+        } catch (...) {
+          // Skip nested class templates that cannot be processed.
+        }
       }
 
       if (auto const *R = clang::dyn_cast<clang::CXXRecordDecl>(D)) {
-        nested_records.emplace_back(Record(R, rp));
+        try {
+          nested_records.emplace_back(Record(R, rp));
+        } catch (...) {
+          // Skip nested records that cannot be processed.
+        }
       }
     }
   }
@@ -83,8 +106,16 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   if (rp == RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE) {
     clang::QualType type = RD->getASTContext().getTypeDeclType(RD);
     clang::ASTContext &ctx = RD->getASTContext();
-    sizeof_ = ctx.getTypeSize(type) / ctx.getCharWidth();
-    alignof_ = ctx.getTypeAlign(type) / ctx.getCharWidth();
+    // Guard against dependent or incomplete types whose layout cannot be
+    // computed.  This can happen for records inside class template
+    // specialisations that Clang has not fully instantiated.
+    if (!type->isDependentType() && !type->isIncompleteType()) {
+      sizeof_ = ctx.getTypeSize(type) / ctx.getCharWidth();
+      alignof_ = ctx.getTypeAlign(type) / ctx.getCharWidth();
+    } else {
+      sizeof_ = INVALID_SIZE_OF;
+      alignof_ = INVALID_ALIGN_OF;
+    }
   } else {
     // A record with class template parent is not instantiated, and thus
     // computing size and alignment of such a record is not possible.
