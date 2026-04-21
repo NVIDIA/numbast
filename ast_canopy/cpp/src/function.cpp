@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <memory>
 
 namespace ast_canopy {
 
@@ -27,6 +28,30 @@ execution_space get_execution_space(const clang::FunctionDecl *FD) {
   } else {
     return execution_space::undefined;
   }
+}
+
+/**
+ * @brief Return true if the function has a dependent (unresolved) signature.
+ *
+ * Mangling or querying canonical types on such a function is undefined and
+ * can crash the Clang mangler (segfault).  We detect this upfront so callers
+ * can skip or guard the operation.
+ */
+static bool has_dependent_signature(const clang::FunctionDecl *FD) {
+  if (FD->getReturnType()->isDependentType())
+    return true;
+  for (const auto *P : FD->parameters()) {
+    if (P->getType()->isDependentType())
+      return true;
+  }
+  // Also flag methods whose parent class is dependent.
+  if (const auto *MD = clang::dyn_cast<clang::CXXMethodDecl>(FD)) {
+    if (const auto *Parent = MD->getParent()) {
+      if (Parent->isDependentContext())
+        return true;
+    }
+  }
+  return false;
 }
 
 Function::Function(const clang::FunctionDecl *FD)
@@ -46,25 +71,33 @@ Function::Function(const clang::FunctionDecl *FD)
     this->attributes.insert(attr->getSpelling());
   }
 
-  // Compute itanium mangled name
-  auto &context = FD->getASTContext();
-  auto &diag = context.getDiagnostics();
-  clang::ItaniumMangleContext *MC =
-      clang::ItaniumMangleContext::create(context, diag);
-  llvm::raw_string_ostream OS(mangled_name);
-
-  clang::GlobalDecl GD;
-  if (const clang::CXXConstructorDecl *CCD =
-          clang::dyn_cast<clang::CXXConstructorDecl>(FD)) {
-    GD = clang::GlobalDecl(CCD, clang::Ctor_Complete);
-  } else if (const clang::CXXDestructorDecl *CDD =
-                 clang::dyn_cast<clang::CXXDestructorDecl>(FD)) {
-    GD = clang::GlobalDecl(CDD, clang::Dtor_Complete);
+  // Compute itanium mangled name.
+  // Skip mangling for functions with dependent (unresolved) signatures --
+  // the Clang Itanium mangler can segfault when asked to mangle types that
+  // are still template-dependent (e.g. methods of uninstantiated class
+  // templates such as Eigen::Matrix<Scalar_,...>).
+  if (has_dependent_signature(FD)) {
+    mangled_name = qual_name; // best-effort fallback
   } else {
-    GD = clang::GlobalDecl(FD);
-  }
+    auto &context = FD->getASTContext();
+    auto &diag = context.getDiagnostics();
+    std::unique_ptr<clang::ItaniumMangleContext> MC(
+        clang::ItaniumMangleContext::create(context, diag));
+    llvm::raw_string_ostream OS(mangled_name);
 
-  MC->mangleName(GD, OS);
-  OS.flush();
+    clang::GlobalDecl GD;
+    if (const clang::CXXConstructorDecl *CCD =
+            clang::dyn_cast<clang::CXXConstructorDecl>(FD)) {
+      GD = clang::GlobalDecl(CCD, clang::Ctor_Complete);
+    } else if (const clang::CXXDestructorDecl *CDD =
+                   clang::dyn_cast<clang::CXXDestructorDecl>(FD)) {
+      GD = clang::GlobalDecl(CDD, clang::Dtor_Complete);
+    } else {
+      GD = clang::GlobalDecl(FD);
+    }
+
+    MC->mangleName(GD, OS);
+    OS.flush();
+  }
 }
 } // namespace ast_canopy
