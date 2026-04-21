@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+"""Standalone test for the ``name=`` override on ``bind_cxx_struct``.
+
+For a class template specialization, ``struct_decl.name`` is just the
+unqualified template name (e.g. ``"Vec"``), but the Numba type name,
+CTYPE_MAPS key, and shim code all need the fully qualified
+specialization (e.g. ``"demo::Vec<float, 3>"``). The ``name=`` keyword
+on ``bind_cxx_struct`` lets callers supply the fully-qualified name.
+"""
+
+import os
+
+from numba import types as nbtypes
+from numba.cuda.datamodel.models import StructModel
+
+from ast_canopy import parse_declarations_from_source
+from numbast import bind_cxx_struct, MemoryShimWriter
+from numbast.types import CTYPE_MAPS, to_numba_type
+
+
+def _parse_specialization():
+    header = os.path.join(
+        os.path.dirname(__file__), "data", "sample_name_override.cuh"
+    )
+    decls = parse_declarations_from_source(header, [header], "sm_80")
+    specs = [
+        cts
+        for cts in decls.class_template_specializations
+        if "Vec" in cts.name
+    ]
+    assert specs, "expected Vec<float, 3> specialization to be parsed"
+    return specs[0]
+
+
+def test_specialization_name_is_unqualified_by_default():
+    """Guard: struct_decl.name on the parsed specialization is the short
+    template name. This is the reason the override is needed."""
+    cts = _parse_specialization()
+    assert cts.name == "Vec"
+
+
+def test_bind_without_name_uses_struct_decl_name():
+    """Without ``name=``, numba type name and CTYPE_MAPS key use the
+    unqualified specialization name from struct_decl."""
+    cts = _parse_specialization()
+    shim_writer = MemoryShimWriter("")
+    S = bind_cxx_struct(shim_writer, cts, nbtypes.Type, StructModel)
+
+    assert S._nbtype.name == "Vec"
+    assert CTYPE_MAPS.get("Vec") is S._nbtype
+    assert to_numba_type("Vec") is S._nbtype
+
+
+def test_bind_with_name_uses_override_everywhere():
+    """With ``name=``, the override drives Numba type name, Python API
+    class name, and the CTYPE_MAPS registration key."""
+    cts = _parse_specialization()
+    shim_writer = MemoryShimWriter("")
+    override = "demo::Vec<float, 3>"
+
+    S = bind_cxx_struct(
+        shim_writer, cts, nbtypes.Type, StructModel, name=override,
+    )
+
+    assert S._nbtype.name == override
+    assert S.__name__ == override
+    assert CTYPE_MAPS.get(override) is S._nbtype
+    assert to_numba_type(override) is S._nbtype
