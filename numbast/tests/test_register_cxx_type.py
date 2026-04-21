@@ -10,9 +10,19 @@ of ``Opaque``. This is how external types (e.g. ``Eigen::half``) get
 mapped to ``float16`` when their real headers are too complex to parse.
 """
 
+import pytest
 from numba import types as nbtypes
 
-from numbast.types import register_cxx_type, to_numba_type
+from numbast.types import CTYPE_MAPS, register_cxx_type, to_numba_type
+
+
+@pytest.fixture(autouse=True)
+def _restore_ctype_maps():
+    """Snapshot and restore CTYPE_MAPS so tests don't pollute the global registry."""
+    snapshot = dict(CTYPE_MAPS)
+    yield
+    CTYPE_MAPS.clear()
+    CTYPE_MAPS.update(snapshot)
 
 
 def test_unregistered_type_is_opaque():
