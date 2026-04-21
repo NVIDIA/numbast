@@ -26,9 +26,7 @@ def _parse_specialization():
     )
     decls = parse_declarations_from_source(header, [header], "sm_80")
     specs = [
-        cts
-        for cts in decls.class_template_specializations
-        if "Vec" in cts.name
+        cts for cts in decls.class_template_specializations if "Vec" in cts.name
     ]
     assert specs, "expected Vec<float, 3> specialization to be parsed"
     return specs[0]
@@ -61,7 +59,11 @@ def test_bind_with_name_uses_override_everywhere():
     override = "demo::Vec<float, 3>"
 
     S = bind_cxx_struct(
-        shim_writer, cts, nbtypes.Type, StructModel, name=override,
+        shim_writer,
+        cts,
+        nbtypes.Type,
+        StructModel,
+        name=override,
     )
 
     assert S._nbtype.name == override
