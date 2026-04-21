@@ -1,0 +1,21 @@
+﻿ast\_canopy.decl
+================
+
+.. automodule:: ast_canopy.decl
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ClassTemplate
+      ClassTemplateSpecialization
+      ConstExprVar
+      Function
+      FunctionTemplate
+      Struct
+      StructMethod
+      Template
+      TemplatedStruct
+      TemplatedStructMethod
+   
