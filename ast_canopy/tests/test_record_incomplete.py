@@ -43,7 +43,10 @@ def test_incomplete_specialization_does_not_abort(source_path):
     """Header containing an incomplete class template specialisation
     (Fwd<int>) must not abort the parse."""
     decls = parse_declarations_from_source(
-        source_path, [source_path], "sm_80", bypass_parse_error=True,
+        source_path,
+        [source_path],
+        "sm_80",
+        bypass_parse_error=True,
     )
     assert decls is not None
 
@@ -51,7 +54,10 @@ def test_incomplete_specialization_does_not_abort(source_path):
 def test_wrapper_structs_parsed(source_path):
     """UsesIncomplete and UsesComplete should both parse."""
     decls = parse_declarations_from_source(
-        source_path, [source_path], "sm_80", bypass_parse_error=True,
+        source_path,
+        [source_path],
+        "sm_80",
+        bypass_parse_error=True,
     )
     names = [s.name for s in decls.structs]
     assert "UsesIncomplete" in names, names
@@ -62,7 +68,10 @@ def test_complete_specialization_has_layout(source_path):
     """The fix must not regress layout computation for complete
     specialisations: Complete<float> still gets a valid sizeof_."""
     decls = parse_declarations_from_source(
-        source_path, [source_path], "sm_80", bypass_parse_error=True,
+        source_path,
+        [source_path],
+        "sm_80",
+        bypass_parse_error=True,
     )
     complete_specs = [
         cts

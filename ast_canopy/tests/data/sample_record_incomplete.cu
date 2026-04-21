@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+// All rights reserved. SPDX-License-Identifier: Apache-2.0
 
 // Minimal repro for the dependent/incomplete type crash in
 // ast_canopy/cpp/src/record.cpp.
