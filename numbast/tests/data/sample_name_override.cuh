@@ -13,6 +13,10 @@
 namespace demo {
 template <typename T, int N> struct Vec {
   T data[N];
+  // A conversion operator forces the bind path that composes a shim
+  // symbol from struct_name — that symbol must remain a valid C
+  // identifier even when struct_name contains template syntax.
+  __device__ operator T() const { return data[0]; }
 };
 } // namespace demo
 

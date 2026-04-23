@@ -12,12 +12,23 @@ on ``bind_cxx_struct`` lets callers supply the fully-qualified name.
 
 import os
 
+import pytest
 from numba import types as nbtypes
 from numba.cuda.datamodel.models import StructModel
 
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_struct, MemoryShimWriter
 from numbast.types import CTYPE_MAPS, to_numba_type
+
+
+@pytest.fixture(autouse=True)
+def _restore_ctype_maps():
+    """Snapshot and restore CTYPE_MAPS so bind_cxx_struct side effects
+    don't leak across tests."""
+    snapshot = dict(CTYPE_MAPS)
+    yield
+    CTYPE_MAPS.clear()
+    CTYPE_MAPS.update(snapshot)
 
 
 def _parse_specialization():
@@ -70,3 +81,19 @@ def test_bind_with_name_uses_override_everywhere():
     assert S.__name__ == override
     assert CTYPE_MAPS.get(override) is S._nbtype
     assert to_numba_type(override) is S._nbtype
+
+
+def test_sanitize_c_identifier_strips_template_syntax():
+    """When a fully-qualified template specialization is passed via
+    ``name=``, it is embedded in the conversion-operator shim symbol.
+    ``_sanitize_c_identifier`` must rewrite every character outside
+    ``[A-Za-z0-9_]`` (``:``, ``<``, ``>``, ``,``, spaces) to keep the
+    resulting C symbol valid."""
+    import re
+
+    from numbast.struct import _sanitize_c_identifier
+
+    result = _sanitize_c_identifier("Eigen::Matrix<float, 3, 1>")
+    assert re.fullmatch(r"[A-Za-z0-9_]+", result)
+    assert "<" not in result and ">" not in result
+    assert ":" not in result and "," not in result

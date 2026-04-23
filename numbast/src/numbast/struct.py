@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 from typing import Any, Optional
 from collections import defaultdict
 
@@ -47,6 +48,16 @@ extern "C" __device__ int
     return 0;
 }}
 """
+
+
+def _sanitize_c_identifier(s: str) -> str:
+    """Replace characters invalid in a C identifier with underscores.
+
+    Needed when struct_name is a fully-qualified template specialization
+    (e.g. ``Eigen::Matrix<float, 3, 1>``) and is embedded into a shim
+    function symbol.
+    """
+    return re.sub(r"[^A-Za-z0-9_]", "_", s)
 
 
 def bind_cxx_struct_ctor(
@@ -200,8 +211,13 @@ def bind_cxx_struct_conversion_opeartor(
     casted_type = to_numba_type(conv.return_type.unqualified_non_ref_type_name)
 
     # Lowering:
+    # struct_name may be a fully-qualified template specialization (e.g.
+    # "Eigen::Matrix<float, 3, 1>"), which is a valid C++ type reference
+    # but not a valid C identifier — sanitize before embedding in the
+    # shim symbol.
+    safe_struct_name = _sanitize_c_identifier(struct_name)
     mangled_name = deduplicate_overloads(
-        f"__{struct_name}__{conv.mangled_name}"
+        f"__{safe_struct_name}__{conv.mangled_name}"
     )
     shim_func_name = f"{mangled_name}_nbst"
 
