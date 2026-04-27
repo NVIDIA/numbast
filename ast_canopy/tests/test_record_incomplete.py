@@ -26,7 +26,7 @@ import os
 import pytest
 
 from ast_canopy import parse_declarations_from_source
-from ast_canopy.constants import INVALID_SIZE_OF
+from ast_canopy.constants import INVALID_ALIGN_OF, INVALID_SIZE_OF
 
 
 @pytest.fixture(scope="module")
@@ -72,7 +72,7 @@ def test_complete_specialization_has_layout(source_path):
     complete_specs = [
         cts
         for cts in decls.class_template_specializations
-        if "Complete" in cts.qual_name
+        if cts.qual_name == "Complete<float>"
     ]
     assert complete_specs, "Complete<float> not in parsed specializations"
     assert complete_specs[0].sizeof_ > 0, complete_specs[0].sizeof_
@@ -95,3 +95,6 @@ def test_incomplete_specialization_has_sentinel_layout(source_path):
     assert incomplete_specs[0].sizeof_ == INVALID_SIZE_OF, incomplete_specs[
         0
     ].sizeof_
+    assert incomplete_specs[0].alignof_ == INVALID_ALIGN_OF, incomplete_specs[
+        0
+    ].alignof_
