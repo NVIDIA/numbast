@@ -15,6 +15,9 @@ using namespace ast_canopy;
 PYBIND11_MODULE(pylibastcanopy, m) {
   m.doc() = "Python bindings for canopy.hpp";
 
+  m.attr("INVALID_SIZE_OF") = py::int_(INVALID_SIZE_OF);
+  m.attr("INVALID_ALIGN_OF") = py::int_(INVALID_ALIGN_OF);
+
   py::register_exception<ParseError>(m, "ParseError");
 
   py::enum_<execution_space>(m, "execution_space")

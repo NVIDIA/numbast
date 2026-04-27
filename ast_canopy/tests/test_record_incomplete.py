@@ -21,12 +21,11 @@ Two related changes in this file:
    build-time concern); this file documents it for provenance.
 """
 
-import ctypes
 import os
 
 import pytest
 
-from ast_canopy import parse_declarations_from_source
+from ast_canopy import INVALID_SIZE_OF, parse_declarations_from_source
 
 
 @pytest.fixture(scope="module")
@@ -91,8 +90,7 @@ def test_incomplete_specialization_has_sentinel_layout(source_path):
         for cts in decls.class_template_specializations
         if cts.qual_name == "Fwd<int>"
     ]
-    invalid_sizeof = ctypes.c_size_t(-1).value
     assert incomplete_specs, "Fwd<int> not in parsed specializations"
-    assert incomplete_specs[0].sizeof_ == invalid_sizeof, incomplete_specs[
+    assert incomplete_specs[0].sizeof_ == INVALID_SIZE_OF, incomplete_specs[
         0
     ].sizeof_

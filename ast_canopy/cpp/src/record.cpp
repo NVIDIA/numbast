@@ -9,17 +9,12 @@
 #include <clang/AST/DeclCXX.h>
 
 #include <algorithm>
-#include <limits>
 
 #ifndef NDEBUG
 #include <iostream>
 #endif
 
 namespace ast_canopy {
-
-std::size_t constexpr INVALID_SIZE_OF = std::numeric_limits<std::size_t>::max();
-std::size_t constexpr INVALID_ALIGN_OF =
-    std::numeric_limits<std::size_t>::max();
 
 Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   using AS = clang::AccessSpecifier;
