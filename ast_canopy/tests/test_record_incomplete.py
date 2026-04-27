@@ -21,6 +21,7 @@ Two related changes in this file:
    build-time concern); this file documents it for provenance.
 """
 
+import ctypes
 import os
 
 import pytest
@@ -75,3 +76,23 @@ def test_complete_specialization_has_layout(source_path):
     ]
     assert complete_specs, "Complete<float> not in parsed specializations"
     assert complete_specs[0].sizeof_ > 0, complete_specs[0].sizeof_
+
+
+def test_incomplete_specialization_has_sentinel_layout(source_path):
+    """Incomplete specialisations should report the invalid layout sentinel."""
+    decls = parse_declarations_from_source(
+        source_path,
+        [source_path],
+        "sm_80",
+        bypass_parse_error=True,
+    )
+    incomplete_specs = [
+        cts
+        for cts in decls.class_template_specializations
+        if cts.qual_name == "Fwd<int>"
+    ]
+    invalid_sizeof = ctypes.c_size_t(-1).value
+    assert incomplete_specs, "Fwd<int> not in parsed specializations"
+    assert incomplete_specs[0].sizeof_ == invalid_sizeof, incomplete_specs[
+        0
+    ].sizeof_
