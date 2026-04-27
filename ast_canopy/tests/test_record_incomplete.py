@@ -25,7 +25,8 @@ import os
 
 import pytest
 
-from ast_canopy import INVALID_SIZE_OF, parse_declarations_from_source
+from ast_canopy import parse_declarations_from_source
+from ast_canopy.constants import INVALID_SIZE_OF
 
 
 @pytest.fixture(scope="module")
