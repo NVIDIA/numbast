@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <string>
 
 namespace ast_canopy {
 
@@ -54,6 +55,79 @@ static bool has_dependent_signature(const clang::FunctionDecl *FD) {
   return false;
 }
 
+static bool is_identifier_alnum(unsigned char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
+         ('0' <= c && c <= '9');
+}
+
+static std::string encode_identifier_fragment(const std::string &input) {
+  static constexpr char hex[] = "0123456789ABCDEF";
+  std::string output;
+  output.reserve(input.size());
+  for (unsigned char c : input) {
+    if (is_identifier_alnum(c)) {
+      output.push_back(static_cast<char>(c));
+    } else {
+      output += "_x";
+      output.push_back(hex[c >> 4]);
+      output.push_back(hex[c & 0x0F]);
+    }
+  }
+  return output;
+}
+
+/**
+ * @brief Build an overload-stable fallback name for dependent signatures.
+ *
+ * This is not an Itanium-mangled symbol.  It includes byte-encoded printed
+ * signature fragments to keep dependent overloads distinct without asking
+ * Clang's mangler to process unresolved template-dependent types.
+ */
+static std::string
+make_dependent_signature_fallback(const clang::FunctionDecl *FD,
+                                  const std::string &base_name) {
+  const clang::PrintingPolicy &policy = FD->getASTContext().getPrintingPolicy();
+
+  std::string fallback = encode_identifier_fragment(base_name);
+  fallback += "__dependent_signature__returns__";
+  fallback +=
+      encode_identifier_fragment(FD->getReturnType().getAsString(policy));
+  fallback += "__params__";
+
+  if (FD->parameters().empty()) {
+    fallback += "void";
+  } else {
+    bool first = true;
+    for (const auto *P : FD->parameters()) {
+      if (!first)
+        fallback += "__";
+      first = false;
+      fallback += encode_identifier_fragment(P->getType().getAsString(policy));
+    }
+  }
+
+  if (const auto *FPT = FD->getType()->getAs<clang::FunctionProtoType>()) {
+    std::string method_quals = FPT->getMethodQuals().getAsString(policy);
+    if (!method_quals.empty()) {
+      fallback += "__quals__";
+      fallback += encode_identifier_fragment(method_quals);
+    }
+
+    switch (FPT->getRefQualifier()) {
+    case clang::RQ_LValue:
+      fallback += "__ref__lvalue";
+      break;
+    case clang::RQ_RValue:
+      fallback += "__ref__rvalue";
+      break;
+    case clang::RQ_None:
+      break;
+    }
+  }
+
+  return fallback;
+}
+
 Function::Function(const clang::FunctionDecl *FD)
     : name(FD->getNameAsString()), qual_name(FD->getQualifiedNameAsString()),
       return_type(FD->getReturnType(), FD->getASTContext()),
@@ -77,7 +151,7 @@ Function::Function(const clang::FunctionDecl *FD)
   // are still template-dependent (e.g. methods of uninstantiated class
   // templates such as Eigen::Matrix<Scalar_,...>).
   if (has_dependent_signature(FD)) {
-    mangled_name = qual_name; // best-effort fallback
+    mangled_name = make_dependent_signature_fallback(FD, qual_name);
   } else {
     auto &context = FD->getASTContext();
     auto &diag = context.getDiagnostics();

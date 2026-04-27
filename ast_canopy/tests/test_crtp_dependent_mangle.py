@@ -12,10 +12,10 @@ Because ast_canopy unconditionally mangled every function it visited,
 return type depended on its parameters (e.g. Eigen's expression
 templates) would segfault the Python interpreter.
 
-The fix introduces ``has_dependent_signature(FD)`` and skips mangling
-(using the qualified name as a fallback) when the signature is still
-dependent. It also replaces a raw ``create`` with a ``unique_ptr`` to
-plug a leak.
+The fix introduces ``has_dependent_signature(FD)`` and skips Itanium
+mangling when the signature is still dependent, using an explicit
+dependent-signature fallback instead. It also replaces a raw ``create``
+with a ``unique_ptr`` to plug a leak.
 """
 
 import os
@@ -50,8 +50,17 @@ def test_dependent_function_template_captured(source_path):
     """extract_value has a dependent return type. It should appear as a
     function template without having segfaulted the mangler."""
     decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
-    ft_names = [ft.function.name for ft in decls.function_templates]
-    assert "extract_value" in ft_names, ft_names
+    funcs = [
+        ft.function
+        for ft in decls.function_templates
+        if ft.function.name == "extract_value"
+    ]
+    assert funcs, [ft.function.name for ft in decls.function_templates]
+
+    mangled = funcs[0].mangled_name
+    assert mangled
+    assert not mangled.startswith("_Z"), mangled
+    assert "dependent_signature" in mangled, mangled
 
 
 def test_non_dependent_function_still_mangled(source_path):

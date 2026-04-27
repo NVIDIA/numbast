@@ -11,8 +11,8 @@
 // base classes or Eigen expression templates.
 //
 // The fix detects dependent signatures up-front with
-// has_dependent_signature() and skips mangling -- using the qualified
-// name as a best-effort fallback. It also plugs a leak by wrapping the
+// has_dependent_signature() and skips Itanium mangling, using an explicit
+// dependent-signature fallback. It also plugs a leak by wrapping the
 // ItaniumMangleContext in a unique_ptr.
 
 #pragma once
