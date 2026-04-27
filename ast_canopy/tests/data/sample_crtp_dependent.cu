@@ -21,6 +21,9 @@
 // derived type. Parsing CRTPBase<T> was enough to segfault the mangler.
 template <typename Derived> struct CRTPBase {
   __device__ Derived &derived() { return static_cast<Derived &>(*this); }
+  __device__ const Derived &derived() const {
+    return static_cast<const Derived &>(*this);
+  }
   __device__ Derived add(const Derived &other) const { return derived(); }
 };
 
