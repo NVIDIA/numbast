@@ -83,6 +83,33 @@ def test_bind_with_name_uses_override_everywhere():
     assert to_numba_type(override) is S._nbtype
 
 
+def test_bind_with_name_honors_aliases_from_typedef_names():
+    """Typedef-derived aliases are keyed by the parsed declaration name.
+
+    ``name=`` changes the effective C++ type name used by the binding, but it
+    must not drop aliases produced from typedefs of the original parsed name.
+    """
+    cts = _parse_specialization()
+    shim_writer = MemoryShimWriter("")
+    override = "demo::Vec<float, 3>"
+    aliases = {
+        "Vec": ["VecAliasFromTypedef"],
+        override: ["VecAliasFromOverride"],
+    }
+
+    S = bind_cxx_struct(
+        shim_writer,
+        cts,
+        nbtypes.Type,
+        StructModel,
+        aliases=aliases,
+        name=override,
+    )
+
+    assert to_numba_type("VecAliasFromTypedef") is S._nbtype
+    assert to_numba_type("VecAliasFromOverride") is S._nbtype
+
+
 def test_sanitize_c_identifier_strips_template_syntax():
     """When a fully-qualified template specialization is passed via
     ``name=``, it is embedded in the conversion-operator shim symbol.

@@ -493,8 +493,11 @@ def bind_cxx_struct(
     # It also needs to happen before method typings - because copy constructors
     # needs to know the type of itself even if the definition is incomplete.
     C2N[struct_name] = s_type
-    if struct_name in aliases:
-        for alias in aliases[struct_name]:
+    alias_keys = (struct_name,)
+    if struct_decl.name != struct_name:
+        alias_keys = (struct_name, struct_decl.name)
+    for alias_key in alias_keys:
+        for alias in aliases.get(alias_key, []):
             C2N[alias] = s_type
 
     # Data Model
