@@ -4,17 +4,17 @@
 """Standalone test for the safe record_id lookup in
 ``ast_canopy/cpp/src/typedef.cpp``.
 
-The typedef matcher passes an ``unordered_map<int, string>`` of record
-IDs → names that the record matcher captured. The Typedef constructor
-looked up the underlying record's ID with ``map::at``, which throws
-``std::out_of_range`` when the ID isn't present. Class template
-instantiations are captured by a separate matcher, so their IDs are not
-in this map; any typedef whose underlying type is a template
-instantiation therefore aborted parsing.
+IDs → names that the record and class-template-specialization matchers
+captured. The Typedef constructor looked up the underlying record's ID
+with ``map::at``, which throws ``std::out_of_range`` when the ID isn't
+present. Class template instantiations are captured by a separate
+matcher, but their IDs also need to be registered because typedefs can
+refer to them.
 
-The fix replaces ``at`` with ``find``, falling back to the record's own
-name when the ID isn't registered. Additionally handles the case where
-``getAsCXXRecordDecl`` returns null.
+The fix registers class template specialization IDs in the shared map
+without forcing incomplete typedef-only instantiations to materialize,
+uses ``find`` for lookup, and keeps a fallback for unregistered or
+non-record underlying types.
 """
 
 import os
@@ -46,10 +46,12 @@ def test_both_typedefs_are_parsed(source_path):
     assert "Vec4dStorage" in names, names
 
 
-def test_underlying_name_populated(source_path):
-    """The fallback branch populates underlying_name from Clang's own
-    name when the ID is missing from record_id_to_name."""
+def test_underlying_name_comes_from_registered_template_specialization(
+    source_path,
+):
+    """Template instantiation typedefs resolve through the registered
+    specialization record name."""
     decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
     by_name = {td.name: td for td in decls.typedefs}
-    assert by_name["Vec3fStorage"].underlying_name
-    assert by_name["Vec4dStorage"].underlying_name
+    assert by_name["Vec3fStorage"].underlying_name == "Storage"
+    assert by_name["Vec4dStorage"].underlying_name == "Storage"

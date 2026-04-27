@@ -5,15 +5,16 @@
 // ast_canopy/cpp/src/typedef.cpp.
 //
 // The typedef matcher builds a map (record_id_to_name) from record IDs
-// to names that the record matcher captured. For a typedef whose
-// underlying type is a class template instantiation, the underlying
-// record's ID is NOT in that map (class template specialisations are
-// captured on a separate matcher list). The old code called
-// record_id_to_name->at(id), which threw std::out_of_range and aborted
-// parsing of the entire header.
+// to names that the record/class-template-specialization matchers captured.
+// For a typedef whose underlying type is a class template instantiation, the
+// underlying record's ID was missing from that map because class template
+// specialisations are captured on a separate matcher list. The old code called
+// record_id_to_name->at(id), which threw std::out_of_range and aborted parsing
+// of the entire header.
 //
-// The fix falls back to find() with a safe default (the record's own
-// name from Clang) when the ID is missing.
+// The fix registers class template specialization IDs in the shared map without
+// forcing typedef-only instantiations to materialize, and keeps the typedef
+// lookup defensive for other unregistered record-like types.
 
 #pragma once
 
@@ -21,7 +22,8 @@ template <typename T, int N> struct Storage {
   T data[N];
 };
 
-// Both typedefs point at template instantiations whose IDs are not in
-// record_id_to_name. Prior to the fix, parsing these lines threw.
+// Both typedefs point at template instantiations. Prior to the fix, their
+// underlying record IDs were not in record_id_to_name and parsing these lines
+// threw.
 typedef Storage<float, 3> Vec3fStorage;
 typedef Storage<double, 4> Vec4dStorage;

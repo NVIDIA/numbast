@@ -43,8 +43,13 @@ void ClassTemplateSpecializationCallback::run(
                   }))
 
   {
+    auto id = CTSD->getID();
+    auto name = CTSD->getNameAsString();
+    auto rename_for_unnamed =
+        name.empty() ? "unnamed" + std::to_string(id) : name;
+    (*payload->record_id_to_name)[id] = rename_for_unnamed;
 
-    if (!CTSD->isImplicit())
+    if (!CTSD->isImplicit() && CTSD->isCompleteDefinition())
       payload->decls->class_template_specializations.push_back(
           ClassTemplateSpecialization(CTSD));
   }

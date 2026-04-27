@@ -28,14 +28,11 @@ Typedef::Typedef(const clang::TypedefDecl *TD,
     if (it != record_id_to_name->end()) {
       underlying_name = it->second;
     } else {
-      // The underlying record was not captured by the record matcher (e.g. it
-      // is a class template instantiation, comes from a non-retained file, or
-      // lives inside a partial specialization).  Fall back to the name Clang
-      // gives us directly.
-      underlying_name = underlying_record_decl->getNameAsString();
-      if (underlying_name.empty()) {
-        underlying_name = underlying_record_decl->getQualifiedNameAsString();
-      }
+      // Most records, including class template specializations, should already
+      // be registered by their matchers. Keep a fallback for declarations that
+      // intentionally are not retained or for other non-standard traversal
+      // paths.
+      underlying_name = qd.getAsString();
     }
   } else {
     // The underlying type is not a CXXRecordDecl (e.g. a built-in or
