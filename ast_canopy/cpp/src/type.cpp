@@ -85,7 +85,17 @@ Type::Type(const clang::QualType &qualtype, const clang::ASTContext &context) {
   // type itself for portability. Downstream consumer of this type information
   // should remember to include <stdint.h> or <cstdint> in their code.
 
+  // Guard: if the QualType is null, produce a placeholder.
+  if (qualtype.isNull()) {
+    name = "<null-type>";
+    unqualified_non_ref_type_name = "<null-type>";
+    _is_right_reference = false;
+    _is_left_reference = false;
+    return;
+  }
+
   std::string printed_name = qualtype.getAsString();
+
   clang::QualType ty = detail::contains_stdint_type(printed_name)
                            ? qualtype
                            : qualtype.getCanonicalType();
