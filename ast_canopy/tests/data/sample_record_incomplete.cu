@@ -10,8 +10,7 @@
 // still dependent or incomplete, Clang aborts inside getTypeSize.
 // The fix guards on isDependentType()/isIncompleteType() and emits
 // INVALID_SIZE_OF / INVALID_ALIGN_OF sentinels when layout cannot be
-// computed. Also adds a try/catch around per-field/-method construction
-// so a single bad child declaration does not lose the whole record.
+// computed.
 
 #pragma once
 

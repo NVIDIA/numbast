@@ -4,7 +4,7 @@
 """Standalone test for the dependent/incomplete type guards in
 ``ast_canopy/cpp/src/record.cpp``.
 
-Three related changes in this file:
+Two related changes in this file:
 
 1. ``Record::Record`` calls ``ctx.getTypeSize`` / ``ctx.getTypeAlign``
    on class template specialisations reaching the matcher with
@@ -14,12 +14,7 @@ Three related changes in this file:
    !type->isIncompleteType()`` and emits ``INVALID_SIZE_OF`` /
    ``INVALID_ALIGN_OF`` sentinels when layout cannot be computed.
 
-2. Each per-child construction (``Field``, ``Method``,
-   ``FunctionTemplate``, nested ``ClassTemplate``, nested ``Record``)
-   is wrapped in ``try { ... } catch (...) { /* skip */ }`` so a
-   single bad child does not lose the entire parent record.
-
-3. Adds a ``<limits>`` include. ``INVALID_SIZE_OF`` /
+2. Adds a ``<limits>`` include. ``INVALID_SIZE_OF`` /
    ``INVALID_ALIGN_OF`` use ``std::numeric_limits``; the header was
    transitively included in conda builds but missing in the manylinux
    wheel container. This cannot be exercised from pytest (it is a

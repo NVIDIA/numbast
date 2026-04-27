@@ -55,12 +55,7 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
     // Include all fields regardless of access specifier, downstream
     // tools needs all fields to create type with proper size and alignment.
     if (auto const *FD = clang::dyn_cast<clang::FieldDecl>(D)) {
-      try {
-        fields.emplace_back(Field(FD, access));
-      } catch (...) {
-        // Skip fields that cannot be processed (e.g. dependent types in
-        // uninstantiated templates).
-      }
+      fields.emplace_back(Field(FD, access));
     }
 
     // Skip Non-public function, nested class and template declarations
@@ -69,36 +64,19 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
       if (auto const *MD = clang::dyn_cast<clang::CXXMethodDecl>(D)) {
         if (MD->isImplicit())
           continue;
-        try {
-          methods.emplace_back(Method(MD));
-        } catch (...) {
-          // Skip methods that cannot be processed (e.g. methods with
-          // dependent types that cannot be mangled).
-        }
+        methods.emplace_back(Method(MD));
       }
 
       if (auto const *FTD = clang::dyn_cast<clang::FunctionTemplateDecl>(D)) {
-        try {
-          templated_methods.emplace_back(FunctionTemplate(FTD));
-        } catch (...) {
-          // Skip function templates that cannot be processed.
-        }
+        templated_methods.emplace_back(FunctionTemplate(FTD));
       }
 
       if (auto const *CTD = clang::dyn_cast<clang::ClassTemplateDecl>(D)) {
-        try {
-          nested_class_templates.emplace_back(ClassTemplate(CTD));
-        } catch (...) {
-          // Skip nested class templates that cannot be processed.
-        }
+        nested_class_templates.emplace_back(ClassTemplate(CTD));
       }
 
       if (auto const *R = clang::dyn_cast<clang::CXXRecordDecl>(D)) {
-        try {
-          nested_records.emplace_back(Record(R, rp));
-        } catch (...) {
-          // Skip nested records that cannot be processed.
-        }
+        nested_records.emplace_back(Record(R, rp));
       }
     }
   }
