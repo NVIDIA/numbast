@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstddef>
+#include <limits>
 #include <optional>
 #include <set>
 #include <string>
@@ -19,6 +21,11 @@
 #include <ast_canopy/error.hpp>
 
 namespace ast_canopy {
+
+inline constexpr std::size_t INVALID_SIZE_OF =
+    std::numeric_limits<std::size_t>::max();
+inline constexpr std::size_t INVALID_ALIGN_OF =
+    std::numeric_limits<std::size_t>::max();
 
 struct TemplateParam;
 struct ClassTemplate;

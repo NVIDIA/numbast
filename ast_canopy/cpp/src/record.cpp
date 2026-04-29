@@ -16,10 +16,6 @@
 
 namespace ast_canopy {
 
-std::size_t constexpr INVALID_SIZE_OF = std::numeric_limits<std::size_t>::max();
-std::size_t constexpr INVALID_ALIGN_OF =
-    std::numeric_limits<std::size_t>::max();
-
 Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   using AS = clang::AccessSpecifier;
 
@@ -83,8 +79,16 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   if (rp == RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE) {
     clang::QualType type = RD->getASTContext().getTypeDeclType(RD);
     clang::ASTContext &ctx = RD->getASTContext();
-    sizeof_ = ctx.getTypeSize(type) / ctx.getCharWidth();
-    alignof_ = ctx.getTypeAlign(type) / ctx.getCharWidth();
+    // Guard against dependent or incomplete types whose layout cannot be
+    // computed.  This can happen for records inside class template
+    // specialisations that Clang has not fully instantiated.
+    if (!type->isDependentType() && !type->isIncompleteType()) {
+      sizeof_ = ctx.getTypeSize(type) / ctx.getCharWidth();
+      alignof_ = ctx.getTypeAlign(type) / ctx.getCharWidth();
+    } else {
+      sizeof_ = INVALID_SIZE_OF;
+      alignof_ = INVALID_ALIGN_OF;
+    }
   } else {
     // A record with class template parent is not instantiated, and thus
     // computing size and alignment of such a record is not possible.
