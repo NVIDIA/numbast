@@ -50,8 +50,8 @@ def test_underlying_name_comes_from_registered_template_specialization(
     source_path,
 ):
     """Template instantiation typedefs resolve through the registered
-    specialization record name."""
+    specialization record name, including the template arguments."""
     decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
     by_name = {td.name: td for td in decls.typedefs}
-    assert by_name["Vec3fStorage"].underlying_name == "Storage"
-    assert by_name["Vec4dStorage"].underlying_name == "Storage"
+    assert by_name["Vec3fStorage"].underlying_name == "Storage<float, 3>"
+    assert by_name["Vec4dStorage"].underlying_name == "Storage<double, 4>"
