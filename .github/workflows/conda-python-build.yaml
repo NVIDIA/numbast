@@ -91,7 +91,7 @@ jobs:
       RAPIDS_CONDA_BLD_OUTPUT_DIR: /tmp/conda-bld-output
       RAPIDS_CONDA_BLD_ROOT_DIR: /tmp/conda-bld-workspace
     container:
-      image: condaforge/miniforge3:26.1.1-2
+      image: condaforge/miniforge3:26.1.1-3
       env:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
     steps:
@@ -144,7 +144,10 @@ jobs:
           else
               PYTHON_ABI_TAG="cpython"
           fi
-          rapids-mamba-retry install -y -n base "python>=${PYTHON_VERSION},<${PYTHON_UPPER_BOUND}=*_${PYTHON_ABI_TAG}"
+          # Changing the Miniforge base Python exercises libmamba's package
+          # cache hard enough to fail before the project build starts. Use
+          # conda's classic solver for this bootstrap install.
+          conda install --solver=classic -y -n base "python>=${PYTHON_VERSION},<${PYTHON_UPPER_BOUND}=*_${PYTHON_ABI_TAG}"
       - name: Standardize repository information
         run: |
           echo "RAPIDS_REPOSITORY=${{ inputs.repo || github.repository }}" >> "${GITHUB_ENV}"
