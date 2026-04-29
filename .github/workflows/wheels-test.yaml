@@ -85,7 +85,7 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         name: Download binary wheels
         with:
           name: pypi-wheels-${{ matrix.ARCH }}
