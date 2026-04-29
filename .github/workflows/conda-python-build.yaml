@@ -91,7 +91,7 @@ jobs:
       RAPIDS_CONDA_BLD_OUTPUT_DIR: /tmp/conda-bld-output
       RAPIDS_CONDA_BLD_ROOT_DIR: /tmp/conda-bld-workspace
     container:
-      image: condaforge/miniforge3:26.1.1-3
+      image: condaforge/miniforge3:26.1.1-2
       env:
         RAPIDS_BUILD_TYPE: ${{ inputs.build_type }}
     steps:
