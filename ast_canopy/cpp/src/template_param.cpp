@@ -25,7 +25,10 @@ TemplateParam::TemplateParam(const clang::NonTypeTemplateParmDecl *TPD) {
 }
 
 TemplateParam::TemplateParam(const clang::TemplateTemplateParmDecl *TPD) {
-  throw std::runtime_error("TemplateTemplateParmDecl not implemented");
+  name = TPD->getNameAsString();
+  kind = template_param_kind::template_;
+  // Leave type default-constructed -- a template template parameter does not
+  // have a single associated type.
 }
 
 } // namespace ast_canopy
