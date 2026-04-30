@@ -119,6 +119,22 @@ Use ``numbast.types.register_cxx_type`` when a function or method signature
 mentions a C++ type that ast_canopy did not parse, but you already know the
 Numba type that should represent it.
 
+The ``cxx_name`` argument should match the type string Numbast receives from
+ast_canopy for a signature, usually ``Type.unqualified_non_ref_type_name`` from
+a parameter or return type. For namespaced types this normally includes the
+C++ namespace qualification, such as ``third_party::Handle``. It is not the
+Python API name, and it is not necessarily a declaration's ``qual_name``.
+
+When in doubt, inspect the parsed declaration before registering the mapping:
+
+.. code-block:: python
+
+  for param in decls.functions[0].params:
+      print(param.type_.unqualified_non_ref_type_name)
+
+Top-level ``const`` and reference qualifiers are stripped from this lookup key;
+pointer types are resolved by looking up their pointee type.
+
 .. code-block:: python
 
   from numba import types as nbtypes
