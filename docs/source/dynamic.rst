@@ -90,6 +90,42 @@ Numbast can generate and use bindings at runtime:
   kernel[1, 1](arr)
   np.testing.assert_allclose(arr, [3.0, np.sqrt(3.0)], rtol=1e-2)
 
+Struct name overrides
+---------------------
+
+``bind_cxx_struct`` accepts a ``name=`` keyword for cases where the parsed record
+name is not the C++ type spelling that should appear in generated shim code and
+Numba's type registry. This is useful when binding a concrete class-template
+specialization through the lower-level struct API.
+
+.. code-block:: python
+
+  matrix = next(
+      s
+      for s in decls.class_template_specializations
+      if s.qual_name == "Eigen::Matrix<float, 3, 1>"
+  )
+
+  Matrix3f = bind_cxx_struct(
+      shim_writer,
+      matrix,
+      name="Eigen::Matrix<float, 3, 1>",
+  )
+
+External C++ type mappings
+--------------------------
+
+Use ``numbast.types.register_cxx_type`` when a function or method signature
+mentions a C++ type that ast_canopy did not parse, but you already know the
+Numba type that should represent it.
+
+.. code-block:: python
+
+  from numba import types as nbtypes
+  from numbast.types import register_cxx_type
+
+  register_cxx_type("third_party::Handle", nbtypes.uint64)
+
 Class template calls
 --------------------
 
