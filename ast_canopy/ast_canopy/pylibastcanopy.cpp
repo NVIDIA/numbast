@@ -144,12 +144,12 @@ PYBIND11_MODULE(pylibastcanopy, m) {
             return py::make_tuple(t.name, t.kind, t.type, t.is_pack);
           },
           [](py::tuple t) {
-            if (t.size() != 3 && t.size() != 4)
+            if (t.size() != 4)
               throw std::runtime_error(
                   "Invalid template param state during unpickle!");
-            return TemplateParam{
-                t[0].cast<std::string>(), t[1].cast<template_param_kind>(),
-                t[2].cast<Type>(), t.size() == 4 ? t[3].cast<bool>() : false};
+            return TemplateParam{t[0].cast<std::string>(),
+                                 t[1].cast<template_param_kind>(),
+                                 t[2].cast<Type>(), t[3].cast<bool>()};
           }));
 
   py::class_<Function>(m, "Function")
