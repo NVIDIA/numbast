@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 // All rights reserved. SPDX-License-Identifier: Apache-2.0
 
-// Minimal repro for the "Unsupported template argument kind" throw in
+// Minimal repro for handling Pack-kind template arguments in
 // class_template_specialization.cpp.
 //
 // Parameter packs instantiate to a Pack-kind TemplateArgument on the
 // specialization's getTemplateArgs() list. Prior to the fix, only Type
 // and Integral kinds were handled, so any specialization that contained
-// a Pack, Declaration, Template, Expression, etc. argument caused a
-// std::runtime_error to propagate and abort parsing of the whole header.
+// a Pack argument caused a std::runtime_error to propagate and abort parsing
+// of the whole header.
 
 #pragma once
 

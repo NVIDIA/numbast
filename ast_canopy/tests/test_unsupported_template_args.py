@@ -10,8 +10,9 @@ any ``TemplateArgument::ArgKind`` other than ``Type`` or ``Integral``.
 Parameter packs, for example, produce a ``Pack``-kind argument on the
 specialization's argument list, which caused the whole parse to abort.
 
-The fix substitutes a ``"<unsupported>"`` placeholder string so parsing
-continues.
+The fix records whether a declared template parameter is a pack and
+prints ``Pack``-kind specialization arguments by joining their elements,
+so parsing continues without losing the actual packed argument list.
 """
 
 import os
@@ -27,6 +28,18 @@ def source_path():
     return os.path.join(here, "data", "sample_unsupported_template_args.cu")
 
 
+def _find_specialization(decls, qual_name):
+    matches = [
+        cts
+        for cts in decls.class_template_specializations
+        if cts.qual_name == qual_name
+    ]
+    assert len(matches) == 1, [
+        cts.qual_name for cts in decls.class_template_specializations
+    ]
+    return matches[0]
+
+
 def test_pack_specialization_does_not_throw(source_path):
     """A specialization with a parameter-pack argument must not abort the
     parse."""
@@ -40,19 +53,30 @@ def test_supported_specialization_still_parsed(source_path):
     parsed."""
     decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
     cts_names = [cts.qual_name for cts in decls.class_template_specializations]
-    assert any("Simple" in n for n in cts_names), cts_names
+    assert "Simple<float, 3>" in cts_names, cts_names
 
 
-def test_unsupported_pack_has_placeholder_argument(source_path):
-    """For the Variadic<int, float, double> specialization, the pack
-    argument should be represented by a placeholder string rather than
-    having thrown."""
+def test_variadic_template_parameter_is_marked_as_pack(source_path):
+    """The Variadic template's single declared parameter should be
+    represented as a type template parameter pack."""
     decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
-    variadic = [
-        cts
-        for cts in decls.class_template_specializations
-        if "Variadic" in cts.qual_name
+    variadic_templates = [
+        ct for ct in decls.class_templates if ct.qual_name == "Variadic"
     ]
-    assert variadic, "Variadic specialization missing from parsed decls"
-    args = variadic[0].actual_template_arguments
-    assert "<unsupported>" in args, args
+    assert len(variadic_templates) == 1, [
+        ct.qual_name for ct in decls.class_templates
+    ]
+    params = variadic_templates[0].template_parameters
+    assert len(params) == 1
+    assert params[0].name == "Ts"
+    assert params[0].is_pack
+
+
+def test_pack_argument_is_expanded(source_path):
+    """For the Variadic<int, float, double> specialization, the pack
+    argument should preserve the packed argument list rather than using
+    an unsupported placeholder."""
+    decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
+    variadic = _find_specialization(decls, "Variadic<int, float, double>")
+    args = variadic.actual_template_arguments
+    assert args == ["int, float, double"]
