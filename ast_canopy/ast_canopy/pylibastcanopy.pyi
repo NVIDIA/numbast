@@ -99,6 +99,7 @@ class Template:
     ) -> None: ...
 
 class TemplateParam:
+    is_pack: bool
     kind: template_param_kind
     name: str
     type_: Type

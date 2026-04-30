@@ -122,8 +122,9 @@ struct Template {
 };
 
 struct TemplateParam {
-  TemplateParam(const std::string &name, template_param_kind kind, Type type)
-      : name(name), kind(kind), type(type) {}
+  TemplateParam(const std::string &name, template_param_kind kind, Type type,
+                bool is_pack = false)
+      : name(name), kind(kind), type(type), is_pack(is_pack) {}
   TemplateParam(const clang::TemplateTypeParmDecl *);
   TemplateParam(const clang::NonTypeTemplateParmDecl *);
   TemplateParam(const clang::TemplateTemplateParmDecl *);
@@ -131,6 +132,7 @@ struct TemplateParam {
   std::string name;
   template_param_kind kind;
   Type type;
+  bool is_pack;
 };
 
 struct Function {

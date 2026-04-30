@@ -7,9 +7,56 @@
 
 #include <clang/AST/DeclTemplate.h>
 #include <llvm/ADT/APSInt.h>
-#include <llvm/Support/raw_ostream.h>
+#include <llvm/ADT/SmallString.h>
 
 namespace ast_canopy {
+
+static std::string
+integral_template_argument_to_string(const clang::TemplateArgument &targ) {
+  clang::QualType T = targ.getIntegralType();
+
+  if (T->isEnumeralType()) {
+    const auto *ET = T->getAs<clang::EnumType>();
+    const clang::EnumDecl *ED = ET->getDecl();
+    const llvm::APSInt &Val = targ.getAsIntegral();
+
+    for (const auto *ECD : ED->enumerators()) {
+      if (ECD->getInitVal() == Val) {
+        return ECD->getQualifiedNameAsString();
+      }
+    }
+  }
+
+  llvm::APSInt integer = targ.getAsIntegral();
+  llvm::SmallString<32> str; // -uint64_t::max() is 21 digits (with sign).
+  integer.toString(str);
+  return std::string(str.c_str());
+}
+
+static std::string
+template_argument_to_string(const clang::TemplateArgument &targ) {
+  switch (targ.getKind()) {
+  case clang::TemplateArgument::ArgKind::Type:
+    return targ.getAsType().getAsString();
+  case clang::TemplateArgument::ArgKind::Integral:
+    return integral_template_argument_to_string(targ);
+  case clang::TemplateArgument::ArgKind::Pack: {
+    std::string result;
+    bool first = true;
+    for (const auto &packed_arg : targ.pack_elements()) {
+      if (!first)
+        result += ", ";
+      first = false;
+      result += template_argument_to_string(packed_arg);
+    }
+    return result;
+  }
+  default:
+    // Gracefully handle template argument kinds we don't yet support
+    // (e.g. Template, Expression, NullPtr, StructuralValue).
+    return "<unsupported>";
+  }
+}
 
 ClassTemplateSpecialization::ClassTemplateSpecialization(
     const clang::ClassTemplateSpecializationDecl *CTSD)
@@ -21,57 +68,9 @@ ClassTemplateSpecialization::ClassTemplateSpecialization(
   const auto &tparam_list = CTSD->getTemplateArgs();
   actual_template_arguments.reserve(tparam_list.size());
 
-  for (auto i = 0; i < tparam_list.size(); i++) {
+  for (unsigned i = 0; i < tparam_list.size(); i++) {
     const auto &targ = tparam_list[i];
-
-    clang::TemplateArgument::ArgKind kind = targ.getKind();
-    switch (kind) {
-    case clang::TemplateArgument::ArgKind::Type:
-      actual_template_arguments.push_back(targ.getAsType().getAsString());
-      break;
-    case clang::TemplateArgument::ArgKind::Integral: {
-      clang::QualType T = targ.getIntegralType();
-
-      // If this integral NTTP is actually an enum, try to recover the
-      // enumerator name from the value.
-      if (T->isEnumeralType()) {
-        const auto *ET = T->getAs<clang::EnumType>();
-        const clang::EnumDecl *ED = ET->getDecl();
-        const llvm::APSInt &Val = targ.getAsIntegral();
-
-        const clang::EnumConstantDecl *Matched = nullptr;
-        for (const auto *ECD : ED->enumerators()) {
-          if (ECD->getInitVal() == Val) {
-            Matched = ECD;
-            break;
-          }
-        }
-
-        if (Matched) {
-          // Use the fully-qualified enumerator name if you like,
-          // or just ECD->getNameAsString() for the bare name.
-          actual_template_arguments.push_back(
-              Matched->getQualifiedNameAsString());
-        } else {
-          // No enumerator found with that value; fall back to integer.
-          llvm::APSInt integer = Val;
-          llvm::SmallString<32> str;
-          integer.toString(str);
-          actual_template_arguments.push_back(str.c_str());
-        }
-      } else {
-        // Plain integral (not an enum type) — keep your existing behavior.
-        llvm::APSInt integer = targ.getAsIntegral();
-        llvm::SmallString<32> str; // -uint64_t::max() is 21 digits (with sign).
-        integer.toString(str);
-        actual_template_arguments.push_back(str.c_str());
-      }
-
-      break;
-    }
-    default:
-      throw std::runtime_error("Unsupported template argument kind");
-    }
+    actual_template_arguments.push_back(template_argument_to_string(targ));
   }
 }
 

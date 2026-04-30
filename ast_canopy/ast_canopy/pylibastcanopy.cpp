@@ -137,21 +137,22 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("name", &TemplateParam::name)
       .def_readwrite("type_", &TemplateParam::type)
       .def_readwrite("kind", &TemplateParam::kind)
+      .def_readwrite("is_pack", &TemplateParam::is_pack)
       .def("__repr__",
            [](const TemplateParam &t) {
              return "<TemplateParam: " + t.name + " " + t.type.name + ">";
            })
       .def(py::pickle(
           [](const TemplateParam &t) {
-            return py::make_tuple(t.name, t.kind, t.type);
+            return py::make_tuple(t.name, t.kind, t.type, t.is_pack);
           },
           [](py::tuple t) {
-            if (t.size() != 3)
+            if (t.size() != 4)
               throw std::runtime_error(
                   "Invalid template param state during unpickle!");
             return TemplateParam{t[0].cast<std::string>(),
                                  t[1].cast<template_param_kind>(),
-                                 t[2].cast<Type>()};
+                                 t[2].cast<Type>(), t[3].cast<bool>()};
           }));
 
   py::class_<Function>(m, "Function")
