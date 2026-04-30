@@ -9,12 +9,19 @@ Concrete structs and classes
 - Constructors generate typing and lowering for instantiation
 - Conversion operators are mapped to Python conversions
 - Public fields are exposed for read access
+- Records expose ``sizeof_`` and ``alignof_`` when Clang can compute a concrete
+  layout. For dependent or incomplete records, ast_canopy uses the exported
+  ``ast_canopy.INVALID_SIZE_OF`` and ``ast_canopy.INVALID_ALIGN_OF`` sentinels.
 
 Functions and operators
 -----------------------
 
 - Free functions receive typing and lowering for all overloads
 - Operator overloads are mapped to Python operators (e.g., ``operator+`` → ``operator.add``)
+- ``Function.mangled_name`` is an Itanium mangled symbol for resolved function
+  signatures. If a function has a template-dependent signature, ast_canopy
+  stores a deterministic fallback identifier instead; that fallback is useful
+  for distinguishing overloads but is not an ABI symbol.
 
 Templates
 ---------
@@ -24,6 +31,15 @@ Templates
 - Function templates (e.g., ``template<typename T> T add(T, T)``) are serialized with parameter lists
   and signatures so consumers can materialize concrete overloads.
 - Where present, explicit specializations and explicit instantiations are captured as distinct declarations.
+- Template parameters expose ``kind`` and ``is_pack`` metadata. ``kind`` may be
+  ``type_``, ``non_type``, or ``template_`` for template-template parameters.
+  ``is_pack`` is true for parameter packs such as ``typename... Ts`` or
+  ``template <typename> class... Containers``.
+- ``ClassTemplateSpecialization.actual_template_arguments`` serializes type and
+  integral arguments directly. Pack arguments are flattened into a comma-separated
+  string such as ``"int, float, double"``. Template argument kinds that are not
+  yet represented by ast_canopy are preserved as the placeholder
+  ``"<unsupported>"`` so parsing can continue.
 
 Example mapping
 ---------------
@@ -133,6 +149,17 @@ Notes and edge cases
   - ``Typedef.underlying_name`` matching ``unnamed<ID>``
   - ``Record.name`` matching ``unnamed<ID>``
   - ``Record.qual_name == "CStyleAnon"``
+
+- **Typedefs of class template specializations**: for aliases like
+
+  .. code-block:: cpp
+
+     template <typename T, int N> struct Storage {};
+     typedef Storage<float, 3> FloatStorage;
+
+  ``Typedef.name`` and ``Typedef.qual_name`` describe the alias, while
+  ``Typedef.underlying_name`` describes the underlying specialization, for
+  example ``Storage<float, 3>``.
 
 Supported argument types
 ------------------------

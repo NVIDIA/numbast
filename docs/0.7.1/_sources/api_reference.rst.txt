@@ -42,6 +42,7 @@ numbast
    :recursive:
 
    static
+   types
    tools
 
 numbast.static

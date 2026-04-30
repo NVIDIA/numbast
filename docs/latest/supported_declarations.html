@@ -534,6 +534,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.types.html">numbast.static.types</a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="_autosummary/numbast.types.html">numbast.types</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
@@ -601,6 +602,9 @@
 <li><p>Constructors generate typing and lowering for instantiation</p></li>
 <li><p>Conversion operators are mapped to Python conversions</p></li>
 <li><p>Public fields are exposed for read access</p></li>
+<li><p>Records expose <code class="docutils literal notranslate"><span class="pre">sizeof_</span></code> and <code class="docutils literal notranslate"><span class="pre">alignof_</span></code> when Clang can compute a concrete
+layout. For dependent or incomplete records, ast_canopy uses the exported
+<code class="docutils literal notranslate"><span class="pre">ast_canopy.INVALID_SIZE_OF</span></code> and <code class="docutils literal notranslate"><span class="pre">ast_canopy.INVALID_ALIGN_OF</span></code> sentinels.</p></li>
 </ul>
 </section>
 <section id="functions-and-operators">
@@ -608,6 +612,10 @@
 <ul class="simple">
 <li><p>Free functions receive typing and lowering for all overloads</p></li>
 <li><p>Operator overloads are mapped to Python operators (e.g., <code class="docutils literal notranslate"><span class="pre">operator+</span></code> → <code class="docutils literal notranslate"><span class="pre">operator.add</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Function.mangled_name</span></code> is an Itanium mangled symbol for resolved function
+signatures. If a function has a template-dependent signature, ast_canopy
+stores a deterministic fallback identifier instead; that fallback is useful
+for distinguishing overloads but is not an ABI symbol.</p></li>
 </ul>
 </section>
 <section id="templates">
@@ -618,6 +626,15 @@ and their declaration bodies for downstream specialization/instantiation.</p></l
 <li><p>Function templates (e.g., <code class="docutils literal notranslate"><span class="pre">template&lt;typename</span> <span class="pre">T&gt;</span> <span class="pre">T</span> <span class="pre">add(T,</span> <span class="pre">T)</span></code>) are serialized with parameter lists
 and signatures so consumers can materialize concrete overloads.</p></li>
 <li><p>Where present, explicit specializations and explicit instantiations are captured as distinct declarations.</p></li>
+<li><p>Template parameters expose <code class="docutils literal notranslate"><span class="pre">kind</span></code> and <code class="docutils literal notranslate"><span class="pre">is_pack</span></code> metadata. <code class="docutils literal notranslate"><span class="pre">kind</span></code> may be
+<code class="docutils literal notranslate"><span class="pre">type_</span></code>, <code class="docutils literal notranslate"><span class="pre">non_type</span></code>, or <code class="docutils literal notranslate"><span class="pre">template_</span></code> for template-template parameters.
+<code class="docutils literal notranslate"><span class="pre">is_pack</span></code> is true for parameter packs such as <code class="docutils literal notranslate"><span class="pre">typename...</span> <span class="pre">Ts</span></code> or
+<code class="docutils literal notranslate"><span class="pre">template</span> <span class="pre">&lt;typename&gt;</span> <span class="pre">class...</span> <span class="pre">Containers</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ClassTemplateSpecialization.actual_template_arguments</span></code> serializes type and
+integral arguments directly. Pack arguments are flattened into a comma-separated
+string such as <code class="docutils literal notranslate"><span class="pre">&quot;int,</span> <span class="pre">float,</span> <span class="pre">double&quot;</span></code>. Template argument kinds that are not
+yet represented by ast_canopy are preserved as the placeholder
+<code class="docutils literal notranslate"><span class="pre">&quot;&lt;unsupported&gt;&quot;</span></code> so parsing can continue.</p></li>
 </ul>
 </section>
 <section id="example-mapping">
@@ -742,6 +759,15 @@ user-visible qualified name; in that case you may observe:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">Record.name</span></code> matching <code class="docutils literal notranslate"><span class="pre">unnamed&lt;ID&gt;</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">Record.qual_name</span> <span class="pre">==</span> <span class="pre">&quot;CStyleAnon&quot;</span></code></p></li>
 </ul>
+</li>
+<li><p><strong>Typedefs of class template specializations</strong>: for aliases like</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">Storage</span><span class="w"> </span><span class="p">{};</span>
+<span class="k">typedef</span><span class="w"> </span><span class="n">Storage</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="w"> </span><span class="n">FloatStorage</span><span class="p">;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Typedef.name</span></code> and <code class="docutils literal notranslate"><span class="pre">Typedef.qual_name</span></code> describe the alias, while
+<code class="docutils literal notranslate"><span class="pre">Typedef.underlying_name</span></code> describes the underlying specialization, for
+example <code class="docutils literal notranslate"><span class="pre">Storage&lt;float,</span> <span class="pre">3&gt;</span></code>.</p>
 </li>
 </ul>
 </section>

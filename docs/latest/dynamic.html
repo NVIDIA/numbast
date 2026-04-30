@@ -534,6 +534,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.types.html">numbast.static.types</a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="_autosummary/numbast.types.html">numbast.types</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
@@ -680,6 +681,50 @@ Bindings are inserted into Numba’s registries on the fly, so you can immediate
 </pre></div>
 </div>
 </section>
+<section id="struct-name-overrides">
+<h2>Struct name overrides<a class="headerlink" href="#struct-name-overrides" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bind_cxx_struct</span></code> accepts a <code class="docutils literal notranslate"><span class="pre">name=</span></code> keyword for cases where the parsed record
+name is not the C++ type spelling that should appear in generated shim code and
+Numba’s type registry. This is useful when binding a concrete class-template
+specialization through the lower-level struct API.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+    <span class="n">s</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">decls</span><span class="o">.</span><span class="n">class_template_specializations</span>
+    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">qual_name</span> <span class="o">==</span> <span class="s2">&quot;Eigen::Matrix&lt;float, 3, 1&gt;&quot;</span>
+<span class="p">)</span>
+
+<span class="n">Matrix3f</span> <span class="o">=</span> <span class="n">bind_cxx_struct</span><span class="p">(</span>
+    <span class="n">shim_writer</span><span class="p">,</span>
+    <span class="n">matrix</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Eigen::Matrix&lt;float, 3, 1&gt;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="external-c-type-mappings">
+<h2>External C++ type mappings<a class="headerlink" href="#external-c-type-mappings" title="Link to this heading">#</a></h2>
+<p>Use <code class="docutils literal notranslate"><span class="pre">numbast.types.register_cxx_type</span></code> when a function or method signature
+mentions a C++ type that ast_canopy did not parse, but you already know the
+Numba type that should represent it.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cxx_name</span></code> argument should match the type string Numbast receives from
+ast_canopy for a signature, usually <code class="docutils literal notranslate"><span class="pre">Type.unqualified_non_ref_type_name</span></code> from
+a parameter or return type. For namespaced types this normally includes the
+C++ namespace qualification, such as <code class="docutils literal notranslate"><span class="pre">third_party::Handle</span></code>. It is not the
+Python API name, and it is not necessarily a declaration’s <code class="docutils literal notranslate"><span class="pre">qual_name</span></code>.</p>
+<p>When in doubt, inspect the parsed declaration before registering the mapping:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">decls</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">params</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">type_</span><span class="o">.</span><span class="n">unqualified_non_ref_type_name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Top-level <code class="docutils literal notranslate"><span class="pre">const</span></code> and reference qualifiers are stripped from this lookup key;
+pointer types are resolved by looking up their pointee type.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">types</span> <span class="k">as</span> <span class="n">nbtypes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numbast.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_cxx_type</span>
+
+<span class="n">register_cxx_type</span><span class="p">(</span><span class="s2">&quot;third_party::Handle&quot;</span><span class="p">,</span> <span class="n">nbtypes</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
 <section id="class-template-calls">
 <h2>Class template calls<a class="headerlink" href="#class-template-calls" title="Link to this heading">#</a></h2>
 <p>For class template constructor usage and examples, see <a class="reference internal" href="template.html"><span class="doc">Template calls</span></a>.</p>
@@ -755,6 +800,8 @@ compute capability of the current device.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use">When to use</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirements">Requirements</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#struct-name-overrides">Struct name overrides</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#external-c-type-mappings">External C++ type mappings</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-template-calls">Class template calls</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#guidance-and-best-practices">Guidance and best practices</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#differences-vs-static-generation">Differences vs static generation</a></li>
