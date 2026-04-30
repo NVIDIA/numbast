@@ -12,9 +12,10 @@ matcher, but their IDs also need to be registered because typedefs can
 refer to them.
 
 The fix registers class template specialization IDs in the shared map
-without forcing incomplete typedef-only instantiations to materialize,
 uses ``find`` for lookup, and keeps a fallback for unregistered or
-non-record underlying types.
+non-record underlying types. Incomplete specializations can still be
+materialized safely because ``Record`` reports sentinel layout values
+instead of asking Clang for an invalid layout.
 """
 
 import os

@@ -123,7 +123,9 @@ void ClassTemplateSpecializationCallback::run(
     (*payload->record_id_to_name)[id] =
         class_template_specialization_name(CTSD);
 
-    if (!CTSD->isImplicit() && CTSD->isCompleteDefinition())
+    // Incomplete specializations can still be useful to callers. Record
+    // handles them by reporting INVALID_SIZE_OF / INVALID_ALIGN_OF.
+    if (!CTSD->isImplicit())
       payload->decls->class_template_specializations.push_back(
           ClassTemplateSpecialization(CTSD));
   }
