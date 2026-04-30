@@ -706,6 +706,18 @@ specialization through the lower-level struct API.</p>
 <p>Use <code class="docutils literal notranslate"><span class="pre">numbast.types.register_cxx_type</span></code> when a function or method signature
 mentions a C++ type that ast_canopy did not parse, but you already know the
 Numba type that should represent it.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cxx_name</span></code> argument should match the type string Numbast receives from
+ast_canopy for a signature, usually <code class="docutils literal notranslate"><span class="pre">Type.unqualified_non_ref_type_name</span></code> from
+a parameter or return type. For namespaced types this normally includes the
+C++ namespace qualification, such as <code class="docutils literal notranslate"><span class="pre">third_party::Handle</span></code>. It is not the
+Python API name, and it is not necessarily a declaration’s <code class="docutils literal notranslate"><span class="pre">qual_name</span></code>.</p>
+<p>When in doubt, inspect the parsed declaration before registering the mapping:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">decls</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">params</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">type_</span><span class="o">.</span><span class="n">unqualified_non_ref_type_name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Top-level <code class="docutils literal notranslate"><span class="pre">const</span></code> and reference qualifiers are stripped from this lookup key;
+pointer types are resolved by looking up their pointee type.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">types</span> <span class="k">as</span> <span class="n">nbtypes</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numbast.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_cxx_type</span>
 
