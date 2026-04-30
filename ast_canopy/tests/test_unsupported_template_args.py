@@ -20,6 +20,7 @@ import os
 import pytest
 
 from ast_canopy import parse_declarations_from_source
+from ast_canopy.pylibastcanopy import template_param_kind
 
 
 @pytest.fixture(scope="module")
@@ -69,6 +70,25 @@ def test_variadic_template_parameter_is_marked_as_pack(source_path):
     params = variadic_templates[0].template_parameters
     assert len(params) == 1
     assert params[0].name == "Ts"
+    assert params[0].is_pack
+
+
+def test_template_template_parameter_pack_is_marked_as_pack(source_path):
+    """Template-template parameter packs should be represented with
+    template kind and pack metadata."""
+    decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
+    template_template_packs = [
+        ct
+        for ct in decls.class_templates
+        if ct.qual_name == "TemplateTemplatePack"
+    ]
+    assert len(template_template_packs) == 1, [
+        ct.qual_name for ct in decls.class_templates
+    ]
+    params = template_template_packs[0].template_parameters
+    assert len(params) == 1
+    assert params[0].name == "Containers"
+    assert params[0].kind == template_param_kind.template_
     assert params[0].is_pack
 
 

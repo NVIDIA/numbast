@@ -32,3 +32,16 @@ template <typename T, int N> struct Simple {
 struct ForceSimple {
   Simple<float, 3> s;
 };
+
+// A template-template parameter pack should be represented as a template
+// parameter with is_pack set, rather than throwing during template parsing.
+template <typename T> struct Box {
+  T value;
+};
+
+template <template <typename> class... Containers>
+struct TemplateTemplatePack {};
+
+struct ForceTemplateTemplatePack {
+  TemplateTemplatePack<Box> pack;
+};

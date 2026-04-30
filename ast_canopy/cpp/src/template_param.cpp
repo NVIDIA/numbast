@@ -29,6 +29,7 @@ TemplateParam::TemplateParam(const clang::TemplateTemplateParmDecl *TPD) {
   kind = template_param_kind::template_;
   // Leave type default-constructed -- a template template parameter does not
   // have a single associated type.
+  is_pack = TPD->isParameterPack();
 }
 
 } // namespace ast_canopy
