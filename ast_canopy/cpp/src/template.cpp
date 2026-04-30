@@ -8,6 +8,7 @@
 #include <clang/AST/DeclTemplate.h>
 
 #include <algorithm>
+#include <stdexcept>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -32,8 +33,8 @@ Template::Template(const clang::TemplateParameterList *TPL)
       // gracefully instead of throwing.
       template_parameters.push_back(TemplateParam(TPD));
     } else {
-      // Unknown template parameter kind -- skip it rather than crashing.
-      // This can happen with future Clang additions or unusual AST nodes.
+      throw std::runtime_error("Unsupported template parameter kind: " +
+                               std::string(ND->getDeclKindName()));
     }
   }
 }

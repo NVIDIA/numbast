@@ -16,6 +16,7 @@ import os
 import pytest
 
 from ast_canopy import parse_declarations_from_source
+from ast_canopy.pylibastcanopy import template_param_kind
 
 
 @pytest.fixture(scope="module")
@@ -32,7 +33,14 @@ def test_template_template_param_does_not_throw(source_path):
 
 def test_adapter_class_template_is_parsed(source_path):
     """The Adapter class template (which uses a template template param)
-    must appear in the parsed class templates."""
+    must appear with all of its parsed template parameters."""
     decls = parse_declarations_from_source(source_path, [source_path], "sm_80")
-    names = [ct.qual_name for ct in decls.class_templates]
-    assert any("Adapter" in n for n in names), names
+    adapters = [ct for ct in decls.class_templates if "Adapter" in ct.qual_name]
+    assert adapters, [ct.qual_name for ct in decls.class_templates]
+
+    params = adapters[0].template_parameters
+    assert len(params) == 2
+    assert params[0].name == "T"
+    assert params[0].kind == template_param_kind.type_
+    assert params[1].name == "Container"
+    assert params[1].kind == template_param_kind.template_
