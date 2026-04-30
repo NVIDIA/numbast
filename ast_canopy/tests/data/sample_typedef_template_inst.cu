@@ -12,9 +12,8 @@
 // record_id_to_name->at(id), which threw std::out_of_range and aborted parsing
 // of the entire header.
 //
-// The fix registers class template specialization IDs in the shared map without
-// forcing typedef-only instantiations to materialize, and keeps the typedef
-// lookup defensive for other unregistered record-like types.
+// The fix registers class template specialization IDs in the shared map and
+// keeps the typedef lookup defensive for other unregistered record-like types.
 
 #pragma once
 
