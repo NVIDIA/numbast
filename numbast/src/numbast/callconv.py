@@ -5,9 +5,17 @@ from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
 
 # NBST:BEGIN_CALLCONV
+from typing import NamedTuple
+
 from numba.cuda import types, cgutils
 
 from llvmlite import ir
+
+
+class _OutReturnPtr(NamedTuple):
+    numba_ty: types.Type
+    ptr: ir.Value
+    align: int
 
 
 def _get_alloca_alignment(context, value_ty, numba_ty=None):
@@ -166,7 +174,7 @@ class FunctionCallConv(BaseCallConv):
         # - default: pass pointer-to-value to shim (alloca + store)
         # - for C++ reference args mapped to CPointer(T): pass pointer value directly
         ptrs = []
-        out_return_ptrs: list[tuple[types.Type, ir.Value, int]] = []
+        out_return_ptrs: list[_OutReturnPtr] = []
         if self._intent_plan is None:
             for argty, arg, passthrough in zip(sig.args, args, pass_ptr_mask):
                 vty = context.get_value_type(argty)
@@ -199,7 +207,11 @@ class FunctionCallConv(BaseCallConv):
                     )
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
-                    out_return_ptrs.append((out_nbty, ptr, ptr_align))
+                    out_return_ptrs.append(
+                        _OutReturnPtr(
+                            numba_ty=out_nbty, ptr=ptr, align=ptr_align
+                        )
+                    )
                     continue
 
                 vis_pos = orig_to_vis[orig_idx]
@@ -246,8 +258,10 @@ class FunctionCallConv(BaseCallConv):
         ret_vals: list[ir.Value] = []
         if cxx_return_type != types.void:
             ret_vals.append(builder.load(retval_ptr, align=retval_align))
-        for _, out_ptr, out_align in out_return_ptrs:
-            ret_vals.append(builder.load(out_ptr, align=out_align))
+        for out_return in out_return_ptrs:
+            ret_vals.append(
+                builder.load(out_return.ptr, align=out_return.align)
+            )
 
         # If Numba-visible return is a tuple, use context.make_tuple.
         # Otherwise (void + single out), return the single out value directly.
