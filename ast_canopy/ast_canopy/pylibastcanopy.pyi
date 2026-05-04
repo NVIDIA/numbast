@@ -3,6 +3,9 @@ import typing
 from _typeshed import Incomplete
 from typing import ClassVar, overload
 
+INVALID_SIZE_OF: int
+INVALID_ALIGN_OF: int
+
 class ClassTemplate(Template):
     num_min_required_args: int
     qual_name: str
@@ -96,6 +99,7 @@ class Template:
     ) -> None: ...
 
 class TemplateParam:
+    is_pack: bool
     kind: template_param_kind
     name: str
     type_: Type

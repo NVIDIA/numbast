@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstddef>
+#include <limits>
 #include <optional>
 #include <set>
 #include <string>
@@ -19,6 +21,11 @@
 #include <ast_canopy/error.hpp>
 
 namespace ast_canopy {
+
+inline constexpr std::size_t INVALID_SIZE_OF =
+    std::numeric_limits<std::size_t>::max();
+inline constexpr std::size_t INVALID_ALIGN_OF =
+    std::numeric_limits<std::size_t>::max();
 
 struct TemplateParam;
 struct ClassTemplate;
@@ -115,8 +122,9 @@ struct Template {
 };
 
 struct TemplateParam {
-  TemplateParam(const std::string &name, template_param_kind kind, Type type)
-      : name(name), kind(kind), type(type) {}
+  TemplateParam(const std::string &name, template_param_kind kind, Type type,
+                bool is_pack = false)
+      : name(name), kind(kind), type(type), is_pack(is_pack) {}
   TemplateParam(const clang::TemplateTypeParmDecl *);
   TemplateParam(const clang::NonTypeTemplateParmDecl *);
   TemplateParam(const clang::TemplateTemplateParmDecl *);
@@ -124,6 +132,7 @@ struct TemplateParam {
   std::string name;
   template_param_kind kind;
   Type type;
+  bool is_pack;
 };
 
 struct Function {

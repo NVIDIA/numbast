@@ -14,16 +14,22 @@ TemplateParam::TemplateParam(const clang::TemplateTypeParmDecl *TPD) {
   name = TPD->getNameAsString();
   type = Type(TPD->getASTContext().getTypeDeclType(TPD), TPD->getASTContext());
   kind = template_param_kind::type;
+  is_pack = TPD->isParameterPack();
 }
 
 TemplateParam::TemplateParam(const clang::NonTypeTemplateParmDecl *TPD) {
   name = TPD->getNameAsString();
   type = Type(TPD->getType(), TPD->getASTContext());
   kind = template_param_kind::non_type;
+  is_pack = TPD->isParameterPack();
 }
 
 TemplateParam::TemplateParam(const clang::TemplateTemplateParmDecl *TPD) {
-  throw std::runtime_error("TemplateTemplateParmDecl not implemented");
+  name = TPD->getNameAsString();
+  kind = template_param_kind::template_;
+  // Leave type default-constructed -- a template template parameter does not
+  // have a single associated type.
+  is_pack = TPD->isParameterPack();
 }
 
 } // namespace ast_canopy
