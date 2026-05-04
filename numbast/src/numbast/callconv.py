@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# NUMBAST_RETVAL_ALIGN_FIX_APPLIED
 from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
 
@@ -9,6 +8,22 @@ from numbast.intent import IntentPlan
 from numba.cuda import types, cgutils
 
 from llvmlite import ir
+
+
+def _get_alloca_alignment(context, value_ty, numba_ty=None):
+    """Return a power-of-two stack alignment for shim value slots."""
+    abi_align = context.get_abi_alignment(value_ty)
+    abi_size = context.get_abi_sizeof(value_ty)
+    capped_size = max(1, min(abi_size, 16))
+    size_align = 1 << (capped_size.bit_length() - 1)
+    explicit_align = getattr(numba_ty, "alignof_", None) or 0
+    return max(abi_align, size_align, explicit_align)
+
+
+def _set_alloca_alignment(alloca, context, value_ty, numba_ty=None):
+    align = _get_alloca_alignment(context, value_ty, numba_ty)
+    alloca.align = align
+    return align
 
 
 class BaseCallConv:
@@ -105,31 +120,13 @@ class FunctionCallConv(BaseCallConv):
             # Void return type in C++ is shimmed as int& ignored
             retval_ty = ir.IntType(32)
             retval_ptr = builder.alloca(retval_ty, name="ignored")
+            retval_align = _set_alloca_alignment(retval_ptr, context, retval_ty)
         else:
             retval_ty = context.get_value_type(cxx_return_type)
             retval_ptr = builder.alloca(retval_ty, name="retval")
-            # Use the Numba type's alignof_ to set the alloca alignment.
-            #
-            # LLVM computes struct ABI alignment as the max alignment of its
-            # members.  For CUDA vector types (float2, float4, uchar4, …)
-            # declared with __align__(N) in the CUDA headers, N can exceed
-            # the member alignment: float2 is {float,float} with member
-            # alignment 4 B but __align__(8).  LLVM therefore assigns a 4 B
-            # alloca, while the NVRTC shim uses a vector instruction
-            # (ld/st.v2.f32) that requires 8 B alignment, causing
-            # cudaErrorMisalignedAddress at runtime.
-            #
-            # Numbast's struct binder already sets alignof_ on user-defined
-            # bound structs (propagated from ast_canopy).  For built-in CUDA
-            # vector types, callers must set alignof_ on the Numba type when
-            # registering it in CTYPE_MAPS.  When alignof_ is present it is
-            # used here, matching the convention already applied to loads and
-            # stores (getattr(argty, "alignof_", None)).  When absent, LLVM's
-            # default ABI alignment is used, which is correct for scalars and
-            # structs without an explicit __align__ attribute.
-            _nb_align = getattr(cxx_return_type, "alignof_", None)
-            if _nb_align is not None:
-                retval_ptr.align = _nb_align
+            retval_align = _set_alloca_alignment(
+                retval_ptr, context, retval_ty, cxx_return_type
+            )
 
         # 2. Prepare arguments
         if self._intent_plan is None:
@@ -169,7 +166,7 @@ class FunctionCallConv(BaseCallConv):
         # - default: pass pointer-to-value to shim (alloca + store)
         # - for C++ reference args mapped to CPointer(T): pass pointer value directly
         ptrs = []
-        out_return_ptrs: list[tuple[types.Type, ir.Value]] = []
+        out_return_ptrs: list[tuple[types.Type, ir.Value, int]] = []
         if self._intent_plan is None:
             for argty, arg, passthrough in zip(sig.args, args, pass_ptr_mask):
                 vty = context.get_value_type(argty)
@@ -177,12 +174,8 @@ class FunctionCallConv(BaseCallConv):
                     ptrs.append(arg)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
-                    _nb_align = getattr(argty, "alignof_", None)
-                    if _nb_align is not None:
-                        ptr.align = _nb_align  # see retval_ptr comment above
-                    builder.store(
-                        arg, ptr, align=_nb_align
-                    )
+                    ptr_align = _set_alloca_alignment(ptr, context, vty, argty)
+                    builder.store(arg, ptr, align=ptr_align)
                     ptrs.append(ptr)
         else:
             plan = self._intent_plan
@@ -201,12 +194,12 @@ class FunctionCallConv(BaseCallConv):
                     out_nbty = self._out_return_types[out_pos]
                     vty = context.get_value_type(out_nbty)
                     ptr = cgutils.alloca_once(builder, vty)
-                    _nb_align = getattr(out_nbty, "alignof_", None)
-                    if _nb_align is not None:
-                        ptr.align = _nb_align  # see retval_ptr comment above
+                    ptr_align = _set_alloca_alignment(
+                        ptr, context, vty, out_nbty
+                    )
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
-                    out_return_ptrs.append((out_nbty, ptr))
+                    out_return_ptrs.append((out_nbty, ptr, ptr_align))
                     continue
 
                 vis_pos = orig_to_vis[orig_idx]
@@ -223,12 +216,8 @@ class FunctionCallConv(BaseCallConv):
                     arg_pointer_types.append(vty)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
-                    _nb_align = getattr(argty, "alignof_", None)
-                    if _nb_align is not None:
-                        ptr.align = _nb_align  # see retval_ptr comment above
-                    builder.store(
-                        arg, ptr, align=_nb_align
-                    )
+                    ptr_align = _set_alloca_alignment(ptr, context, vty, argty)
+                    builder.store(arg, ptr, align=ptr_align)
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
 
@@ -251,22 +240,14 @@ class FunctionCallConv(BaseCallConv):
         ):
             if cxx_return_type == types.void:
                 return None
-            return builder.load(
-                retval_ptr, align=getattr(cxx_return_type, "alignof_", None)
-            )
+            return builder.load(retval_ptr, align=retval_align)
 
         # out_return enabled: return either a value or a tuple (ret, out1, out2, ...)
         ret_vals: list[ir.Value] = []
         if cxx_return_type != types.void:
-            ret_vals.append(
-                builder.load(
-                    retval_ptr, align=getattr(cxx_return_type, "alignof_", None)
-                )
-            )
-        for out_ty, out_ptr in out_return_ptrs:
-            ret_vals.append(
-                builder.load(out_ptr, align=getattr(out_ty, "alignof_", None))
-            )
+            ret_vals.append(builder.load(retval_ptr, align=retval_align))
+        for _, out_ptr, out_align in out_return_ptrs:
+            ret_vals.append(builder.load(out_ptr, align=out_align))
 
         # If Numba-visible return is a tuple, use context.make_tuple.
         # Otherwise (void + single out), return the single out value directly.
