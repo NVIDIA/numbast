@@ -1,0 +1,12 @@
+numbast.tools.yaml\_tags
+========================
+
+.. automodule:: numbast.tools.yaml_tags
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      string_constructor
+   
