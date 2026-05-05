@@ -58,19 +58,31 @@ ENUM_TYPE_MAPS = {
     ),
 }
 
+CUDA_VECTOR_TYPE_MAPS = {
+    f"{cxx_name}{lanes}": vector_types[f"{numba_name}x{lanes}"]
+    for cxx_name, numba_name in (
+        ("char", "int8"),
+        ("uchar", "uint8"),
+        ("short", "int16"),
+        ("ushort", "uint16"),
+        ("int", "int32"),
+        ("uint", "uint32"),
+        ("longlong", "int64"),
+        ("ulonglong", "uint64"),
+        ("float", "float32"),
+        ("double", "float64"),
+    )
+    for lanes in (1, 2, 3, 4)
+}
+
 CTYPE_MAPS = {
     **INTEGER_TYPE_MAPS,
     **FLOATING_TYPE_MAPS,
     **CCCL_Types,
     **ENUM_TYPE_MAPS,
+    **CUDA_VECTOR_TYPE_MAPS,
     "void": nbtypes.void,
     "bool": nbtypes.bool_,
-    "uint4": vector_types["uint32x4"],
-    "uint2": vector_types["uint32x2"],
-    "float2": vector_types["float32x2"],
-    "float4": vector_types["float32x4"],
-    "double2": vector_types["float64x2"],
-    "double4": vector_types["float64x4"],
 }
 
 
@@ -88,6 +100,10 @@ NUMBA_TO_CTYPE_MAPS = {
     nbtypes.float64: "double",
     nbtypes.bool_: "bool",
     nbtypes.void: "void",
+    **{
+        numba_type: cxx_name
+        for cxx_name, numba_type in CUDA_VECTOR_TYPE_MAPS.items()
+    },
 }
 
 
