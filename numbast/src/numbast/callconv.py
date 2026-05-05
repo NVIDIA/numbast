@@ -10,6 +10,28 @@ from numba.cuda import types, cgutils
 from llvmlite import ir
 
 
+def _alloca_alignment(context, llvm_ty, numba_ty=None):
+    """Return the alignment to use for a local ABI slot.
+
+    LLVM's ABI alignment can be too small for CUDA built-in vector types
+    represented as LLVM structs.  For example, ``float2`` lowers to a
+    ``{float, float}`` struct whose default alloca alignment is 4, while CUDA
+    vector loads/stores require 8-byte alignment.  Numbast type maps can attach
+    an explicit ``alignof_`` to such Numba types; honor it for the stack slot
+    itself, not only for later stores/loads.
+    """
+    abi_align = context.target_data.abi_alignment(llvm_ty)
+    explicit_align = getattr(numba_ty, "alignof_", None)
+    if explicit_align is None:
+        return abi_align
+    return max(abi_align, explicit_align)
+
+
+def _set_alloca_alignment(ptr, context, llvm_ty, numba_ty=None):
+    ptr.align = _alloca_alignment(context, llvm_ty, numba_ty)
+    return ptr
+
+
 class BaseCallConv:
     shim_function_template = "{mangled_name}_nbst"
 
@@ -104,9 +126,13 @@ class FunctionCallConv(BaseCallConv):
             # Void return type in C++ is shimmed as int& ignored
             retval_ty = ir.IntType(32)
             retval_ptr = builder.alloca(retval_ty, name="ignored")
+            _set_alloca_alignment(retval_ptr, context, retval_ty)
         else:
             retval_ty = context.get_value_type(cxx_return_type)
             retval_ptr = builder.alloca(retval_ty, name="retval")
+            _set_alloca_alignment(
+                retval_ptr, context, retval_ty, cxx_return_type
+            )
 
         # 2. Prepare arguments
         if self._intent_plan is None:
@@ -154,6 +180,7 @@ class FunctionCallConv(BaseCallConv):
                     ptrs.append(arg)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
+                    _set_alloca_alignment(ptr, context, vty, argty)
                     builder.store(
                         arg, ptr, align=getattr(argty, "alignof_", None)
                     )
@@ -175,6 +202,7 @@ class FunctionCallConv(BaseCallConv):
                     out_nbty = self._out_return_types[out_pos]
                     vty = context.get_value_type(out_nbty)
                     ptr = cgutils.alloca_once(builder, vty)
+                    _set_alloca_alignment(ptr, context, vty, out_nbty)
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
                     out_return_ptrs.append((out_nbty, ptr))
@@ -194,6 +222,7 @@ class FunctionCallConv(BaseCallConv):
                     arg_pointer_types.append(vty)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
+                    _set_alloca_alignment(ptr, context, vty, argty)
                     builder.store(
                         arg, ptr, align=getattr(argty, "alignof_", None)
                     )

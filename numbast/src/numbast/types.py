@@ -13,6 +13,24 @@ from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
 from cuda.bindings import runtime
 
 
+CUDA_VECTOR_TYPE_ALIGNMENTS = {
+    # CUDA vector_types.h gives 2-lane 32-bit vectors 8-byte alignment and
+    # 4-lane 32-bit vectors 16-byte alignment.  LLVM represents these as
+    # ordinary structs, whose ABI alignment would otherwise be only 4.
+    "uint32x2": 8,
+    "uint32x4": 16,
+    "float32x2": 8,
+    "float32x4": 16,
+    # CUDA double2 is explicitly 16-byte aligned.  Keep double4 at 16 as well;
+    # over-aligning a local slot is safe and matches CUDA's vector access needs.
+    "float64x2": 16,
+    "float64x4": 16,
+}
+
+for _vector_type_name, _alignment in CUDA_VECTOR_TYPE_ALIGNMENTS.items():
+    vector_types[_vector_type_name].alignof_ = _alignment
+
+
 class FunctorType(nbtypes.Type):
     def __init__(self, name):
         super().__init__(name=name + "FunctorType")
