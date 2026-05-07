@@ -8,10 +8,10 @@ from types import SimpleNamespace
 from llvmlite import ir
 from numba.cuda import types as cuda_types
 from numba.cuda.descriptor import cuda_target
-from numba.cuda.vector_types import vector_types
 
 from numbast.callconv import FunctionCallConv, _get_alloca_alignment
 from numbast.intent_defs import ArgIntent, IntentPlan
+from numbast.types import CTYPE_MAPS
 
 
 class _ShimWriter:
@@ -50,13 +50,13 @@ def _lower_callconv_to_ir(
     return str(module)
 
 
-def test_cuda_vector_alloca_alignment_uses_type_size_without_alignof():
+def test_cuda_vector_alloca_alignment_uses_type_alignof():
     context = cuda_target.target_context
-    float2 = vector_types["float32x2"]
-    float4 = vector_types["float32x4"]
+    float2 = CTYPE_MAPS["float2"]
+    float4 = CTYPE_MAPS["float4"]
 
-    assert getattr(float2, "alignof_", None) is None
-    assert getattr(float4, "alignof_", None) is None
+    assert float2.alignof_ == 8
+    assert float4.alignof_ == 16
 
     assert (
         _get_alloca_alignment(context, context.get_value_type(float2), float2)
@@ -68,8 +68,16 @@ def test_cuda_vector_alloca_alignment_uses_type_size_without_alignof():
     )
 
 
+def test_alloca_alignment_honors_explicit_alignof_larger_than_16():
+    context = cuda_target.target_context
+    value_ty = context.get_value_type(cuda_types.int32)
+    explicit_aligned_type = SimpleNamespace(alignof_=32)
+
+    assert _get_alloca_alignment(context, value_ty, explicit_aligned_type) == 32
+
+
 def test_return_and_value_arg_allocas_are_aligned_in_lowered_ir():
-    float2 = vector_types["float32x2"]
+    float2 = CTYPE_MAPS["float2"]
 
     llvm_ir = _lower_callconv_to_ir(return_type=float2, args=(float2,))
 
@@ -79,8 +87,8 @@ def test_return_and_value_arg_allocas_are_aligned_in_lowered_ir():
 
 
 def test_intent_plan_allocas_are_aligned_in_lowered_ir():
-    float2 = vector_types["float32x2"]
-    float4 = vector_types["float32x4"]
+    float2 = CTYPE_MAPS["float2"]
+    float4 = CTYPE_MAPS["float4"]
     plan = IntentPlan(
         intents=(ArgIntent.in_, ArgIntent.out_return),
         visible_param_indices=(0,),

@@ -19,13 +19,12 @@ class _OutReturnPtr(NamedTuple):
 
 
 def _get_alloca_alignment(context, value_ty, numba_ty=None):
-    """Return a power-of-two stack alignment for shim value slots."""
+    """Return the stack alignment for shim value slots."""
     abi_align = context.get_abi_alignment(value_ty)
-    abi_size = context.get_abi_sizeof(value_ty)
-    capped_size = max(1, min(abi_size, 16))
-    size_align = 1 << (capped_size.bit_length() - 1)
-    explicit_align = getattr(numba_ty, "alignof_", None) or 0
-    return max(abi_align, size_align, explicit_align)
+    explicit_align = getattr(numba_ty, "alignof_", None)
+    if explicit_align is None:
+        return abi_align
+    return max(abi_align, explicit_align)
 
 
 def _set_alloca_alignment(alloca, context, value_ty, numba_ty=None):

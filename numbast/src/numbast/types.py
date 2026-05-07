@@ -73,6 +73,16 @@ CTYPE_MAPS = {
     "double4": vector_types["float64x4"],
 }
 
+for _cxx_name, _alignment in {
+    "uint2": 8,
+    "uint4": 16,
+    "float2": 8,
+    "float4": 16,
+    "double2": 16,
+    "double4": 16,
+}.items():
+    CTYPE_MAPS[_cxx_name].alignof_ = _alignment
+
 
 NUMBA_TO_CTYPE_MAPS = {
     nbtypes.int8: "char",
