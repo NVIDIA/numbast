@@ -58,13 +58,26 @@ ENUM_TYPE_MAPS = {
     ),
 }
 
+CUDA_VECTOR_TYPE_SPECS = (
+    ("char", "int8", {1: 1, 2: 2, 3: 1, 4: 4}),
+    ("uchar", "uint8", {1: 1, 2: 2, 3: 1, 4: 4}),
+    ("short", "int16", {1: 2, 2: 4, 3: 2, 4: 8}),
+    ("ushort", "uint16", {1: 2, 2: 4, 3: 2, 4: 8}),
+    ("int", "int32", {1: 4, 2: 8, 3: 4, 4: 16}),
+    ("uint", "uint32", {1: 4, 2: 8, 3: 4, 4: 16}),
+    ("longlong", "int64", {1: 8, 2: 16, 3: 8, 4: 16}),
+    ("ulonglong", "uint64", {1: 8, 2: 16, 3: 8, 4: 16}),
+    ("float", "float32", {1: 4, 2: 8, 3: 4, 4: 16}),
+    ("double", "float64", {1: 8, 2: 16, 3: 8, 4: 16}),
+)
+
 CUDA_VECTOR_TYPE_MAPS = {
-    "uint2": (vector_types["uint32x2"], 8),
-    "uint4": (vector_types["uint32x4"], 16),
-    "float2": (vector_types["float32x2"], 8),
-    "float4": (vector_types["float32x4"], 16),
-    "double2": (vector_types["float64x2"], 16),
-    "double4": (vector_types["float64x4"], 16),
+    f"{cxx_name}{lanes}": (
+        vector_types[f"{numba_name}x{lanes}"],
+        alignments[lanes],
+    )
+    for cxx_name, numba_name, alignments in CUDA_VECTOR_TYPE_SPECS
+    for lanes in (1, 2, 3, 4)
 }
 
 CTYPE_MAPS = {}
@@ -84,6 +97,10 @@ NUMBA_TO_CTYPE_MAPS = {
     nbtypes.float64: "double",
     nbtypes.bool_: "bool",
     nbtypes.void: "void",
+    **{
+        numba_type: cxx_name
+        for cxx_name, (numba_type, _alignof) in CUDA_VECTOR_TYPE_MAPS.items()
+    },
 }
 
 
