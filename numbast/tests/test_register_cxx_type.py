@@ -48,3 +48,38 @@ def test_register_overwrites_previous_registration():
 
     register_cxx_type(cxx_name, nbtypes.float64)
     assert to_numba_type(cxx_name) is nbtypes.float64
+
+
+def test_register_records_explicit_alignment():
+    """Registering with alignof records the C++ alignment requirement."""
+    cxx_name = "SomeLibrary::Aligned_abc123"
+    numba_type = nbtypes.Opaque("SomeLibrary::Aligned_abc123")
+
+    register_cxx_type(cxx_name, numba_type, alignof=32)
+
+    result = to_numba_type(cxx_name)
+    assert result is numba_type
+    assert result.alignof_ == 32
+
+
+@pytest.mark.parametrize("alignof", [0, 3, -8])
+def test_register_rejects_invalid_alignment(alignof):
+    """Explicit alignment must be a positive power of two."""
+    cxx_name = f"SomeLibrary::InvalidAlign_{alignof}_abc123"
+    numba_type = nbtypes.Opaque(cxx_name)
+
+    with pytest.raises(ValueError, match="positive power of two"):
+        register_cxx_type(cxx_name, numba_type, alignof=alignof)
+
+
+def test_register_rejects_conflicting_alignment_metadata():
+    """Existing type alignment metadata must not be silently overwritten."""
+    numba_type = nbtypes.Opaque("SomeLibrary::ConflictingAligned_abc123")
+    register_cxx_type("SomeLibrary::Aligned16_abc123", numba_type, alignof=16)
+
+    with pytest.raises(ValueError, match="already has alignof_=16"):
+        register_cxx_type(
+            "SomeLibrary::Aligned32_abc123",
+            numba_type,
+            alignof=32,
+        )

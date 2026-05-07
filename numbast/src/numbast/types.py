@@ -58,30 +58,16 @@ ENUM_TYPE_MAPS = {
     ),
 }
 
-CTYPE_MAPS = {
-    **INTEGER_TYPE_MAPS,
-    **FLOATING_TYPE_MAPS,
-    **CCCL_Types,
-    **ENUM_TYPE_MAPS,
-    "void": nbtypes.void,
-    "bool": nbtypes.bool_,
-    "uint4": vector_types["uint32x4"],
-    "uint2": vector_types["uint32x2"],
-    "float2": vector_types["float32x2"],
-    "float4": vector_types["float32x4"],
-    "double2": vector_types["float64x2"],
-    "double4": vector_types["float64x4"],
+CUDA_VECTOR_TYPE_MAPS = {
+    "uint2": (vector_types["uint32x2"], 8),
+    "uint4": (vector_types["uint32x4"], 16),
+    "float2": (vector_types["float32x2"], 8),
+    "float4": (vector_types["float32x4"], 16),
+    "double2": (vector_types["float64x2"], 16),
+    "double4": (vector_types["float64x4"], 16),
 }
 
-for _cxx_name, _alignment in {
-    "uint2": 8,
-    "uint4": 16,
-    "float2": 8,
-    "float4": 16,
-    "double2": 16,
-    "double4": 16,
-}.items():
-    CTYPE_MAPS[_cxx_name].alignof_ = _alignment
+CTYPE_MAPS = {}
 
 
 NUMBA_TO_CTYPE_MAPS = {
@@ -101,7 +87,21 @@ NUMBA_TO_CTYPE_MAPS = {
 }
 
 
-def register_cxx_type(cxx_name: str, numba_type: nbtypes.Type):
+def _normalize_alignof(alignof: int | None) -> int | None:
+    if alignof is None:
+        return None
+    alignof = int(alignof)
+    if alignof <= 0 or alignof & (alignof - 1):
+        raise ValueError("alignof must be a positive power of two")
+    return alignof
+
+
+def register_cxx_type(
+    cxx_name: str,
+    numba_type: nbtypes.Type,
+    *,
+    alignof: int | None = None,
+):
     """
     Register an external C++ type in numbast's type registry.
 
@@ -113,8 +113,35 @@ def register_cxx_type(cxx_name: str, numba_type: nbtypes.Type):
     Parameters:
         cxx_name (str): The C++ type name as it appears in function signatures.
         numba_type (nbtypes.Type): The Numba type to map it to.
+        alignof (int | None): Optional explicit C++ alignment requirement for
+            the type. When provided, it must be a positive power of two and is
+            attached to the Numba type as ``alignof_``.
     """
+    alignof = _normalize_alignof(alignof)
+    if alignof is not None:
+        existing_alignof = getattr(numba_type, "alignof_", None)
+        if existing_alignof is not None and existing_alignof != alignof:
+            raise ValueError(
+                f"{numba_type} already has alignof_={existing_alignof}, "
+                f"cannot register {cxx_name!r} with alignof={alignof}"
+            )
+        numba_type.alignof_ = alignof
     CTYPE_MAPS[cxx_name] = numba_type
+
+
+def _register_builtin_cxx_types():
+    for cxx_name, numba_type in {
+        **INTEGER_TYPE_MAPS,
+        **FLOATING_TYPE_MAPS,
+        **CCCL_Types,
+        **ENUM_TYPE_MAPS,
+        "void": nbtypes.void,
+        "bool": nbtypes.bool_,
+    }.items():
+        register_cxx_type(cxx_name, numba_type)
+
+    for cxx_name, (numba_type, alignof) in CUDA_VECTOR_TYPE_MAPS.items():
+        register_cxx_type(cxx_name, numba_type, alignof=alignof)
 
 
 def register_enum_type(
@@ -131,7 +158,7 @@ def register_enum_type(
     Returns:
         None
     """
-    CTYPE_MAPS[cxx_name] = nbtypes.IntEnumMember(e, nbtypes.int64)
+    register_cxx_type(cxx_name, nbtypes.IntEnumMember(e, nbtypes.int64))
 
 
 def to_numba_type(ty: str):
@@ -216,5 +243,6 @@ def is_c_floating_type(typ_str: str) -> bool:
     return typ_str in FLOATING_TYPE_MAPS
 
 
-# Register CUDA Python Types
-register_enum_type("cudaRoundMode", runtime.cudaRoundMode)
+# Register built-in C/CUDA type mappings through the same public path used by
+# downstream registrations.
+_register_builtin_cxx_types()
