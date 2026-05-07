@@ -158,11 +158,16 @@ bind_static_function_templates(
         with_imports: bool,
         with_shim_stream: bool,
     ):
+        symbol_names = self._collect_symbol_names()
+        if not symbol_names:
+            self._output = ""
+            return
+
         self.Imports.add(
             "from numbast.static.function_template import bind_static_function_templates"
         )
 
-        for symbol in self._collect_symbol_names():
+        for symbol in symbol_names:
             if symbol not in self._function_symbols:
                 self._function_symbols.append(symbol)
 
