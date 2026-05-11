@@ -8,6 +8,7 @@
 
    .. autosummary::
    
+      get_numba_type_alignof
       is_c_floating_type
       is_c_integral_type
       register_cxx_type

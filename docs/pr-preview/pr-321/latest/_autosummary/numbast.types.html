@@ -597,25 +597,28 @@
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_c_floating_type</span></code>(typ_str)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_numba_type_alignof</span></code>(numba_type)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_c_integral_type</span></code>(typ_str)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_c_floating_type</span></code>(typ_str)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_cxx_type</span></code>(cxx_name, numba_type)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_c_integral_type</span></code>(typ_str)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_cxx_type</span></code>(cxx_name, numba_type, *[, ...])</p></td>
 <td><p>Register an external C++ type in numbast's type registry.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_enum_type</span></code>(cxx_name, e)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_enum_type</span></code>(cxx_name, e)</p></td>
 <td><p>Register a mapping from a C++ enum type name to its corresponding Numba type.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_c_type_str</span></code>(nbty)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_c_type_str</span></code>(nbty)</p></td>
 <td><p>Convert a Numba type to its corresponding C/C++ type string.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_numba_arg_type</span></code>(ast_type)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_numba_arg_type</span></code>(ast_type)</p></td>
 <td><p>Map an ast_canopy Type to the corresponding Numba type for use as a function argument.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_numba_type</span></code>(ty)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_numba_type</span></code>(ty)</p></td>
 <td><p>Map a C/C++ type string to the corresponding Numba type.</p></td>
 </tr>
 </tbody>
