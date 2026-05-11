@@ -11,7 +11,7 @@ from numba.cuda.descriptor import cuda_target
 
 from numbast.callconv import FunctionCallConv, _get_alloca_alignment
 from numbast.intent_defs import ArgIntent, IntentPlan
-from numbast.types import CTYPE_MAPS
+from numbast.types import CTYPE_MAPS, get_numba_type_alignof
 
 
 class _ShimWriter:
@@ -50,13 +50,15 @@ def _lower_callconv_to_ir(
     return str(module)
 
 
-def test_cuda_vector_alloca_alignment_uses_type_alignof():
+def test_cuda_vector_alloca_alignment_uses_registered_alignof():
     context = cuda_target.target_context
     float2 = CTYPE_MAPS["float2"]
     float4 = CTYPE_MAPS["float4"]
 
-    assert float2.alignof_ == 8
-    assert float4.alignof_ == 16
+    assert get_numba_type_alignof(float2) == 8
+    assert get_numba_type_alignof(float4) == 16
+    assert getattr(float2, "alignof_", None) is None
+    assert getattr(float4, "alignof_", None) is None
 
     assert (
         _get_alloca_alignment(context, context.get_value_type(float2), float2)

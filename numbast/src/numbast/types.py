@@ -81,6 +81,8 @@ CUDA_VECTOR_TYPE_MAPS = {
 }
 
 CTYPE_MAPS = {}
+CTYPE_ALIGNOF_MAPS = {}
+NUMBA_TYPE_ALIGNOF_MAPS = {}
 
 
 NUMBA_TO_CTYPE_MAPS = {
@@ -131,19 +133,60 @@ def register_cxx_type(
         cxx_name (str): The C++ type name as it appears in function signatures.
         numba_type (nbtypes.Type): The Numba type to map it to.
         alignof (int | None): Optional explicit C++ alignment requirement for
-            the type. When provided, it must be a positive power of two and is
-            attached to the Numba type as ``alignof_``.
+            the type. When provided, it must be a positive power of two.
     """
     alignof = _normalize_alignof(alignof)
+    existing_type = CTYPE_MAPS.get(cxx_name)
+    existing_alignof = CTYPE_ALIGNOF_MAPS.get(cxx_name)
     if alignof is not None:
-        existing_alignof = getattr(numba_type, "alignof_", None)
-        if existing_alignof is not None and existing_alignof != alignof:
+        existing_type_alignof = NUMBA_TYPE_ALIGNOF_MAPS.get(numba_type)
+        if existing_type_alignof is None:
+            existing_owner = next(
+                (
+                    existing_name
+                    for existing_name, registered_type in CTYPE_MAPS.items()
+                    if (
+                        existing_name != cxx_name
+                        and registered_type == numba_type
+                    )
+                ),
+                None,
+            )
+            if existing_owner is not None:
+                raise ValueError(
+                    "aligned aliases require a distinct Numba type object; "
+                    f"{numba_type} is already registered as {existing_owner!r}"
+                )
+        elif existing_type_alignof != alignof:
             raise ValueError(
-                f"{numba_type} already has alignof_={existing_alignof}, "
+                f"{numba_type} already has alignof_={existing_type_alignof}, "
                 f"cannot register {cxx_name!r} with alignof={alignof}"
             )
-        numba_type.alignof_ = alignof
+        NUMBA_TYPE_ALIGNOF_MAPS[numba_type] = alignof
+
     CTYPE_MAPS[cxx_name] = numba_type
+    if alignof is None:
+        CTYPE_ALIGNOF_MAPS.pop(cxx_name, None)
+    else:
+        CTYPE_ALIGNOF_MAPS[cxx_name] = alignof
+
+    if (
+        existing_type is not None
+        and existing_alignof is not None
+        and not any(
+            registered_type == existing_type
+            for existing_name, registered_type in CTYPE_MAPS.items()
+            if CTYPE_ALIGNOF_MAPS.get(existing_name) is not None
+        )
+    ):
+        NUMBA_TYPE_ALIGNOF_MAPS.pop(existing_type, None)
+
+
+def get_numba_type_alignof(numba_type: nbtypes.Type) -> int | None:
+    try:
+        return NUMBA_TYPE_ALIGNOF_MAPS.get(numba_type)
+    except TypeError:
+        return None
 
 
 def _register_builtin_cxx_types():

@@ -9,6 +9,7 @@ from numba.cuda.vector_types import vector_types
 from numbast.types import (
     CTYPE_MAPS,
     CUDA_VECTOR_TYPE_MAPS,
+    get_numba_type_alignof,
     to_c_type_str,
     to_numba_type,
 )
@@ -77,7 +78,8 @@ def test_cuda_vector_types_map_to_numba_types_with_alignment(
 
     assert result is vector_types[numba_key]
     assert result is CTYPE_MAPS[cxx_name]
-    assert result.alignof_ == alignof
+    assert get_numba_type_alignof(result) == alignof
+    assert getattr(result, "alignof_", None) is None
     assert CUDA_VECTOR_TYPE_MAPS[cxx_name] == (result, alignof)
 
 

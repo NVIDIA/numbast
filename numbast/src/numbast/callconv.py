@@ -11,6 +11,8 @@ from numba.cuda import types, cgutils
 
 from llvmlite import ir
 
+from numbast.types import get_numba_type_alignof
+
 
 class _OutReturnPtr(NamedTuple):
     numba_ty: types.Type
@@ -21,7 +23,9 @@ class _OutReturnPtr(NamedTuple):
 def _get_alloca_alignment(context, value_ty, numba_ty=None):
     """Return the stack alignment for shim value slots."""
     abi_align = context.get_abi_alignment(value_ty)
-    explicit_align = getattr(numba_ty, "alignof_", None)
+    explicit_align = get_numba_type_alignof(numba_ty)
+    if explicit_align is None:
+        explicit_align = getattr(numba_ty, "alignof_", None)
     if explicit_align is None:
         return abi_align
     return max(abi_align, explicit_align)
