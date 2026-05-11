@@ -61,7 +61,8 @@ EXPECTED_CUDA_VECTOR_TYPES = (
 
 def test_all_canonical_cuda_vector_types_are_registered():
     expected_cxx_names = {
-        cxx_name for cxx_name, _numba_key, _alignof in EXPECTED_CUDA_VECTOR_TYPES
+        cxx_name
+        for cxx_name, _numba_key, _alignof in EXPECTED_CUDA_VECTOR_TYPES
     }
     assert set(CUDA_VECTOR_TYPE_MAPS) == expected_cxx_names
 
@@ -96,6 +97,5 @@ def test_cuda_vector_types_map_back_to_c_type_strings(
 
 def test_cuda_vector_pointer_types_map_back_to_c_type_strings():
     assert (
-        to_c_type_str(nbtypes.CPointer(vector_types["float32x3"]))
-        == "float3*"
+        to_c_type_str(nbtypes.CPointer(vector_types["float32x3"])) == "float3*"
     )
