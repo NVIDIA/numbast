@@ -1,8 +1,10 @@
 import inspect
+import pprint
 
 from numbast import callconv
 from numbast import args
 from numbast import intent_defs as intent_mod
+from numbast.types import NUMBA_TYPE_ALIGNOF_MAPS
 
 
 def _extract_section(src: str, begin: str, end: str) -> str:
@@ -43,4 +45,35 @@ _CALLCONV_SRC_SECTION = _extract_section(
     _CALLCONV_SRC, "# NBST:BEGIN_CALLCONV", "# NBST:END_CALLCONV"
 )
 
-CALLCONV_SRC = INTENT_SRC + "\n" + ARGS_SRC + "\n" + _CALLCONV_SRC_SECTION
+
+def _render_numba_type_alignof_src() -> str:
+    """
+    Render the alignof lookup helper used by generated static bindings.
+
+    Static bindings cannot import ``numbast.types`` at runtime, so the
+    generator snapshots the known explicit alignment map as type-name strings.
+    Generated struct types still use their ``alignof_`` attribute directly.
+    """
+    alignof_by_type_name = {
+        str(numba_type): alignof
+        for numba_type, alignof in NUMBA_TYPE_ALIGNOF_MAPS.items()
+    }
+    alignof_map_src = pprint.pformat(alignof_by_type_name, sort_dicts=True)
+    return f"""
+_NUMBA_TYPE_ALIGNOF_MAPS = {alignof_map_src}
+
+
+def get_numba_type_alignof(numba_type):
+    return _NUMBA_TYPE_ALIGNOF_MAPS.get(str(numba_type))
+"""
+
+
+CALLCONV_SRC = (
+    INTENT_SRC
+    + "\n"
+    + ARGS_SRC
+    + "\n"
+    + _render_numba_type_alignof_src()
+    + "\n"
+    + _CALLCONV_SRC_SECTION
+)

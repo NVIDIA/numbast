@@ -3,6 +3,7 @@
 
 from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
+from numbast.types import get_numba_type_alignof
 
 # NBST:BEGIN_CALLCONV
 from typing import NamedTuple
@@ -10,8 +11,6 @@ from typing import NamedTuple
 from numba.cuda import types, cgutils
 
 from llvmlite import ir
-
-from numbast.types import get_numba_type_alignof
 
 
 class _OutReturnPtr(NamedTuple):
