@@ -41,6 +41,7 @@ cuda = "12"
 
 [feature.cu12.dependencies]
 numba-cuda = ">=0.25.0"
+cuda-core = ">=0.7.0,<2.0.0"
 cuda-version = "12.9.*"
 cuda-toolkit = "12.9.*"
 cuda-python = "12.9.*"
@@ -50,6 +51,7 @@ cuda = "13"
 
 [feature.cu13.dependencies]
 numba-cuda = ">=0.25.0"
+cuda-core = ">=0.7.0,<2.0.0"
 cuda-version = "13.0.*"
 cuda-toolkit = "13.0.*"
 cuda-python = "13.0.*"
