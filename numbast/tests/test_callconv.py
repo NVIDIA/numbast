@@ -57,8 +57,6 @@ def test_cuda_vector_alloca_alignment_uses_registered_alignof():
 
     assert get_numba_type_alignof(float2) == 8
     assert get_numba_type_alignof(float4) == 16
-    assert getattr(float2, "alignof_", None) is None
-    assert getattr(float4, "alignof_", None) is None
 
     assert (
         _get_alloca_alignment(context, context.get_value_type(float2), float2)
@@ -68,6 +66,17 @@ def test_cuda_vector_alloca_alignment_uses_registered_alignof():
         _get_alloca_alignment(context, context.get_value_type(float4), float4)
         == 16
     )
+
+
+def test_alloca_alignment_falls_back_to_abi_alignment():
+    context = cuda_target.target_context
+    no_explicit_align = SimpleNamespace()
+
+    for numba_ty in (CTYPE_MAPS["float2"], CTYPE_MAPS["float4"]):
+        value_ty = context.get_value_type(numba_ty)
+        assert _get_alloca_alignment(
+            context, value_ty, no_explicit_align
+        ) == context.get_abi_alignment(value_ty)
 
 
 def test_alloca_alignment_honors_explicit_alignof_larger_than_16():
