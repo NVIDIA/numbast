@@ -172,7 +172,7 @@ jobs:
           commit_message: ${{ steps.commit-msg.outputs.message }}
       - name: Comment PR with preview URL
         if: ${{ !inputs.is_release && !inputs.remove_pr_preview && steps.normalize-pr-number.outputs.pr_number }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: pr-preview
           number: ${{ steps.normalize-pr-number.outputs.pr_number }}
