@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 
-from cuda.core.experimental import Device
+from cuda.core import Device
 
 dev = Device(0)
 cc = dev.compute_capability
