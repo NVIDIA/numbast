@@ -278,6 +278,23 @@ Optional keys
           0: in
 
 
+``Function Return Materializations`` : ``object``
+   Per-function return materialization overrides for borrowed fixed-size pointer returns. Function keys map to an
+   integer length or an object with kind/intent pointer metadata and a length, size, or count.
+
+   Default: ``{}``.
+
+   Example:
+
+   .. code-block:: yaml
+
+      Function Return Materializations:
+        get_transform:
+          kind: pointer
+          length: 3
+        get_coefficients: 8
+
+
 Optional nested keys
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -615,3 +632,59 @@ Raw schema
                    type: string
                    enum: ["in", "inout_ptr", "out_ptr", "out_return"]
                required: ["intent"]
+     Function Return Materializations:
+       type: object
+       default: {}
+       description: >
+         Per-function return materialization overrides for borrowed fixed-size pointer returns. Function keys map to an
+         integer length or an object with kind/intent pointer metadata and a length, size, or count.
+
+       examples:
+         - get_transform:
+             kind: pointer
+             length: 3
+           get_coefficients: 8
+       additionalProperties:
+         oneOf:
+           - type: integer
+             minimum: 1
+           - type: object
+             additionalProperties: false
+             properties:
+               kind:
+                 type: string
+                 enum:
+                   - pointer
+                   - ptr
+                   - pointer_return
+                   - ptr_return
+                   - borrowed_ptr
+                   - borrowed_pointer
+                   - fixed_size_pointer
+                   - borrowed_fixed_size_ptr
+                   - borrowed_fixed_size_pointer
+               intent:
+                 type: string
+                 enum:
+                   - pointer
+                   - ptr
+                   - pointer_return
+                   - ptr_return
+                   - borrowed_ptr
+                   - borrowed_pointer
+                   - fixed_size_pointer
+                   - borrowed_fixed_size_ptr
+                   - borrowed_fixed_size_pointer
+               length:
+                 type: integer
+                 minimum: 1
+               size:
+                 type: integer
+                 minimum: 1
+               count:
+                 type: integer
+                 minimum: 1
+             anyOf:
+               - required: ["length"]
+               - required: ["size"]
+               - required: ["count"]

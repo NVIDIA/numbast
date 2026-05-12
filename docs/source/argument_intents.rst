@@ -112,3 +112,26 @@ Notes
   returns that value directly (not a tuple).
 - If C++ returns ``void`` and there are multiple ``out_return`` parameters,
   Numbast returns ``types.Tuple((out1, out2, ...))``.
+
+Pointer return materialization
+------------------------------
+
+Some APIs return a borrowed pointer to a fixed-size sequence owned elsewhere:
+
+.. code-block:: c++
+
+  __device__ const float4 *get_transform(Handle h);
+
+Use ``Function Return Materializations`` to copy a configured number of
+pointee values into the Numba return value:
+
+.. code-block:: yaml
+
+  Function Return Materializations:
+    get_transform:
+      kind: pointer
+      length: 3
+
+The generated Numba signature returns ``UniTuple(float32x4, 3)``. The source
+pointer is still the C++ return value; Numbast does not allocate or own that
+storage beyond copying the configured elements during the call.

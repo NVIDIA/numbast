@@ -3,6 +3,7 @@
 
 from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
+from numbast.return_materialization import PointerReturnMaterialization
 from numbast.types import get_numba_type_alignof
 
 # NBST:BEGIN_CALLCONV
@@ -78,6 +79,7 @@ class FunctionCallConv(BaseCallConv):
         intent_plan: IntentPlan | None = None,
         out_return_types: list[types.Type] | None = None,
         cxx_return_type: types.Type | None = None,
+        return_materialization: PointerReturnMaterialization | None = None,
     ):
         """
         Initialize a FunctionCallConv with shim information and optional ABI/intent hints.
@@ -90,6 +92,10 @@ class FunctionCallConv(BaseCallConv):
             intent_plan (IntentPlan | None): Optional plan describing visible parameter indices, which parameters should be passed as pointers, and which parameters are out-returns; when present it drives argument mapping and out-return handling.
             out_return_types (list[types.Type] | None): Types of the out-return values in the order declared by the IntentPlan; required when the intent_plan defines out-return indices.
             cxx_return_type (types.Type | None): The C++ ABI return type to use for allocating/shimming the return slot; if None, the signature's return type is used.
+            return_materialization (PointerReturnMaterialization | None):
+                Optional borrowed-pointer return materialization plan. When
+                provided, the C++ return value must be a pointer and Numbast
+                copies `length` pointee elements into a UniTuple return value.
         """
         super().__init__(itanium_mangled_name, shim_writer, shim_code)
         self._arg_is_ref = list(arg_is_ref) if arg_is_ref is not None else None
@@ -98,6 +104,41 @@ class FunctionCallConv(BaseCallConv):
             list(out_return_types) if out_return_types is not None else None
         )
         self._cxx_return_type = cxx_return_type
+        self._return_materialization = return_materialization
+
+    def _materialize_pointer_return(
+        self,
+        builder,
+        context,
+        cxx_return_type,
+        retval_ptr,
+        retval_align,
+    ):
+        if self._return_materialization is None:
+            raise ValueError("return materialization was not configured")
+        if not isinstance(cxx_return_type, types.CPointer):
+            raise ValueError(
+                "pointer return materialization requires a C++ pointer return "
+                f"type, got {cxx_return_type}"
+            )
+
+        pointee_numba_ty = cxx_return_type.dtype
+        pointee_ir_ty = context.get_value_type(pointee_numba_ty)
+        pointee_align = _get_alloca_alignment(
+            context, pointee_ir_ty, pointee_numba_ty
+        )
+        source_ptr = builder.load(retval_ptr, align=retval_align)
+
+        ret_vals: list[ir.Value] = []
+        for idx in range(self._return_materialization.length):
+            offset = ir.Constant(ir.IntType(32), idx)
+            elem_ptr = builder.gep(source_ptr, [offset], inbounds=True)
+            ret_vals.append(builder.load(elem_ptr, align=pointee_align))
+
+        return_type = types.UniTuple(
+            pointee_numba_ty, self._return_materialization.length
+        )
+        return context.make_tuple(builder, return_type, ret_vals)
 
     def _lower_impl(self, builder, context, sig, args):
         # Numba-visible return type may differ from the underlying C++ return type
@@ -125,6 +166,13 @@ class FunctionCallConv(BaseCallConv):
             if self._cxx_return_type is not None
             else sig.return_type
         )
+        if (
+            self._return_materialization is not None
+            and cxx_return_type == types.void
+        ):
+            raise ValueError(
+                "pointer return materialization cannot be used with void returns"
+            )
         # 1. Prepare return value pointer
         if cxx_return_type == types.void:
             # Void return type in C++ is shimmed as int& ignored
@@ -248,18 +296,29 @@ class FunctionCallConv(BaseCallConv):
         builder.call(fn, (retval_ptr, *ptrs))
 
         # 5. Return
+        materialized_return = None
+        if self._return_materialization is not None:
+            materialized_return = self._materialize_pointer_return(
+                builder, context, cxx_return_type, retval_ptr, retval_align
+            )
+
         if (
             self._intent_plan is None
             or not self._intent_plan.out_return_indices
         ):
             if cxx_return_type == types.void:
                 return None
+            if materialized_return is not None:
+                return materialized_return
             return builder.load(retval_ptr, align=retval_align)
 
         # out_return enabled: return either a value or a tuple (ret, out1, out2, ...)
         ret_vals: list[ir.Value] = []
         if cxx_return_type != types.void:
-            ret_vals.append(builder.load(retval_ptr, align=retval_align))
+            if materialized_return is not None:
+                ret_vals.append(materialized_return)
+            else:
+                ret_vals.append(builder.load(retval_ptr, align=retval_align))
         for out_return in out_return_ptrs:
             ret_vals.append(
                 builder.load(out_return.ptr, align=out_return.align)

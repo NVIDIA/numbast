@@ -45,6 +45,7 @@ def test_static_binding_schema_has_expected_keys():
         "Skip Prefix",
         "Use Separate Registry",
         "Function Argument Intents",
+        "Function Return Materializations",
     }
     assert expected_keys.issubset(set(properties))
 

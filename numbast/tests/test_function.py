@@ -11,6 +11,7 @@ import cffi
 
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_functions, MemoryShimWriter
+from numbast.function import overload_registry
 
 import pytest
 
@@ -234,3 +235,58 @@ def test_out_return_device_function_results(_sample_out_functions):
     kernel_ptr[1, 1](out_ptr_buf, np.int32(8), out_in_ref)
     assert out_ptr_buf[0] == 9
     assert out_in_ref[0] == 13
+
+
+@pytest.fixture
+def _sample_pointer_return_functions():
+    DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
+    p = os.path.join(DATA_FOLDER, "sample_function_out.cuh")
+    decls = parse_declarations_from_source(p, [p], "sm_80", verbose=True)
+    funcs = decls.functions
+    shim_writer = MemoryShimWriter(f'#include "{p}"')
+
+    func_bindings = bind_cxx_functions(
+        shim_writer,
+        funcs,
+        return_materializations={
+            "get_transform": {"kind": "pointer", "length": 3},
+        },
+    )
+
+    return func_bindings, shim_writer
+
+
+def test_pointer_return_materializes_borrowed_rows(
+    _sample_pointer_return_functions,
+):
+    func_bindings, shim_writer = _sample_pointer_return_functions
+    get_transform = find_binding(func_bindings, "get_transform")
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel(out):
+        rows = get_transform(0)
+        out[0] = rows[0].x
+        out[1] = rows[0].y
+        out[2] = rows[0].z
+        out[3] = rows[0].w
+        out[4] = rows[1].x
+        out[5] = rows[1].y
+        out[6] = rows[1].z
+        out[7] = rows[1].w
+        out[8] = rows[2].x
+        out[9] = rows[2].y
+        out[10] = rows[2].z
+        out[11] = rows[2].w
+
+    out = np.zeros(12, dtype=np.float32)
+    kernel[1, 1](out)
+    np.testing.assert_allclose(
+        out, np.arange(1, 13, dtype=np.float32), rtol=0, atol=0
+    )
+
+
+def test_pointer_return_binding_signature(_sample_pointer_return_functions):
+    assert any(
+        str(sig) == "(int32,) -> UniTuple(float32x4 x 3)"
+        for sig in overload_registry["get_transform"]
+    )

@@ -90,6 +90,24 @@ def decl_out_ptr(make_binding):
     return bindings
 
 
+@pytest.fixture(scope="function")
+def decl_pointer_return(make_binding):
+    res = make_binding(
+        "function_out.cuh",
+        {},
+        {},
+        "sm_50",
+        function_return_materializations={
+            "get_transform": {"kind": "pointer", "length": 3},
+        },
+    )
+    bindings = res["bindings"]
+
+    assert "get_transform" in bindings
+
+    return bindings
+
+
 @pytest.fixture(scope="module")
 def impl_out(data_folder):
     """
@@ -230,3 +248,51 @@ def test_out_ptr_in_inout_function_bindings(decl_out_ptr, impl_out):
     assert out_ptr_buf[0] == 9
     assert inout_buf[0] == 10
     assert out_val.copy_to_host()[0] == 13
+
+
+def test_pointer_return_materializes_borrowed_rows(
+    decl_pointer_return, impl_out
+):
+    get_transform = decl_pointer_return["get_transform"]
+
+    @cuda.jit(link=[impl_out])
+    def kernel(out):
+        rows = get_transform(0)
+        out[0] = rows[0].x
+        out[1] = rows[0].y
+        out[2] = rows[0].z
+        out[3] = rows[0].w
+        out[4] = rows[1].x
+        out[5] = rows[1].y
+        out[6] = rows[1].z
+        out[7] = rows[1].w
+        out[8] = rows[2].x
+        out[9] = rows[2].y
+        out[10] = rows[2].z
+        out[11] = rows[2].w
+
+    out = device_array((12,), "float32")
+    kernel[1, 1](out)
+
+    np.testing.assert_allclose(
+        out.copy_to_host(), np.arange(1, 13, dtype=np.float32), rtol=0, atol=0
+    )
+
+
+def test_pointer_return_static_binding_source(make_binding):
+    src = make_binding(
+        "function_out.cuh",
+        {},
+        {},
+        "sm_50",
+        function_return_materializations={
+            "get_transform": {"kind": "pointer", "length": 3},
+        },
+    )["src"]
+
+    assert "signature(UniTuple(float32x4, 3), int32)" in src
+    assert (
+        "return_materialization=PointerReturnMaterialization(length=3)" in src
+    )
+    assert "cxx_return_type=CPointer(float32x4)" in src
+    assert "const float4 * &retval" in src

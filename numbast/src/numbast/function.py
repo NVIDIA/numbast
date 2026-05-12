@@ -15,6 +15,10 @@ from ast_canopy.decl import Function
 
 from numbast.types import to_numba_type, to_numba_arg_type
 from numbast.intent import compute_intent_plan
+from numbast.return_materialization import (
+    PointerReturnMaterialization,
+    parse_return_materialization,
+)
 from numbast.utils import (
     deduplicate_overloads,
     make_function_shim,
@@ -40,6 +44,22 @@ def make_new_func_obj():
 
 overload_registry: dict[str, list[Signature]] = defaultdict(list)
 func_obj_registry: dict[str, object] = defaultdict(make_new_func_obj)
+
+
+def _visible_cxx_return_type(
+    cxx_return_type: nbtypes.Type,
+    return_materialization: PointerReturnMaterialization | None,
+) -> nbtypes.Type:
+    if return_materialization is None:
+        return cxx_return_type
+    if not isinstance(cxx_return_type, nbtypes.CPointer):
+        raise ValueError(
+            "pointer return materialization requires a C++ pointer return "
+            f"type, got {cxx_return_type}"
+        )
+    return nbtypes.UniTuple(
+        cxx_return_type.dtype, return_materialization.length
+    )
 
 
 def bind_cxx_operator_overload_function(
@@ -129,6 +149,7 @@ def bind_cxx_non_operator_function(
     exclude: set[str],
     *,
     arg_intent: dict | None = None,
+    return_materializations: dict | None = None,
 ) -> object:
     """
     Create a Python-callable binding for a C++ non-operator function.
@@ -147,6 +168,8 @@ def bind_cxx_non_operator_function(
         Set of function names to exclude from binding.
     arg_intent : dict | None, optional
         Optional per-function intent overrides that specify visibility and in/out semantics for reference parameters.
+    return_materializations : dict | None, optional
+        Optional per-function return materialization specs for borrowed fixed-size pointer returns.
 
     Returns
     -------
@@ -164,11 +187,19 @@ def bind_cxx_non_operator_function(
     cxx_return_type = to_numba_type(
         func_decl.return_type.unqualified_non_ref_type_name
     )
+    return_materialization = parse_return_materialization(
+        return_materializations.get(func_decl.name)
+        if return_materializations
+        else None
+    )
+    visible_cxx_return_type = _visible_cxx_return_type(
+        cxx_return_type, return_materialization
+    )
 
     overrides = arg_intent.get(func_decl.name) if arg_intent else None
     if overrides is None:
         # Backward-compatible default: refs are input-only values.
-        return_type = cxx_return_type
+        return_type = visible_cxx_return_type
         param_types = [to_numba_arg_type(arg) for arg in func_decl.param_types]
         arg_is_ref = [
             bool(t.is_left_reference() or t.is_right_reference())
@@ -211,10 +242,10 @@ def bind_cxx_non_operator_function(
                     return_type = nbtypes.Tuple(tuple(out_return_types))
             else:
                 return_type = nbtypes.Tuple(
-                    tuple([cxx_return_type, *out_return_types])
+                    tuple([visible_cxx_return_type, *out_return_types])
                 )
         else:
-            return_type = cxx_return_type
+            return_type = visible_cxx_return_type
 
         # In intentful mode, pass-through pointers are controlled by intent_plan,
         # not by whether the C++ parameter is a reference.
@@ -235,7 +266,11 @@ def bind_cxx_non_operator_function(
 
     register_global(func, nbtypes.Function(func_typing))
 
-    return_type_name = func_decl.return_type.unqualified_non_ref_type_name
+    return_type_name = (
+        func_decl.return_type.name
+        if return_materialization is not None
+        else func_decl.return_type.unqualified_non_ref_type_name
+    )
     mangled_name = deduplicate_overloads(func_decl.mangled_name)
     shim_func_name = f"{mangled_name}_nbst"
 
@@ -251,6 +286,7 @@ def bind_cxx_non_operator_function(
         intent_plan=intent_plan,
         out_return_types=out_return_types,
         cxx_return_type=cxx_return_type,
+        return_materialization=return_materialization,
     )
 
     # Lowering
@@ -269,6 +305,7 @@ def bind_cxx_function(
     exclude: set[str] = set(),
     *,
     arg_intent: dict | None = None,
+    return_materializations: dict | None = None,
 ) -> object:
     """
     Create Python bindings for a C++ function.
@@ -282,6 +319,8 @@ def bind_cxx_function(
         arg_intent (dict | None): Optional explicit intent overrides that control which C++ reference
             parameters are exposed as inputs, outputs, or inout pointers and which parameters are
             promoted to out-returns.
+        return_materializations (dict | None): Optional per-function return
+            materialization specs for borrowed fixed-size pointer returns.
 
     Returns:
         object or None: The Numba-CUDA-callable Python binding object for the function, or `None`
@@ -307,6 +346,7 @@ def bind_cxx_function(
             skip_prefix=skip_prefix,
             exclude=exclude,
             arg_intent=arg_intent,
+            return_materializations=return_materializations,
         )
 
     return None
@@ -320,6 +360,7 @@ def bind_cxx_functions(
     exclude: set[str] = set(),
     *,
     arg_intent: dict | None = None,
+    return_materializations: dict | None = None,
 ) -> list[object]:
     """Create bindings for a list of C++ functions.
 
@@ -339,6 +380,9 @@ def bind_cxx_functions(
 
     exclude : set[str]
         A set of function names to exclude. Default to empty set.
+    return_materializations : dict | None
+        Optional per-function return materialization specs for borrowed fixed-size
+        pointer returns.
 
     Returns
     -------
@@ -355,6 +399,7 @@ def bind_cxx_functions(
             skip_non_device=skip_non_device,
             exclude=exclude,
             arg_intent=arg_intent,
+            return_materializations=return_materializations,
         )
         # overloaded operator (e.g. "+") do not need to have a separate API
         # as they are called directly from the Python operator.

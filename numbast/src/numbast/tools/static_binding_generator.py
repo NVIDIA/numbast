@@ -80,6 +80,7 @@ class Config:
     skip_prefix: str | None
     separate_registry: bool
     function_argument_intents: dict
+    function_return_materializations: dict
 
     def __init__(self, config_dict: dict):
         """
@@ -145,6 +146,9 @@ class Config:
         self.function_argument_intents = (
             config_dict.get("Function Argument Intents", {}) or {}
         )
+        self.function_return_materializations = (
+            config_dict.get("Function Return Materializations", {}) or {}
+        )
 
         # TODO: support multiple GPU architectures
         if len(self.gpu_arch) > 1:
@@ -194,12 +198,14 @@ class Config:
         skip_prefix: str | None = None,
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
+        function_return_materializations: dict | None = None,
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
 
         Parameters:
             function_argument_intents (dict | None): Mapping from function names to argument-intent specifications used by renderers; defaults to an empty dict if omitted.
+            function_return_materializations (dict | None): Mapping from function names to fixed-size pointer-return materialization specifications; defaults to an empty dict if omitted.
             cooperative_launch_required_functions_regex (list[str] | None): Regular expression patterns that identify functions requiring cooperative launch handling; defaults to an empty list if omitted.
             api_prefix_removal (dict[str, list[str]] | None): Mapping of API names to lists of symbol-name prefixes to remove when generating bindings; defaults to an empty dict if omitted.
             module_callbacks (dict[str, str] | None): Mapping of callback identifiers to their fully qualified callable names to be invoked from the generated module; defaults to an empty dict if omitted.
@@ -234,6 +240,8 @@ class Config:
             "Skip Prefix": skip_prefix,
             "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
+            "Function Return Materializations": function_return_materializations
+            or {},
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -398,6 +406,7 @@ def _generate_functions(
     function_prefix_removal: list[str],
     skip_prefix: str | None,
     function_argument_intents: dict | None = None,
+    function_return_materializations: dict | None = None,
 ) -> str:
     """
     Render the function-binding source for the given function declarations.
@@ -423,6 +432,7 @@ def _generate_functions(
         function_prefix_removal=function_prefix_removal,
         skip_prefix=skip_prefix,
         function_argument_intents=function_argument_intents or {},
+        function_return_materializations=function_return_materializations or {},
     )
 
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
@@ -640,6 +650,7 @@ def _static_binding_generator(
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
         config.function_argument_intents,
+        config.function_return_materializations,
     )
     class_template_bindings = _generate_class_templates(
         class_templates,

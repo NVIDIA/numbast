@@ -37,3 +37,14 @@ int __device__ add_in_ref(int &x) { return x + 5; }
  * @param delta Amount to add to `x`.
  */
 void __device__ add_inout_ref(int &x, int delta) { x += delta; }
+
+static __device__ const float4 transform_rows[3] = {
+    {1.0f, 2.0f, 3.0f, 4.0f},
+    {5.0f, 6.0f, 7.0f, 8.0f},
+    {9.0f, 10.0f, 11.0f, 12.0f},
+};
+
+const float4 *__device__ get_transform(int handle) {
+  (void)handle;
+  return transform_rows;
+}
