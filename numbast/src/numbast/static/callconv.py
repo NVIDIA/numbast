@@ -40,9 +40,7 @@ INTENT_SRC = _extract_section(
     _INTENT_DEFS_SRC, "# NBST:BEGIN_INTENT_DEFS", "# NBST:END_INTENT_DEFS"
 )
 
-_RETURN_MATERIALIZATION_DEFS_SRC = inspect.getsource(
-    return_materialization_mod
-)
+_RETURN_MATERIALIZATION_DEFS_SRC = inspect.getsource(return_materialization_mod)
 RETURN_MATERIALIZATION_SRC = _extract_section(
     _RETURN_MATERIALIZATION_DEFS_SRC,
     "# NBST:BEGIN_RETURN_MATERIALIZATION_DEFS",

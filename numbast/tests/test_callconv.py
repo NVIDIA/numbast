@@ -135,8 +135,6 @@ def test_pointer_return_materialization_loads_fixed_size_rows():
         return_materialization=PointerReturnMaterialization(length=3),
     )
 
-    assert llvm_ir.count(
-        "load {float, float, float, float}, "
-    ) == 3
+    assert llvm_ir.count("load {float, float, float, float}, ") == 3
     assert llvm_ir.count("align 16") >= 3
     assert "getelementptr inbounds {float, float, float, float}" in llvm_ir

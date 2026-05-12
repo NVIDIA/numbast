@@ -47,10 +47,9 @@ def _visible_cxx_return_type_str(
 ) -> str:
     if return_materialization is None:
         return cxx_return_type
-    if (
-        not cxx_return_type.startswith("CPointer(")
-        or not cxx_return_type.endswith(")")
-    ):
+    if not cxx_return_type.startswith(
+        "CPointer("
+    ) or not cxx_return_type.endswith(")"):
         raise ValueError(
             "pointer return materialization requires a C++ pointer return "
             f"type, got {cxx_return_type}"
@@ -66,9 +65,7 @@ def _render_return_materialization(
     if return_materialization is None:
         return "None"
     return (
-        "PointerReturnMaterialization("
-        f"length={return_materialization.length}"
-        ")"
+        f"PointerReturnMaterialization(length={return_materialization.length})"
     )
 
 
@@ -291,9 +288,7 @@ def {func_name}():
                     )
                     self._return_numba_type_str = f"types.Tuple(({outs},))"
             else:
-                self._return_numba_type_str = (
-                    self._visible_cxx_return_type_str
-                )
+                self._return_numba_type_str = self._visible_cxx_return_type_str
 
             def _tuple_literal(items: list[str]) -> str:
                 """
