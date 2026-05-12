@@ -162,6 +162,16 @@ def test_float32x2_operator_add_overload(decl, impl):
     assert arr.copy_to_host()[0] == 6.0
 
 
+def test_generated_callconv_alignof_helper_is_standalone(make_binding):
+    src = make_binding("function.cuh", {}, {}, "sm_50")["src"]
+
+    assert "from numbast" not in src
+    assert "import numbast" not in src
+    assert "from numbast.types import get_numba_type_alignof" not in src
+    assert "_NUMBA_TYPE_ALIGNOF_MAPS" in src
+    assert "def get_numba_type_alignof(numba_type):" in src
+
+
 def test_out_return_function_bindings(decl_out, impl_out):
     add_out = decl_out["add_out"]
     add_out_ret = decl_out["add_out_ret"]

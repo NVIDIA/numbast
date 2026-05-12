@@ -3,11 +3,37 @@
 
 from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
+from numbast.types import get_numba_type_alignof
 
 # NBST:BEGIN_CALLCONV
+from typing import NamedTuple
+
 from numba.cuda import types, cgutils
 
 from llvmlite import ir
+
+
+class _OutReturnPtr(NamedTuple):
+    numba_ty: types.Type
+    ptr: ir.Value
+    align: int
+
+
+def _get_alloca_alignment(context, value_ty, numba_ty=None):
+    """Return the stack alignment for shim value slots."""
+    abi_align = context.get_abi_alignment(value_ty)
+    explicit_align = get_numba_type_alignof(numba_ty)
+    if explicit_align is None:
+        explicit_align = getattr(numba_ty, "alignof_", None)
+    if explicit_align is None:
+        return abi_align
+    return max(abi_align, explicit_align)
+
+
+def _set_alloca_alignment(alloca, context, value_ty, numba_ty=None):
+    align = _get_alloca_alignment(context, value_ty, numba_ty)
+    alloca.align = align
+    return align
 
 
 class BaseCallConv:
@@ -104,9 +130,13 @@ class FunctionCallConv(BaseCallConv):
             # Void return type in C++ is shimmed as int& ignored
             retval_ty = ir.IntType(32)
             retval_ptr = builder.alloca(retval_ty, name="ignored")
+            retval_align = _set_alloca_alignment(retval_ptr, context, retval_ty)
         else:
             retval_ty = context.get_value_type(cxx_return_type)
             retval_ptr = builder.alloca(retval_ty, name="retval")
+            retval_align = _set_alloca_alignment(
+                retval_ptr, context, retval_ty, cxx_return_type
+            )
 
         # 2. Prepare arguments
         if self._intent_plan is None:
@@ -146,7 +176,7 @@ class FunctionCallConv(BaseCallConv):
         # - default: pass pointer-to-value to shim (alloca + store)
         # - for C++ reference args mapped to CPointer(T): pass pointer value directly
         ptrs = []
-        out_return_ptrs: list[tuple[types.Type, ir.Value]] = []
+        out_return_ptrs: list[_OutReturnPtr] = []
         if self._intent_plan is None:
             for argty, arg, passthrough in zip(sig.args, args, pass_ptr_mask):
                 vty = context.get_value_type(argty)
@@ -154,9 +184,8 @@ class FunctionCallConv(BaseCallConv):
                     ptrs.append(arg)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
-                    builder.store(
-                        arg, ptr, align=getattr(argty, "alignof_", None)
-                    )
+                    ptr_align = _set_alloca_alignment(ptr, context, vty, argty)
+                    builder.store(arg, ptr, align=ptr_align)
                     ptrs.append(ptr)
         else:
             plan = self._intent_plan
@@ -175,9 +204,16 @@ class FunctionCallConv(BaseCallConv):
                     out_nbty = self._out_return_types[out_pos]
                     vty = context.get_value_type(out_nbty)
                     ptr = cgutils.alloca_once(builder, vty)
+                    ptr_align = _set_alloca_alignment(
+                        ptr, context, vty, out_nbty
+                    )
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
-                    out_return_ptrs.append((out_nbty, ptr))
+                    out_return_ptrs.append(
+                        _OutReturnPtr(
+                            numba_ty=out_nbty, ptr=ptr, align=ptr_align
+                        )
+                    )
                     continue
 
                 vis_pos = orig_to_vis[orig_idx]
@@ -194,9 +230,8 @@ class FunctionCallConv(BaseCallConv):
                     arg_pointer_types.append(vty)
                 else:
                     ptr = cgutils.alloca_once(builder, vty)
-                    builder.store(
-                        arg, ptr, align=getattr(argty, "alignof_", None)
-                    )
+                    ptr_align = _set_alloca_alignment(ptr, context, vty, argty)
+                    builder.store(arg, ptr, align=ptr_align)
                     ptrs.append(ptr)
                     arg_pointer_types.append(ir.PointerType(vty))
 
@@ -219,21 +254,15 @@ class FunctionCallConv(BaseCallConv):
         ):
             if cxx_return_type == types.void:
                 return None
-            return builder.load(
-                retval_ptr, align=getattr(cxx_return_type, "alignof_", None)
-            )
+            return builder.load(retval_ptr, align=retval_align)
 
         # out_return enabled: return either a value or a tuple (ret, out1, out2, ...)
         ret_vals: list[ir.Value] = []
         if cxx_return_type != types.void:
+            ret_vals.append(builder.load(retval_ptr, align=retval_align))
+        for out_return in out_return_ptrs:
             ret_vals.append(
-                builder.load(
-                    retval_ptr, align=getattr(cxx_return_type, "alignof_", None)
-                )
-            )
-        for out_ty, out_ptr in out_return_ptrs:
-            ret_vals.append(
-                builder.load(out_ptr, align=getattr(out_ty, "alignof_", None))
+                builder.load(out_return.ptr, align=out_return.align)
             )
 
         # If Numba-visible return is a tuple, use context.make_tuple.
