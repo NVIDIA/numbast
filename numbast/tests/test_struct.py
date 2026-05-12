@@ -12,6 +12,8 @@ from llvmlite import ir
 
 from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_structs, MemoryShimWriter
+from numbast.static.types import to_numba_type_str
+from numbast.types import to_numba_type
 
 from numba.cuda.descriptor import cuda_target
 
@@ -57,6 +59,114 @@ def test_struct_binding_has_correct_LLVM_type(sample_structs):
     assert len(llvm_ty.elements) == 3
     assert all(ty == ir.IntType(32) for ty in llvm_ty.elements)
     assert not llvm_ty._packed
+
+
+def test_fixed_size_array_type_preserves_multidimensional_shape():
+    assert to_numba_type("unsigned int[20]") == types.UniTuple(types.uint32, 20)
+    assert to_numba_type("float[2][12]") == types.UniTuple(
+        types.UniTuple(types.float32, 12), 2
+    )
+    assert to_numba_type_str("float[2][12]") == (
+        "UniTuple(UniTuple(float32, 12), 2)"
+    )
+
+
+def _bind_pod_structs_from_source(tmp_path, source):
+    p = tmp_path / "pod_structs.cuh"
+    p.write_text(source)
+    decls = parse_declarations_from_source(str(p), [str(p)], "sm_80")
+    structs = decls.structs
+    shim_writer = MemoryShimWriter(f'#include "{p}"')
+    return bind_cxx_structs(
+        shim_writer,
+        structs,
+        {s.name: types.Type for s in structs},
+        {s.name: StructModel for s in structs},
+    )
+
+
+def test_pod_struct_array_fields_have_correct_llvm_shape(tmp_path):
+    PodArrayFields = _bind_pod_structs_from_source(
+        tmp_path,
+        """
+        struct PodArrayFieldsForNumbast {
+          unsigned int data[20];
+          float transform[2][12];
+          float flat_transform[12];
+        };
+        """,
+    )[0]
+
+    llvm_ty = cuda_target.target_context.get_value_type(PodArrayFields._nbtype)
+
+    assert [str(ty) for ty in llvm_ty.elements] == [
+        "[20 x i32]",
+        "[2 x [12 x float]]",
+        "[12 x float]",
+    ]
+
+
+def test_pod_struct_nested_fields_and_arrays_have_struct_layout(tmp_path):
+    PodNestedOuter = _bind_pod_structs_from_source(
+        tmp_path,
+        """
+        struct PodNestedOuterForNumbast {
+          struct Inner {
+            int tag;
+            float value;
+          };
+
+          Inner inner;
+          Inner inners[3];
+        };
+        """,
+    )[0]
+
+    llvm_ty = cuda_target.target_context.get_value_type(PodNestedOuter._nbtype)
+    inner_llvm_ty = llvm_ty.elements[0]
+
+    assert len(inner_llvm_ty.elements) == 2
+    assert inner_llvm_ty.elements[0] == ir.IntType(32)
+    assert inner_llvm_ty.elements[1] == ir.FloatType()
+    assert str(llvm_ty.elements[1]) == "[3 x {i32, float}]"
+    assert not llvm_ty._packed
+
+
+def test_pod_struct_nested_duplicate_short_names_use_qualified_names(tmp_path):
+    PodNestedDuplicateNames = _bind_pod_structs_from_source(
+        tmp_path,
+        """
+        struct PodNestedDuplicateNamesForNumbast {
+          struct Left {
+            struct Leaf {
+              int value;
+            };
+
+            Leaf leaf;
+          };
+
+          struct Right {
+            struct Leaf {
+              float value;
+            };
+
+            Leaf leaf;
+          };
+
+          Left left;
+          Right right;
+        };
+        """,
+    )[0]
+
+    llvm_ty = cuda_target.target_context.get_value_type(
+        PodNestedDuplicateNames._nbtype
+    )
+    left_leaf_llvm_ty = llvm_ty.elements[0].elements[0]
+    right_leaf_llvm_ty = llvm_ty.elements[1].elements[0]
+
+    assert str(left_leaf_llvm_ty) == "{i32}"
+    assert str(right_leaf_llvm_ty) == "{float}"
 
 
 def test_struct_methods_simple(sample_structs, shim_writer):

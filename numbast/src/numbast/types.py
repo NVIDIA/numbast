@@ -13,6 +13,10 @@ from numba.cuda._internal.cuda_bf16 import _type_unnamed1405307
 from cuda.bindings import runtime
 
 
+_FIXED_SIZE_ARRAY_RE = re.compile(r"^(?P<base>.+?)(?P<dims>(?:\[\d+\])+)$")
+_ARRAY_DIM_RE = re.compile(r"\[(\d+)\]")
+
+
 class FunctorType(nbtypes.Type):
     def __init__(self, name):
         super().__init__(name=name + "FunctorType")
@@ -221,6 +225,25 @@ def register_enum_type(
     register_cxx_type(cxx_name, nbtypes.IntEnumMember(e, nbtypes.int64))
 
 
+def parse_fixed_size_array_type(ty: str) -> tuple[str, list[int]] | None:
+    """
+    Split a fixed-size C/C++ array type string into its base type and extents.
+
+    Examples:
+        ``float[12]`` -> ``("float", [12])``
+        ``float[2][12]`` -> ``("float", [2, 12])``
+    """
+    match = _FIXED_SIZE_ARRAY_RE.match(ty.strip())
+    if match is None:
+        return None
+
+    base_ty = match.group("base").strip()
+    dimensions = [
+        int(dim) for dim in _ARRAY_DIM_RE.findall(match.group("dims"))
+    ]
+    return base_ty, dimensions
+
+
 def to_numba_type(ty: str):
     """
     Map a C/C++ type string to the corresponding Numba type.
@@ -246,12 +269,15 @@ def to_numba_type(ty: str):
         return nbtypes.CPointer(to_numba_type(base_ty))
 
     # Support for array type is still incomplete in ast_canopy,
-    # doing manual parsing for array type here.
-    arr_type_pat = r"(.*)\[(\d+)\]"
-    is_array_type = re.match(arr_type_pat, ty)
-    if is_array_type:
-        base_ty, size = is_array_type.groups()
-        return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
+    # doing manual parsing for array type here. C arrays are arrays of arrays,
+    # so `T[M][N]` is modeled as M rows of N elements.
+    array_type = parse_fixed_size_array_type(ty)
+    if array_type is not None:
+        base_ty, dimensions = array_type
+        nbty = to_numba_type(base_ty)
+        for size in reversed(dimensions):
+            nbty = nbtypes.UniTuple(nbty, size)
+        return nbty
 
     # For any type that's unknown / not yet supported, return an opaque type.
     return CTYPE_MAPS.get(ty, nbtypes.Opaque(ty))
