@@ -60,7 +60,9 @@ def _out_return_type_str(param_type, *, pointer_out: bool) -> str:
     return to_numba_type_str(type_name)
 
 
-def _compose_return_type_str(cxx_return_type_str: str, out_return_types: list[str]):
+def _compose_return_type_str(
+    cxx_return_type_str: str, out_return_types: list[str]
+):
     if not out_return_types:
         return cxx_return_type_str
     if cxx_return_type_str == "void":

@@ -14,9 +14,7 @@ __device__ int add_out_ret(int &out, int x) {
 
 __device__ int add_in_ref(int &x) { return x + 5; }
 
-__device__ void add_ptr_out(unsigned int *out, unsigned int x) {
-  *out = x + 1;
-}
+__device__ void add_ptr_out(unsigned int *out, unsigned int x) { *out = x + 1; }
 
 __device__ int add_ptr_out_ret(int x, unsigned int *out) {
   *out = (unsigned int)(x + 2);
