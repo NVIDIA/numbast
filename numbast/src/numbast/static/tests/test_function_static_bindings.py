@@ -198,12 +198,10 @@ def test_out_array_return_static_binding_source(make_binding):
     assert "signature(UniTuple(float32, 12), )" in src
     assert "signature(UniTuple(float32x4, 3), )" in src
     assert (
-        "OutArrayReturnSpec(dtype=float32, length=12, "
-        "shim_arg_indirect=True)"
+        "OutArrayReturnSpec(dtype=float32, length=12, shim_arg_indirect=True)"
     ) in src
     assert (
-        "OutArrayReturnSpec(dtype=float32x4, length=3, "
-        "shim_arg_indirect=True)"
+        "OutArrayReturnSpec(dtype=float32x4, length=3, shim_arg_indirect=True)"
     ) in src
 
 

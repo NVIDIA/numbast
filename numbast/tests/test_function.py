@@ -150,9 +150,7 @@ def _sample_out_functions():
             "add_out_ret": {"out": "out_return"},
             "get_matrix": {"out": out_array_return(dtype=float32, length=12)},
             "get_data": {
-                "out": out_array_return(
-                    dtype=CTYPE_MAPS["float4"], length=3
-                )
+                "out": out_array_return(dtype=CTYPE_MAPS["float4"], length=3)
             },
         },
     )

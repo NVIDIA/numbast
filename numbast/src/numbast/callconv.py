@@ -278,9 +278,7 @@ class FunctionCallConv(BaseCallConv):
                                 storage_ptr, context, array_vty
                             )
                             ptrs.append(storage_ptr)
-                            arg_pointer_types.append(
-                                ir.PointerType(array_vty)
-                            )
+                            arg_pointer_types.append(ir.PointerType(array_vty))
                             out_return_ptrs.append(
                                 _OutReturnPtr(
                                     numba_ty=out_nbty,
@@ -366,9 +364,7 @@ class FunctionCallConv(BaseCallConv):
                         inbounds=True,
                     )
                 else:
-                    elem_ptr = builder.gep(
-                        out_return.ptr, [idx], inbounds=True
-                    )
+                    elem_ptr = builder.gep(out_return.ptr, [idx], inbounds=True)
                 elems.append(builder.load(elem_ptr, align=out_return.align))
             ret_vals.append(
                 context.make_tuple(builder, out_return.numba_ty, elems)

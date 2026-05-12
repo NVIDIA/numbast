@@ -72,13 +72,17 @@ def _is_pointer_type(ast_type: Any) -> bool:
     return "*" in str(type_name)
 
 
-def _parse_override_value(raw: Any) -> tuple[ArgIntent, OutArrayReturnSpec | None]:
+def _parse_override_value(
+    raw: Any,
+) -> tuple[ArgIntent, OutArrayReturnSpec | None]:
     if isinstance(raw, OutArrayReturnSpec):
         return ArgIntent.out_array_return, raw
 
     if isinstance(raw, Mapping):
         if "intent" not in raw:
-            raise ValueError("arg_intent object values must include an 'intent' key")
+            raise ValueError(
+                "arg_intent object values must include an 'intent' key"
+            )
         intent = _parse_arg_intent(ArgIntent, raw["intent"])
         if intent == ArgIntent.out_array_return:
             if "dtype" not in raw or "length" not in raw:

@@ -43,7 +43,7 @@ class OutArrayReturnSpec:
     length: int
     shim_arg_indirect: bool | None = None
 
-    def with_shim_arg_indirect(self, value: bool) -> "OutArrayReturnSpec":
+    def with_shim_arg_indirect(self, value: bool):
         return replace(self, shim_arg_indirect=bool(value))
 
 

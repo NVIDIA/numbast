@@ -85,11 +85,14 @@ def prepend_receiver_to_intent_plan(method_plan: IntentPlan) -> IntentPlan:
         + tuple(i + 1 for i in method_plan.visible_param_indices),
         out_return_indices=tuple(i + 1 for i in method_plan.out_return_indices),
         pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
-        out_array_return_specs=(None,) + get_out_array_return_specs(method_plan),
+        out_array_return_specs=(None,)
+        + get_out_array_return_specs(method_plan),
     )
 
 
-def shim_arg_type_for_out_return(out_return_type, spec: OutArrayReturnSpec | None):
+def shim_arg_type_for_out_return(
+    out_return_type, spec: OutArrayReturnSpec | None
+):
     if spec is None:
         return out_return_type
     return nbtypes.CPointer(resolve_out_array_dtype(spec.dtype))

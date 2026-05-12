@@ -90,7 +90,9 @@ def _out_return_type_str(param_type, spec) -> str:
     return to_numba_out_array_type_str(spec.dtype, spec.length)
 
 
-def _compose_return_type_str(cxx_return_type_str: str, out_return_types: list[str]):
+def _compose_return_type_str(
+    cxx_return_type_str: str, out_return_types: list[str]
+):
     if not out_return_types:
         return cxx_return_type_str
     if cxx_return_type_str == "void":
