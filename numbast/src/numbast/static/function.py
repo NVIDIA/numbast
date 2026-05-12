@@ -16,7 +16,11 @@ from numbast.static.renderer import (
     get_shim,
     get_callconv_utils,
 )
-from numbast.static.types import to_numba_type_str, to_numba_arg_type_str
+from numbast.static.types import (
+    to_numba_arg_type_str,
+    to_numba_out_array_type_str,
+    to_numba_type_str,
+)
 from numbast.intent import ArgIntent, compute_intent_plan
 from numbast.utils import make_function_shim, _apply_prefix_removal
 from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
@@ -58,6 +62,62 @@ def _matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
         if re.search(pattern, name):
             return True
     return False
+
+
+def _tuple_literal(items: list[str]) -> str:
+    if not items:
+        return "()"
+    if len(items) == 1:
+        return f"({items[0]},)"
+    return f"({', '.join(items)})"
+
+
+def _out_array_specs_for_plan(plan):
+    specs = getattr(plan, "out_array_return_specs", ())
+    if not specs:
+        return (None,) * len(plan.intents)
+    if len(specs) != len(plan.intents):
+        raise ValueError(
+            "IntentPlan out_array_return_specs length does not match intents: "
+            f"{len(specs)} != {len(plan.intents)}"
+        )
+    return tuple(specs)
+
+
+def _out_return_type_str(param_type, spec) -> str:
+    if spec is None:
+        return to_numba_type_str(param_type.unqualified_non_ref_type_name)
+    return to_numba_out_array_type_str(spec.dtype, spec.length)
+
+
+def _compose_return_type_str(cxx_return_type_str: str, out_return_types: list[str]):
+    if not out_return_types:
+        return cxx_return_type_str
+    if cxx_return_type_str == "void":
+        if len(out_return_types) == 1:
+            return out_return_types[0]
+        outs = ", ".join(out_return_types)
+        return f"types.Tuple(({outs},))"
+    outs = ", ".join([cxx_return_type_str, *out_return_types])
+    return f"types.Tuple(({outs},))"
+
+
+def _render_out_array_specs(plan) -> str:
+    specs = _out_array_specs_for_plan(plan)
+    rendered = []
+    for spec in specs:
+        if spec is None:
+            rendered.append("None")
+        else:
+            dtype_str = to_numba_type_str(spec.dtype)
+            rendered.append(
+                "OutArrayReturnSpec("
+                f"dtype={dtype_str}, "
+                f"length={int(spec.length)}, "
+                f"shim_arg_indirect={bool(spec.shim_arg_indirect)}"
+                ")"
+            )
+    return _tuple_literal(rendered)
 
 
 class StaticFunctionRenderer(BaseRenderer):
@@ -220,42 +280,19 @@ def {func_name}():
             )
 
             out_return_types = [
-                to_numba_type_str(
-                    self._decl.param_types[i].unqualified_non_ref_type_name
+                _out_return_type_str(
+                    self._decl.param_types[i],
+                    _out_array_specs_for_plan(plan)[i],
                 )
                 for i in plan.out_return_indices
             ]
             if out_return_types:
                 self.Imports.add("from numba import types")
-                if self._cxx_return_type_str == "void":
-                    if len(out_return_types) == 1:
-                        self._return_numba_type_str = out_return_types[0]
-                    else:
-                        outs = ", ".join(out_return_types)
-                        self._return_numba_type_str = f"types.Tuple(({outs},))"
-                else:
-                    outs = ", ".join(
-                        [self._cxx_return_type_str, *out_return_types]
-                    )
-                    self._return_numba_type_str = f"types.Tuple(({outs},))"
+                self._return_numba_type_str = _compose_return_type_str(
+                    self._cxx_return_type_str, out_return_types
+                )
             else:
                 self._return_numba_type_str = self._cxx_return_type_str
-
-            def _tuple_literal(items: list[str]) -> str:
-                """
-                Builds a Python tuple literal from a list of string expressions.
-
-                Parameters:
-                    items (list[str]): String representations of tuple elements.
-
-                Returns:
-                    tuple_literal (str): A Python tuple literal. For an empty list returns "()"; for a single element returns "(element,)" (includes the trailing comma); otherwise returns "(elem1, elem2, ...)".
-                """
-                if not items:
-                    return "()"
-                if len(items) == 1:
-                    return f"({items[0]},)"
-                return f"({', '.join(items)})"
 
             intents_str = _tuple_literal(
                 [
@@ -271,7 +308,8 @@ def {func_name}():
                 f"intents={intents_str}, "
                 f"visible_param_indices={visible_str}, "
                 f"out_return_indices={out_str}, "
-                f"pass_ptr_mask={mask_str}"
+                f"pass_ptr_mask={mask_str}, "
+                f"out_array_return_specs={_render_out_array_specs(plan)}"
                 ")"
             )
             if out_return_types:

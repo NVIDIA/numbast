@@ -172,6 +172,41 @@ def test_generated_callconv_alignof_helper_is_standalone(make_binding):
     assert "def get_numba_type_alignof(numba_type):" in src
 
 
+def test_out_array_return_static_binding_source(make_binding):
+    intents = {
+        "get_matrix": {
+            "out": {
+                "intent": "out_array_return",
+                "dtype": "float",
+                "length": 12,
+            }
+        },
+        "get_data": {
+            "out": {
+                "intent": "out_array_return",
+                "dtype": "float4",
+                "length": 3,
+            }
+        },
+    }
+    res = make_binding("function_out.cuh", {}, {}, "sm_50", intents)
+    bindings = res["bindings"]
+    src = res["src"]
+
+    assert "get_matrix" in bindings
+    assert "get_data" in bindings
+    assert "signature(UniTuple(float32, 12), )" in src
+    assert "signature(UniTuple(float32x4, 3), )" in src
+    assert (
+        "OutArrayReturnSpec(dtype=float32, length=12, "
+        "shim_arg_indirect=True)"
+    ) in src
+    assert (
+        "OutArrayReturnSpec(dtype=float32x4, length=3, "
+        "shim_arg_indirect=True)"
+    ) in src
+
+
 def test_out_return_function_bindings(decl_out, impl_out):
     add_out = decl_out["add_out"]
     add_out_ret = decl_out["add_out_ret"]

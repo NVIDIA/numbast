@@ -24,6 +24,10 @@ C++ source of truth
   __device__ bool stats_update_and_get_zscore(
       RunningStats &state, float x, float &zscore_out);
 
+  __device__ void stats_get_matrix(float out[12]);
+
+  __device__ void stats_get_vectors(float4 out[3]);
+
 Example config
 --------------
 
@@ -38,6 +42,34 @@ Example config
     stats_update_and_get_zscore:
       state: inout_ptr
       zscore_out: out_return
+    stats_get_matrix:
+      out:
+        intent: out_array_return
+        dtype: float
+        length: 12
+    stats_get_vectors:
+      out:
+        intent: out_array_return
+        dtype: float4
+        length: 3
+
+Programmatic API
+----------------
+
+.. code-block:: python
+
+  from numba.cuda.types import float32
+  from numbast import bind_cxx_functions, out_array_return
+
+  bindings = bind_cxx_functions(
+      shim_writer,
+      funcs,
+      arg_intent={
+          "stats_get_matrix": {
+              "out": out_array_return(dtype=float32, length=12),
+          },
+      },
+  )
 
 Intent semantics
 ----------------
@@ -71,6 +103,18 @@ Intent semantics
 - Numbast allocates temporary storage, passes it to C++, then returns the value to Python.
 - If C++ also returns a non-``void`` value, generated return type is packed as a tuple.
 
+``out_array_return``
+^^^^^^^^^^^^^^^^^^^^
+
+- Pointer or fixed-size array output parameter is removed from the visible Python call arguments.
+- Numbast allocates fixed-size native stack storage, passes the raw pointer to
+  C++ through the shim, loads each element after the call, and returns a fixed
+  ``UniTuple``.
+- ``dtype`` is the element type and ``length`` is the number of elements to load.
+- Static configs use C++ or registered type names such as ``float`` or
+  ``float4``. Programmatic bindings can use Numba types such as ``float32`` or
+  registered C++ type names.
+
 Generated Python signatures
 ---------------------------
 
@@ -94,11 +138,17 @@ Representative signatures for the example API:
       float32,
   )
 
+  # out_array_return:
+  signature(UniTuple(float32, 12))
+  signature(UniTuple(float32x4, 3))
+
 Notes
 -----
 
 - ``inout_ptr``, ``out_ptr``, and ``out_return`` are only supported on C++
   reference parameters (``T&`` / ``T&&``).
+- ``out_array_return`` is supported on pointer/array output parameters such as
+  ``float *out``, ``float out[12]``, and ``float4 out[3]``.
 - In ``Function Argument Intents``, parameter overrides can be keyed by
   parameter name or 0-based parameter index.
 
@@ -112,3 +162,7 @@ Notes
   returns that value directly (not a tuple).
 - If C++ returns ``void`` and there are multiple ``out_return`` parameters,
   Numbast returns ``types.Tuple((out1, out2, ...))``.
+- ``out_array_return`` values participate in the same return packing rules as
+  ``out_return``. A single ``void`` function output returns the ``UniTuple``
+  directly; multiple outputs or a non-``void`` C++ return are packed in an
+  outer ``types.Tuple``.

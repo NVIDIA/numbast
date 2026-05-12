@@ -13,3 +13,15 @@ __device__ int add_out_ret(int &out, int x) {
 }
 
 __device__ int add_in_ref(int &x) { return x + 5; }
+
+__device__ void get_matrix(float out[12]) {
+  for (int i = 0; i < 12; ++i) {
+    out[i] = static_cast<float>(i) + 0.5f;
+  }
+}
+
+__device__ void get_data(float4 out[3]) {
+  out[0] = make_float4(1.0f, 2.0f, 3.0f, 4.0f);
+  out[1] = make_float4(5.0f, 6.0f, 7.0f, 8.0f);
+  out[2] = make_float4(9.0f, 10.0f, 11.0f, 12.0f);
+}

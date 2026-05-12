@@ -6,11 +6,13 @@ import os
 import numpy as np
 
 from numba import cuda
+from numba.cuda.types import float32
 
 import cffi
 
 from ast_canopy import parse_declarations_from_source
-from numbast import bind_cxx_functions, MemoryShimWriter
+from numbast import bind_cxx_functions, MemoryShimWriter, out_array_return
+from numbast.types import CTYPE_MAPS
 
 import pytest
 
@@ -146,6 +148,12 @@ def _sample_out_functions():
         arg_intent={
             "add_out": {"out": "out_return"},
             "add_out_ret": {"out": "out_return"},
+            "get_matrix": {"out": out_array_return(dtype=float32, length=12)},
+            "get_data": {
+                "out": out_array_return(
+                    dtype=CTYPE_MAPS["float4"], length=3
+                )
+            },
         },
     )
 
@@ -194,6 +202,30 @@ def test_out_return_device_function_results(_sample_out_functions):
     assert out_single[0] == 11
     assert out_pair[0] == 10
     assert out_pair[1] == 9
+
+    get_matrix = find_binding(func_bindings, "get_matrix")
+    get_data = find_binding(func_bindings, "get_data")
+
+    @cuda.jit(link=shim_writer.links())
+    def kernel_arrays(out_matrix, out_data):
+        matrix = get_matrix()
+        for i in range(12):
+            out_matrix[i] = matrix[i]
+
+        data = get_data()
+        for i in range(3):
+            item = data[i]
+            out_data[i] = item.x + item.y + item.z + item.w
+
+    out_matrix = np.zeros(12, dtype=np.float32)
+    out_data = np.zeros(3, dtype=np.float32)
+    kernel_arrays[1, 1](out_matrix, out_data)
+    np.testing.assert_allclose(
+        out_matrix, np.arange(12, dtype=np.float32) + np.float32(0.5)
+    )
+    np.testing.assert_allclose(
+        out_data, np.array([10, 26, 42], dtype=np.float32)
+    )
 
     DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
     p = os.path.join(DATA_FOLDER, "sample_function_out.cuh")

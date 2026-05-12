@@ -253,8 +253,15 @@ def to_numba_type(ty: str):
         base_ty, size = is_array_type.groups()
         return nbtypes.UniTuple(to_numba_type(base_ty), int(size))
 
+    if ty in CTYPE_MAPS:
+        return CTYPE_MAPS[ty]
+
+    for registered_type in CTYPE_MAPS.values():
+        if str(registered_type) == ty:
+            return registered_type
+
     # For any type that's unknown / not yet supported, return an opaque type.
-    return CTYPE_MAPS.get(ty, nbtypes.Opaque(ty))
+    return nbtypes.Opaque(ty)
 
 
 def to_numba_arg_type(ast_type) -> nbtypes.Type:

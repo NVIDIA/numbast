@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 # NBST:BEGIN_INTENT_DEFS
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
+from typing import Any
 
 
 class ArgIntent(str, Enum):
@@ -20,12 +21,42 @@ class ArgIntent(str, Enum):
       (CPointer(T)) on the Numba side and passed through to the shim.
     - `out_return`: C++ reference parameter is *not* exposed as an argument; a
       temporary is allocated, passed to the shim, and then returned to the caller.
+    - `out_array_return`: C++ pointer/array output parameter is *not* exposed as
+      an argument; fixed-size stack storage is allocated, passed to the shim, and
+      returned to the caller as a UniTuple.
     """
 
     in_ = "in"
     inout_ptr = "inout_ptr"
     out_ptr = "out_ptr"
     out_return = "out_return"
+    out_array_return = "out_array_return"
+
+
+@dataclass(frozen=True)
+class OutArrayReturnSpec:
+    """
+    Metadata for a fixed-size output array returned as a Numba UniTuple.
+    """
+
+    dtype: Any
+    length: int
+    shim_arg_indirect: bool | None = None
+
+    def with_shim_arg_indirect(self, value: bool) -> "OutArrayReturnSpec":
+        return replace(self, shim_arg_indirect=bool(value))
+
+
+def out_array_return(*, dtype: Any, length: int) -> OutArrayReturnSpec:
+    """
+    Create an argument-intent spec for fixed-size native output arrays.
+    """
+    length = int(length)
+    if length <= 0:
+        raise ValueError("out_array_return length must be positive")
+    if dtype is None:
+        raise ValueError("out_array_return dtype must be provided")
+    return OutArrayReturnSpec(dtype=dtype, length=length)
 
 
 @dataclass(frozen=True)
@@ -38,6 +69,7 @@ class IntentPlan:
     visible_param_indices: tuple[int, ...]  # subset of [0..N)
     out_return_indices: tuple[int, ...]  # subset of [0..N)
     pass_ptr_mask: tuple[bool, ...]  # aligned with visible params only
+    out_array_return_specs: tuple[OutArrayReturnSpec | None, ...] = ()
 
 
 # NBST:END_INTENT_DEFS
