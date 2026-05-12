@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 import cffi
 
-from numba.cuda.types import int32, float32
+from numba.cuda.types import int32, float32, uint32
 from numba import cuda
 from numba.cuda import device_array
 
@@ -51,11 +51,18 @@ def decl_out(make_binding):
     intents = {
         "add_out": {"out": "out_return"},
         "add_out_ret": {"out": "out_return"},
+        "add_ptr_out": {"out": "out_return"},
+        "add_ptr_out_ret": {"out": "out_return"},
     }
     res = make_binding("function_out.cuh", {}, {}, "sm_50", intents)
     bindings = res["bindings"]
 
-    public_apis = ["add_out", "add_out_ret"]
+    public_apis = [
+        "add_out",
+        "add_out_ret",
+        "add_ptr_out",
+        "add_ptr_out_ret",
+    ]
     assert all(public_api in bindings for public_api in public_apis)
 
     return bindings
@@ -165,9 +172,11 @@ def test_float32x2_operator_add_overload(decl, impl):
 def test_out_return_function_bindings(decl_out, impl_out):
     add_out = decl_out["add_out"]
     add_out_ret = decl_out["add_out_ret"]
+    add_ptr_out = decl_out["add_ptr_out"]
+    add_ptr_out_ret = decl_out["add_ptr_out_ret"]
 
     @cuda.jit(link=[impl_out])
-    def kernel(out_single, out_pair):
+    def kernel(out_single, out_pair, out_ptr_single, out_ptr_pair):
         """
         CUDA kernel that invokes `add_out` and `add_out_ret` to populate provided output buffers.
 
@@ -178,15 +187,39 @@ def test_out_return_function_bindings(decl_out, impl_out):
         ret, out = add_out_ret(7)
         out_pair[0] = ret
         out_pair[1] = out
+        out_ptr_single[0] = add_ptr_out(uint32(10))
+        ptr_ret, ptr_out = add_ptr_out_ret(int32(7))
+        out_ptr_pair[0] = ptr_ret
+        out_ptr_pair[1] = ptr_out
 
     out_single = device_array((1,), "int32")
     out_pair = device_array((2,), "int32")
-    kernel[1, 1](out_single, out_pair)
+    out_ptr_single = device_array((1,), "uint32")
+    out_ptr_pair = device_array((2,), "uint32")
+    kernel[1, 1](out_single, out_pair, out_ptr_single, out_ptr_pair)
 
     assert out_single.copy_to_host()[0] == 11
     host_pair = out_pair.copy_to_host()
     assert host_pair[0] == 10
     assert host_pair[1] == 9
+    assert out_ptr_single.copy_to_host()[0] == 11
+    host_ptr_pair = out_ptr_pair.copy_to_host()
+    assert host_ptr_pair[0] == 10
+    assert host_ptr_pair[1] == 9
+
+
+def test_scalar_pointer_out_return_static_rendering(make_binding):
+    intents = {
+        "add_ptr_out": {"out": "out_return"},
+        "add_ptr_out_ret": {"out": "out_return"},
+    }
+    res = make_binding("function_out.cuh", {}, {}, "sm_50", intents)
+    src = res["src"]
+
+    assert "signature(uint32, uint32)" in src
+    assert "signature(types.Tuple((int32, uint32,)), int32)" in src
+    assert "out_return_ptr_mask=(True, False)" in src
+    assert "out_return_ptr_mask=(False, True)" in src
 
 
 def test_out_ptr_in_inout_function_bindings(decl_out_ptr, impl_out):

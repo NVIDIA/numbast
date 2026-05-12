@@ -53,7 +53,14 @@ from numbast.types import (
     to_c_type_str,
     to_numba_arg_type,
 )
-from numbast.intent import ArgIntent, IntentPlan, compute_intent_plan
+from numbast.intent import ArgIntent, compute_intent_plan
+from numbast.intent_utils import (
+    compose_return_type,
+    get_out_return_ptr_mask,
+    out_return_types_for_plan,
+    prepend_receiver_to_intent_plan,
+    shim_arg_type_for_out_return,
+)
 from numbast.utils import (
     deduplicate_overloads,
     make_struct_ctor_shim,
@@ -334,15 +341,7 @@ def bind_cxx_struct_regular_method(
             overrides=overrides,
             allow_out_return=True,
         )
-        intent_plan = IntentPlan(
-            intents=(ArgIntent.in_,) + method_plan.intents,
-            visible_param_indices=(0,)
-            + tuple(i + 1 for i in method_plan.visible_param_indices),
-            out_return_indices=tuple(
-                i + 1 for i in method_plan.out_return_indices
-            ),
-            pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
-        )
+        intent_plan = prepend_receiver_to_intent_plan(method_plan)
 
         param_types = []
         for orig_idx in method_plan.visible_param_indices:
@@ -354,24 +353,10 @@ def bind_cxx_struct_regular_method(
             else:
                 param_types.append(base)
 
-        out_return_types = [
-            to_numba_type(
-                method_decl.param_types[i].unqualified_non_ref_type_name
-            )
-            for i in method_plan.out_return_indices
-        ]
-        if out_return_types:
-            if cxx_return_type == nbtypes.void:
-                if len(out_return_types) == 1:
-                    return_type = out_return_types[0]
-                else:
-                    return_type = nbtypes.Tuple(tuple(out_return_types))
-            else:
-                return_type = nbtypes.Tuple(
-                    tuple([cxx_return_type, *out_return_types])
-                )
-        else:
-            return_type = cxx_return_type
+        out_return_types = out_return_types_for_plan(
+            method_decl.param_types, method_plan
+        )
+        return_type = compose_return_type(cxx_return_type, out_return_types)
         arg_is_ref = None
 
     # Lowering
@@ -519,35 +504,13 @@ def bind_cxx_struct_templated_method(
                     overrides=overrides,
                     allow_out_return=True,
                 )
-                intent_plan = IntentPlan(
-                    intents=(ArgIntent.in_,) + method_plan.intents,
-                    visible_param_indices=(0,)
-                    + tuple(i + 1 for i in method_plan.visible_param_indices),
-                    out_return_indices=tuple(
-                        i + 1 for i in method_plan.out_return_indices
-                    ),
-                    pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
+                intent_plan = prepend_receiver_to_intent_plan(method_plan)
+                out_return_types = out_return_types_for_plan(
+                    templated_method.function.param_types, method_plan
                 )
-                out_return_types = [
-                    to_numba_type(
-                        templated_method.function.param_types[
-                            i
-                        ].unqualified_non_ref_type_name
-                    )
-                    for i in method_plan.out_return_indices
-                ]
-                if out_return_types:
-                    if cxx_return_type == nbtypes.void:
-                        if len(out_return_types) == 1:
-                            return_type = out_return_types[0]
-                        else:
-                            return_type = nbtypes.Tuple(tuple(out_return_types))
-                    else:
-                        return_type = nbtypes.Tuple(
-                            tuple([cxx_return_type, *out_return_types])
-                        )
-                else:
-                    return_type = cxx_return_type
+                return_type = compose_return_type(
+                    cxx_return_type, out_return_types
+                )
 
             lowering_key = (qualname, recvr, param_types)
             if lowering_key not in _TEMPLATED_METHOD_LOWERING_CACHE:
@@ -592,6 +555,9 @@ def bind_cxx_struct_templated_method(
                                 method_plan.out_return_indices
                             )
                         }
+                        out_return_ptr_mask = get_out_return_ptr_mask(
+                            method_plan
+                        )
                         # Reconstruct full C++ param order by merging visible
                         # params with out_return slots, keeping a shim-aligned
                         # pass_ptr_mask.
@@ -602,7 +568,12 @@ def bind_cxx_struct_templated_method(
                             out_pos = out_return_map.get(orig_idx)
                             if out_pos is not None:
                                 param_types_for_shim_list.append(
-                                    out_return_types[out_pos]
+                                    shim_arg_type_for_out_return(
+                                        out_return_types[out_pos],
+                                        pointer_out=out_return_ptr_mask[
+                                            orig_idx
+                                        ],
+                                    )
                                 )
                                 pass_ptr_mask_for_shim_list.append(False)
                             else:

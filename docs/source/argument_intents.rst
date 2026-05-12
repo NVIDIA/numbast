@@ -24,6 +24,10 @@ C++ source of truth
   __device__ bool stats_update_and_get_zscore(
       RunningStats &state, float x, float &zscore_out);
 
+  __device__ uint4 texture_footprint(
+      cudaTextureObject_t texture, float x, float y,
+      unsigned int *single_mip_level);
+
 Example config
 --------------
 
@@ -38,6 +42,8 @@ Example config
     stats_update_and_get_zscore:
       state: inout_ptr
       zscore_out: out_return
+    texture_footprint:
+      single_mip_level: out_return
 
 Intent semantics
 ----------------
@@ -69,6 +75,8 @@ Intent semantics
 
 - Parameter is removed from the visible Python call arguments.
 - Numbast allocates temporary storage, passes it to C++, then returns the value to Python.
+- For scalar pointer outputs such as ``unsigned int*``, the returned value is
+  the pointee scalar, not ``CPointer(T)``.
 - If C++ also returns a non-``void`` value, generated return type is packed as a tuple.
 
 Generated Python signatures
@@ -94,11 +102,15 @@ Representative signatures for the example API:
       float32,
   )
 
+  # out_return on a scalar pointer output:
+  signature(types.Tuple((uint32x4, uint32)), cudaTextureObject_t, float32, float32)
+
 Notes
 -----
 
-- ``inout_ptr``, ``out_ptr``, and ``out_return`` are only supported on C++
-  reference parameters (``T&`` / ``T&&``).
+- ``inout_ptr`` and ``out_ptr`` are only supported on C++ reference parameters
+  (``T&`` / ``T&&``). ``out_return`` also supports scalar pointer output
+  parameters (``T*``).
 - In ``Function Argument Intents``, parameter overrides can be keyed by
   parameter name or 0-based parameter index.
 

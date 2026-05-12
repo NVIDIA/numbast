@@ -5,9 +5,28 @@ from numbast.args import prepare_ir_types
 from numbast.intent import IntentPlan
 
 # NBST:BEGIN_CALLCONV
+from typing import NamedTuple
+
 from numba.cuda import types, cgutils
 
 from llvmlite import ir
+
+
+class _OutReturnPtr(NamedTuple):
+    numba_ty: types.Type
+    ptr: ir.Value
+
+
+def _get_out_return_ptr_mask(plan):
+    mask = getattr(plan, "out_return_ptr_mask", ())
+    if not mask:
+        return (False,) * len(plan.intents)
+    if len(mask) != len(plan.intents):
+        raise ValueError(
+            "IntentPlan out_return_ptr_mask length does not match intents: "
+            f"{len(mask)} != {len(plan.intents)}"
+        )
+    return tuple(bool(v) for v in mask)
 
 
 class BaseCallConv:
@@ -146,7 +165,7 @@ class FunctionCallConv(BaseCallConv):
         # - default: pass pointer-to-value to shim (alloca + store)
         # - for C++ reference args mapped to CPointer(T): pass pointer value directly
         ptrs = []
-        out_return_ptrs: list[tuple[types.Type, ir.Value]] = []
+        out_return_ptrs: list[_OutReturnPtr] = []
         if self._intent_plan is None:
             for argty, arg, passthrough in zip(sig.args, args, pass_ptr_mask):
                 vty = context.get_value_type(argty)
@@ -168,6 +187,7 @@ class FunctionCallConv(BaseCallConv):
             orig_to_out = [None] * n_orig
             for out_pos, orig_idx in enumerate(plan.out_return_indices):
                 orig_to_out[orig_idx] = out_pos
+            out_return_ptr_mask = _get_out_return_ptr_mask(plan)
 
             for orig_idx in range(n_orig):
                 out_pos = orig_to_out[orig_idx]
@@ -175,9 +195,20 @@ class FunctionCallConv(BaseCallConv):
                     out_nbty = self._out_return_types[out_pos]
                     vty = context.get_value_type(out_nbty)
                     ptr = cgutils.alloca_once(builder, vty)
-                    ptrs.append(ptr)
-                    arg_pointer_types.append(ir.PointerType(vty))
-                    out_return_ptrs.append((out_nbty, ptr))
+                    if out_return_ptr_mask[orig_idx]:
+                        ptr_slot_ty = ir.PointerType(vty)
+                        ptr_slot = cgutils.alloca_once(
+                            builder, ptr_slot_ty, name="out_return_ptr"
+                        )
+                        builder.store(ptr, ptr_slot)
+                        ptrs.append(ptr_slot)
+                        arg_pointer_types.append(ir.PointerType(ptr_slot_ty))
+                    else:
+                        ptrs.append(ptr)
+                        arg_pointer_types.append(ir.PointerType(vty))
+                    out_return_ptrs.append(
+                        _OutReturnPtr(numba_ty=out_nbty, ptr=ptr)
+                    )
                     continue
 
                 vis_pos = orig_to_vis[orig_idx]
@@ -231,9 +262,12 @@ class FunctionCallConv(BaseCallConv):
                     retval_ptr, align=getattr(cxx_return_type, "alignof_", None)
                 )
             )
-        for out_ty, out_ptr in out_return_ptrs:
+        for out_return in out_return_ptrs:
             ret_vals.append(
-                builder.load(out_ptr, align=getattr(out_ty, "alignof_", None))
+                builder.load(
+                    out_return.ptr,
+                    align=getattr(out_return.numba_ty, "alignof_", None),
+                )
             )
 
         # If Numba-visible return is a tuple, use context.make_tuple.

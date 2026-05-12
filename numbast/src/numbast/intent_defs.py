@@ -18,8 +18,9 @@ class ArgIntent(str, Enum):
       as a value type on the Numba side.
     - `inout_ptr` / `out_ptr`: C++ reference parameter is exposed as a pointer
       (CPointer(T)) on the Numba side and passed through to the shim.
-    - `out_return`: C++ reference parameter is *not* exposed as an argument; a
-      temporary is allocated, passed to the shim, and then returned to the caller.
+    - `out_return`: C++ reference parameter or scalar pointer output parameter
+      is *not* exposed as an argument; a temporary is allocated, passed to the
+      shim, and then returned to the caller.
     """
 
     in_ = "in"
@@ -38,6 +39,7 @@ class IntentPlan:
     visible_param_indices: tuple[int, ...]  # subset of [0..N)
     out_return_indices: tuple[int, ...]  # subset of [0..N)
     pass_ptr_mask: tuple[bool, ...]  # aligned with visible params only
+    out_return_ptr_mask: tuple[bool, ...] = ()  # aligned with original params
 
 
 # NBST:END_INTENT_DEFS

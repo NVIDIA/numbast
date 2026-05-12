@@ -17,7 +17,12 @@ from numbast.static.renderer import (
     get_callconv_utils,
 )
 from numbast.static.types import to_numba_type_str, to_numba_arg_type_str
-from numbast.intent import ArgIntent, compute_intent_plan
+from numbast.intent import (
+    ArgIntent,
+    compute_intent_plan,
+    get_out_return_ptr_mask,
+    pointee_type_name,
+)
 from numbast.utils import make_function_shim, _apply_prefix_removal
 from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
 
@@ -35,6 +40,54 @@ function_mangled_name_registry: set[str] = set()
 
 function_apis_registry: set[str] = set()
 """A set of created function API names."""
+
+
+def _tuple_literal(items: list[str]) -> str:
+    """
+    Builds a Python tuple literal from a list of string expressions.
+    """
+    if not items:
+        return "()"
+    if len(items) == 1:
+        return f"({items[0]},)"
+    return f"({', '.join(items)})"
+
+
+def _out_return_type_str(param_type, *, pointer_out: bool) -> str:
+    type_name = param_type.unqualified_non_ref_type_name
+    if pointer_out:
+        type_name = pointee_type_name(type_name)
+    return to_numba_type_str(type_name)
+
+
+def _compose_return_type_str(cxx_return_type_str: str, out_return_types: list[str]):
+    if not out_return_types:
+        return cxx_return_type_str
+    if cxx_return_type_str == "void":
+        if len(out_return_types) == 1:
+            return out_return_types[0]
+        outs = ", ".join(out_return_types)
+        return f"types.Tuple(({outs},))"
+    outs = ", ".join([cxx_return_type_str, *out_return_types])
+    return f"types.Tuple(({outs},))"
+
+
+def _render_intent_plan(plan) -> str:
+    intents_str = _tuple_literal(
+        [
+            f"ArgIntent.{i.value if i != ArgIntent.in_ else 'in_'}"
+            for i in plan.intents
+        ]
+    )
+    return (
+        "IntentPlan("
+        f"intents={intents_str}, "
+        f"visible_param_indices={repr(plan.visible_param_indices)}, "
+        f"out_return_indices={repr(plan.out_return_indices)}, "
+        f"pass_ptr_mask={repr(plan.pass_ptr_mask)}, "
+        f"out_return_ptr_mask={repr(get_out_return_ptr_mask(plan))}"
+        ")"
+    )
 
 
 def _matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
@@ -219,61 +272,23 @@ def {func_name}():
                 self._argument_numba_types
             )
 
+            out_return_ptr_mask = get_out_return_ptr_mask(plan)
             out_return_types = [
-                to_numba_type_str(
-                    self._decl.param_types[i].unqualified_non_ref_type_name
+                _out_return_type_str(
+                    self._decl.param_types[i],
+                    pointer_out=out_return_ptr_mask[i],
                 )
                 for i in plan.out_return_indices
             ]
             if out_return_types:
                 self.Imports.add("from numba import types")
-                if self._cxx_return_type_str == "void":
-                    if len(out_return_types) == 1:
-                        self._return_numba_type_str = out_return_types[0]
-                    else:
-                        outs = ", ".join(out_return_types)
-                        self._return_numba_type_str = f"types.Tuple(({outs},))"
-                else:
-                    outs = ", ".join(
-                        [self._cxx_return_type_str, *out_return_types]
-                    )
-                    self._return_numba_type_str = f"types.Tuple(({outs},))"
+                self._return_numba_type_str = _compose_return_type_str(
+                    self._cxx_return_type_str, out_return_types
+                )
             else:
                 self._return_numba_type_str = self._cxx_return_type_str
 
-            def _tuple_literal(items: list[str]) -> str:
-                """
-                Builds a Python tuple literal from a list of string expressions.
-
-                Parameters:
-                    items (list[str]): String representations of tuple elements.
-
-                Returns:
-                    tuple_literal (str): A Python tuple literal. For an empty list returns "()"; for a single element returns "(element,)" (includes the trailing comma); otherwise returns "(elem1, elem2, ...)".
-                """
-                if not items:
-                    return "()"
-                if len(items) == 1:
-                    return f"({items[0]},)"
-                return f"({', '.join(items)})"
-
-            intents_str = _tuple_literal(
-                [
-                    f"ArgIntent.{i.value if i != ArgIntent.in_ else 'in_'}"
-                    for i in plan.intents
-                ]
-            )
-            visible_str = repr(plan.visible_param_indices)
-            out_str = repr(plan.out_return_indices)
-            mask_str = repr(plan.pass_ptr_mask)
-            self._intent_plan_rendered = (
-                "IntentPlan("
-                f"intents={intents_str}, "
-                f"visible_param_indices={visible_str}, "
-                f"out_return_indices={out_str}, "
-                f"pass_ptr_mask={mask_str}"
-                ")"
-            )
+            self._intent_plan_rendered = _render_intent_plan(plan)
             if out_return_types:
                 self._out_return_types_rendered = (
                     "[" + ", ".join(out_return_types) + "]"

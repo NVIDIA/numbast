@@ -60,6 +60,39 @@ def _is_ref_type(ast_type: Any) -> bool:
     return bool(is_ref)
 
 
+def _type_name(ast_type: Any) -> str:
+    return str(getattr(ast_type, "unqualified_non_ref_type_name", "")).strip()
+
+
+def _is_pointer_type(ast_type: Any) -> bool:
+    return _type_name(ast_type).endswith("*")
+
+
+def pointee_type_name(type_name: str) -> str:
+    """
+    Return the type string produced by dereferencing one C/C++ pointer layer.
+    """
+    normalized = type_name.strip()
+    if not normalized.endswith("*"):
+        raise ValueError(f"expected pointer type, got {type_name!r}")
+    return normalized[:-1].rstrip()
+
+
+def get_out_return_ptr_mask(plan: IntentPlan) -> tuple[bool, ...]:
+    """
+    Return the per-original-parameter mask for scalar pointer out-returns.
+    """
+    mask = getattr(plan, "out_return_ptr_mask", ())
+    if not mask:
+        return (False,) * len(plan.intents)
+    if len(mask) != len(plan.intents):
+        raise ValueError(
+            "IntentPlan out_return_ptr_mask length does not match intents: "
+            f"{len(mask)} != {len(plan.intents)}"
+        )
+    return tuple(bool(v) for v in mask)
+
+
 def compute_intent_plan(
     *,
     params: list[Any],
@@ -70,7 +103,7 @@ def compute_intent_plan(
     """
     Compute a per-parameter intent plan for a function call.
 
-    This determines an ArgIntent for each parameter (defaulting to `ArgIntent.in_`), applies optional overrides (index-based and name-based; name-based overrides take precedence), validates intents against parameter types (non-`in_` intents require reference-like types), and produces an IntentPlan describing which parameters are visible, which are returned via out_return, and which should be passed as pointer-like arguments.
+    This determines an ArgIntent for each parameter (defaulting to `ArgIntent.in_`), applies optional overrides (index-based and name-based; name-based overrides take precedence), validates intents against parameter types (non-`in_` intents require reference-like types, except `out_return` also supports scalar pointer output parameters), and produces an IntentPlan describing which parameters are visible, which are returned via out_return, and which should be passed as pointer-like arguments.
 
     Parameters:
         params (list[Any]): Parameter-like objects (must have a `.name` attribute when name-based overrides are used).
@@ -84,9 +117,10 @@ def compute_intent_plan(
           - visible_param_indices: tuple[int] indices of parameters that remain visible (not out_return)
           - out_return_indices: tuple[int] indices of parameters specified as `out_return`
           - pass_ptr_mask: tuple[bool] parallel to visible_param_indices indicating whether the parameter should be passed as a pointer (True for `inout_ptr`/`out_ptr`)
+          - out_return_ptr_mask: tuple[bool] parallel to original parameters indicating which out_return parameters are scalar pointer outputs
 
     Raises:
-        ValueError: If `params` and `param_types` lengths differ, an index override is out of range, a named override refers to an unknown parameter, a non-`in_` intent is applied to a non-reference type, or `out_return` is disallowed.
+        ValueError: If `params` and `param_types` lengths differ, an index override is out of range, a named override refers to an unknown parameter, a non-`in_` intent is applied to an unsupported type, or `out_return` is disallowed.
         TypeError: If override keys are not `int` or `str`, or override values are not `str` or `ArgIntent`.
     """
     if len(params) != len(param_types):
@@ -139,11 +173,21 @@ def compute_intent_plan(
     visible_param_indices: list[int] = []
     out_return_indices: list[int] = []
     pass_ptr_mask: list[bool] = []
+    out_return_ptr_mask: list[bool] = [False] * len(params)
 
     for i, (intent, ty) in enumerate(zip(normalized, param_types)):
         is_ref = _is_ref_type(ty)
+        is_pointer = _is_pointer_type(ty)
         if intent != ArgIntent.in_:
-            if not is_ref:
+            if intent == ArgIntent.out_return:
+                if not (is_ref or is_pointer):
+                    raise ValueError(
+                        f"arg_intent[{i}]='out_return' is only supported for "
+                        "reference parameters (T&/T&&) or pointer output "
+                        "parameters (T*)"
+                    )
+                out_return_ptr_mask[i] = is_pointer and not is_ref
+            elif not is_ref:
                 raise ValueError(
                     f"arg_intent[{i}]={intent.value!r} is only supported for reference parameters (T&/T&&)"
                 )
@@ -164,4 +208,5 @@ def compute_intent_plan(
         visible_param_indices=tuple(visible_param_indices),
         out_return_indices=tuple(out_return_indices),
         pass_ptr_mask=tuple(pass_ptr_mask),
+        out_return_ptr_mask=tuple(out_return_ptr_mask),
     )

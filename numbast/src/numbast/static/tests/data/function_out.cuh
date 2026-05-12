@@ -10,3 +10,5 @@ void __device__ add_out(int &out, int x);
 int __device__ add_out_ret(int &out, int x);
 int __device__ add_in_ref(int &x);
 void __device__ add_inout_ref(int &x, int delta);
+void __device__ add_ptr_out(unsigned int *out, unsigned int x);
+int __device__ add_ptr_out_ret(int x, unsigned int *out);

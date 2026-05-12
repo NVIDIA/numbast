@@ -13,6 +13,7 @@ from ast_canopy import parse_declarations_from_source
 from numbast import bind_cxx_functions, MemoryShimWriter
 
 import pytest
+from numba.cuda.types import int32, uint32
 
 
 @pytest.fixture
@@ -146,6 +147,8 @@ def _sample_out_functions():
         arg_intent={
             "add_out": {"out": "out_return"},
             "add_out_ret": {"out": "out_return"},
+            "add_ptr_out": {"out": "out_return"},
+            "add_ptr_out_ret": {"out": "out_return"},
         },
     )
 
@@ -173,9 +176,11 @@ def test_out_return_device_function_results(_sample_out_functions):
     func_bindings, shim_writer = _sample_out_functions
     add_out = find_binding(func_bindings, "add_out")
     add_out_ret = find_binding(func_bindings, "add_out_ret")
+    add_ptr_out = find_binding(func_bindings, "add_ptr_out")
+    add_ptr_out_ret = find_binding(func_bindings, "add_ptr_out_ret")
 
     @cuda.jit(link=shim_writer.links())
-    def kernel(out_single, out_pair):
+    def kernel(out_single, out_pair, out_ptr_single, out_ptr_pair):
         """
         Populate provided output buffers with results produced by bound device functions.
 
@@ -187,13 +192,22 @@ def test_out_return_device_function_results(_sample_out_functions):
         ret, out = add_out_ret(7)
         out_pair[0] = ret
         out_pair[1] = out
+        out_ptr_single[0] = add_ptr_out(uint32(10))
+        ptr_ret, ptr_out = add_ptr_out_ret(int32(7))
+        out_ptr_pair[0] = ptr_ret
+        out_ptr_pair[1] = ptr_out
 
     out_single = np.array([0], dtype=np.int32)
     out_pair = np.array([0, 0], dtype=np.int32)
-    kernel[1, 1](out_single, out_pair)
+    out_ptr_single = np.array([0], dtype=np.uint32)
+    out_ptr_pair = np.array([0, 0], dtype=np.uint32)
+    kernel[1, 1](out_single, out_pair, out_ptr_single, out_ptr_pair)
     assert out_single[0] == 11
     assert out_pair[0] == 10
     assert out_pair[1] == 9
+    assert out_ptr_single[0] == 11
+    assert out_ptr_pair[0] == 10
+    assert out_ptr_pair[1] == 9
 
     DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
     p = os.path.join(DATA_FOLDER, "sample_function_out.cuh")

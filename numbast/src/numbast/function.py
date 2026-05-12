@@ -15,6 +15,7 @@ from ast_canopy.decl import Function
 
 from numbast.types import to_numba_type, to_numba_arg_type
 from numbast.intent import compute_intent_plan
+from numbast.intent_utils import compose_return_type, out_return_types_for_plan
 from numbast.utils import (
     deduplicate_overloads,
     make_function_shim,
@@ -196,25 +197,10 @@ def bind_cxx_non_operator_function(
             else:
                 param_types.append(base)
 
-        out_return_types = [
-            to_numba_type(
-                func_decl.param_types[i].unqualified_non_ref_type_name
-            )
-            for i in intent_plan.out_return_indices
-        ]
-
-        if out_return_types:
-            if cxx_return_type == nbtypes.void:
-                if len(out_return_types) == 1:
-                    return_type = out_return_types[0]
-                else:
-                    return_type = nbtypes.Tuple(tuple(out_return_types))
-            else:
-                return_type = nbtypes.Tuple(
-                    tuple([cxx_return_type, *out_return_types])
-                )
-        else:
-            return_type = cxx_return_type
+        out_return_types = out_return_types_for_plan(
+            func_decl.param_types, intent_plan
+        )
+        return_type = compose_return_type(cxx_return_type, out_return_types)
 
         # In intentful mode, pass-through pointers are controlled by intent_plan,
         # not by whether the C++ parameter is a reference.

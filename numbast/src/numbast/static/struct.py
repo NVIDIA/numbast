@@ -24,7 +24,13 @@ from numbast.static.types import (
     to_numba_arg_type_str,
     CTYPE_TO_NBTYPE_STR,
 )
-from numbast.intent import ArgIntent, IntentPlan, compute_intent_plan
+from numbast.intent import (
+    ArgIntent,
+    IntentPlan,
+    compute_intent_plan,
+    get_out_return_ptr_mask,
+    pointee_type_name,
+)
 from numbast.utils import (
     make_struct_ctor_shim,
     make_struct_conversion_operator_shim,
@@ -37,6 +43,62 @@ file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "test.py")
 file_logger.debug(f"Struct debug outputs are written to {logger_path}")
 file_logger.addHandler(FileHandler(logger_path))
+
+
+def _tuple_literal(items: list[str]) -> str:
+    if not items:
+        return "()"
+    if len(items) == 1:
+        return f"({items[0]},)"
+    return f"({', '.join(items)})"
+
+
+def _out_return_type_str(param_type, *, pointer_out: bool) -> str:
+    type_name = param_type.unqualified_non_ref_type_name
+    if pointer_out:
+        type_name = pointee_type_name(type_name)
+    return to_numba_type_str(type_name)
+
+
+def _compose_return_type_str(cxx_return_type_str: str, out_return_types: list[str]):
+    if not out_return_types:
+        return cxx_return_type_str
+    if cxx_return_type_str == "void":
+        if len(out_return_types) == 1:
+            return out_return_types[0]
+        outs = ", ".join(out_return_types)
+        return f"types.Tuple(({outs},))"
+    outs = ", ".join([cxx_return_type_str, *out_return_types])
+    return f"types.Tuple(({outs},))"
+
+
+def _prepend_receiver_to_intent_plan(method_plan: IntentPlan) -> IntentPlan:
+    return IntentPlan(
+        intents=(ArgIntent.in_,) + method_plan.intents,
+        visible_param_indices=(0,)
+        + tuple(i + 1 for i in method_plan.visible_param_indices),
+        out_return_indices=tuple(i + 1 for i in method_plan.out_return_indices),
+        pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
+        out_return_ptr_mask=(False,) + get_out_return_ptr_mask(method_plan),
+    )
+
+
+def _render_intent_plan(plan: IntentPlan) -> str:
+    intents_str = _tuple_literal(
+        [
+            f"ArgIntent.{i.value if i != ArgIntent.in_ else 'in_'}"
+            for i in plan.intents
+        ]
+    )
+    return (
+        "IntentPlan("
+        f"intents={intents_str}, "
+        f"visible_param_indices={repr(plan.visible_param_indices)}, "
+        f"out_return_indices={repr(plan.out_return_indices)}, "
+        f"pass_ptr_mask={repr(plan.pass_ptr_mask)}, "
+        f"out_return_ptr_mask={repr(get_out_return_ptr_mask(plan))}"
+        ")"
+    )
 
 
 class StaticStructMethodRenderer(BaseRenderer):
@@ -660,15 +722,7 @@ def {lower_scope_name}(shim_stream, shim_obj):
                 overrides=overrides,
                 allow_out_return=True,
             )
-            intent_plan = IntentPlan(
-                intents=(ArgIntent.in_,) + method_plan.intents,
-                visible_param_indices=(0,)
-                + tuple(i + 1 for i in method_plan.visible_param_indices),
-                out_return_indices=tuple(
-                    i + 1 for i in method_plan.out_return_indices
-                ),
-                pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
-            )
+            intent_plan = _prepend_receiver_to_intent_plan(method_plan)
             self._arg_is_ref = None
 
             self._nb_param_types = []
@@ -690,47 +744,23 @@ def {lower_scope_name}(shim_stream, shim_obj):
                 ", ".join(map(str, self._nb_param_types)) or ""
             )
 
+            out_return_ptr_mask = get_out_return_ptr_mask(method_plan)
             out_return_types = [
-                to_numba_type_str(
-                    self._method_decl.param_types[
-                        i
-                    ].unqualified_non_ref_type_name
+                _out_return_type_str(
+                    self._method_decl.param_types[i],
+                    pointer_out=out_return_ptr_mask[i],
                 )
                 for i in method_plan.out_return_indices
             ]
             if out_return_types:
                 self.Imports.add("from numba import types")
-                if self._cxx_return_type_str == "void":
-                    if len(out_return_types) == 1:
-                        self._nb_return_type_str = out_return_types[0]
-                    else:
-                        outs = ", ".join(out_return_types)
-                        self._nb_return_type_str = f"types.Tuple(({outs},))"
-                else:
-                    outs = ", ".join(
-                        [self._cxx_return_type_str, *out_return_types]
-                    )
-                    self._nb_return_type_str = f"types.Tuple(({outs},))"
+                self._nb_return_type_str = _compose_return_type_str(
+                    self._cxx_return_type_str, out_return_types
+                )
             else:
                 self._nb_return_type_str = self._cxx_return_type_str
 
-            intents_str = (
-                "("
-                + ", ".join(
-                    f"ArgIntent.{i.value if i != ArgIntent.in_ else 'in_'}"
-                    for i in intent_plan.intents
-                )
-                + ("," if len(intent_plan.intents) == 1 else "")
-                + ")"
-            )
-            self._intent_plan_rendered = (
-                "IntentPlan("
-                f"intents={intents_str}, "
-                f"visible_param_indices={repr(intent_plan.visible_param_indices)}, "
-                f"out_return_indices={repr(intent_plan.out_return_indices)}, "
-                f"pass_ptr_mask={repr(intent_plan.pass_ptr_mask)}"
-                ")"
-            )
+            self._intent_plan_rendered = _render_intent_plan(intent_plan)
             if out_return_types:
                 self._out_return_types_rendered = (
                     "[" + ", ".join(out_return_types) + "]"
