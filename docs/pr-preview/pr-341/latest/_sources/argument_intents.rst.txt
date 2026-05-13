@@ -24,7 +24,8 @@ C++ source of truth
   __device__ bool stats_update_and_get_zscore(
       RunningStats &state, float x, float &zscore_out);
 
-  __device__ void stats_get_matrix(float out[12]);
+  // Logical 3x4 matrix stored row-major in a flat native buffer.
+  __device__ void stats_get_matrix_3x4(float out[12]);
 
   __device__ void stats_get_vectors(float4 out[3]);
 
@@ -42,7 +43,7 @@ Example config
     stats_update_and_get_zscore:
       state: inout_ptr
       zscore_out: out_return
-    stats_get_matrix:
+    stats_get_matrix_3x4:
       out:
         intent: out_array_return
         dtype: float
@@ -65,7 +66,7 @@ Programmatic API
       shim_writer,
       funcs,
       arg_intent={
-          "stats_get_matrix": {
+          "stats_get_matrix_3x4": {
               "out": out_array_return(dtype=float32, length=12),
           },
       },
@@ -111,6 +112,9 @@ Intent semantics
   C++ through the shim, loads each element after the call, and returns a fixed
   ``UniTuple``.
 - ``dtype`` is the element type and ``length`` is the number of elements to load.
+- Multidimensional data is returned as a flat tuple. For example, a logical
+  3x4 matrix uses ``length: 12`` and row-major indexing
+  ``value[row * 4 + col]``.
 - Static configs use C++ or registered type names such as ``float`` or
   ``float4``. Programmatic bindings can use Numba types such as ``float32`` or
   registered C++ type names.
@@ -139,7 +143,7 @@ Representative signatures for the example API:
   )
 
   # out_array_return:
-  signature(UniTuple(float32, 12))
+  signature(UniTuple(float32, 12))  # logical 3x4 matrix, flattened
   signature(UniTuple(float32x4, 3))
 
 Notes
@@ -149,6 +153,9 @@ Notes
   reference parameters (``T&`` / ``T&&``).
 - ``out_array_return`` is supported on pointer/array output parameters such as
   ``float *out``, ``float out[12]``, and ``float4 out[3]``.
+- ``out_array_return`` returns a one-dimensional ``UniTuple``. For logical
+  multidimensional outputs, use the total element count as ``length`` and
+  flatten the indexing convention in the binding documentation.
 - In ``Function Argument Intents``, parameter overrides can be keyed by
   parameter name or 0-based parameter index.
 
