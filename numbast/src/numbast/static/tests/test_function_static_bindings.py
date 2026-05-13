@@ -181,6 +181,13 @@ def test_out_array_return_static_binding_source(make_binding):
                 "length": 12,
             }
         },
+        "get_matrix_3x4": {
+            "out": {
+                "intent": "out_array_return",
+                "dtype": "float",
+                "length": 12,
+            }
+        },
         "get_data": {
             "out": {
                 "intent": "out_array_return",
@@ -194,6 +201,7 @@ def test_out_array_return_static_binding_source(make_binding):
     src = res["src"]
 
     assert "get_matrix" in bindings
+    assert "get_matrix_3x4" in bindings
     assert "get_data" in bindings
     assert "signature(UniTuple(float32, 12), )" in src
     assert "signature(UniTuple(float32x4, 3), )" in src
@@ -203,6 +211,8 @@ def test_out_array_return_static_binding_source(make_binding):
     assert (
         "OutArrayReturnSpec(dtype=float32x4, length=3, shim_arg_indirect=True)"
     ) in src
+    assert "float (**out)[4]" in src
+    assert "get_matrix_3x4(*out);" in src
 
 
 def test_out_return_function_bindings(decl_out, impl_out):

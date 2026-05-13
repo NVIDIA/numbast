@@ -149,6 +149,9 @@ def _sample_out_functions():
             "add_out": {"out": "out_return"},
             "add_out_ret": {"out": "out_return"},
             "get_matrix": {"out": out_array_return(dtype=float32, length=12)},
+            "get_matrix_3x4": {
+                "out": out_array_return(dtype=float32, length=12)
+            },
             "get_data": {
                 "out": out_array_return(dtype=CTYPE_MAPS["float4"], length=3)
             },
@@ -202,13 +205,18 @@ def test_out_return_device_function_results(_sample_out_functions):
     assert out_pair[1] == 9
 
     get_matrix = find_binding(func_bindings, "get_matrix")
+    get_matrix_3x4 = find_binding(func_bindings, "get_matrix_3x4")
     get_data = find_binding(func_bindings, "get_data")
 
     @cuda.jit(link=shim_writer.links())
-    def kernel_arrays(out_matrix, out_data):
+    def kernel_arrays(out_matrix, out_matrix_3x4, out_data):
         matrix = get_matrix()
         for i in range(12):
             out_matrix[i] = matrix[i]
+
+        matrix_3x4 = get_matrix_3x4()
+        for i in range(12):
+            out_matrix_3x4[i] = matrix_3x4[i]
 
         data = get_data()
         for i in range(3):
@@ -216,10 +224,15 @@ def test_out_return_device_function_results(_sample_out_functions):
             out_data[i] = item.x + item.y + item.z + item.w
 
     out_matrix = np.zeros(12, dtype=np.float32)
+    out_matrix_3x4 = np.zeros(12, dtype=np.float32)
     out_data = np.zeros(3, dtype=np.float32)
-    kernel_arrays[1, 1](out_matrix, out_data)
+    kernel_arrays[1, 1](out_matrix, out_matrix_3x4, out_data)
     np.testing.assert_allclose(
         out_matrix, np.arange(12, dtype=np.float32) + np.float32(0.5)
+    )
+    np.testing.assert_allclose(
+        out_matrix_3x4,
+        np.arange(12, dtype=np.float32) + np.float32(1.25),
     )
     np.testing.assert_allclose(
         out_data, np.array([10, 26, 42], dtype=np.float32)

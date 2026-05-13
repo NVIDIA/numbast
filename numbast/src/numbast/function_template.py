@@ -30,7 +30,12 @@ from numbast.intent_utils import (
     shim_arg_type_for_out_return,
 )
 from numbast.types import to_c_type_str, to_numba_type
-from numbast.utils import deduplicate_overloads, get_return_type_strings
+from numbast.utils import (
+    _canonicalize_array_pointer_type,
+    _param_type_name_to_pointer_arg,
+    deduplicate_overloads,
+    get_return_type_strings,
+)
 from numbast.shim_writer import ShimWriterBase
 from numbast.overload_selection import _select_templated_overload
 
@@ -151,7 +156,9 @@ def _make_templated_function_shim_arg_strings(
             formal_default = f"{c_ty}* arg{i}"
         actual_default = f"*arg{i}"
 
-        cxx_ty = cxx_param.type_.unqualified_non_ref_type_name
+        cxx_ty = _canonicalize_array_pointer_type(
+            cxx_param.type_.unqualified_non_ref_type_name
+        )
         if use_pass_ptr:
             if "*" in cxx_ty:
                 actual_default = f"arg{i}"
@@ -159,7 +166,12 @@ def _make_templated_function_shim_arg_strings(
                 actual_default = f"*arg{i}"
         m = _CXX_ARRAY_TYPE_RE.match(cxx_ty)
         is_lref = cxx_param.type_.is_left_reference()
-        if m and is_lref:
+        if m and "*" in m.group("base") and isinstance(nb_ty, nbtypes.CPointer):
+            formal_parts.append(
+                _param_type_name_to_pointer_arg(cxx_ty, f"arg{i}")
+            )
+            actual_parts.append(f"*arg{i}")
+        elif m and is_lref:
             if not isinstance(nb_ty, nbtypes.CPointer):
                 raise TypingError(
                     f"{cxx_param.name}: expected a pointer argument in Numba "

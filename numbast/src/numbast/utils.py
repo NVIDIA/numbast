@@ -11,6 +11,44 @@ from ast_canopy import pylibastcanopy
 
 OVERLOADS_CNT: dict[str, int] = defaultdict(int)  # overload counter
 
+_ARRAY_POINTER_TYPE_RE = re.compile(
+    r"^(?P<base>.+?)(?P<sizes>(?:\[\d+\])+)\s*(?P<pointers>\*+)\s*$"
+)
+
+
+def _canonicalize_array_pointer_type(type_name: str) -> str:
+    """Normalize ast_canopy's ``T[N] *`` spelling to C declarator form."""
+    match = _ARRAY_POINTER_TYPE_RE.match(type_name)
+    if not match:
+        return type_name
+
+    base = match.group("base").strip()
+    sizes = match.group("sizes")
+    pointers = match.group("pointers")
+    return f"{base} ({pointers}){sizes}"
+
+
+def _param_type_name_to_pointer_arg(type_name: str, arg_name: str) -> str:
+    array_pattern = r"(.*)(\[\d+\]+)"
+    type_name = _canonicalize_array_pointer_type(type_name)
+
+    # For each of the arguments, elevate to pointer type.
+    match = re.match(array_pattern, type_name)
+    if match:
+        # Array type
+        base_ty, sizes = match.groups()
+        if "*" in base_ty:
+            # Pointer to array type: int (*arr)[10]
+            loc = base_ty.rfind("*")
+            return (
+                base_ty[: loc + 1] + f"*{arg_name}" + base_ty[loc + 1 :] + sizes
+            )
+
+        # Regular array type: int arr[10]
+        return base_ty + f" (*{arg_name})" + sizes
+
+    return f"{type_name}* {arg_name}"
+
 
 def make_device_caller_with_nargs(
     name: str, nargs: int, wrapped: ExternFunction
@@ -72,26 +110,10 @@ def paramvar_to_str(arg: pylibastcanopy.ParamVar):
 
     Performs necessary downcasting of array-typed ``ParamVar`` to pointer types.
     """
-    array_pattern = r"(.*)(\[\d+\]+)"
-
-    # For each of the arguments, elevate to pointer type.
-    match = re.match(array_pattern, arg.type_.unqualified_non_ref_type_name)
-    if match:
-        # Array type
-        base_ty, sizes = match.groups()
-        if "*" in base_ty:
-            # Pointer to array type: int (*arr)[10]
-            loc = base_ty.rfind("*")
-            fml_arg = (
-                base_ty[: loc + 1] + f"*{arg.name}" + base_ty[loc + 1 :] + sizes
-            )
-        else:
-            # Regular array type: int arr[10]
-            fml_arg = base_ty + f" (*{arg.name})" + sizes
-    else:
-        fml_arg = f"{arg.type_.unqualified_non_ref_type_name}* {arg.name}"
-
-    return fml_arg
+    return _param_type_name_to_pointer_arg(
+        arg.type_.unqualified_non_ref_type_name,
+        arg.name,
+    )
 
 
 def assemble_arglist_string(params: list[pylibastcanopy.ParamVar]) -> str:
