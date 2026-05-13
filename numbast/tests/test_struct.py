@@ -104,11 +104,11 @@ def test_pod_struct_array_fields_have_correct_llvm_shape(tmp_path):
 
     llvm_ty = cuda_target.target_context.get_value_type(PodArrayFields._nbtype)
 
-    assert [str(ty) for ty in llvm_ty.elements] == [
-        "[20 x i32]",
-        "[2 x [12 x float]]",
-        "[12 x float]",
-    ]
+    assert llvm_ty.elements[0] == ir.ArrayType(ir.IntType(32), 20)
+    assert llvm_ty.elements[1] == ir.ArrayType(
+        ir.ArrayType(ir.FloatType(), 12), 2
+    )
+    assert llvm_ty.elements[2] == ir.ArrayType(ir.FloatType(), 12)
 
 
 def test_pod_struct_nested_fields_and_arrays_have_struct_layout(tmp_path):
@@ -134,7 +134,7 @@ def test_pod_struct_nested_fields_and_arrays_have_struct_layout(tmp_path):
     assert len(inner_llvm_ty.elements) == 2
     assert inner_llvm_ty.elements[0] == ir.IntType(32)
     assert inner_llvm_ty.elements[1] == ir.FloatType()
-    assert str(llvm_ty.elements[1]) == "[3 x {i32, float}]"
+    assert llvm_ty.elements[1] == ir.ArrayType(inner_llvm_ty, 3)
     assert not llvm_ty._packed
 
 
@@ -174,8 +174,10 @@ def test_pod_struct_nested_duplicate_short_names_use_qualified_names(tmp_path):
     left_leaf_llvm_ty = llvm_ty.elements[0].elements[0]
     right_leaf_llvm_ty = llvm_ty.elements[1].elements[0]
 
-    assert str(left_leaf_llvm_ty) == "{i32}"
-    assert str(right_leaf_llvm_ty) == "{float}"
+    assert len(left_leaf_llvm_ty.elements) == 1
+    assert left_leaf_llvm_ty.elements[0] == ir.IntType(32)
+    assert len(right_leaf_llvm_ty.elements) == 1
+    assert right_leaf_llvm_ty.elements[0] == ir.FloatType()
 
 
 def test_struct_methods_simple(sample_structs, shim_writer):
