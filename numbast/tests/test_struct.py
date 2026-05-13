@@ -85,8 +85,12 @@ def _bind_pod_structs_from_source(tmp_path, source):
     )
 
 
+def _get_bound_struct(bindings, name):
+    return next(s for s in bindings if s.__name__ == name)
+
+
 def test_pod_struct_array_fields_have_correct_llvm_shape(tmp_path):
-    PodArrayFields = _bind_pod_structs_from_source(
+    bindings = _bind_pod_structs_from_source(
         tmp_path,
         """
         struct PodArrayFieldsForNumbast {
@@ -95,7 +99,8 @@ def test_pod_struct_array_fields_have_correct_llvm_shape(tmp_path):
           float flat_transform[12];
         };
         """,
-    )[0]
+    )
+    PodArrayFields = _get_bound_struct(bindings, "PodArrayFieldsForNumbast")
 
     llvm_ty = cuda_target.target_context.get_value_type(PodArrayFields._nbtype)
 
@@ -107,7 +112,7 @@ def test_pod_struct_array_fields_have_correct_llvm_shape(tmp_path):
 
 
 def test_pod_struct_nested_fields_and_arrays_have_struct_layout(tmp_path):
-    PodNestedOuter = _bind_pod_structs_from_source(
+    bindings = _bind_pod_structs_from_source(
         tmp_path,
         """
         struct PodNestedOuterForNumbast {
@@ -120,7 +125,8 @@ def test_pod_struct_nested_fields_and_arrays_have_struct_layout(tmp_path):
           Inner inners[3];
         };
         """,
-    )[0]
+    )
+    PodNestedOuter = _get_bound_struct(bindings, "PodNestedOuterForNumbast")
 
     llvm_ty = cuda_target.target_context.get_value_type(PodNestedOuter._nbtype)
     inner_llvm_ty = llvm_ty.elements[0]
@@ -133,7 +139,7 @@ def test_pod_struct_nested_fields_and_arrays_have_struct_layout(tmp_path):
 
 
 def test_pod_struct_nested_duplicate_short_names_use_qualified_names(tmp_path):
-    PodNestedDuplicateNames = _bind_pod_structs_from_source(
+    bindings = _bind_pod_structs_from_source(
         tmp_path,
         """
         struct PodNestedDuplicateNamesForNumbast {
@@ -157,7 +163,10 @@ def test_pod_struct_nested_duplicate_short_names_use_qualified_names(tmp_path):
           Right right;
         };
         """,
-    )[0]
+    )
+    PodNestedDuplicateNames = _get_bound_struct(
+        bindings, "PodNestedDuplicateNamesForNumbast"
+    )
 
     llvm_ty = cuda_target.target_context.get_value_type(
         PodNestedDuplicateNames._nbtype
