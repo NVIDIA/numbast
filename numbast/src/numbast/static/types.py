@@ -1,10 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import re
 import copy
 
-from numbast.types import CTYPE_MAPS
+from numbast.types import CTYPE_MAPS, parse_fixed_size_array_type
 from numbast.static.renderer import BaseRenderer
 from numbast.errors import TypeNotFoundError
 
@@ -102,14 +101,14 @@ def to_numba_type_str(ty: str):
         return ptr_ty_str
 
     # Support for array type is still incomplete in ast_canopy,
-    # doing manual parsing for array type here.
-    arr_type_pat = r"(.*)\[(\d+)\]"
-    is_array_type = re.match(arr_type_pat, ty)
-    if is_array_type:
-        base_ty, size = is_array_type.groups()
-        base_ty_str = to_numba_type_str(base_ty)
-
-        arr_type_str = f"UniTuple({base_ty_str}, {int(size)})"
+    # doing manual parsing for array type here. C arrays are arrays of arrays,
+    # so `T[M][N]` is modeled as M rows of N elements.
+    array_type = parse_fixed_size_array_type(ty)
+    if array_type is not None:
+        base_ty, dimensions = array_type
+        arr_type_str = to_numba_type_str(base_ty)
+        for size in reversed(dimensions):
+            arr_type_str = f"UniTuple({arr_type_str}, {size})"
         BaseRenderer._try_import_numba_type("UniTuple")
         return arr_type_str
 

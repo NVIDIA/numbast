@@ -433,6 +433,50 @@ def bind_cxx_struct_regular_methods(
     return method_templates
 
 
+def _is_injected_class_name_record(parent: Struct, nested) -> bool:
+    return (
+        nested.name == parent.name
+        and nested.qual_name == f"{parent.qual_name}::{parent.name}"
+    )
+
+
+def _as_struct(record, parse_entry_point: str) -> Struct:
+    if isinstance(record, Struct):
+        return record
+    return Struct.from_c_obj(record, parse_entry_point)
+
+
+def _bind_nested_cxx_structs(
+    shim_writer: ShimWriter,
+    struct_decl: Struct,
+    aliases: dict[str, list[str]],
+    arg_intent: dict | None,
+    bound_struct_names: set[str],
+):
+    for nested_record in struct_decl.nested_records:
+        if _is_injected_class_name_record(struct_decl, nested_record):
+            continue
+
+        nested_struct = _as_struct(nested_record, struct_decl.parse_entry_point)
+        nested_qualified_names = {nested_struct.qual_name}
+        if nested_qualified_names & bound_struct_names:
+            continue
+        if nested_struct.qual_name in C2N:
+            continue
+
+        bound_struct_names.update(nested_qualified_names)
+        bind_cxx_struct(
+            shim_writer,
+            nested_struct,
+            nbtypes.Type,
+            StructModel,
+            aliases,
+            arg_intent=arg_intent,
+            name=nested_struct.qual_name,
+            _bound_struct_names=bound_struct_names,
+        )
+
+
 def bind_cxx_struct(
     shim_writer: ShimWriter,
     struct_decl: Struct,
@@ -444,6 +488,7 @@ def bind_cxx_struct(
     *,
     arg_intent: dict | None = None,
     name: str | None = None,
+    _bound_struct_names: set[str] | None = None,
 ) -> object:
     """
     Create and register a Numba API type and associated bindings for a C++ struct.
@@ -493,12 +538,19 @@ def bind_cxx_struct(
     # It also needs to happen before method typings - because copy constructors
     # needs to know the type of itself even if the definition is incomplete.
     C2N[struct_name] = s_type
-    alias_keys = (struct_name,)
-    if struct_decl.name != struct_name:
-        alias_keys = (struct_name, struct_decl.name)
+    C2N[struct_decl.name] = s_type
+    C2N[struct_decl.qual_name] = s_type
+    alias_keys = {struct_name, struct_decl.name, struct_decl.qual_name}
     for alias_key in alias_keys:
         for alias in aliases.get(alias_key, []):
             C2N[alias] = s_type
+
+    if _bound_struct_names is None:
+        _bound_struct_names = set()
+    _bound_struct_names.add(struct_decl.qual_name)
+    _bind_nested_cxx_structs(
+        shim_writer, struct_decl, aliases, arg_intent, _bound_struct_names
+    )
 
     # Data Model
     if data_model == PrimitiveModel:
