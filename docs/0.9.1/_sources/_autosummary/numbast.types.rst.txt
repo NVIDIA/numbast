@@ -11,6 +11,7 @@
       get_numba_type_alignof
       is_c_floating_type
       is_c_integral_type
+      parse_fixed_size_array_type
       register_cxx_type
       register_enum_type
       to_c_type_str
