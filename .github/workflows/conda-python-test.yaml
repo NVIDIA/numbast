@@ -148,7 +148,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CUDA_VER: ${{ matrix.CUDA_VER }}
       - name: Generate test report
-        uses: test-summary/action@v2.4
+        uses: test-summary/action@v2.6
         with:
           paths: "${{ env.RAPIDS_TESTS_DIR }}/*.xml"
         if: always()
