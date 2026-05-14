@@ -614,8 +614,7 @@ the template/API.</p>
 <span class="n">__device__</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">stats_update_and_get_zscore</span><span class="p">(</span>
 <span class="w">    </span><span class="n">RunningStats</span><span class="w"> </span><span class="o">&amp;</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">&amp;</span><span class="n">zscore_out</span><span class="p">);</span>
 
-<span class="c1">// Logical 3x4 matrix stored row-major in a flat native buffer.</span>
-<span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">stats_get_matrix_3x4</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="n">out</span><span class="p">[</span><span class="mi">12</span><span class="p">]);</span>
+<span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">stats_get_matrix_3x4</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">4</span><span class="p">]);</span>
 
 <span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">stats_get_vectors</span><span class="p">(</span><span class="n">float4</span><span class="w"> </span><span class="n">out</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
 </pre></div>
@@ -705,8 +704,8 @@ the template/API.</p>
 C++ through the shim, loads each element after the call, and returns a fixed
 <code class="docutils literal notranslate"><span class="pre">UniTuple</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dtype</span></code> is the element type and <code class="docutils literal notranslate"><span class="pre">length</span></code> is the number of elements to load.</p></li>
-<li><p>Multidimensional data is returned as a flat tuple. For example, a logical
-3x4 matrix uses <code class="docutils literal notranslate"><span class="pre">length:</span> <span class="pre">12</span></code> and row-major indexing
+<li><p>Multidimensional native arrays are returned as flat tuples. For example,
+<code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">out[3][4]</span></code> uses <code class="docutils literal notranslate"><span class="pre">length:</span> <span class="pre">12</span></code> and row-major indexing
 <code class="docutils literal notranslate"><span class="pre">value[row</span> <span class="pre">*</span> <span class="pre">4</span> <span class="pre">+</span> <span class="pre">col]</span></code>.</p></li>
 <li><p>Static configs use C++ or registered type names such as <code class="docutils literal notranslate"><span class="pre">float</span></code> or
 <code class="docutils literal notranslate"><span class="pre">float4</span></code>. Programmatic bindings can use Numba types such as <code class="docutils literal notranslate"><span class="pre">float32</span></code> or
@@ -745,7 +744,7 @@ registered C++ type names.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">inout_ptr</span></code>, <code class="docutils literal notranslate"><span class="pre">out_ptr</span></code>, and <code class="docutils literal notranslate"><span class="pre">out_return</span></code> are only supported on C++
 reference parameters (<code class="docutils literal notranslate"><span class="pre">T&amp;</span></code> / <code class="docutils literal notranslate"><span class="pre">T&amp;&amp;</span></code>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">out_array_return</span></code> is supported on pointer/array output parameters such as
-<code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">*out</span></code>, <code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">out[12]</span></code>, and <code class="docutils literal notranslate"><span class="pre">float4</span> <span class="pre">out[3]</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">*out</span></code>, <code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">out[12]</span></code>, <code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">out[3][4]</span></code>, and <code class="docutils literal notranslate"><span class="pre">float4</span> <span class="pre">out[3]</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">out_array_return</span></code> returns a one-dimensional <code class="docutils literal notranslate"><span class="pre">UniTuple</span></code>. For logical
 multidimensional outputs, use the total element count as <code class="docutils literal notranslate"><span class="pre">length</span></code> and
 flatten the indexing convention in the binding documentation.</p></li>

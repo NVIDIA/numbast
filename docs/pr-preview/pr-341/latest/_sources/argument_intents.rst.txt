@@ -24,8 +24,7 @@ C++ source of truth
   __device__ bool stats_update_and_get_zscore(
       RunningStats &state, float x, float &zscore_out);
 
-  // Logical 3x4 matrix stored row-major in a flat native buffer.
-  __device__ void stats_get_matrix_3x4(float out[12]);
+  __device__ void stats_get_matrix_3x4(float out[3][4]);
 
   __device__ void stats_get_vectors(float4 out[3]);
 
@@ -112,8 +111,8 @@ Intent semantics
   C++ through the shim, loads each element after the call, and returns a fixed
   ``UniTuple``.
 - ``dtype`` is the element type and ``length`` is the number of elements to load.
-- Multidimensional data is returned as a flat tuple. For example, a logical
-  3x4 matrix uses ``length: 12`` and row-major indexing
+- Multidimensional native arrays are returned as flat tuples. For example,
+  ``float out[3][4]`` uses ``length: 12`` and row-major indexing
   ``value[row * 4 + col]``.
 - Static configs use C++ or registered type names such as ``float`` or
   ``float4``. Programmatic bindings can use Numba types such as ``float32`` or
@@ -152,7 +151,7 @@ Notes
 - ``inout_ptr``, ``out_ptr``, and ``out_return`` are only supported on C++
   reference parameters (``T&`` / ``T&&``).
 - ``out_array_return`` is supported on pointer/array output parameters such as
-  ``float *out``, ``float out[12]``, and ``float4 out[3]``.
+  ``float *out``, ``float out[12]``, ``float out[3][4]``, and ``float4 out[3]``.
 - ``out_array_return`` returns a one-dimensional ``UniTuple``. For logical
   multidimensional outputs, use the total element count as ``length`` and
   flatten the indexing convention in the binding documentation.
