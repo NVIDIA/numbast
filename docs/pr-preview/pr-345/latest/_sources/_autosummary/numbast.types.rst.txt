@@ -1,0 +1,25 @@
+﻿numbast.types
+=============
+
+.. automodule:: numbast.types
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_numba_type_alignof
+      is_c_floating_type
+      is_c_integral_type
+      register_cxx_type
+      register_enum_type
+      to_c_type_str
+      to_numba_arg_type
+      to_numba_type
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FunctorType
+   
