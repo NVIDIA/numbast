@@ -10,3 +10,4 @@ void __device__ add_out(int &out, int x);
 int __device__ add_out_ret(int &out, int x);
 int __device__ add_in_ref(int &x);
 void __device__ add_inout_ref(int &x, int delta);
+const float4 *__device__ get_transform(int handle);

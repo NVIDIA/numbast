@@ -11,6 +11,7 @@ from numba.cuda.descriptor import cuda_target
 
 from numbast.callconv import FunctionCallConv, _get_alloca_alignment
 from numbast.intent_defs import ArgIntent, IntentPlan
+from numbast.return_materialization import PointerReturnMaterialization
 from numbast.types import CTYPE_MAPS, get_numba_type_alignof
 
 
@@ -26,6 +27,7 @@ def _lower_callconv_to_ir(
     intent_plan=None,
     out_return_types=None,
     cxx_return_type=None,
+    return_materialization=None,
 ):
     context = cuda_target.target_context
     sig = SimpleNamespace(return_type=return_type, args=tuple(args))
@@ -44,6 +46,7 @@ def _lower_callconv_to_ir(
         intent_plan=intent_plan,
         out_return_types=out_return_types,
         cxx_return_type=cxx_return_type,
+        return_materialization=return_materialization,
     )
     callconv._lower_impl(builder, context, sig, tuple(fn.args))
     builder.ret_void()
@@ -120,3 +123,18 @@ def test_intent_plan_allocas_are_aligned_in_lowered_ir():
     assert re.search(
         r"load \{float, float, float, float\}, .* align 16", llvm_ir
     )
+
+
+def test_pointer_return_materialization_loads_fixed_size_rows():
+    float4 = CTYPE_MAPS["float4"]
+
+    llvm_ir = _lower_callconv_to_ir(
+        return_type=cuda_types.UniTuple(float4, 3),
+        args=(cuda_types.int32,),
+        cxx_return_type=cuda_types.CPointer(float4),
+        return_materialization=PointerReturnMaterialization(length=3),
+    )
+
+    assert llvm_ir.count("load {float, float, float, float}, ") == 3
+    assert llvm_ir.count("align 16") >= 3
+    assert "getelementptr inbounds {float, float, float, float}" in llvm_ir

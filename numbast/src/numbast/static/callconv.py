@@ -4,6 +4,7 @@ import pprint
 from numbast import callconv
 from numbast import args
 from numbast import intent_defs as intent_mod
+from numbast import return_materialization as return_materialization_mod
 from numbast.types import NUMBA_TYPE_ALIGNOF_MAPS
 
 
@@ -39,6 +40,13 @@ INTENT_SRC = _extract_section(
     _INTENT_DEFS_SRC, "# NBST:BEGIN_INTENT_DEFS", "# NBST:END_INTENT_DEFS"
 )
 
+_RETURN_MATERIALIZATION_DEFS_SRC = inspect.getsource(return_materialization_mod)
+RETURN_MATERIALIZATION_SRC = _extract_section(
+    _RETURN_MATERIALIZATION_DEFS_SRC,
+    "# NBST:BEGIN_RETURN_MATERIALIZATION_DEFS",
+    "# NBST:END_RETURN_MATERIALIZATION_DEFS",
+)
+
 ARGS_SRC = inspect.getsource(args)
 _CALLCONV_SRC = inspect.getsource(callconv)
 _CALLCONV_SRC_SECTION = _extract_section(
@@ -70,6 +78,8 @@ def get_numba_type_alignof(numba_type):
 
 CALLCONV_SRC = (
     INTENT_SRC
+    + "\n"
+    + RETURN_MATERIALIZATION_SRC
     + "\n"
     + ARGS_SRC
     + "\n"

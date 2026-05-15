@@ -16,6 +16,7 @@ from numbast.function_template import (
     bind_cxx_function_templates,
 )
 from numbast.enum import bind_cxx_enum, bind_cxx_enums
+from numbast.return_materialization import PointerReturnMaterialization
 from numbast.shim_writer import MemoryShimWriter, FileShimWriter
 
 import importlib.metadata
@@ -40,6 +41,7 @@ __all__ = [
     "bind_cxx_class_template",
     "bind_cxx_class_templates",
     "clear_concrete_type_caches",
+    "PointerReturnMaterialization",
     "MemoryShimWriter",
     "FileShimWriter",
 ]

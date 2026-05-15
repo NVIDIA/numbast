@@ -18,6 +18,10 @@ from numbast.static.renderer import (
 )
 from numbast.static.types import to_numba_type_str, to_numba_arg_type_str
 from numbast.intent import ArgIntent, compute_intent_plan
+from numbast.return_materialization import (
+    PointerReturnMaterialization,
+    parse_return_materialization,
+)
 from numbast.utils import make_function_shim, _apply_prefix_removal
 from numbast.errors import TypeNotFoundError, MangledFunctionNameConflictError
 
@@ -35,6 +39,34 @@ function_mangled_name_registry: set[str] = set()
 
 function_apis_registry: set[str] = set()
 """A set of created function API names."""
+
+
+def _visible_cxx_return_type_str(
+    cxx_return_type: str,
+    return_materialization: PointerReturnMaterialization | None,
+) -> str:
+    if return_materialization is None:
+        return cxx_return_type
+    if not cxx_return_type.startswith(
+        "CPointer("
+    ) or not cxx_return_type.endswith(")"):
+        raise ValueError(
+            "pointer return materialization requires a C++ pointer return "
+            f"type, got {cxx_return_type}"
+        )
+    BaseRenderer._try_import_numba_type("UniTuple")
+    pointee_type = cxx_return_type[len("CPointer(") : -1]
+    return f"UniTuple({pointee_type}, {return_materialization.length})"
+
+
+def _render_return_materialization(
+    return_materialization: PointerReturnMaterialization | None,
+) -> str:
+    if return_materialization is None:
+        return "None"
+    return (
+        f"PointerReturnMaterialization(length={return_materialization.length})"
+    )
 
 
 def _matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
@@ -114,6 +146,7 @@ def impl(context, builder, sig, args):
         intent_plan={intent_plan},
         out_return_types={out_return_types},
         cxx_return_type={cxx_return_type},
+        return_materialization={return_materialization},
     )
     return callconv(builder, context, sig, args)
 """
@@ -146,6 +179,7 @@ def {func_name}():
         header_path: str,
         use_cooperative: bool,
         function_argument_intents: dict | None = None,
+        function_return_materializations: dict | None = None,
     ):
         """
         Initialize the renderer for a static (non-operator) C++/CUDA function binding and compute type/intent metadata used for shim and lowering generation.
@@ -172,11 +206,22 @@ def {func_name}():
         overrides = None
         if function_argument_intents:
             overrides = function_argument_intents.get(self._decl.name)
+        self._return_materialization = parse_return_materialization(
+            function_return_materializations.get(self._decl.name)
+            if function_return_materializations
+            else None
+        )
 
         self._cxx_return_type = to_numba_type_str(
             self._decl.return_type.unqualified_non_ref_type_name
         )
         self._cxx_return_type_str = str(self._cxx_return_type)
+        self._visible_cxx_return_type_str = _visible_cxx_return_type_str(
+            self._cxx_return_type_str, self._return_materialization
+        )
+        self._return_materialization_rendered = _render_return_materialization(
+            self._return_materialization
+        )
 
         if overrides is None:
             self._argument_numba_types = [
@@ -189,10 +234,14 @@ def {func_name}():
                 bool(t.is_left_reference() or t.is_right_reference())
                 for t in self._decl.param_types
             ]
-            self._return_numba_type_str = self._cxx_return_type_str
+            self._return_numba_type_str = self._visible_cxx_return_type_str
             self._intent_plan_rendered = "None"
             self._out_return_types_rendered = "None"
-            self._cxx_return_type_rendered = "None"
+            self._cxx_return_type_rendered = (
+                self._cxx_return_type_str
+                if self._return_materialization is not None
+                else "None"
+            )
         else:
             plan = compute_intent_plan(
                 params=self._decl.params,
@@ -235,11 +284,11 @@ def {func_name}():
                         self._return_numba_type_str = f"types.Tuple(({outs},))"
                 else:
                     outs = ", ".join(
-                        [self._cxx_return_type_str, *out_return_types]
+                        [self._visible_cxx_return_type_str, *out_return_types]
                     )
                     self._return_numba_type_str = f"types.Tuple(({outs},))"
             else:
-                self._return_numba_type_str = self._cxx_return_type_str
+                self._return_numba_type_str = self._visible_cxx_return_type_str
 
             def _tuple_literal(items: list[str]) -> str:
                 """
@@ -314,7 +363,11 @@ def {func_name}():
         self._c_ext_shim_rendered = make_function_shim(
             shim_name=self._deduplicated_shim_name,
             func_name=self._decl.name,
-            return_type=self._decl.return_type.unqualified_non_ref_type_name,
+            return_type=(
+                self._decl.return_type.name
+                if self._return_materialization is not None
+                else self._decl.return_type.unqualified_non_ref_type_name
+            ),
             params=self._decl.params,
         )
 
@@ -351,6 +404,7 @@ def {func_name}():
             intent_plan=self._intent_plan_rendered,
             out_return_types=self._out_return_types_rendered,
             cxx_return_type=self._cxx_return_type_rendered,
+            return_materialization=self._return_materialization_rendered,
         )
 
     def _render_scoped_lower(self):
@@ -434,6 +488,7 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
         decl: Function,
         header_path: str,
         function_argument_intents: dict | None = None,
+        function_return_materializations: dict | None = None,
     ):
         """
         Initialize an overloaded-operator renderer and record the Python operator mapping.
@@ -448,6 +503,7 @@ class StaticOverloadedOperatorRenderer(StaticFunctionRenderer):
             header_path,
             use_cooperative=False,
             function_argument_intents=function_argument_intents,
+            function_return_materializations=function_return_materializations,
         )
 
         self._py_op = decl.overloaded_operator_to_python_operator
@@ -492,6 +548,7 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
         use_cooperative: bool,
         function_prefix_removal: list[str] = [],
         function_argument_intents: dict | None = None,
+        function_return_materializations: dict | None = None,
     ):
         """
         Initialize the non-operator function renderer, compute the Python-facing function name by removing configured prefixes, and update tracked function symbols accordingly.
@@ -510,6 +567,7 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
             header_path,
             use_cooperative,
             function_argument_intents=function_argument_intents,
+            function_return_materializations=function_return_materializations,
         )
         self._python_func_name = _apply_prefix_removal(
             decl.name, function_prefix_removal
@@ -594,6 +652,7 @@ class {op_typing_name}(ConcreteTemplate):
         cooperative_launch_required: list[str] = [],
         function_prefix_removal: list[str] = [],
         function_argument_intents: dict | None = None,
+        function_return_materializations: dict | None = None,
     ):
         """
         Initialize the renderer for a collection of CUDA/C++ function declarations and configure rendering options.
@@ -620,6 +679,9 @@ class {op_typing_name}(ConcreteTemplate):
         self._cooperative_launch_required = cooperative_launch_required
         self._function_prefix_removal = function_prefix_removal
         self._function_argument_intents = function_argument_intents or {}
+        self._function_return_materializations = (
+            function_return_materializations or {}
+        )
 
         self._func_typing_signature_cache: dict[str, list[str]] = defaultdict(
             list
@@ -673,6 +735,9 @@ class {op_typing_name}(ConcreteTemplate):
                 decl,
                 self._header_path,
                 function_argument_intents=self._function_argument_intents,
+                function_return_materializations=(
+                    self._function_return_materializations
+                ),
             )
         except TypeNotFoundError as e:
             warn(
@@ -700,6 +765,9 @@ class {op_typing_name}(ConcreteTemplate):
                 use_cooperative,
                 self._function_prefix_removal,
                 function_argument_intents=self._function_argument_intents,
+                function_return_materializations=(
+                    self._function_return_materializations
+                ),
             )
         except TypeNotFoundError as e:
             warn(
