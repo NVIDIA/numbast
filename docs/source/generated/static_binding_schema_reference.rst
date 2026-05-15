@@ -276,6 +276,12 @@ Optional keys
         my_function:
           result: out_ptr
           0: in
+      Function Argument Intents:
+        get_matrix:
+          out:
+            intent: out_array_return
+            dtype: float
+            length: 12
 
 
 Optional nested keys
@@ -603,6 +609,11 @@ Raw schema
          - my_function:
              result: out_ptr
              0: in
+         - get_matrix:
+             out:
+               intent: out_array_return
+               dtype: float
+               length: 12
        additionalProperties:
          type: object
          additionalProperties:
@@ -615,3 +626,14 @@ Raw schema
                    type: string
                    enum: ["in", "inout_ptr", "out_ptr", "out_return"]
                required: ["intent"]
+             - type: object
+               properties:
+                 intent:
+                   type: string
+                   const: out_array_return
+                 dtype:
+                   type: string
+                 length:
+                   type: integer
+                   minimum: 1
+               required: ["intent", "dtype", "length"]

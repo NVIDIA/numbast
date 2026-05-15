@@ -8,12 +8,15 @@ from numbast.static.renderer import BaseRenderer
 from numbast.errors import TypeNotFoundError
 
 
-_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = {
-    k: str(v) for k, v in CTYPE_MAPS.items()
-} | {
-    "bool": "bool_",
-    "void": "void",
-}
+_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP = (
+    {k: str(v) for k, v in CTYPE_MAPS.items()}
+    | {str(v): str(v) for v in CTYPE_MAPS.values()}
+    | {
+        "bool": "bool_",
+        "bool_": "bool_",
+        "void": "void",
+    }
+)
 
 CTYPE_TO_NBTYPE_STR = copy.deepcopy(_DEFAULT_CTYPE_TO_NBTYPE_STR_MAP)
 
@@ -79,6 +82,11 @@ def to_numba_type_str(ty: str):
         TypeNotFoundError: If `ty` has no known mapping to a Numba type.
     """
 
+    if not isinstance(ty, str):
+        nb_type_str = str(ty)
+        BaseRenderer._try_import_numba_type(nb_type_str)
+        return nb_type_str
+
     if ty == "__nv_bfloat16":
         BaseRenderer._try_import_numba_type("__nv_bfloat16")
         return "bfloat16"
@@ -119,6 +127,12 @@ def to_numba_type_str(ty: str):
 
     BaseRenderer._try_import_numba_type(nb_type_str)
     return nb_type_str
+
+
+def to_numba_out_array_type_str(dtype: str, length: int) -> str:
+    dtype_str = to_numba_type_str(dtype)
+    BaseRenderer._try_import_numba_type("UniTuple")
+    return f"UniTuple({dtype_str}, {int(length)})"
 
 
 def to_numba_arg_type_str(ast_type) -> str:

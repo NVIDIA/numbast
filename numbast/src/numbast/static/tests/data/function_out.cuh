@@ -10,3 +10,6 @@ void __device__ add_out(int &out, int x);
 int __device__ add_out_ret(int &out, int x);
 int __device__ add_in_ref(int &x);
 void __device__ add_inout_ref(int &x, int delta);
+void __device__ get_matrix(float out[12]);
+void __device__ get_matrix_3x4(float out[3][4]);
+void __device__ get_data(float4 out[3]);

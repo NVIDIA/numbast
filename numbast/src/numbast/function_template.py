@@ -22,8 +22,20 @@ from numba.core.errors import TypingError
 from numbast.callconv import FunctionCallConv
 from numbast.deduction import deduce_templated_overloads
 from numbast.intent import ArgIntent, compute_intent_plan
+from numbast.intent_utils import (
+    compose_return_type,
+    get_out_array_return_specs,
+    normalize_out_array_return_specs,
+    out_return_types_for_plan,
+    shim_arg_type_for_out_return,
+)
 from numbast.types import to_c_type_str, to_numba_type
-from numbast.utils import deduplicate_overloads, get_return_type_strings
+from numbast.utils import (
+    _canonicalize_array_pointer_type,
+    _param_type_name_to_pointer_arg,
+    deduplicate_overloads,
+    get_return_type_strings,
+)
 from numbast.shim_writer import ShimWriterBase
 from numbast.overload_selection import _select_templated_overload
 
@@ -144,7 +156,9 @@ def _make_templated_function_shim_arg_strings(
             formal_default = f"{c_ty}* arg{i}"
         actual_default = f"*arg{i}"
 
-        cxx_ty = cxx_param.type_.unqualified_non_ref_type_name
+        cxx_ty = _canonicalize_array_pointer_type(
+            cxx_param.type_.unqualified_non_ref_type_name
+        )
         if use_pass_ptr:
             if "*" in cxx_ty:
                 actual_default = f"arg{i}"
@@ -152,7 +166,12 @@ def _make_templated_function_shim_arg_strings(
                 actual_default = f"*arg{i}"
         m = _CXX_ARRAY_TYPE_RE.match(cxx_ty)
         is_lref = cxx_param.type_.is_left_reference()
-        if m and is_lref:
+        if m and "*" in m.group("base") and isinstance(nb_ty, nbtypes.CPointer):
+            formal_parts.append(
+                _param_type_name_to_pointer_arg(cxx_ty, f"arg{i}")
+            )
+            actual_parts.append(f"*arg{i}")
+        elif m and is_lref:
             if not isinstance(nb_ty, nbtypes.CPointer):
                 raise TypingError(
                     f"{cxx_param.name}: expected a pointer argument in Numba "
@@ -264,27 +283,14 @@ def bind_cxx_function_template(
                     overrides=overrides,
                     allow_out_return=True,
                 )
+                func_plan = normalize_out_array_return_specs(func_plan)
                 intent_plan = func_plan
-                out_return_types = [
-                    to_numba_type(
-                        templated_func.function.param_types[
-                            i
-                        ].unqualified_non_ref_type_name
-                    )
-                    for i in func_plan.out_return_indices
-                ]
-                if out_return_types:
-                    if cxx_return_type == nbtypes.void:
-                        if len(out_return_types) == 1:
-                            return_type = out_return_types[0]
-                        else:
-                            return_type = nbtypes.Tuple(tuple(out_return_types))
-                    else:
-                        return_type = nbtypes.Tuple(
-                            tuple([cxx_return_type, *out_return_types])
-                        )
-                else:
-                    return_type = cxx_return_type
+                out_return_types = out_return_types_for_plan(
+                    templated_func.function.param_types, func_plan
+                )
+                return_type = compose_return_type(
+                    cxx_return_type, out_return_types
+                )
 
             @lower(func, *param_types)
             def _impl(
@@ -321,6 +327,7 @@ def bind_cxx_function_template(
                             func_plan.out_return_indices
                         )
                     }
+                    out_array_specs = get_out_array_return_specs(func_plan)
                     visible_iter = iter(param_types_inner)
                     visible_mask_iter = iter(func_plan.pass_ptr_mask)
                     param_types_for_shim_list = []
@@ -329,7 +336,10 @@ def bind_cxx_function_template(
                         out_pos = out_return_map.get(orig_idx)
                         if out_pos is not None:
                             param_types_for_shim_list.append(
-                                out_return_types[out_pos]
+                                shim_arg_type_for_out_return(
+                                    out_return_types[out_pos],
+                                    out_array_specs[orig_idx],
+                                )
                             )
                             pass_ptr_mask_for_shim_list.append(False)
                         else:

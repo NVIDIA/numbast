@@ -10,7 +10,7 @@ from numba.cuda import types as cuda_types
 from numba.cuda.descriptor import cuda_target
 
 from numbast.callconv import FunctionCallConv, _get_alloca_alignment
-from numbast.intent_defs import ArgIntent, IntentPlan
+from numbast.intent_defs import ArgIntent, IntentPlan, OutArrayReturnSpec
 from numbast.types import CTYPE_MAPS, get_numba_type_alignof
 
 
@@ -117,6 +117,66 @@ def test_intent_plan_allocas_are_aligned_in_lowered_ir():
 
     assert "alloca {float, float}, align 8" in llvm_ir
     assert "alloca {float, float, float, float}, align 16" in llvm_ir
+    assert re.search(
+        r"load \{float, float, float, float\}, .* align 16", llvm_ir
+    )
+
+
+def test_out_array_return_allocates_stack_storage_and_returns_unituple():
+    plan = IntentPlan(
+        intents=(ArgIntent.out_array_return,),
+        visible_param_indices=(),
+        out_return_indices=(0,),
+        pass_ptr_mask=(),
+        out_array_return_specs=(
+            OutArrayReturnSpec(
+                dtype=cuda_types.float32,
+                length=12,
+                shim_arg_indirect=True,
+            ),
+        ),
+    )
+    return_type = cuda_types.UniTuple(cuda_types.float32, 12)
+
+    llvm_ir = _lower_callconv_to_ir(
+        return_type=return_type,
+        args=(),
+        intent_plan=plan,
+        out_return_types=(return_type,),
+        cxx_return_type=cuda_types.void,
+    )
+
+    assert re.search(r"alloca float, i64 12, align 4", llvm_ir)
+    assert "float**" in llvm_ir
+    assert llvm_ir.count("load float, float*") >= 12
+
+
+def test_out_array_return_honors_vector_element_alignment():
+    float4 = CTYPE_MAPS["float4"]
+    plan = IntentPlan(
+        intents=(ArgIntent.out_array_return,),
+        visible_param_indices=(),
+        out_return_indices=(0,),
+        pass_ptr_mask=(),
+        out_array_return_specs=(
+            OutArrayReturnSpec(
+                dtype=float4,
+                length=3,
+                shim_arg_indirect=True,
+            ),
+        ),
+    )
+    return_type = cuda_types.UniTuple(float4, 3)
+
+    llvm_ir = _lower_callconv_to_ir(
+        return_type=return_type,
+        args=(),
+        intent_plan=plan,
+        out_return_types=(return_type,),
+        cxx_return_type=cuda_types.void,
+    )
+
+    assert "alloca {float, float, float, float}, i64 3, align 16" in llvm_ir
     assert re.search(
         r"load \{float, float, float, float\}, .* align 16", llvm_ir
     )

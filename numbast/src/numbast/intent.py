@@ -5,7 +5,12 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from numbast.intent_defs import ArgIntent, IntentPlan
+from numbast.intent_defs import (
+    ArgIntent,
+    IntentPlan,
+    OutArrayReturnSpec,
+    out_array_return,
+)
 
 
 def _parse_arg_intent(cls, v: Any) -> ArgIntent:
@@ -33,6 +38,8 @@ def _parse_arg_intent(cls, v: Any) -> ArgIntent:
             return ArgIntent.out_ptr
         if v2 == "out_return":
             return ArgIntent.out_return
+        if v2 == "out_array_return":
+            return ArgIntent.out_array_return
     raise ValueError(f"Unknown arg intent: {v!r}")
 
 
@@ -58,6 +65,49 @@ def _is_ref_type(ast_type: Any) -> bool:
     if hasattr(ast_type, "is_right_reference"):
         is_ref = is_ref or bool(ast_type.is_right_reference())
     return bool(is_ref)
+
+
+def _is_pointer_type(ast_type: Any) -> bool:
+    type_name = getattr(ast_type, "unqualified_non_ref_type_name", "")
+    return "*" in str(type_name)
+
+
+def _parse_override_value(
+    raw: Any,
+) -> tuple[ArgIntent, OutArrayReturnSpec | None]:
+    if isinstance(raw, OutArrayReturnSpec):
+        return ArgIntent.out_array_return, raw
+
+    if isinstance(raw, Mapping):
+        if "intent" not in raw:
+            raise ValueError(
+                "arg_intent object values must include an 'intent' key"
+            )
+        intent = _parse_arg_intent(ArgIntent, raw["intent"])
+        if intent == ArgIntent.out_array_return:
+            if "dtype" not in raw or "length" not in raw:
+                raise ValueError(
+                    "out_array_return intent requires 'dtype' and 'length'"
+                )
+            return intent, out_array_return(
+                dtype=raw["dtype"], length=raw["length"]
+            )
+        return intent, None
+
+    if not isinstance(raw, (str, ArgIntent)):
+        raise TypeError(
+            "arg_intent values must be strings, ArgIntent enums, "
+            "OutArrayReturnSpec objects, or intent objects"
+        )
+
+    intent = _parse_arg_intent(ArgIntent, raw)
+    if intent == ArgIntent.out_array_return:
+        raise ValueError(
+            "out_array_return requires dtype and length; use "
+            "out_array_return(dtype=..., length=...) or an object with "
+            "intent/dtype/length"
+        )
+    return intent, None
 
 
 def compute_intent_plan(
@@ -95,14 +145,11 @@ def compute_intent_plan(
         )
 
     normalized: list[ArgIntent] = [ArgIntent.in_] * len(params)
+    out_array_specs: list[OutArrayReturnSpec | None] = [None] * len(params)
     if overrides:
         # First apply index-based overrides, then name-based overrides so names win.
         for key, raw in overrides.items():
-            if type(raw) not in (str, ArgIntent):
-                raise TypeError(
-                    "arg_intent values must be strings or ArgIntent enums"
-                )
-            intent = _parse_arg_intent(ArgIntent, raw)
+            intent, array_spec = _parse_override_value(raw)
 
             if isinstance(key, int):
                 if key < 0 or key >= len(params):
@@ -110,6 +157,7 @@ def compute_intent_plan(
                         f"arg_intent index {key} out of range for {len(params)} params"
                     )
                 normalized[key] = intent
+                out_array_specs[key] = array_spec
             elif isinstance(key, str):
                 # Defer name lookup until after we process all keys.
                 continue
@@ -124,16 +172,14 @@ def compute_intent_plan(
         for key, raw in overrides.items():
             if not isinstance(key, str):
                 continue
-            if type(raw) not in (str, ArgIntent):
-                raise TypeError(
-                    "arg_intent values must be strings or ArgIntent enums"
-                )
-            intent = _parse_arg_intent(ArgIntent, raw)
+            intent, array_spec = _parse_override_value(raw)
             if key not in name_to_idx:
                 raise ValueError(
                     f"arg_intent specified unknown param name {key!r}; known params: {list(name_to_idx.keys())}"
                 )
-            normalized[name_to_idx[key]] = intent
+            idx = name_to_idx[key]
+            normalized[idx] = intent
+            out_array_specs[idx] = array_spec
 
     # Validation + derived plan
     visible_param_indices: list[int] = []
@@ -142,12 +188,25 @@ def compute_intent_plan(
 
     for i, (intent, ty) in enumerate(zip(normalized, param_types)):
         is_ref = _is_ref_type(ty)
-        if intent != ArgIntent.in_:
+        is_pointer = _is_pointer_type(ty)
+        if intent == ArgIntent.out_array_return:
+            spec = out_array_specs[i]
+            if spec is None:
+                raise ValueError(
+                    f"arg_intent[{i}]='out_array_return' requires dtype and length"
+                )
+            if not (is_ref or is_pointer):
+                raise ValueError(
+                    f"arg_intent[{i}]='out_array_return' is only supported for pointer "
+                    "parameters or array/reference output parameters"
+                )
+            out_array_specs[i] = spec.with_shim_arg_indirect(is_pointer)
+        elif intent != ArgIntent.in_:
             if not is_ref:
                 raise ValueError(
                     f"arg_intent[{i}]={intent.value!r} is only supported for reference parameters (T&/T&&)"
                 )
-        if intent == ArgIntent.out_return:
+        if intent in (ArgIntent.out_return, ArgIntent.out_array_return):
             if not allow_out_return:
                 raise ValueError(
                     "out_return intent is not supported in this context"
@@ -164,4 +223,5 @@ def compute_intent_plan(
         visible_param_indices=tuple(visible_param_indices),
         out_return_indices=tuple(out_return_indices),
         pass_ptr_mask=tuple(pass_ptr_mask),
+        out_array_return_specs=tuple(out_array_specs),
     )
