@@ -28,6 +28,7 @@ jobs:
     with:
       build_type: branch
       test_backend: mlir
+      matrix_filter: 'map(select(.PY_VER != "3.10"))'
   build-wheels:
     name: Build Wheels
     secrets: inherit
@@ -50,6 +51,7 @@ jobs:
     with:
       build_type: branch
       test_backend: mlir
+      matrix_filter: 'map(select(.PY_VER != "3.10"))'
   build-docs:
     name: Build Docs
     needs:
