@@ -39,7 +39,7 @@ issues = "https://github.com/NVIDIA/numbast/issues"
 [project.optional-dependencies]
 dev = ["ruff"]
 docs = ["sphinx>=7.0", "sphinx-copybutton>=0.5.2"]
-mlir = ["numba-cuda-mlir"]
+mlir = ["numba-cuda-mlir", "nvidia-cuda-nvrtc"]
 test-cu12 = [
   "pytest",
   "cffi",
@@ -51,6 +51,7 @@ test-cu12-mlir = [
   "cffi",
   "cuda-core>=0.7.0,<2.0.0",
   "numba-cuda-mlir",
+  "nvidia-cuda-nvrtc",
 ]
 test-cu13 = [
   "pytest",
@@ -65,6 +66,7 @@ test-cu13-mlir = [
   "cuda-toolkit[cudart,crt,curand,cccl,nvcc]==13.*",
   "cuda-core>=0.7.0,<2.0.0",
   "numba-cuda-mlir",
+  "nvidia-cuda-nvrtc",
 ]
 
 
