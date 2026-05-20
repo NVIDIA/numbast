@@ -12,6 +12,7 @@ from pathlib import Path
 MLIR_PREFIX = "numbast/src/numbast/experimental/mlir/"
 
 BOTH_TEST_PATHS = {
+    "numbast/src/numbast/__init__.py",
     "numbast/src/numbast/tools/static_binding_generator.py",
     "numbast/src/numbast/tools/static_binding_generator.schema.yaml",
     "numbast/src/numbast/tools/tests/test_mlir_backend_routing.py",
