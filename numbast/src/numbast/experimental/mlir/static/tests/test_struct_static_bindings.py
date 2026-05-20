@@ -1,0 +1,173 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+import pytest
+
+import numpy as np
+
+from numba_cuda_mlir import cuda
+from numba_cuda_mlir.types import Type, Number
+from numba_cuda_mlir.models import StructModel, PrimitiveModel
+from numba_cuda_mlir.numba_cuda import device_array
+
+
+@pytest.fixture(scope="module")
+def header(data_folder):
+    return data_folder("struct.cuh")
+
+
+@pytest.fixture(scope="function")
+def decl(make_binding):
+    types = {
+        "Foo": Type,
+        "Bar": Type,
+        "MyInt": Number,
+    }
+    datamodels = {
+        "Foo": StructModel,
+        "Bar": StructModel,
+        "MyInt": PrimitiveModel,
+    }
+
+    res = make_binding("struct.cuh", types, datamodels, "sm_50")
+    bindings = res["bindings"]
+
+    public_apis = ["Foo", "Bar", "MyInt"]
+    assert all(public_api in bindings for public_api in public_apis)
+
+    return bindings
+
+
+@pytest.fixture(scope="module")
+def impl(data_folder, header):
+    src = data_folder("src", "struct.cu")
+    with open(src) as f:
+        impl = f.read()
+
+    header_str = f"#include <{header}>"
+    return cuda.CUSource(header_str + "\n" + impl)
+
+
+def test_foo_ctor_default_simple(decl, impl):
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        foo = Foo()  # noqa: F841
+        foo2 = Foo(np.int32(42))
+
+        arr[0] = foo.x
+        arr[1] = foo2.x
+
+    arr = device_array((2,), "int32")
+    kernel[1, 1](arr)
+    assert all(arr.copy_to_host() == [0, 42])
+
+
+def test_foo_attriubte_readonly_access(decl, impl):
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.x
+
+    arr = np.ones((1,), dtype="int32")
+    kernel[1, 1](arr)
+    assert arr == pytest.approx([0])
+
+
+def test_bar_ctor_overloads(decl, impl):
+    Bar = decl["Bar"]
+
+    from numba_cuda_mlir.types import int32, float32
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        bar = Bar(int32(3.14))
+        bar2 = Bar(float32(3.14))
+        arr[0] = bar.x
+        arr[1] = bar2.x
+
+    arr = device_array((2,), "float32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([3, 3.14])
+
+
+def test_myint_cast(decl, impl):
+    MyInt = decl["MyInt"]
+
+    from numba_cuda_mlir.types import int32
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        i = MyInt(np.int32(42))
+        arr[0] = int32(i)
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([42])
+
+
+@pytest.mark.xfail(
+    reason="numba-cuda-mlir does not support isinstance lowering for generated static types",
+    strict=True,
+)
+def test_static_type_check(decl, impl):
+    MyInt = decl["MyInt"]
+
+    from numba_cuda_mlir.types import int32
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        i = MyInt(np.int32(42))
+        if isinstance(i, MyInt):
+            arr[0] = int32(i)
+        else:
+            arr[0] = 0
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([42])
+
+
+def test_struct_methods_simple_static(decl, impl):
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.get_x()
+
+    arr = device_array((1,), "int32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host()[0] == 0
+
+
+def test_struct_methods_argument_static(decl, impl):
+    from numba_cuda_mlir.types import float32 as nb_float32
+
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel(arr):
+        foo = Foo()
+        arr[0] = foo.add_one(nb_float32(42.0))
+
+    arr = device_array((1,), "float32")
+    kernel[1, 1](arr)
+    assert arr.copy_to_host() == pytest.approx([43.0])
+
+
+def test_struct_void_return_static(decl, impl, capfd):
+    Foo = decl["Foo"]
+
+    @cuda.jit(link=[impl])
+    def kernel():
+        foo = Foo()
+        foo.print()
+
+    kernel[1, 1]()
+    cuda.synchronize()
+    captured = capfd.readouterr()
+    assert "Foo: 0" in captured.out

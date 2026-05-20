@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Name: Test Data
+Version: 0.0.1
+MLIR Backend: true
+Entry Point: {{ data }}
+GPU Arch:
+    - {{ arch_str }}
+File List:
+    - {{ data }}
+Exclude: {}
+Types: {}
+Data Models: {}
+Module Link Variables Used:
+    - retained_global
+    - another_retained_global

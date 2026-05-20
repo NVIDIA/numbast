@@ -1,0 +1,16 @@
+Name: Cooperative Launch Invalid Regex
+Version: 0.0.1
+MLIR Backend: true
+Entry Point: {{ data }}
+GPU Arch:
+    - {{ arch_str }}
+File List:
+    - {{ data }}
+Exclude: {}
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+Cooperative Launch Required Functions Regex:
+    - "[invalid_regex"
+    - "invalid_regex2]"

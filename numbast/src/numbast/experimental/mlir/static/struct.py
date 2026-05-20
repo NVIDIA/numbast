@@ -1,0 +1,1709 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+import os
+from textwrap import indent
+from logging import getLogger, FileHandler
+import tempfile
+import warnings
+
+from numba_cuda_mlir.types import Type
+from numba_cuda_mlir.models import StructModel, PrimitiveModel
+from numba.core.datamodel.models import (
+    StructModel as NumbaStructModel,
+    PrimitiveModel as NumbaPrimitiveModel,
+)
+
+from ast_canopy.pylibastcanopy import access_kind, method_kind
+from ast_canopy.decl import Struct, StructMethod
+
+from numbast.experimental.mlir.static.renderer import (
+    BaseRenderer,
+    get_rendered_imports,
+    get_shim,
+    get_callconv_utils,
+)
+from numbast.experimental.mlir.static.types import (
+    to_numba_type_str,
+    to_numba_arg_type_str,
+    CTYPE_TO_NBTYPE_STR,
+)
+from numbast.experimental.mlir.intent import (
+    ArgIntent,
+    IntentPlan,
+    compute_intent_plan,
+)
+from numbast.experimental.mlir.utils import (
+    make_struct_ctor_shim,
+    make_struct_conversion_operator_shim,
+    make_struct_regular_method_shim,
+    _apply_prefix_removal,
+)
+from numbast.experimental.mlir.errors import TypeNotFoundError
+
+file_logger = getLogger(f"{__name__}")
+logger_path = os.path.join(tempfile.gettempdir(), "test.py")
+file_logger.debug(f"Struct debug outputs are written to {logger_path}")
+file_logger.addHandler(FileHandler(logger_path))
+
+
+class StaticStructMethodRenderer(BaseRenderer):
+    """Base class for all struct methods
+    TODO: merge all common code paths
+    """
+
+    c_ext_shim_var_template = """
+shim_raw_str = \"\"\"{shim_rendered}\"\"\"
+"""
+
+
+class StaticStructCtorRenderer(StaticStructMethodRenderer):
+    """Renderer for a single struct constructor.
+
+    Parameters
+    ----------
+    struct_name: str
+        Name of the struct.
+    struct_type_class: str
+        Name of the new numba type class in the binding script.
+    struct_type_name: str
+        Name of the instantiated numba type in the binding script.
+    ctor_decl: ast_canopy.StructMethod
+        Declaration of the constructor.
+    """
+
+    struct_ctor_c_ext_shim_template = """
+extern "C" __device__ int
+{unique_shim_name}({struct_name} *self {arglist}) {{
+    new (self) {struct_name}({args});
+    return 0;
+}}
+    """
+
+    struct_ctor_lowering_template = """
+@lower({struct_name}, {param_types})
+def ctor_impl(builder, target, args, kws):
+    ctor_callconv = FunctionCallConv(
+        itanium_mangled_name="{mangled_name}",
+        shim_writer=shim_writer,
+        shim_code=shim_raw_str,
+        arg_is_ref={arg_is_ref},
+    )
+    _numbast_link_shim(builder, shim_obj)
+    return ctor_callconv(builder, target, args, kws)
+    """
+
+    struct_ctor_typeref_lowering_template = """
+@lower(numba_typeref_ctor, {struct_type_ref_name}, {param_types})
+def ctor_typeref_impl(builder, target, args, kws):
+    return ctor_callconv(builder, target, args[1:], kws)
+    """
+
+    struct_conversion_ctor_lowering_template = """
+@lower_cast({param_types}, {struct_type_name})
+def conversion_impl(builder, target, value):
+    return ctor_impl(builder, target, [value], {{}})
+    """
+
+    lowering_body_template = """
+{shim_var}
+shim_writer.write_to_shim(shim_raw_str, "{shim_name}")
+{lowering}
+"""
+
+    lower_overload_scope_template = """
+def {lower_scope_name}(shim_stream, shim_obj):
+{body}
+
+{lower_scope_name}(shim_stream, shim_obj)
+"""
+
+    struct_ctor_signature_template = "signature({struct_type_name}, {arglist})"
+
+    _nb_param_types: list[Type]
+    """A list of parameter types converted from C++ types to Numba types.
+    """
+
+    _nb_param_types_str: str
+    """Concatenated string of argument types in Numba type for this constructor.
+    e.g. "int32, int32, CPointer(float32)"
+    """
+
+    def __init__(
+        self,
+        struct_name: str,
+        python_struct_name: str,
+        struct_type_class: str,
+        struct_type_name: str,
+        struct_type_ref_name: str,
+        header_path: str,
+        ctor_decl: StructMethod,
+        use_typeref_ctor: bool = False,
+    ):
+        """
+        Initialize a renderer for a single struct constructor and prepare cached type/name representations used during code generation.
+
+        Parameters:
+            struct_name (str): Original C/C++ struct identifier.
+            python_struct_name (str): Python-facing name to use in generated bindings and typing.
+            struct_type_class (str): Name of the generated Numba type class for the struct.
+            struct_type_name (str): Name of the generated Numba type identifier for the struct.
+            header_path (str): Path to the C/C++ header that declares the struct.
+            ctor_decl (StructMethod): Parsed constructor declaration describing parameter names, types, and mangled name.
+        """
+        self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
+        self._struct_type_class = struct_type_class
+        self._struct_type_name = struct_type_name
+        self._struct_type_ref_name = struct_type_ref_name
+        self._header_path = header_path
+        self._ctor_decl = ctor_decl
+        self._use_typeref_ctor = use_typeref_ctor
+
+        # Cache the list of parameter types represented as Numba types
+        self._nb_param_types = [
+            to_numba_arg_type_str(t) for t in ctor_decl.param_types
+        ]
+        self._arg_is_ref = [
+            bool(t.is_left_reference() or t.is_right_reference())
+            for t in ctor_decl.param_types
+        ]
+
+        self._nb_param_types_str = ", ".join(map(str, self._nb_param_types))
+
+        # Cache the unique shim name
+        self._deduplicated_shim_name = f"{self._ctor_decl.mangled_name}_nbst"
+
+        # lower scope name
+        self._lower_scope_name = f"_lower_{ctor_decl.mangled_name}"
+
+    def _render_shim_function(self):
+        """Render external C shim functions for this struct constructor."""
+
+        self._c_ext_shim_rendered = make_struct_ctor_shim(
+            shim_name=self._deduplicated_shim_name,
+            struct_name=self._struct_name,
+            params=self._ctor_decl.params,
+        )
+
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_rendered=self._c_ext_shim_rendered,
+        )
+
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
+
+    def _render_lowering(self):
+        """
+        Render and store the Numba lowering code for this struct constructor.
+
+        Populates self._lowering_rendered with the formatted constructor lowering. If the constructor is a non-explicit single-argument converting constructor, also append a lower_cast lowering to enable implicit conversion from the argument type to the struct type.
+        """
+
+        self._lowering_rendered = self.struct_ctor_lowering_template.format(
+            struct_name=self._python_struct_name,
+            param_types=self._nb_param_types_str,
+            struct_type_name=self._struct_type_name,
+            mangled_name=self._ctor_decl.mangled_name,
+            arg_is_ref=self._arg_is_ref,
+        )
+        if self._use_typeref_ctor:
+            self.Imports.add(
+                "from numba_cuda_mlir.numba_cuda.core.imputils import numba_typeref_ctor"
+            )
+            self._lowering_rendered += (
+                "\n"
+                + self.struct_ctor_typeref_lowering_template.format(
+                    struct_type_ref_name=self._struct_type_ref_name,
+                    param_types=self._nb_param_types_str,
+                )
+            )
+
+        # When the function being lowered is a non-explicit single-arg
+        # constructor (also called a converting constructor), we generate
+        # a lower_cast from the argument type to the struct type to
+        # match the C++ behavior of implicit conversion in python
+        if self._ctor_decl.kind == method_kind.converting_constructor:
+            self._lowering_rendered += (
+                "\n"
+                + self.struct_conversion_ctor_lowering_template.format(
+                    struct_type_name=self._struct_type_name,
+                    param_types=self._nb_param_types_str,
+                )
+            )
+
+    def _render(self):
+        """Render FFI, lowering and C shim functions of the constructor.
+
+        Note that the typing still needs to be handled on a higher layer.
+        """
+        self._render_shim_function()
+        self._render_lowering()
+
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            shim_name=self._deduplicated_shim_name,
+            lowering=self._lowering_rendered,
+        )
+        lower_body = indent(lower_body, " " * 4)
+
+        self._python_rendered = self.lower_overload_scope_template.format(
+            lower_scope_name=self._lower_scope_name,
+            body=lower_body,
+        )
+
+        self._c_rendered = self._c_ext_shim_rendered
+
+    @property
+    def numba_param_types(self):
+        """Parameter types of the constructor in Numba types."""
+        return self._nb_param_types
+
+    @property
+    def signature_str(self):
+        """Numba.signature string of the constructor's signature."""
+        if self._use_typeref_ctor:
+            arglist = self._struct_type_ref_name
+            if self._nb_param_types_str:
+                arglist += f", {self._nb_param_types_str}"
+            return self.struct_ctor_signature_template.format(
+                struct_type_name=self._struct_type_name,
+                arglist=arglist,
+            )
+        return self.struct_ctor_signature_template.format(
+            struct_type_name=self._struct_type_name,
+            arglist=self._nb_param_types_str,
+        )
+
+
+class StaticStructCtorsRenderer(BaseRenderer):
+    """Renderer for all constructors of a struct.
+
+    Parameters
+    ----------
+
+    ctor_decls: list[StructMethod]
+        A list of constructor declarations.
+    struct_name: str
+        Name of the struct.
+    struct_type_class: str
+        Name of the new numba type class in the binding script.
+    struct_type_name: str
+        Name of the instantiated numba type in the binding script.
+    """
+
+    struct_ctor_template_typing_template = """
+class {struct_ctor_template_name}(ConcreteTemplate):
+    key = globals()['{struct_name}']
+    cases = [{signatures}]
+
+register_global({struct_name}, Function({struct_ctor_template_name}))
+"""
+
+    typeref_ctor_template_typing_template = """
+class {struct_ctor_template_name}(ConcreteTemplate):
+    key = numba_typeref_ctor
+    cases = [{signatures}]
+
+register({struct_ctor_template_name})
+register_global(numba_typeref_ctor, Function({struct_ctor_template_name}))
+register_global({struct_name}, {struct_type_ref_name})
+"""
+
+    def __init__(
+        self,
+        ctor_decls: list[StructMethod],
+        struct_name,
+        python_struct_name,
+        struct_type_class,
+        struct_type_name,
+        struct_type_ref_name,
+        header_path,
+        use_typeref_ctor: bool = False,
+    ):
+        """
+        Initialize the renderer for all constructors of a CUDA struct, storing inputs and preparing Python/C output accumulators.
+
+        Parameters:
+            ctor_decls (list[StructMethod]): List of constructor declarations to render.
+            struct_name (str): Original struct name from the declaration.
+            python_struct_name (str): Python-facing struct name to use in generated bindings and typing.
+            struct_type_class (str): Name of the generated Numba type class for the struct.
+            struct_type_name (str): Name of the generated Numba type instance for the struct.
+            header_path (str | os.PathLike): Path to the C/C++ header containing the struct declaration.
+        """
+        self._ctor_decls = ctor_decls
+        self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
+        self._struct_type_class = struct_type_class
+        self._struct_type_name = struct_type_name
+        self._struct_type_ref_name = struct_type_ref_name
+        self._header_path = header_path
+        self._use_typeref_ctor = use_typeref_ctor
+
+        self._python_rendered = ""
+        self._c_rendered = ""
+
+        self._struct_ctor_template_name = f"_ctor_template_{struct_name}"
+
+    def _render_typing(self, signature_strs: list[str]):
+        """
+        Render the ConcreteTemplate typing class for the struct's constructors using provided overload signatures.
+
+        Parameters:
+                signature_strs (list[str]): Numba `signature` strings for each constructor overload to include in the generated typing template.
+        """
+
+        self.Imports.add(
+            "from numba_cuda_mlir.numba_cuda.typing.templates import ConcreteTemplate"
+        )
+        self.Imports.add("from numba_cuda_mlir.types import Function")
+        if self._use_typeref_ctor:
+            self.Imports.add(
+                "from numba_cuda_mlir.numba_cuda.core.imputils import numba_typeref_ctor"
+            )
+
+        signatures_str = ", ".join(signature_strs)
+
+        template = (
+            self.typeref_ctor_template_typing_template
+            if self._use_typeref_ctor
+            else self.struct_ctor_template_typing_template
+        )
+        self._struct_ctor_typing_rendered = template.format(
+            struct_ctor_template_name=self._struct_ctor_template_name,
+            struct_name=self._python_struct_name,
+            struct_type_ref_name=self._struct_type_ref_name,
+            signatures=signatures_str,
+        )
+
+    def _render(self):
+        """
+        Render all constructors for the struct and assemble their Python and C outputs.
+
+        Iterates over the stored constructor declarations, instantiates a StaticStructCtorRenderer
+        for each, and invokes its rendering. Accumulates each renderer's Python and C fragments
+        into this renderer's outputs and collects constructor typing signatures.
+        If a constructor references a type not known to Numba, a warning is emitted and that
+        constructor is skipped. After processing all constructors, the collected signatures
+        are used to render the combined typing block which is appended to the Python output.
+        """
+
+        signatures: list[str] = []
+        for ctor_decl in self._ctor_decls:
+            try:
+                renderer = StaticStructCtorRenderer(
+                    struct_name=self._struct_name,
+                    python_struct_name=self._python_struct_name,
+                    struct_type_class=self._struct_type_class,
+                    struct_type_name=self._struct_type_name,
+                    struct_type_ref_name=self._struct_type_ref_name,
+                    header_path=self._header_path,
+                    ctor_decl=ctor_decl,
+                    use_typeref_ctor=self._use_typeref_ctor,
+                )
+            except TypeNotFoundError as e:
+                warnings.warn(
+                    f"{e.type_name} is not known to Numbast. Skipping "
+                    f"binding for {str(ctor_decl)}"
+                )
+                continue
+
+            renderer._render()
+
+            self._python_rendered += renderer._python_rendered
+            self._c_rendered += renderer._c_rendered
+
+            signatures.append(renderer.signature_str)
+
+        if signatures:
+            self._render_typing(signatures)
+            self._python_rendered += self._struct_ctor_typing_rendered
+
+    @property
+    def python_rendered(self) -> str:
+        """The python script that contains the bindings to all constructors."""
+        return self._python_rendered
+
+    @property
+    def c_rendered(self) -> str:
+        """The C program that contains the shim functions to all constructors."""
+        return self._c_rendered
+
+
+class StaticStructConversionOperatorRenderer(StaticStructMethodRenderer):
+    """Renderer for a single struct conversion operator.
+
+    Parameters
+    ----------
+    struct_name: str
+        Name of the struct.
+    struct_type_class: str
+        Name of the new numba type class in the binding script.
+    struct_type_name: str
+        Name of the instantiated numba type in the binding script.
+    op_decl: ast_canopy.StructMethod
+        Declaration of the conversion operator.
+    """
+
+    struct_conversion_op_lowering_template = """
+def _impl(builder, target, value):
+    callconv = FunctionCallConv(
+        itanium_mangled_name="{mangled_name}",
+        shim_writer=shim_writer,
+        shim_code=shim_raw_str,
+        arg_is_ref=[False],
+        cxx_return_type={cast_to_type},
+    )
+    _numbast_link_shim(builder, shim_obj)
+    return callconv(builder, target, [value], {{}})
+
+@lower({cast_to_type}, {struct_type_name})
+def impl(builder, target, args, kws):
+    return _impl(builder, target, args[0])
+
+@lower_cast({struct_type_name}, {cast_to_type})
+def impl_cast(builder, target, value):
+    return _impl(builder, target, value)
+    """
+
+    lowering_body_template = """
+{shim_var}
+shim_writer.write_to_shim(shim_raw_str, "{shim_name}")
+{lowering}
+"""
+
+    lower_scope_template = """
+def {lower_scope_name}(shim_stream, shim_obj):
+{body}
+
+{lower_scope_name}(shim_stream, shim_obj)
+"""
+
+    def __init__(
+        self,
+        struct_name: str,
+        struct_type_class: str,
+        struct_type_name: str,
+        header_path: str,
+        convop_decl: StructMethod,
+    ):
+        self._struct_name = struct_name
+        self._struct_type_class = struct_type_class
+        self._struct_type_name = struct_type_name
+        self._header_path = header_path
+        self._convop_decl = convop_decl
+
+        # Cache the type that's converted to
+        self._nb_cast_to_type = to_numba_type_str(
+            self._convop_decl.return_type.unqualified_non_ref_type_name
+        )
+        self._nb_cast_to_type_str = str(self._nb_cast_to_type)
+
+        # Cache the C type that's converted to
+        self._cast_to_type = self._convop_decl.return_type
+
+        # Cache the unique shim name of the c extension shim function
+        self._unique_shim_name = f"{self._convop_decl.mangled_name}_nbst"
+
+        self._lower_scope_name = (
+            f"_from_{struct_name}_to_{self._nb_cast_to_type_str}_lower"
+        )
+
+    def _render_shim_function(self):
+        """Render external C shim functions for this struct constructor."""
+
+        self._c_ext_shim_rendered = make_struct_conversion_operator_shim(
+            shim_name=self._unique_shim_name,
+            struct_name=self._struct_name,
+            method_name=self._convop_decl.name,
+            return_type=self._cast_to_type.name,
+        )
+
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_rendered=self._c_ext_shim_rendered,
+        )
+
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
+
+    def _render_lowering(self):
+        """Render lowering codes for this struct constructor."""
+
+        self._lowering_rendered = (
+            self.struct_conversion_op_lowering_template.format(
+                struct_name=self._struct_name,
+                cast_to_type=self._nb_cast_to_type_str,
+                struct_type_name=self._struct_type_name,
+                mangled_name=self._convop_decl.mangled_name,
+            )
+        )
+
+    def _render(self):
+        """Render FFI, lowering and C shim functions of the constructor.
+
+        Note that the typing still needs to be handled on a higher layer.
+        """
+        self._render_shim_function()
+        self._render_lowering()
+
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            shim_name=self._unique_shim_name,
+            lowering=self._lowering_rendered,
+        )
+        lower_body = indent(lower_body, " " * 4)
+
+        self._python_rendered = self.lower_scope_template.format(
+            lower_scope_name=self._lower_scope_name,
+            body=lower_body,
+        )
+
+        self._c_rendered = self._c_ext_shim_rendered
+
+
+class StaticStructConversionOperatorsRenderer(BaseRenderer):
+    """Renderer for all conversion operators of a struct.
+
+    Parameters
+    ----------
+
+    convop_decls: list[StructMethod]
+        A list of conversion operators declarations.
+    struct_name: str
+        Name of the struct.
+    struct_type_class: str
+        Name of the new numba type class in the binding script.
+    struct_type_name: str
+        Name of the instantiated numba type in the binding script.
+    """
+
+    def __init__(
+        self,
+        convop_decls: list[StructMethod],
+        struct_name,
+        struct_type_class,
+        struct_type_name,
+        header_path,
+    ):
+        self._convop_decls = convop_decls
+        self._struct_name = struct_name
+        self._struct_type_class = struct_type_class
+        self._struct_type_name = struct_type_name
+        self._header_path = header_path
+
+        self._python_rendered = ""
+        self._c_rendered = ""
+
+    def _render(self):
+        """Render all struct constructors."""
+
+        for convop_decl in self._convop_decls:
+            try:
+                renderer = StaticStructConversionOperatorRenderer(
+                    struct_name=self._struct_name,
+                    struct_type_class=self._struct_type_class,
+                    struct_type_name=self._struct_type_name,
+                    header_path=self._header_path,
+                    convop_decl=convop_decl,
+                )
+            except TypeNotFoundError as e:
+                warnings.warn(
+                    f"{e.type_name} is not known to Numbast. Skipping "
+                    f"binding for {str(convop_decl)}"
+                )
+                continue
+            renderer._render()
+
+            self._python_rendered += renderer._python_rendered
+            self._c_rendered += renderer._c_rendered
+
+    @property
+    def python_rendered(self) -> str:
+        """The python script that contains the bindings to all constructors."""
+        return self._python_rendered
+
+    @property
+    def c_rendered(self) -> str:
+        """The C program that contains the shim functions to all constructors."""
+        return self._c_rendered
+
+
+class StaticStructRegularMethodRenderer(BaseRenderer):
+    """Renderer for a single regular method of a struct."""
+
+    c_ext_shim_var_template = """
+shim_raw_str = \"\"\"{shim_rendered}\"\"\"
+"""
+
+    struct_method_lowering_template = """
+@lower(f"{{{struct_type_name}}}.{method_name}", {struct_type_name}, {param_types})
+def _{lower_fn_suffix}(builder, target, args, kws):
+    callconv = FunctionCallConv(
+        itanium_mangled_name="{mangled_name}",
+        shim_writer=shim_writer,
+        shim_code=shim_raw_str,
+        arg_is_ref={arg_is_ref},
+        intent_plan={intent_plan},
+        out_return_types={out_return_types},
+        cxx_return_type={cxx_return_type},
+    )
+    _numbast_link_shim(builder, shim_obj)
+    return callconv(builder, target, args, kws)
+"""
+
+    lowering_body_template = """
+{shim_var}
+shim_writer.write_to_shim(shim_raw_str, "{shim_name}")
+{lowering}
+"""
+
+    lower_scope_template = """
+def {lower_scope_name}(shim_stream, shim_obj):
+{body}
+
+{lower_scope_name}(shim_stream, shim_obj)
+"""
+
+    def __init__(
+        self,
+        struct_name: str,
+        python_struct_name: str,
+        struct_type_name: str,
+        header_path: str,
+        method_decl: StructMethod,
+        function_argument_intents: dict | None = None,
+    ):
+        """
+        Initialize the renderer for a single struct regular method and cache derived names, Numba type strings, and lowering metadata used during code generation.
+
+        When provided, `function_argument_intents` overrides are processed into an IntentPlan that affects `nb_param_types`, visible parameter ordering, out-return handling, and the rendered intent/out-return/type strings; otherwise parameter/ref information is derived directly from `method_decl`. The initializer also sets unique identifiers used by the lowering/shim generation (`_unique_shim_name`, `_lower_fn_suffix`, `_lower_scope_name`).
+
+        Parameters:
+            method_decl: Parsed method declaration used to derive parameter and return types, mangled names, and signatures.
+            function_argument_intents: Optional mapping of "<Struct>.<method>" to intent overrides that control parameter passing, out-returns, and visibility during lowering.
+        """
+        super().__init__(method_decl)
+        self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
+        self._struct_type_name = struct_type_name
+        self._header_path = header_path
+        self._method_decl = method_decl
+
+        overrides = None
+        if function_argument_intents:
+            overrides = function_argument_intents.get(
+                f"{struct_name}.{method_decl.name}"
+            )
+
+        self._cxx_return_type = to_numba_type_str(
+            self._method_decl.return_type.unqualified_non_ref_type_name
+        )
+        self._cxx_return_type_str = str(self._cxx_return_type)
+
+        if overrides is None:
+            # Cache Numba param and return types (as strings)
+            self._nb_param_types = [
+                to_numba_arg_type_str(t) for t in self._method_decl.param_types
+            ]
+            param_arg_is_ref = [
+                bool(t.is_left_reference() or t.is_right_reference())
+                for t in self._method_decl.param_types
+            ]
+            # Numba lowering signatures include receiver as first argument.
+            self._arg_is_ref = [False, *param_arg_is_ref]
+            self._nb_param_types_str = (
+                ", ".join(map(str, self._nb_param_types)) or ""
+            )
+            self._nb_return_type_str = self._cxx_return_type_str
+            self._intent_plan_rendered = "None"
+            self._out_return_types_rendered = "None"
+            self._cxx_return_type_rendered = "None"
+        else:
+            method_plan = compute_intent_plan(
+                params=self._method_decl.params,
+                param_types=self._method_decl.param_types,
+                overrides=overrides,
+                allow_out_return=True,
+            )
+            intent_plan = IntentPlan(
+                intents=(ArgIntent.in_,) + method_plan.intents,
+                visible_param_indices=(0,)
+                + tuple(i + 1 for i in method_plan.visible_param_indices),
+                out_return_indices=tuple(
+                    i + 1 for i in method_plan.out_return_indices
+                ),
+                pass_ptr_mask=(False,) + method_plan.pass_ptr_mask,
+            )
+            self._arg_is_ref = None
+
+            self._nb_param_types = []
+            for orig_idx in method_plan.visible_param_indices:
+                base = to_numba_type_str(
+                    self._method_decl.param_types[
+                        orig_idx
+                    ].unqualified_non_ref_type_name
+                )
+                if method_plan.intents[orig_idx].value in (
+                    "inout_ptr",
+                    "out_ptr",
+                ):
+                    BaseRenderer._try_import_numba_type("CPointer")
+                    self._nb_param_types.append(f"CPointer({base})")
+                else:
+                    self._nb_param_types.append(base)
+            self._nb_param_types_str = (
+                ", ".join(map(str, self._nb_param_types)) or ""
+            )
+
+            out_return_types = [
+                to_numba_type_str(
+                    self._method_decl.param_types[
+                        i
+                    ].unqualified_non_ref_type_name
+                )
+                for i in method_plan.out_return_indices
+            ]
+            if out_return_types:
+                self.Imports.add("from numba_cuda_mlir import types")
+                if self._cxx_return_type_str == "void":
+                    if len(out_return_types) == 1:
+                        self._nb_return_type_str = out_return_types[0]
+                    else:
+                        outs = ", ".join(out_return_types)
+                        self._nb_return_type_str = f"types.Tuple(({outs},))"
+                else:
+                    outs = ", ".join(
+                        [self._cxx_return_type_str, *out_return_types]
+                    )
+                    self._nb_return_type_str = f"types.Tuple(({outs},))"
+            else:
+                self._nb_return_type_str = self._cxx_return_type_str
+
+            intents_str = (
+                "("
+                + ", ".join(
+                    f"ArgIntent.{i.value if i != ArgIntent.in_ else 'in_'}"
+                    for i in intent_plan.intents
+                )
+                + ("," if len(intent_plan.intents) == 1 else "")
+                + ")"
+            )
+            self._intent_plan_rendered = (
+                "IntentPlan("
+                f"intents={intents_str}, "
+                f"visible_param_indices={repr(intent_plan.visible_param_indices)}, "
+                f"out_return_indices={repr(intent_plan.out_return_indices)}, "
+                f"pass_ptr_mask={repr(intent_plan.pass_ptr_mask)}"
+                ")"
+            )
+            if out_return_types:
+                self._out_return_types_rendered = (
+                    "[" + ", ".join(out_return_types) + "]"
+                )
+            else:
+                self._out_return_types_rendered = "None"
+            self._cxx_return_type_rendered = self._cxx_return_type_str
+
+        # Unique shim name and helpers
+        self._unique_shim_name = f"{self._method_decl.mangled_name}_nbst"
+        self._lower_fn_suffix = f"lower_{self._method_decl.mangled_name}"
+        self._lower_scope_name = f"_lower_{self._method_decl.mangled_name}"
+
+    @property
+    def signature_str(self) -> str:
+        """
+        Builds the typing signature string for this method including the receiver.
+
+        Returns:
+            signature_str (str): A string formatted as
+            "signature(<return_type>, <param_types>, recvr=<receiver_type>)" or
+            "signature(<return_type>, recvr=<receiver_type>)" when there are no parameters.
+        """
+        recvr = self._struct_type_name
+        if self._nb_param_types_str:
+            return (
+                f"signature({self._nb_return_type_str}, "
+                f"{self._nb_param_types_str}, recvr={recvr})"
+            )
+        else:
+            return f"signature({self._nb_return_type_str}, recvr={recvr})"
+
+    def _render_shim_function(self):
+        """
+        Generate and register the C-extension shim for this struct method.
+
+        Stores the generated C shim text in _c_ext_shim_rendered, creates a variable-wrapped string in
+        _c_ext_shim_var_rendered, and appends the shim to the ShimFunctions list.
+        """
+        self._c_ext_shim_rendered = make_struct_regular_method_shim(
+            shim_name=self._unique_shim_name,
+            struct_name=self._struct_name,
+            method_name=self._method_decl.name,
+            return_type=self._method_decl.return_type.unqualified_non_ref_type_name,
+            params=self._method_decl.params,
+        )
+        self._c_ext_shim_var_rendered = self.c_ext_shim_var_template.format(
+            shim_rendered=self._c_ext_shim_rendered
+        )
+        self.ShimFunctions.append(self._c_ext_shim_rendered)
+
+    def _render_lowering(self):
+        """
+        Render and store the Numba CUDA lowering for this struct method.
+
+        Formats the method lowering using the renderer's template, ensures the required `lower` import is recorded, and assigns the generated source to `self._lowering_rendered`.
+        """
+        param_types = self._nb_param_types_str or ""
+        lowering_rendered = self.struct_method_lowering_template.format(
+            struct_name=self._python_struct_name,
+            method_name=self._method_decl.name,
+            struct_type_name=self._struct_type_name,
+            param_types=param_types,
+            return_type=self._nb_return_type_str,
+            lower_fn_suffix=self._lower_fn_suffix,
+            mangled_name=self._method_decl.mangled_name,
+            arg_is_ref=self._arg_is_ref,
+            intent_plan=self._intent_plan_rendered,
+            out_return_types=self._out_return_types_rendered,
+            cxx_return_type=self._cxx_return_type_rendered,
+        )
+        self._lowering_rendered = lowering_rendered
+
+    def _render(self):
+        """
+        Orchestrates rendering of a single struct conversion/operator: produces the Python lowering scope and the C
+        shim.
+
+        Calls the device declaration, C shim generation, and lowering renderers, then combines their template outputs
+        into the final Python lowering body (stored on self._python_rendered) and the final C shim string (stored on
+        self._c_rendered).
+        """
+        self._render_shim_function()
+        self._render_lowering()
+
+        lower_body = self.lowering_body_template.format(
+            shim_var=self._c_ext_shim_var_rendered,
+            shim_name=self._unique_shim_name,
+            lowering=self._lowering_rendered,
+        )
+        lower_body = indent(lower_body, " " * 4)
+
+        self._python_rendered = self.lower_scope_template.format(
+            lower_scope_name=self._lower_scope_name,
+            body=lower_body,
+        )
+        self._c_rendered = self._c_ext_shim_rendered
+
+
+class StaticStructRegularMethodsRenderer(BaseRenderer):
+    """Renderer for all regular (non-operator) member functions of a struct."""
+
+    method_template_typing_template = """
+class {method_template_name}(ConcreteTemplate):
+    key = f"{{{struct_type_name}}}.{method_name}"
+    cases = [{signatures}]
+"""
+
+    lower_getattr_method_template = """
+def _lower_getattr_{struct_name}_{method_name}(context, builder, target, value):
+    builder.store_var(target, builder.load_var(value))
+_lower_getattr_{struct_name}_{method_name}.__module__ = __name__
+lower_attr({struct_type_class_name}, "{method_name}")(_lower_getattr_{struct_name}_{method_name})
+"""
+
+    def __init__(
+        self,
+        struct_name: str,
+        python_struct_name: str,
+        struct_type_name: str,
+        struct_type_class_name: str,
+        header_path: str,
+        method_decls: list[StructMethod],
+        function_argument_intents: dict | None = None,
+    ):
+        """
+        Initialize the renderer for a struct's regular member methods.
+
+        Parameters:
+            struct_name (str): Original C/C++ struct name.
+            python_struct_name (str): Public Python-facing name used in generated typing and symbols.
+            struct_type_name (str): Internal Numba type name for the struct.
+            struct_type_class_name (str): Internal Numba type class name for the struct.
+            header_path (str): Path to the C/C++ header that declares the struct.
+            method_decls (list[StructMethod]): Declarations of the struct's member functions to render.
+
+        Initializes internal containers for accumulated Python and C output, and maps for per-method typing templates and collected signatures.
+        """
+        super().__init__(method_decls)
+        self._struct_name = struct_name
+        self._python_struct_name = python_struct_name
+        self._struct_type_name = struct_type_name
+        self._struct_type_class_name = struct_type_class_name
+        self._header_path = header_path
+        self._method_decls = method_decls
+        self._function_argument_intents = function_argument_intents or {}
+
+        self._python_rendered = ""
+        self._c_rendered = ""
+        self._method_templates: dict[str, str] = {}
+        self._method_signatures: dict[str, list[str]] = {}
+
+    def _render(self):
+        """
+        Render lowering, C shims, and typing templates for all regular methods of the struct.
+
+        Processes each method declaration to produce per-overload Python lowering, C shim code, and typing signatures; then emits a ConcreteTemplate typing class per method name aggregating overload signatures.
+
+        Side effects:
+        - Adds required imports to self.Imports.
+        - Appends generated Python lowering/typing code to self._python_rendered.
+        - Appends generated C shim code to self._c_rendered.
+        - Updates self._method_signatures (method name -> list of signatures).
+        - Updates self._method_templates (method name -> generated template name).
+        - Emits a warning and skips a method when a required type is not found.
+        """
+        self.Imports.add(
+            "from numba_cuda_mlir.numba_cuda.typing.templates import ConcreteTemplate"
+        )
+        self.Imports.add(
+            "from numba_cuda_mlir.numba_cuda.typing import signature"
+        )
+        # Lowering imports are added by sub-renderers
+
+        # Render per-overload lowering and collect signatures
+        for m in self._method_decls:
+            try:
+                mr = StaticStructRegularMethodRenderer(
+                    struct_name=self._struct_name,
+                    python_struct_name=self._python_struct_name,
+                    struct_type_name=self._struct_type_name,
+                    header_path=self._header_path,
+                    method_decl=m,
+                    function_argument_intents=self._function_argument_intents,
+                )
+            except TypeNotFoundError:
+                warnings.warn(
+                    f"Unknown type in method declaration. Skipping binding for {str(m)}"
+                )
+                continue
+
+            mr._render()
+            self._python_rendered += mr._python_rendered
+            self._c_rendered += mr._c_rendered
+
+            sig = mr.signature_str
+            self._method_signatures.setdefault(m.name, []).append(sig)
+
+        # Render typing templates per method name
+        for method_name, sigs in self._method_signatures.items():
+            # We don't use the mangled name here because each template contains all
+            # signatures for overloading.
+            template_name = (
+                f"_method_template_{self._struct_name}_{method_name}"
+            )
+            signatures_str = ", ".join(sigs)
+            typed = self.method_template_typing_template.format(
+                method_template_name=template_name,
+                struct_type_name=self._struct_type_name,
+                method_name=method_name,
+                signatures=signatures_str,
+            )
+            self._python_rendered += typed
+            self._method_templates[method_name] = template_name
+
+        # Render @lower_getattr for each method name so the generic
+        # AggregateType getattr handler does not intercept method lookups.
+        for method_name in self._method_signatures:
+            getattr_code = self.lower_getattr_method_template.format(
+                struct_type_class_name=self._struct_type_class_name,
+                struct_name=self._struct_name,
+                method_name=method_name,
+            )
+            self._python_rendered += getattr_code
+
+    @property
+    def python_rendered(self) -> str:
+        return self._python_rendered
+
+    @property
+    def c_rendered(self) -> str:
+        return self._c_rendered
+
+    @property
+    def method_templates(self) -> dict[str, str]:
+        """Mapping: method name -> ConcreteTemplate class name"""
+        return self._method_templates
+
+
+class StaticStructRenderer(BaseRenderer):
+    """Renderer that renders bindings to a single CUDA C++ struct.
+
+    Parameters
+    ----------
+    decl: Struct
+        Declaration of the struct.
+    parent_type: type | None
+        The parent Numba type of the new struct type created. If None, default to numba.types.Type.
+    data_model: type | None
+        The data model of the new struct type. If None, default to numba_cuda_mlir.models.StructModel.
+    header_path: os.PathLike
+        Path to the header that contains the declaration of the struct.
+    aliases: list[str], optional
+        TODO: If the struct has other aliases, specify them here. Numbast creates
+        aliased objects that references the original python API object.
+    """
+
+    typing_template = """
+# Typing for {struct_name}
+class {struct_type_class_name}({parent_type}):
+    def __init__(self):
+        super().__init__({super_ctor_args})
+        self.alignof_ = {struct_alignof}
+        self.bitwidth = {struct_sizeof} * 8
+
+    def can_convert_from(self, typingctx, other):
+        from numba_cuda_mlir.numba_cuda.typeconv import Conversion
+        if other in [{implicit_conversion_types}]:
+            return Conversion.safe
+
+{struct_type_name} = {struct_type_class_name}()
+{struct_typeref_decl}
+"""
+
+    python_api_template = """
+# Make Python API for struct
+{struct_name} = type("{struct_name}", (), {{"_nbtype": {struct_type_name}}})
+
+as_numba_type.register({struct_name}, {struct_type_name})
+core_as_numba_type.register({struct_name}, {struct_type_name})
+"""
+
+    primitive_data_model_template = """
+@register_model({struct_type_class_name})
+class {struct_model_name}(PrimitiveModel):
+    def __init__(self, dmm, fe_type):
+        be_type = ir.IntegerType.get_signless(fe_type.bitwidth)
+        super({struct_model_name}, self).__init__(dmm, fe_type, be_type)
+"""
+
+    function_data_model_override_template = """
+@register_model(Function)
+class {function_model_name}(PrimitiveModel):
+    def __init__(self, dmm, fe_type):
+        be_type = llvm.PointerType.get()
+        super().__init__(dmm, fe_type, be_type)
+"""
+
+    struct_data_model_template = """
+@register_model({struct_type_class_name})
+class {struct_model_name}(StructModel):
+    def __init__(self, dmm, fe_type):
+        members = [{member_types_tuples}]
+        super().__init__(dmm, fe_type, members)
+"""
+
+    resolve_methods_template = """
+    def resolve_{attr_name}(self, obj):
+        return {numba_type}
+"""
+
+    make_attribute_wrappers_template = """
+make_attribute_wrapper({struct_type_class_name}, "{attr_name}", "{attr_name}")
+"""
+
+    struct_attribute_typing_template = """
+@register_attr
+class {struct_attr_typing_name}(AttributeTemplate):
+    key = {type_name}
+
+    {resolve_methods}
+
+{make_attribute_wrappers}
+"""
+
+    primitive_call_attribute_typing_template = """
+@register_attr
+class {struct_attr_typing_name}(AttributeTemplate):
+    key = {type_name}
+
+    def generic_resolve(self, typ, attr):
+        if attr == "__call__":
+            pass
+        else:
+            raise AttributeError(attr)
+"""
+
+    resolve_method_template = """
+    def resolve_{method_name}(self, obj):
+        return BoundFunction({template_name}, obj)
+    """
+
+    _parent_type_str: str
+    """Qualified name of parent type."""
+
+    @staticmethod
+    def _is_data_model_kind(
+        data_model: type, candidates: tuple[type, ...]
+    ) -> bool:
+        """Return True when data_model is (or subclasses) any candidate type."""
+        if not isinstance(data_model, type):
+            return False
+        return any(
+            data_model is candidate or issubclass(data_model, candidate)
+            for candidate in candidates
+        )
+
+    def __init__(
+        self,
+        decl: Struct,
+        parent_type: type | None,
+        data_model: type | None,
+        header_path: os.PathLike | str,
+        struct_prefix_removal: list[str] | None = None,
+        aliases: list[str] = [],
+        function_argument_intents: dict | None = None,
+    ):
+        """
+        Initialize renderer state for a CUDA struct binding and register related symbols and imports.
+
+        Parameters:
+            decl (Struct): Parsed struct declaration to render.
+            parent_type (type | None): Numba parent type to inherit from; defaults to `Type` when None.
+            data_model (type | None): Numba data model to use (`StructModel` by default).
+            header_path (os.PathLike | str): Path to the C/C++ header that declares the struct.
+            struct_prefix_removal (list[str] | None): Optional list of prefixes to remove from the struct's name for Python-facing identifiers.
+            aliases (list[str]): Optional additional public names to expose for the struct.
+
+        Side effects:
+            - Registers required numba type and datamodel imports.
+            - Computes and stores python-facing and internal identifier names.
+            - Records a mapping from the original struct name to the generated Numba type name in CTYPE_TO_NBTYPE_STR.
+            - Appends public symbol names to internal symbol lists used for export.
+        """
+        super().__init__(decl)
+        self._struct_prefix_removal = struct_prefix_removal or []
+
+        self._python_struct_name = _apply_prefix_removal(
+            decl.name, self._struct_prefix_removal
+        )
+        self._struct_name = decl.name
+        self._aliases = aliases
+        self._function_argument_intents = function_argument_intents or {}
+
+        if parent_type is None:
+            parent_type = Type
+
+        if data_model is None:
+            data_model = StructModel
+
+        self._data_model = data_model
+        self._is_struct_data_model = self._is_data_model_kind(
+            self._data_model, (StructModel, NumbaStructModel)
+        )
+        self._is_primitive_data_model = self._is_data_model_kind(
+            self._data_model, (PrimitiveModel, NumbaPrimitiveModel)
+        )
+
+        self._parent_type = parent_type
+        self._use_aggregate_parent = (
+            self._is_struct_data_model and parent_type == Type
+        )
+        if self._use_aggregate_parent:
+            self.Imports.add(
+                "from numba_cuda_mlir.type_defs.aggregate_types import AggregateType"
+            )
+            self._parent_type_str = "AggregateType"
+        else:
+            self.Imports.add(
+                f"from numba_cuda_mlir.types import {self._parent_type.__qualname__}"
+            )
+            self._parent_type_str = self._parent_type.__qualname__
+
+        self.Imports.add(
+            f"from numba_cuda_mlir.models import {self._data_model.__qualname__}"
+        )
+        self._data_model_str = self._data_model.__qualname__
+
+        # We use a prefix here to identify internal objects so that C object names
+        # does not interfere with python's name mangling mechanism.
+        self._struct_type_class_name = f"_type_class_{self._python_struct_name}"
+        self._struct_type_name = f"_type_{self._python_struct_name}"
+        self._struct_model_name = f"_model_{self._python_struct_name}"
+        self._struct_attr_typing_name = (
+            f"_attr_typing_{self._python_struct_name}"
+        )
+        self._struct_type_ref_name = f"_typeref_{self._python_struct_name}"
+        # numba-cuda-mlir currently cannot type-check direct typeref calls for static bindings.
+        self._use_typeref_ctor = False
+
+        self._header_path = header_path
+
+        CTYPE_TO_NBTYPE_STR[self._struct_name] = self._struct_type_name
+
+        # Track the public symbols that should be exposed via a
+        # struct creation
+        self._nbtype_symbols.append(self._struct_type_name)
+        self._record_symbols.append(self._python_struct_name)
+
+    def _render_typing(self):
+        """
+        Render the Numba typing block for this struct.
+
+        Derives implicit conversion types from any converting constructors and formats the typing template, storing the result on self._typing_rendered.
+        """
+        implicit_conversion_types = ", ".join(
+            [
+                to_numba_type_str(
+                    ctor.param_types[0].unqualified_non_ref_type_name
+                )
+                for ctor in self._decl.constructors()
+                if ctor.kind == method_kind.converting_constructor
+            ]
+        )
+        if self._use_aggregate_parent:
+            fields = ", ".join(
+                [
+                    f"('{f.name}', {to_numba_type_str(f.type_.unqualified_non_ref_type_name)})"
+                    for f in self._decl.fields
+                ]
+            )
+            super_ctor_args = (
+                f'name=make_unique_type_name(self, "{self._python_struct_name}"), '
+                f"fields=[{fields}]"
+            )
+        else:
+            super_ctor_args = f'name=make_unique_type_name(self, "{self._python_struct_name}")'
+        if self._use_typeref_ctor:
+            self.Imports.add(
+                "from numba_cuda_mlir.numba_cuda import types as cuda_types"
+            )
+            struct_typeref_decl = (
+                f"{self._struct_type_ref_name} = "
+                f"cuda_types.TypeRef({self._struct_type_name})"
+            )
+        else:
+            struct_typeref_decl = ""
+        self._typing_rendered = self.typing_template.format(
+            struct_type_class_name=self._struct_type_class_name,
+            struct_type_name=self._struct_type_name,
+            parent_type=self._parent_type_str,
+            struct_name=self._python_struct_name,
+            super_ctor_args=super_ctor_args,
+            struct_typeref_decl=struct_typeref_decl,
+            struct_alignof=self._decl.alignof_,
+            struct_sizeof=self._decl.sizeof_,
+            implicit_conversion_types=implicit_conversion_types,
+        )
+
+    def _render_python_api(self):
+        """Render the Python API object of the struct.
+
+        This is the python handle to use it in Numba kernels.
+        """
+        self.Imports.add(
+            "from numba_cuda_mlir.numba_cuda.extending import as_numba_type"
+        )
+        self.Imports.add(
+            "from numba_cuda_mlir.numba_cuda.typing.asnumbatype import as_numba_type as core_as_numba_type"
+        )
+
+        self._python_api_rendered = self.python_api_template.format(
+            struct_type_name=self._struct_type_name,
+            struct_name=self._python_struct_name,
+        )
+
+    def _render_data_model(self):
+        """
+        Render and store the Numba data model representation for this struct.
+
+        If the configured data model is PrimitiveModel, add the required IR import and populate
+        self._data_model_rendered with the primitive model template. If the data model is StructModel,
+        collect the struct fields' Numba type strings, format them into a member tuple list, and
+        populate self._data_model_rendered with the struct model template.
+
+        Side effects:
+        - Adds imports to self.Imports as needed.
+        - Sets self._data_model_rendered.
+        """
+
+        self.Imports.add("from numba_cuda_mlir.models import register_model")
+
+        if self._is_primitive_data_model:
+            self.Imports.add("from numba_cuda_mlir._mlir import ir")
+            self.Imports.add("from numba_cuda_mlir._mlir.dialects import llvm")
+            self.Imports.add("from numba_cuda_mlir.types import Function")
+            self._data_model_rendered = (
+                self.primitive_data_model_template.format(
+                    struct_type_class_name=self._struct_type_class_name,
+                    struct_model_name=self._struct_model_name,
+                    struct_name=self._struct_name,
+                )
+            )
+            self._data_model_rendered += (
+                "\n"
+                + self.function_data_model_override_template.format(
+                    function_model_name=(
+                        f"_model_function_ptr_{self._python_struct_name}"
+                    )
+                )
+            )
+        elif self._is_struct_data_model:
+            member_types_tuples = [
+                (
+                    f.name,
+                    to_numba_type_str(f.type_.unqualified_non_ref_type_name),
+                )
+                for f in self._decl.fields
+            ]
+
+            member_types_tuples_strs = [
+                f"('{name}', {ty})" for name, ty in member_types_tuples
+            ]
+
+            member_types_str = ", ".join(member_types_tuples_strs)
+
+            self._data_model_rendered = self.struct_data_model_template.format(
+                struct_type_class_name=self._struct_type_class_name,
+                struct_model_name=self._struct_model_name,
+                member_types_tuples=member_types_str,
+            )
+        else:
+            raise TypeError(
+                "Unsupported data model for static struct rendering: "
+                f"{self._data_model!r}"
+            )
+
+    def _render_struct_attr(self):
+        """Renders the typings of the struct attributes."""
+
+        self._struct_attr_typing_rendered = ""
+
+        if self._is_struct_data_model:
+            self.Imports.add(
+                "from numba_cuda_mlir.numba_cuda.typing.templates import AttributeTemplate"
+            )
+            # For method attribute resolution
+            self.Imports.add("from numba_cuda_mlir.types import BoundFunction")
+            if not self._use_aggregate_parent:
+                self.Imports.add(
+                    "from numba_cuda_mlir.numba_cuda.extending import make_attribute_wrapper"
+                )
+
+            public_fields = [
+                f for f in self._decl.fields if f.access == access_kind.public_
+            ]
+
+            resolve_methods = []
+            attribute_wrappers = []
+            for field in public_fields:
+                resolve_methods.append(
+                    self.resolve_methods_template.format(
+                        attr_name=field.name,
+                        numba_type=to_numba_type_str(
+                            field.type_.unqualified_non_ref_type_name
+                        ),
+                    )
+                )
+                if not self._use_aggregate_parent:
+                    attribute_wrappers.append(
+                        self.make_attribute_wrappers_template.format(
+                            struct_type_class_name=self._struct_type_class_name,
+                            attr_name=field.name,
+                        )
+                    )
+
+            # Add resolve methods for regular member functions
+            if hasattr(self, "_method_template_map"):
+                for mname, tmpl in self._method_template_map.items():
+                    resolve_methods.append(
+                        self.resolve_method_template.format(
+                            method_name=mname,
+                            template_name=tmpl,
+                        )
+                    )
+
+            resolve_methods_str = "\n".join(resolve_methods)
+            attribute_wrappers_str = "\n".join(attribute_wrappers)
+
+            self._struct_attr_typing_rendered = (
+                self.struct_attribute_typing_template.format(
+                    type_name=self._struct_type_name,
+                    struct_attr_typing_name=self._struct_attr_typing_name,
+                    resolve_methods=resolve_methods_str,
+                    make_attribute_wrappers=attribute_wrappers_str,
+                )
+            )
+        elif self._use_typeref_ctor:
+            self.Imports.add(
+                "from numba_cuda_mlir.numba_cuda.typing.templates import AttributeTemplate"
+            )
+            self._struct_attr_typing_rendered = (
+                self.primitive_call_attribute_typing_template.format(
+                    type_name=self._struct_type_name,
+                    struct_attr_typing_name=self._struct_attr_typing_name,
+                )
+            )
+
+    def _render_regular_methods(self):
+        """Render regular member functions of the struct."""
+        static_methods_renderer = StaticStructRegularMethodsRenderer(
+            struct_name=self._struct_name,
+            python_struct_name=self._python_struct_name,
+            struct_type_name=self._struct_type_name,
+            struct_type_class_name=self._struct_type_class_name,
+            header_path=self._header_path,
+            method_decls=self._decl.regular_member_functions(),
+            function_argument_intents=self._function_argument_intents,
+        )
+        static_methods_renderer._render()
+
+        self._struct_methods_python_rendered = (
+            static_methods_renderer.python_rendered
+        )
+        self._struct_methods_c_rendered = static_methods_renderer.c_rendered
+        # Save method template map for attribute typing
+        self._method_template_map = static_methods_renderer.method_templates
+
+    def _render_struct_ctors(self):
+        """
+        Render all constructors for the struct and store their rendered outputs.
+
+        Populates self._struct_ctors_python_rendered with the combined Python typing and lowering code for the struct's constructors, and self._struct_ctors_c_rendered with the combined C shim implementations.
+        """
+        static_ctors_renderer = StaticStructCtorsRenderer(
+            struct_name=self._struct_name,
+            python_struct_name=self._python_struct_name,
+            struct_type_class=self._struct_type_class_name,
+            struct_type_name=self._struct_type_name,
+            struct_type_ref_name=self._struct_type_ref_name,
+            header_path=self._header_path,
+            ctor_decls=self._decl.constructors(),
+            use_typeref_ctor=self._use_typeref_ctor,
+        )
+        static_ctors_renderer._render()
+
+        self._struct_ctors_python_rendered = (
+            static_ctors_renderer.python_rendered
+        )
+        self._struct_ctors_c_rendered = static_ctors_renderer.c_rendered
+
+    def _render_conversion_ops(self):
+        """Render operators of a struct."""
+        static_convops_renderer = StaticStructConversionOperatorsRenderer(
+            struct_name=self._struct_name,
+            struct_type_class=self._struct_type_class_name,
+            struct_type_name=self._struct_type_name,
+            convop_decls=self._decl.conversion_operators(),
+            header_path=self._header_path,
+        )
+        static_convops_renderer._render()
+
+        self._struct_conversion_ops_python_rendered = (
+            static_convops_renderer.python_rendered
+        )
+        self._struct_conversion_ops_c_rendered = (
+            static_convops_renderer.c_rendered
+        )
+
+    def render_python(self) -> tuple[set[str], str]:
+        """Renders the python portion of the bindings.
+
+        At the end of the day, all artifacts are in python scripts. However,
+        there are shim functions that are in C language stored as a plain
+        string in Python. This function only renders the pure-python parts
+        of the bindings. This includes typing, lowering, FFI declarations
+        and python imports.
+
+        Return
+        ------
+        imports_and_bindings: tuple[set[str], str]
+            A tuple. The first element of the tuple is a set of import strings
+            required to run the bindings. The second element of the tuple
+            is the concatenated bindings script.
+        """
+        self.Imports.add("from numba_cuda_mlir.numba_cuda import CUSource")
+
+        self._render_typing()
+        self._render_python_api()
+        self._render_data_model()
+        # Render method lowering/typing before attribute typing to reference templates
+        self._render_regular_methods()
+        self._render_struct_attr()
+        self._render_struct_ctors()
+        self._render_conversion_ops()
+
+        self._python_rendered = f"""
+{self._typing_rendered}
+{self._python_api_rendered}
+{self._data_model_rendered}
+{self._struct_attr_typing_rendered}
+{self._struct_methods_python_rendered}
+{self._struct_ctors_python_rendered}
+{self._struct_conversion_ops_python_rendered}
+"""
+        return self.Imports, self._python_rendered
+
+    def render_c(self) -> tuple[set[str], str]:
+        """Renders the C shim functions of the bindings.
+
+        At the end of the day, all artifacts are in python scripts. However,
+        there are shim functions that are in C language stored as a plain
+        string in Python. This function renders these shim function codes.
+
+        Return
+        ------
+        includes_and_shims: tuple[set[str], str]
+            A tuple. The first element of the tuple is a set of include strings
+            required to compile the shim function. The second element of the tuple
+            is the concatenated shim function C program.
+        """
+        self.Includes.add(
+            self.includes_template.format(header_path=self._header_path)
+        )
+
+        self._c_ext_merged_shim = "\n".join(
+            [
+                self._struct_ctors_c_rendered,
+                self._struct_methods_c_rendered,
+                self._struct_conversion_ops_c_rendered,
+            ]
+        )
+
+        return self.Includes, self._c_ext_merged_shim
+
+
+class StaticStructsRenderer(BaseRenderer):
+    """Render a collection of CUDA struct declcarations.
+
+    Parameters
+    ----------
+    decls: list[Struct]
+        A list of CUDA struct declarations.
+    specs: dict[str, tuple[type, type, PathLike]]
+        A dictionary mapping the name of the structs to a tuple of
+        Numba parent type, data model and header path. If unspecified,
+        use `numba_cuda_mlir.types.Type`, `StructModel` and `default_header` by default.
+    header_path: str
+        The path to the header that contains the cuda struct declaration.
+    excludes: list[str]
+        A list of struct names to exclude from generation.
+    """
+
+    _python_rendered: list[tuple[set[str], str]]
+    """The strings containing rendered python scripts of the struct bindings. Minus the C shim functions. The
+    first element of the tuple are the imports necessary to configure the numba typings and lowerings. The second
+    elements are the typing and lowering of the struct.
+    """
+
+    _c_rendered: list[tuple[set[str], str]]
+    """The strings containing rendered C shim functions of the struct bindings. The first element of the tuple
+    are the C includes that contains the declaration of the CUDA C++ struct. The second element are the shim function
+    strings.
+    """
+
+    def __init__(
+        self,
+        decls: list[Struct],
+        specs: dict[str, tuple[type | None, type | None, os.PathLike]],
+        default_header: os.PathLike | str | None = None,
+        struct_prefix_removal: list[str] | None = None,
+        excludes: list[str] = [],
+        function_argument_intents: dict | None = None,
+    ):
+        """
+        Create a renderer that will produce Python bindings and C shim code for a collection of CUDA struct declarations.
+
+        Parameters:
+            decls: Struct declarations to render.
+            specs: Mapping from struct name to (parent Numba type or None, data model type or None, header path); used to override per-struct rendering options.
+            default_header: Fallback header path to use when a struct's header is absent from `specs`.
+            struct_prefix_removal: Optional list of name prefixes to strip from struct names when generating Python-facing identifiers.
+            excludes: Names of structs to skip during rendering.
+            function_argument_intents: Optional mapping that supplies per-struct or per-function argument intent overrides (controls reference/pointer handling, out-returns, and intent plans) used by per-method and constructor renderers.
+
+        """
+        self._decls = decls
+        self._specs = specs
+        self._default_header = default_header
+        self._struct_prefix_removal = struct_prefix_removal or []
+        self._function_argument_intents = function_argument_intents or {}
+
+        self._python_rendered = []
+        self._c_rendered = []
+
+        self._excludes = excludes
+
+    def _render(
+        self,
+        with_imports: bool,
+        with_shim_stream: bool,
+    ):
+        """
+        Render Python and C bindings for the configured CUDA structs and assemble the final script strings.
+
+        Processes each struct declaration (skipping any in the excludes list), instantiates a StaticStructRenderer for each, and collects per-struct Python and C outputs. Aggregates imports and concatenates the Python renderings into the instance attribute `_python_str`. Optionally prepends rendered imports when `with_imports` is True and injects a shim include when `with_shim_stream` is True. Clears `_shim_function_pystr` and `_c_str` at the end.
+
+        Parameters:
+            with_imports (bool): If True, prepend the global rendered imports to the final Python string.
+            with_shim_stream (bool): If True, prepend a shim include for the default header to the final Python string.
+
+        Raises:
+            ValueError: If a struct declaration does not provide a header path.
+        """
+        for decl in self._decls:
+            name = decl.name
+            if name in self._excludes:
+                continue
+
+            nb_ty, nb_datamodel, header_path = self._specs.get(
+                name, (Type, StructModel, self._default_header)
+            )
+            if header_path is None:
+                raise ValueError(
+                    f"CUDA struct {name} does not provide a header path."
+                )
+
+            SSR = StaticStructRenderer(
+                decl,
+                nb_ty,
+                nb_datamodel,
+                header_path,
+                self._struct_prefix_removal,
+                function_argument_intents=self._function_argument_intents,
+            )
+
+            self._python_rendered.append(SSR.render_python())
+            self._c_rendered.append(SSR.render_c())
+
+        imports = set()
+        python_rendered = []
+        for imp, py in self._python_rendered:
+            imports |= imp
+            python_rendered.append(py)
+
+        self._python_str = ""
+
+        if with_imports:
+            self._python_str += "\n" + get_rendered_imports()
+
+        if with_shim_stream:
+            shim_include = f'"#include<{self._default_header}>"'
+            self._python_str += "\n" + get_shim(shim_include)
+            self._python_str += "\n" + get_callconv_utils()
+
+        self._python_str += "\n" + "\n".join(python_rendered)
+
+        self._shim_function_pystr = self._c_str = ""
+
+    def render_as_str(
+        self,
+        *,
+        with_imports: bool,
+        with_shim_stream: bool,
+    ) -> str:
+        """Return the final assembled bindings in script. This output should be final."""
+
+        self._render(with_imports, with_shim_stream)
+        output = self._python_str
+        file_logger.debug(output)
+
+        return output

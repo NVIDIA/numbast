@@ -1,0 +1,16 @@
+Name: Test Data
+Version: 0.0.1
+MLIR Backend: true
+Entry Point: {{ data }}
+GPU Arch:
+    - {{ arch_str }}
+File List:
+    - {{ data }}
+Exclude: {}
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+Shim Include Override: "os.path.join(os.path.dirname(__file__), 'data.cuh')"
+Additional Import:
+    - os
