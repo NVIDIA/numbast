@@ -51,7 +51,6 @@ test-cu12-mlir = [
   "cffi",
   "cuda-toolkit[nvrtc]==12.9.*",
   "cuda-core>=0.7.0,<2.0.0",
-  "numba-cuda-mlir",
 ]
 test-cu13 = [
   "pytest",
@@ -65,7 +64,6 @@ test-cu13-mlir = [
   "cffi",
   "cuda-toolkit[cudart,crt,curand,cccl,nvcc,nvrtc]==13.2.*",
   "cuda-core>=0.7.0,<2.0.0",
-  "numba-cuda-mlir",
 ]
 
 

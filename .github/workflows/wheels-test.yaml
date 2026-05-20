@@ -145,6 +145,7 @@ jobs:
             fi
           done
           if [[ "${TEST_BACKEND}" == "mlir" ]]; then
+            python -m pip install numba-cuda-mlir
             python -m pip uninstall -y numba-cuda
             python -m pip show numba-cuda && exit 1 || true
             python -c "import numba_cuda_mlir"
