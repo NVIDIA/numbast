@@ -28,7 +28,6 @@ TEST_ENV_PACKAGES=(
   cuda-nvcc
   cuda-version=${RAPIDS_CUDA_VERSION%.*}
   cuda-nvrtc
-  "numba>=0.59"
   cuda-cudart-dev
   python=${RAPIDS_PY_VERSION}
   cffi
