@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   pr-builder:
-    if: ${{ always() }}
+    if: always()
     needs:
       - checks
       - detect-changes
