@@ -1,0 +1,15 @@
+Name: Cooperative Launch
+Version: 0.0.1
+MLIR Backend: true
+Entry Point: {{ data }}
+GPU Arch:
+    - {{ arch_str }}
+File List:
+    - {{ data }}
+Exclude: {}
+Types:
+    Foo: Type
+Data Models:
+    Foo: StructModel
+Cooperative Launch Required Functions Regex:
+    - "cta_barrier"

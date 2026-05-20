@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Name: Test Data
+Version: 0.0.1
+MLIR Backend: true
+Entry Point: {{ data }}
+GPU Arch:
+    - {{ arch_str }}
+File List:
+    - {{ data }}
+Exclude: {}
+Types:
+    __internal__Foo: Type
+Data Models:
+    __internal__Foo: StructModel
+API Prefix Removal:
+    Function:
+        - prefix_
+    Struct:
+        - __internal__
+    Enum:
+        - __internal__
+        - __nv__

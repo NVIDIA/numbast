@@ -12,21 +12,17 @@ import re
 
 import yaml
 
-from numba import config
-import numba.types
+from numba_cuda_mlir.numba_cuda.core import config
+import numba_cuda_mlir.types as mlir_types
 import numba.core.datamodel.models
+import numba_cuda_mlir.models as mlir_models
 
 from ast_canopy import parse_declarations_from_source
-from ast_canopy.decl import (
-    ClassTemplate,
-    Function,
-    FunctionTemplate,
-    Struct,
-)
+from ast_canopy.decl import Function, Struct
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
-from numbast.static import reset_renderer
-from numbast.static.renderer import (
+from numbast.experimental.mlir.static import reset_renderer
+from numbast.experimental.mlir.static.renderer import (
     get_shim,
     get_rendered_imports,
     get_reproducible_info,
@@ -34,22 +30,17 @@ from numbast.static.renderer import (
     registry_setup,
     get_callconv_utils,
 )
-from numbast.static.struct import StaticStructsRenderer
-from numbast.static.function import (
+from numbast.experimental.mlir.static.struct import StaticStructsRenderer
+from numbast.experimental.mlir.static.function import (
     StaticFunctionsRenderer,
 )
-from numbast.static.function_template import StaticFunctionTemplatesRenderer
-from numbast.static.class_template import StaticClassTemplatesRenderer
-from numbast.static.enum import StaticEnumsRenderer
-from numbast.static.typedef import render_aliases
-from numbast.tools.yaml_tags import string_constructor
+from numbast.experimental.mlir.static.enum import StaticEnumsRenderer
+from numbast.experimental.mlir.static.typedef import render_aliases
+from numbast.experimental.mlir.tools.yaml_tags import string_constructor
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
 VERBOSE = True
-STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
-    os.path.dirname(__file__), "static_binding_generator.schema.yaml"
-)
 
 # Register custom YAML constructor for !join tag
 yaml.add_constructor("!numbast_join", string_constructor)
@@ -64,40 +55,6 @@ def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
     )
 
 
-_MLIR_BACKEND_ONLY_CONFIG_KEYS = ("Module Link Variables Used",)
-
-
-def _config_value_is_set(value) -> bool:
-    if value is None:
-        return False
-    if isinstance(value, str):
-        return bool(value)
-    if isinstance(value, (dict, list, tuple, set)):
-        return bool(value)
-    return True
-
-
-def _validate_mlir_backend_only_config(config_dict: dict):
-    if _config_dict_uses_mlir_backend(config_dict):
-        return
-
-    keys = [
-        key
-        for key in _MLIR_BACKEND_ONLY_CONFIG_KEYS
-        if _config_value_is_set(config_dict.get(key))
-    ]
-    if not keys:
-        return
-
-    if len(keys) == 1:
-        message = f'Configuration option "{keys[0]}" requires'
-    else:
-        options = ", ".join(f'"{key}"' for key in keys)
-        message = f"Configuration options {options} require"
-
-    raise ValueError(f'{message} "MLIR Backend: true".')
-
-
 def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
     with open(cfg_path) as f:
         config_dict = yaml.load(f, yaml.Loader)
@@ -105,10 +62,68 @@ def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
 
 
 class Config:
-    """Configuration object for static binding generation.
+    """Configuration File for Static Binding Generation.
 
-    The canonical list of YAML keys, value types, defaults, and constraints is
-    defined in :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH`.
+    Attributes
+    ----------
+    entry_point : str
+        Path to the input CUDA header file.
+    gpu_arch: list[str]
+        The list of GPU architectures to generate bindings for. Currently, only
+        one architecture per run is supported. Must be under pattern
+        `sm_<compute_capability>`. Required.
+    retain_list : list[str]
+        List of file names to keep parsing. The list of files from which the
+        declarations are retained in the final generated binding output. Bindings
+        that exist in other source, which may get transitively included in the
+        declaration, are ignored in bindings output.
+    types : dict[str, type]
+        A dictionary that maps struct names to their Numba types.
+    datamodels : dict[str, type]
+        A dictionary that maps struct names to their Numba data models.
+    exclude_functions : list[str]
+        List of function names to exclude from the bindings.
+    exclude_structs : list[str]
+        List of struct names to exclude from the bindings.
+    clang_includes_paths : list[str]
+        List of additional include paths to use when parsing the header file.
+    additional_imports : list[str]
+        The list of additional imports to add to the binding file.
+    shim_include_override : str | None
+        Override the include line of the shim function to specified string.
+        If not specified, default to `#include <path_to_entry_point>`.
+    predefined_macros : list[str]
+        List of macros defined prior to parsing the header and prefixing shim functions.
+    output_name : str | None
+        The name of the output binding file, default None. When set to None, use
+        the same name as input file (renamed with .py extension).
+    cooperative_launch_required_functions_regex : list[str]
+        The list of regular expressions. When any function name matches any of these
+        regex patterns, the function should cause the kernel to be launched with
+        cooperative launch.
+    api_prefix_removal : dict[str, list[str]]
+        Dictionary mapping declaration types to lists of prefixes to remove from names.
+        For example, {"Function": ["prefix_"]} would remove "prefix_" from function names.
+        Acceptable keywords: ["Struct", "Function", "Enum"]. Value types are lists of prefix
+        strings. Specifically, prefixes in enums are also applicable to enum values.
+    module_callbacks : dict[str, str]
+        Dictionary containing setup and teardown callbacks for the module.
+        Expected keys: "setup", "teardown". Each value is a string callback function.
+    skip_prefix : str | None
+        Do not generate bindings for any functions that start with this prefix.
+        Has no effect if left unspecified.
+    separate_registry : bool
+        If true, use a separate typing and target registry for the generated binding.
+        By default, the new typing and target registries are added to the existing
+        typing and target context. When set to true, user should add the registries
+        to the typing and target context manually. Default to False.
+    function_argument_intents : dict[str, dict[str|int, str|dict]]
+        Optional per-function argument intent overrides. Keys are function names
+        (including qualified method names like "Struct.method" if desired). Values
+        map parameter name (str) or 0-based index (int) to an intent string
+        ("in", "inout_ptr", "out_ptr", "out_return") or a dict containing "intent".
+    mlir_backend : bool
+        If true, this config is intended for the experimental MLIR generator.
     """
 
     entry_point: str
@@ -137,17 +152,31 @@ class Config:
         Initialize a Config object from a configuration dictionary.
 
         Parameters:
-            config_dict (dict): Mapping of configuration keys to values.
-                See :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH` for the
-                authoritative schema documentation.
+            config_dict (dict): Mapping of configuration keys to values. Expected keys include:
+                - "Entry Point": path to the source file to process.
+                - "GPU Arch": list of GPU architectures (at most one supported).
+                - "File List": list of files to retain.
+                - "Types": mapping of type names to numba type strings.
+                - "Data Models": mapping of datamodel names to numba datamodel strings.
+                - "Exclude": mapping with optional "Function" and "Struct" lists.
+                - "Clang Include Paths": list of include paths for clang.
+                - "Additional Import": list of additional import statements/paths.
+                - "Shim Include Override": optional shim include override value.
+                - "Predefined Macros": list of predefined macros.
+                - "Output Name": optional output filename.
+                - "Cooperative Launch Required Functions Regex": list of regex patterns.
+                - "API Prefix Removal": mapping of API names to prefix(es) to remove.
+                - "Module Callbacks": mapping of module callback specifications.
+                - "Skip Prefix": optional prefix to skip.
+                - "Use Separate Registry": boolean flag.
+                - "Separate Registry": deprecated alias for "Use Separate Registry".
+                - "Function Argument Intents": mapping of function argument intent specifications.
+                - "MLIR Backend": boolean flag selecting the experimental MLIR generator.
 
         Raises:
             NotImplementedError: if more than one GPU architecture is provided.
             ValueError: if required files or include paths referenced by the configuration do not exist, or if any provided regex is invalid.
         """
-        self.mlir_backend = _config_dict_uses_mlir_backend(config_dict)
-        _validate_mlir_backend_only_config(config_dict)
-
         self.entry_point = config_dict["Entry Point"]
         self.gpu_arch = config_dict["GPU Arch"]
         self.retain_list = config_dict["File List"]
@@ -197,11 +226,15 @@ class Config:
         )
         self.skip_prefix = config_dict.get("Skip Prefix", None)
 
-        self.separate_registry = config_dict.get("Use Separate Registry", False)
+        self.separate_registry = config_dict.get(
+            "Use Separate Registry",
+            config_dict.get("Separate Registry", False),
+        )
 
         self.function_argument_intents = (
             config_dict.get("Function Argument Intents", {}) or {}
         )
+        self.mlir_backend = _config_dict_uses_mlir_backend(config_dict)
 
         # TODO: support multiple GPU architectures
         if len(self.gpu_arch) > 1:
@@ -252,7 +285,7 @@ class Config:
         skip_prefix: str | None = None,
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
-        mlir_backend: bool = False,
+        mlir_backend: bool = True,
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
@@ -330,7 +363,7 @@ class Config:
 
 def _str_value_to_numba_type(d: dict[str, str]) -> dict[str, type]:
     """Converts string typed value to numba `types` objects"""
-    return {k: getattr(numba.types, v) for k, v in d.items()}
+    return {k: getattr(mlir_types, v) for k, v in d.items()}
 
 
 class NumbaTypeDictType(click.ParamType):
@@ -362,8 +395,25 @@ numba_type_dict = NumbaTypeDictType()
 def _str_value_to_numba_datamodel(
     d: dict[str, str],
 ) -> dict[str, type]:
-    """Converts string typed value to numba `datamodel` objects"""
-    return {k: getattr(numba.core.datamodel.models, v) for k, v in d.items()}
+    """Convert string-valued data-model names to classes.
+
+    Resolution order:
+      1. `numba_cuda_mlir.models`
+      2. `numba.core.datamodel.models`
+    """
+    converted: dict[str, type] = {}
+    for key, model_name in d.items():
+        if hasattr(mlir_models, model_name):
+            converted[key] = getattr(mlir_models, model_name)
+            continue
+        try:
+            converted[key] = getattr(numba.core.datamodel.models, model_name)
+        except AttributeError as exc:
+            raise AttributeError(
+                f"Unknown data model '{model_name}'. "
+                "Tried numba_cuda_mlir.models and numba.core.datamodel.models."
+            ) from exc
+    return converted
 
 
 class NumbaDataModelDictType(click.ParamType):
@@ -390,69 +440,6 @@ class NumbaDataModelDictType(click.ParamType):
 
 
 numba_datamodel_dict = NumbaDataModelDictType()
-
-
-def _mapping_values_to_names(values: dict[str, type]) -> dict[str, str]:
-    return {key: value.__name__ for key, value in values.items()}
-
-
-def _mlir_config_from_config(config: Config):
-    from numbast.experimental.mlir.tools.static_binding_generator import (
-        Config as MlirConfig,
-    )
-
-    config_dict = {
-        "Entry Point": config.entry_point,
-        "GPU Arch": config.gpu_arch,
-        "File List": config.retain_list,
-        "Types": _mapping_values_to_names(config.types),
-        "Data Models": _mapping_values_to_names(config.datamodels),
-        "Exclude": {
-            "Function": config.exclude_functions,
-            "Struct": config.exclude_structs,
-        },
-        "Clang Include Paths": config.clang_includes_paths,
-        "Additional Import": config.additional_imports,
-        "Shim Include Override": config.shim_include_override,
-        "Predefined Macros": config.predefined_macros,
-        "Output Name": config.output_name,
-        "Cooperative Launch Required Functions Regex": (
-            config.cooperative_launch_required_functions_regex
-        ),
-        "API Prefix Removal": config.api_prefix_removal,
-        "Module Callbacks": config.module_callbacks,
-        "Module Link Variables Used": config.module_link_variables_used,
-        "Skip Prefix": config.skip_prefix,
-        "Use Separate Registry": config.separate_registry,
-        "Function Argument Intents": config.function_argument_intents,
-    }
-    return MlirConfig(config_dict)
-
-
-def _run_mlir_static_binding_generator(
-    config,
-    output_dir: str,
-    log_generates: bool = False,
-    cfg_file_path: str | None = None,
-    sbg_params: dict[str, str] = {},
-    bypass_parse_error: bool = False,
-) -> str:
-    from numbast.experimental.mlir.static import (
-        reset_renderer as reset_mlir_renderer,
-    )
-    from numbast.experimental.mlir.tools.static_binding_generator import (
-        _static_binding_generator as mlir_static_binding_generator,
-    )
-
-    reset_mlir_renderer()
-    return mlir_static_binding_generator(
-        config,
-        output_dir,
-        log_generates=log_generates,
-        cfg_file_path=cfg_file_path,
-        sbg_params=sbg_params,
-        bypass_parse_error=bypass_parse_error,
-    )
 
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
@@ -552,61 +539,6 @@ def _generate_functions(
     return SFR.render_as_str(with_imports=False, with_shim_stream=False)
 
 
-def _generate_function_templates(
-    function_template_decls: list[FunctionTemplate],
-    excludes: list[str],
-    skip_prefix: str | None,
-    function_argument_intents: dict | None = None,
-) -> str:
-    """
-    Render static bindings for function templates.
-
-    Parameters:
-        function_template_decls (list[FunctionTemplate]): Parsed function-template declarations to render.
-        excludes (list[str]): Function-template names to exclude.
-        skip_prefix (str | None): Optional prefix used to skip function-template names.
-        function_argument_intents (dict | None): Optional argument-intent overrides.
-
-    Returns:
-        str: Generated source code for function-template bindings.
-    """
-    SFTR = StaticFunctionTemplatesRenderer(
-        function_template_decls,
-        excludes=excludes,
-        skip_prefix=skip_prefix,
-        skip_non_device=True,
-        function_argument_intents=function_argument_intents or {},
-    )
-    return SFTR.render_as_str(with_imports=False, with_shim_stream=False)
-
-
-def _generate_class_templates(
-    class_template_decls: list[ClassTemplate],
-    header_path: str,
-    excludes: list[str],
-    function_argument_intents: dict | None = None,
-) -> str:
-    """
-    Render static bindings for class templates.
-
-    Parameters:
-        class_template_decls (list[ClassTemplate]): Parsed class-template declarations to render.
-        header_path (str): Header path used for template specialization parsing at runtime.
-        excludes (list[str]): Class-template names (short or qualified) to exclude.
-        function_argument_intents (dict | None): Optional argument-intent overrides.
-
-    Returns:
-        str: Generated source code for class-template bindings.
-    """
-    SCTR = StaticClassTemplatesRenderer(
-        class_template_decls,
-        header_path=header_path,
-        excludes=excludes,
-        function_argument_intents=function_argument_intents or {},
-    )
-    return SCTR.render_as_str(with_imports=False, with_shim_stream=False)
-
-
 def _generate_enums(
     enum_decls: list[Enum], enum_prefix_removal: list[str] = []
 ):
@@ -626,9 +558,7 @@ def _generate_enums(
 
 def log_files_to_generate(
     functions: list[Function],
-    function_templates: list[FunctionTemplate],
     structs: list[Struct],
-    class_templates: list[ClassTemplate],
     enums: list[Enum],
     typedefs: list[Typedef],
 ):
@@ -636,13 +566,7 @@ def log_files_to_generate(
 
     click.echo("-" * 80)
     click.echo(
-        "Generating bindings for "
-        f"{len(functions)} functions, "
-        f"{len(function_templates)} function templates, "
-        f"{len(structs)} structs, "
-        f"{len(class_templates)} class templates, "
-        f"{len(typedefs)} typedefs, "
-        f"{len(enums)} enums."
+        f"Generating bindings for {len(functions)} functions, {len(structs)} structs, {len(typedefs)} typedefs, {len(enums)} enums."
     )
 
     click.echo("Enums: ")
@@ -656,18 +580,8 @@ def log_files_to_generate(
     )
     click.echo("Functions: ")
     click.echo("\n".join(f"  - {str(func)}" for func in functions))
-    click.echo("Function Templates: ")
-    click.echo(
-        "\n".join(
-            f"  - {templ.function.qual_name}" for templ in function_templates
-        )
-    )
     click.echo("\nStructs: ")
     click.echo("\n".join(f"  - {struct.name}" for struct in structs))
-    click.echo("Class Templates: ")
-    click.echo(
-        "\n".join(f"  - {templ.record.qual_name}" for templ in class_templates)
-    )
 
 
 def _static_binding_generator(
@@ -689,17 +603,6 @@ def _static_binding_generator(
     Returns:
         str: Absolute path to the generated binding file.
     """
-    if config.mlir_backend:
-        mlir_config = _mlir_config_from_config(config)
-        return _run_mlir_static_binding_generator(
-            mlir_config,
-            output_dir,
-            log_generates=log_generates,
-            cfg_file_path=cfg_file_path,
-            sbg_params=sbg_params,
-            bypass_parse_error=bypass_parse_error,
-        )
-
     try:
         basename = os.path.basename(config.entry_point)
         basename = basename.split(".")[0]
@@ -732,9 +635,7 @@ def _static_binding_generator(
     )
     structs = decls.structs
     functions = decls.functions
-    function_templates = decls.function_templates
     enums = decls.enums
-    class_templates = decls.class_templates
     typedefs = [
         td
         for td in decls.typedefs
@@ -742,14 +643,7 @@ def _static_binding_generator(
     ]
 
     if log_generates:
-        log_files_to_generate(
-            functions,
-            function_templates,
-            structs,
-            class_templates,
-            enums,
-            typedefs,
-        )
+        log_files_to_generate(functions, structs, enums, typedefs)
 
     aliases = _typedef_to_aliases(typedefs)
     rendered_aliases = render_aliases(aliases)
@@ -776,27 +670,8 @@ def _static_binding_generator(
         config.skip_prefix,
         config.function_argument_intents,
     )
-    class_template_bindings = _generate_class_templates(
-        class_templates,
-        entry_point,
-        config.exclude_structs,
-        config.function_argument_intents,
-    )
-    function_template_bindings = _generate_function_templates(
-        function_templates,
-        config.exclude_functions,
-        config.skip_prefix,
-        config.function_argument_intents,
-    )
 
-    if config.separate_registry and (function_templates or class_templates):
-        warnings.warn(
-            "Function/class template static bindings currently register into "
-            "Numba's default CUDA registries. "
-            "'Use Separate Registry' does not yet isolate template bindings."
-        )
-
-    registry_setup_str = registry_setup(config.separate_registry)
+    registry_setup(config.separate_registry)
 
     if config.shim_include_override is not None:
         shim_include = f"'#include <' + {config.shim_include_override} + '>'"
@@ -806,6 +681,7 @@ def _static_binding_generator(
         shim_include=shim_include,
         predefined_macros=config.predefined_macros,
         module_callbacks=config.module_callbacks,
+        module_link_variables_used=config.module_link_variables_used,
     )
     callconv_utils_str = get_callconv_utils()
     imports_str = get_rendered_imports(
@@ -841,6 +717,19 @@ def _static_binding_generator(
         config_rel_path = "<not available>"
 
     exposed_symbols = get_all_exposed_symbols()
+    refresh_contexts_block = ""
+    if not config.separate_registry:
+        refresh_contexts_block = """
+# Refresh shared contexts so newly registered typing/lowering entries are visible
+# to subsequent compilations in this process.
+try:
+    from numba_cuda_mlir.descriptor import mlir_target as _numbast_mlir_target
+
+    _numbast_mlir_target.typing_context.refresh()
+    _numbast_mlir_target.target_context.refresh()
+except Exception:
+    pass
+"""
 
     assembled = f"""
 # Automatically generated by Numbast Static Binding Generator
@@ -849,7 +738,6 @@ def _static_binding_generator(
 
 # Imports:
 {imports_str}
-{registry_setup_str}
 # Shim Stream:
 {shim_stream_str}
 {callconv_utils_str}
@@ -859,15 +747,12 @@ def _static_binding_generator(
 {struct_bindings}
 # Functions:
 {function_bindings}
-# Class Templates:
-{class_template_bindings}
-# Function Templates:
-{function_template_bindings}
 # Aliases:
 {rendered_aliases}
 
 # Symbols:
 {exposed_symbols}
+{refresh_contexts_block}
 """
 
     with open(output_file, "w") as file:
@@ -932,31 +817,17 @@ def static_binding_generator(
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
-    if _cfg_path_uses_mlir_backend(cfg_path):
-        from numbast.experimental.mlir.tools.static_binding_generator import (
-            Config as MlirConfig,
-        )
+    reset_renderer()
 
-        cfg = MlirConfig.from_yaml_path(cfg_path)
-        output_file = _run_mlir_static_binding_generator(
-            cfg,
-            output_dir,
-            log_generates=True,
-            cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
-            bypass_parse_error=bypass_parse_error,
-        )
-    else:
-        reset_renderer()
-        cfg = Config.from_yaml_path(cfg_path)
-        output_file = _static_binding_generator(
-            cfg,
-            output_dir,
-            log_generates=True,
-            cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
-            bypass_parse_error=bypass_parse_error,
-        )
+    cfg = Config.from_yaml_path(cfg_path)
+    output_file = _static_binding_generator(
+        cfg,
+        output_dir,
+        log_generates=True,
+        cfg_file_path=cfg_path,
+        sbg_params=ctx.params,
+        bypass_parse_error=bypass_parse_error,
+    )
 
     if run_ruff_format:
         spec = importlib.util.find_spec("ruff")
