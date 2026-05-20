@@ -13,6 +13,9 @@ on:
       script:
         type: string
         default: "ci/test_wheels.sh"
+      test_backend:
+        type: string
+        default: "numba-cuda"
       matrix_filter:
         type: string
         default: "."
@@ -74,6 +77,7 @@ jobs:
     runs-on: "linux-${{ matrix.ARCH }}-gpu-${{ matrix.GPU }}-${{ matrix.DRIVER }}-1"
     env:
       RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+      TEST_BACKEND: ${{ inputs.test_backend }}
     container:
       image: nvidia/cuda:${{ matrix.CUDA_VER }}-${{ startsWith(matrix.CUDA_VER, '12') && 'devel' || 'base' }}-${{ matrix.LINUX_VER }}
       env:
@@ -125,20 +129,40 @@ jobs:
             libstdc++-14-dev
       - name: Install Python dependencies
         run: |
+          if [[ "${TEST_BACKEND}" != "numba-cuda" ]] && [[ "${TEST_BACKEND}" != "mlir" ]]; then
+            echo "Unsupported TEST_BACKEND='${TEST_BACKEND}'. Expected 'numba-cuda' or 'mlir'."
+            exit 1
+          fi
+
           # FIXME: Hardcoded versions right now, will use parameters later
           python -m pip install --upgrade pip
           python -m pip install wheels/ast_canopy*-cp${PY_VER_NO_DOT}-*.whl
           for wheel in wheels/numbast*.whl; do
-            python -m pip install "$wheel[test-cu${CUDA_MAJOR}]"
+            if [[ "${TEST_BACKEND}" == "mlir" ]]; then
+              python -m pip install "$wheel[test-cu${CUDA_MAJOR}-mlir]"
+            else
+              python -m pip install "$wheel[test-cu${CUDA_MAJOR}]"
+            fi
           done
+          if [[ "${TEST_BACKEND}" == "mlir" ]]; then
+            python -m pip uninstall -y numba-cuda
+            python -m pip show numba-cuda && exit 1 || true
+            python -c "import numba_cuda_mlir"
+          fi
       - name: Test ast_canopy wheels
         run: |
           python -m pytest ast_canopy/tests
-      - name: Test numbast wheels
+      - name: Test numbast wheels (Numba-CUDA)
+        if: env.TEST_BACKEND == 'numba-cuda'
         run: |
           python -m pytest \
             numbast/ \
             --ignore=numbast/src/numbast/experimental/mlir
+      - name: Test numbast wheels (MLIR)
+        if: env.TEST_BACKEND == 'mlir'
+        run: |
+          python -m pytest numbast/src/numbast/experimental/mlir
       - name: Run numbast_extensions third-party CCCL tests
+        if: env.TEST_BACKEND == 'numba-cuda'
         run: |
           python -m pytest numbast_extensions/tests/thirdparty/CCCL/

@@ -15,6 +15,9 @@ on:
       script:
         type: string
         default: "ci/test_conda_python.sh"
+      test_backend:
+        type: string
+        default: "numba-cuda"
       run_codecov:
         type: boolean
         default: false
@@ -147,6 +150,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CUDA_VER: ${{ matrix.CUDA_VER }}
+          TEST_BACKEND: ${{ inputs.test_backend }}
       - name: Generate test report
         uses: test-summary/action@v2.6
         with:
