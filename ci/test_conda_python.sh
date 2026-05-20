@@ -30,16 +30,13 @@ TEST_ENV_PACKAGES=(
   cuda-nvrtc
   cuda-cudart-dev
   python=${RAPIDS_PY_VERSION}
+  pip
   cffi
   ast_canopy="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*"
   numbast="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*"
 )
 
-if [[ "${TEST_BACKEND}" == "mlir" ]]; then
-  TEST_ENV_PACKAGES+=(
-    numba-cuda-mlir
-  )
-else
+if [[ "${TEST_BACKEND}" == "numba-cuda" ]]; then
   TEST_ENV_PACKAGES+=(
     "numba-cuda>=0.25.0"
     numbast-extensions="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*"
@@ -50,13 +47,23 @@ rapids-mamba-retry create -n test "${TEST_ENV_PACKAGES[@]}"
 
 if [[ "${TEST_BACKEND}" == "mlir" ]]; then
   rapids-logger "Removing numba-cuda from MLIR test environment"
-  conda remove -n test --force -y numba-cuda
+  if conda list -n test numba-cuda | grep -E '^numba-cuda[[:space:]]'; then
+    conda remove -n test --force -y numba-cuda
+  fi
 fi
 
 # Temporarily allow unbound variables for conda activation.
 set +u
 conda activate test
 set -u
+
+if [[ "${TEST_BACKEND}" == "mlir" ]]; then
+  rapids-logger "Installing numba-cuda-mlir with pip"
+  python -m pip install numba-cuda-mlir
+  if python -m pip show numba-cuda; then
+    python -m pip uninstall -y numba-cuda
+  fi
+fi
 
 rapids-print-env
 
