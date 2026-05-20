@@ -55,6 +55,55 @@ STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
 yaml.add_constructor("!numbast_join", string_constructor)
 
 
+def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
+    return bool(
+        config_dict.get(
+            "MLIR Backend",
+            config_dict.get("mlir_backend", False),
+        )
+    )
+
+
+_MLIR_BACKEND_ONLY_CONFIG_KEYS = ("Module Link Variables Used",)
+
+
+def _config_value_is_set(value) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value)
+    if isinstance(value, (dict, list, tuple, set)):
+        return bool(value)
+    return True
+
+
+def _validate_mlir_backend_only_config(config_dict: dict):
+    if _config_dict_uses_mlir_backend(config_dict):
+        return
+
+    keys = [
+        key
+        for key in _MLIR_BACKEND_ONLY_CONFIG_KEYS
+        if _config_value_is_set(config_dict.get(key))
+    ]
+    if not keys:
+        return
+
+    if len(keys) == 1:
+        message = f'Configuration option "{keys[0]}" requires'
+    else:
+        options = ", ".join(f'"{key}"' for key in keys)
+        message = f"Configuration options {options} require"
+
+    raise ValueError(f'{message} "MLIR Backend: true".')
+
+
+def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
+    with open(cfg_path) as f:
+        config_dict = yaml.load(f, yaml.Loader)
+    return _config_dict_uses_mlir_backend(config_dict)
+
+
 class Config:
     """Configuration object for static binding generation.
 
@@ -77,9 +126,11 @@ class Config:
     cooperative_launch_required_functions_regex: list[str]
     api_prefix_removal: dict[str, list[str]]
     module_callbacks: dict[str, str]
+    module_link_variables_used: list[str]
     skip_prefix: str | None
     separate_registry: bool
     function_argument_intents: dict
+    mlir_backend: bool
 
     def __init__(self, config_dict: dict):
         """
@@ -94,6 +145,9 @@ class Config:
             NotImplementedError: if more than one GPU architecture is provided.
             ValueError: if required files or include paths referenced by the configuration do not exist, or if any provided regex is invalid.
         """
+        self.mlir_backend = _config_dict_uses_mlir_backend(config_dict)
+        _validate_mlir_backend_only_config(config_dict)
+
         self.entry_point = config_dict["Entry Point"]
         self.gpu_arch = config_dict["GPU Arch"]
         self.retain_list = config_dict["File List"]
@@ -138,6 +192,9 @@ class Config:
                     self.api_prefix_removal[key] = [value]
 
         self.module_callbacks = config_dict.get("Module Callbacks", {})
+        self.module_link_variables_used = (
+            config_dict.get("Module Link Variables Used", []) or []
+        )
         self.skip_prefix = config_dict.get("Skip Prefix", None)
 
         self.separate_registry = config_dict.get("Use Separate Registry", False)
@@ -191,9 +248,11 @@ class Config:
         cooperative_launch_required_functions_regex: list[str] | None = None,
         api_prefix_removal: dict[str, list[str]] | None = None,
         module_callbacks: dict[str, str] | None = None,
+        module_link_variables_used: list[str] | None = None,
         skip_prefix: str | None = None,
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
+        mlir_backend: bool = False,
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
@@ -231,9 +290,11 @@ class Config:
             or [],
             "API Prefix Removal": api_prefix_removal or {},
             "Module Callbacks": module_callbacks or {},
+            "Module Link Variables Used": module_link_variables_used or [],
             "Skip Prefix": skip_prefix,
             "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
+            "MLIR Backend": mlir_backend,
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -329,6 +390,69 @@ class NumbaDataModelDictType(click.ParamType):
 
 
 numba_datamodel_dict = NumbaDataModelDictType()
+
+
+def _mapping_values_to_names(values: dict[str, type]) -> dict[str, str]:
+    return {key: value.__name__ for key, value in values.items()}
+
+
+def _mlir_config_from_config(config: Config):
+    from numbast.experimental.mlir.tools.static_binding_generator import (
+        Config as MlirConfig,
+    )
+
+    config_dict = {
+        "Entry Point": config.entry_point,
+        "GPU Arch": config.gpu_arch,
+        "File List": config.retain_list,
+        "Types": _mapping_values_to_names(config.types),
+        "Data Models": _mapping_values_to_names(config.datamodels),
+        "Exclude": {
+            "Function": config.exclude_functions,
+            "Struct": config.exclude_structs,
+        },
+        "Clang Include Paths": config.clang_includes_paths,
+        "Additional Import": config.additional_imports,
+        "Shim Include Override": config.shim_include_override,
+        "Predefined Macros": config.predefined_macros,
+        "Output Name": config.output_name,
+        "Cooperative Launch Required Functions Regex": (
+            config.cooperative_launch_required_functions_regex
+        ),
+        "API Prefix Removal": config.api_prefix_removal,
+        "Module Callbacks": config.module_callbacks,
+        "Module Link Variables Used": config.module_link_variables_used,
+        "Skip Prefix": config.skip_prefix,
+        "Use Separate Registry": config.separate_registry,
+        "Function Argument Intents": config.function_argument_intents,
+    }
+    return MlirConfig(config_dict)
+
+
+def _run_mlir_static_binding_generator(
+    config,
+    output_dir: str,
+    log_generates: bool = False,
+    cfg_file_path: str | None = None,
+    sbg_params: dict[str, str] = {},
+    bypass_parse_error: bool = False,
+) -> str:
+    from numbast.experimental.mlir.static import (
+        reset_renderer as reset_mlir_renderer,
+    )
+    from numbast.experimental.mlir.tools.static_binding_generator import (
+        _static_binding_generator as mlir_static_binding_generator,
+    )
+
+    reset_mlir_renderer()
+    return mlir_static_binding_generator(
+        config,
+        output_dir,
+        log_generates=log_generates,
+        cfg_file_path=cfg_file_path,
+        sbg_params=sbg_params,
+        bypass_parse_error=bypass_parse_error,
+    )
 
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
@@ -565,6 +689,17 @@ def _static_binding_generator(
     Returns:
         str: Absolute path to the generated binding file.
     """
+    if config.mlir_backend:
+        mlir_config = _mlir_config_from_config(config)
+        return _run_mlir_static_binding_generator(
+            mlir_config,
+            output_dir,
+            log_generates=log_generates,
+            cfg_file_path=cfg_file_path,
+            sbg_params=sbg_params,
+            bypass_parse_error=bypass_parse_error,
+        )
+
     try:
         basename = os.path.basename(config.entry_point)
         basename = basename.split(".")[0]
@@ -797,17 +932,31 @@ def static_binding_generator(
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
-    reset_renderer()
+    if _cfg_path_uses_mlir_backend(cfg_path):
+        from numbast.experimental.mlir.tools.static_binding_generator import (
+            Config as MlirConfig,
+        )
 
-    cfg = Config.from_yaml_path(cfg_path)
-    output_file = _static_binding_generator(
-        cfg,
-        output_dir,
-        log_generates=True,
-        cfg_file_path=cfg_path,
-        sbg_params=ctx.params,
-        bypass_parse_error=bypass_parse_error,
-    )
+        cfg = MlirConfig.from_yaml_path(cfg_path)
+        output_file = _run_mlir_static_binding_generator(
+            cfg,
+            output_dir,
+            log_generates=True,
+            cfg_file_path=cfg_path,
+            sbg_params=ctx.params,
+            bypass_parse_error=bypass_parse_error,
+        )
+    else:
+        reset_renderer()
+        cfg = Config.from_yaml_path(cfg_path)
+        output_file = _static_binding_generator(
+            cfg,
+            output_dir,
+            log_generates=True,
+            cfg_file_path=cfg_path,
+            sbg_params=ctx.params,
+            bypass_parse_error=bypass_parse_error,
+        )
 
     if run_ruff_format:
         spec = importlib.util.find_spec("ruff")

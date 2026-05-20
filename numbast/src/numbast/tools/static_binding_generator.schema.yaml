@@ -193,6 +193,16 @@ properties:
         description: Python expression for teardown callback.
         examples:
           - "lambda mod: print('unloaded', mod)"
+  Module Link Variables Used:
+    type: array
+    default: []
+    items:
+      type: string
+    description: >
+      Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.
+
+    examples:
+      - - "__numbast_module_used"
   Skip Prefix:
     type: [string, "null"]
     default: null
@@ -229,3 +239,11 @@ properties:
                 type: string
                 enum: ["in", "inout_ptr", "out_ptr", "out_return"]
             required: ["intent"]
+  MLIR Backend:
+    type: boolean
+    default: false
+    description: >
+      Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a user-provided ``numba_cuda_mlir`` installation.
+
+    examples:
+      - true
