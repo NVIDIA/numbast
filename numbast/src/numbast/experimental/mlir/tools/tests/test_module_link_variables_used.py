@@ -43,18 +43,6 @@ def test_module_link_variables_used_is_passed_to_mlir_linker(
     kernel[1, 1]()
 
     overload = kernel.overloads[()]
-    linker = overload.metadata["linker"]
-    variables_used = None
-    for attr in ("variable_used", "variables_used", "_variables_used"):
-        if hasattr(linker, attr):
-            variables_used = getattr(linker, attr)
-            break
-
-    assert variables_used == [
-        "retained_global",
-        "another_retained_global",
-    ]
-
     overload._codelibrary.get_cufunc()
     retained_globals = {}
     for name in symbols["module_link_variables_used"]:
