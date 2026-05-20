@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import numba
-
 from numbast.experimental.mlir.struct import bind_cxx_struct, bind_cxx_structs
 from numbast.experimental.mlir.class_template import (
     bind_cxx_class_template_specialization,
@@ -30,10 +28,6 @@ try:
     __version__ = importlib.metadata.version("numbast")
 except importlib.metadata.PackageNotFoundError:
     __version__ = "0+unknown"
-
-major, minor, *_ = numba.__version__.split(".")
-if int(minor) < 59:
-    raise RuntimeError("Numba version >= 0.59rc1 is required")
 
 __all__ = [
     "__version__",
