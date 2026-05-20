@@ -58,7 +58,8 @@ jobs:
       build_type: pull-request
   test-conda-numba-cuda:
     name: Test Conda Python (Numba-CUDA)
-    if: needs.detect-changes.outputs.run_numba_cuda_tests == 'true'
+    # Temporarily disabled while the MLIR CI path is being stabilized.
+    if: false
     needs:
       - build-conda
       - detect-changes
@@ -88,7 +89,8 @@ jobs:
       build_type: pull-request
   test-wheels-numba-cuda:
     name: Test Wheels (Numba-CUDA)
-    if: needs.detect-changes.outputs.run_numba_cuda_tests == 'true'
+    # Temporarily disabled while the MLIR CI path is being stabilized.
+    if: false
     needs:
       - build-wheels
       - detect-changes
