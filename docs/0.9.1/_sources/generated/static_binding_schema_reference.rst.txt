@@ -238,6 +238,23 @@ Optional keys
         teardown: 'lambda mod: print(''unloaded'', mod)'
 
 
+``Module Link Variables Used`` : ``array``
+   Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.
+
+   Default: ``[]``.
+
+   Constraints:
+
+   - Item type: ``string``
+
+   Example:
+
+   .. code-block:: yaml
+
+      Module Link Variables Used:
+      - __numbast_module_used
+
+
 ``Skip Prefix`` : ``string | null``
    Skip generating bindings for functions whose names start with this prefix.
 
@@ -276,6 +293,19 @@ Optional keys
         my_function:
           result: out_ptr
           0: in
+
+
+``MLIR Backend`` : ``boolean``
+   Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a
+   user-provided ``numba_cuda_mlir`` installation.
+
+   Default: ``false``.
+
+   Example:
+
+   .. code-block:: yaml
+
+      MLIR Backend: true
 
 
 Optional nested keys
@@ -578,6 +608,16 @@ Raw schema
            description: Python expression for teardown callback.
            examples:
              - "lambda mod: print('unloaded', mod)"
+     Module Link Variables Used:
+       type: array
+       default: []
+       items:
+         type: string
+       description: >
+         Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.
+
+       examples:
+         - - "__numbast_module_used"
      Skip Prefix:
        type: [string, "null"]
        default: null
@@ -615,3 +655,12 @@ Raw schema
                    type: string
                    enum: ["in", "inout_ptr", "out_ptr", "out_return"]
                required: ["intent"]
+     MLIR Backend:
+       type: boolean
+       default: false
+       description: >
+         Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a
+         user-provided ``numba_cuda_mlir`` installation.
+
+       examples:
+         - true
