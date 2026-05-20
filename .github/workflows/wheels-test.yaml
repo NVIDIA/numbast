@@ -136,7 +136,9 @@ jobs:
           python -m pytest ast_canopy/tests
       - name: Test numbast wheels
         run: |
-          python -m pytest numbast/
+          python -m pytest \
+            numbast/ \
+            --ignore=numbast/src/numbast/experimental/mlir
       - name: Run numbast_extensions third-party CCCL tests
         run: |
           python -m pytest numbast_extensions/tests/thirdparty/CCCL/

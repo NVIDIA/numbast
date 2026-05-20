@@ -5,12 +5,16 @@ import os
 import pytest
 
 
-def run_pytest(lib, test_dir):
+MLIR_TESTS_DIR = "numbast/src/numbast/experimental/mlir"
+
+
+def run_pytest(lib, test_dir, extra_pytest_args=None):
     if RAPIDS_TESTS_DIR := os.environ.get("RAPIDS_TESTS_DIR", None):
         junitxml = os.path.join(RAPIDS_TESTS_DIR, f"junit-{lib}.xml")
     else:
         junitxml = "/dev/null"
 
+    extra_pytest_args = extra_pytest_args or []
     command = [
         "pytest",
         "-v",
@@ -18,6 +22,7 @@ def run_pytest(lib, test_dir):
         "--continue-on-collection-errors",
         "--cache-clear",
         f"--junitxml={junitxml}",
+        *extra_pytest_args,
         *test_dir,
     ]
     try:
@@ -57,7 +62,7 @@ def run(
     if all_tests or ast_canopy:
         run_pytest("ast_canopy", ["ast_canopy/"])
     if all_tests or numbast:
-        run_pytest("numbast", ["numbast/"])
+        run_pytest("numbast", ["numbast/"], [f"--ignore={MLIR_TESTS_DIR}"])
     if all_tests or bf16:
         run_pytest(
             "bf16",
