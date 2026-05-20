@@ -44,7 +44,13 @@ def test_module_link_variables_used_is_passed_to_mlir_linker(
 
     overload = kernel.overloads[()]
     linker = overload.metadata["linker"]
-    assert getattr(linker, "variable_used", linker.variables_used) == [
+    variables_used = None
+    for attr in ("variable_used", "variables_used", "_variables_used"):
+        if hasattr(linker, attr):
+            variables_used = getattr(linker, attr)
+            break
+
+    assert variables_used == [
         "retained_global",
         "another_retained_global",
     ]
