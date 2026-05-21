@@ -2,7 +2,8 @@ import pytest
 
 import os
 
-import ast_canopy
+from ast_canopy import parse_declarations_from_source
+from numba_cuda_mlir import cuda
 
 
 @pytest.fixture(scope="session")
@@ -12,6 +13,9 @@ def decl_of():
 
     def _decl(file_name: str):
         path = _path(file_name)
-        return ast_canopy.parse_decl_only_from_src_current_sm(path), path
+        major, minor = cuda.get_current_device().compute_capability
+        return parse_declarations_from_source(
+            path, [path], f"sm_{major}{minor}"
+        ), path
 
     return _decl
