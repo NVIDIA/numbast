@@ -38,12 +38,14 @@ def run_pytest(lib, test_dir, extra_pytest_args=None):
 @click.command()
 @click.option("--ast-canopy", is_flag=True, help="Run ast_canopy pytests.")
 @click.option("--numbast", is_flag=True, help="Run numbast pytests.")
+@click.option("--mlir", is_flag=True, help="Run numbast MLIR pytests.")
 @click.option("--bf16", is_flag=True, help="Run bfloat16 pytests.")
 @click.option("--cccl", is_flag=True, help="Run CCCL (CUB) binding pytests.")
 @click.option("--all-tests", is_flag=True, help="Run all pytests.")
 def run(
     ast_canopy: bool,
     numbast: bool,
+    mlir: bool,
     bf16: bool,
     cccl: bool,
     all_tests: bool,
@@ -54,7 +56,7 @@ def run(
     package. `--all-tests` option is mutually exclusive to all other options.
     """
     if all_tests:
-        if any([ast_canopy, numbast, bf16, cccl]):
+        if any([ast_canopy, numbast, mlir, bf16, cccl]):
             raise ValueError(
                 "`all_tests` and any subpackage specs are mutual exclusive."
             )
@@ -63,6 +65,8 @@ def run(
         run_pytest("ast_canopy", ["ast_canopy/"])
     if all_tests or numbast:
         run_pytest("numbast", ["numbast/"], [f"--ignore={MLIR_TESTS_DIR}"])
+    if all_tests or mlir:
+        run_pytest("numbast_mlir", [MLIR_TESTS_DIR])
     if all_tests or bf16:
         run_pytest(
             "bf16",

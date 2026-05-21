@@ -12,31 +12,53 @@ jobs:
     uses: ./.github/workflows/conda-python-build.yaml
     with:
       build_type: branch
-  test-conda:
-    name: Test Conda Python
+  test-conda-numba-cuda:
+    name: Test Conda Python (Numba-CUDA)
     needs: build-conda
     secrets: inherit
     uses: ./.github/workflows/conda-python-test.yaml
     with:
       build_type: branch
+      test_backend: numba-cuda
+  test-conda-mlir:
+    name: Test Conda Python (MLIR)
+    needs: build-conda
+    secrets: inherit
+    uses: ./.github/workflows/conda-python-test.yaml
+    with:
+      build_type: branch
+      test_backend: mlir
+      matrix_filter: 'map(select(.PY_VER != "3.10"))'
   build-wheels:
     name: Build Wheels
     secrets: inherit
     uses: ./.github/workflows/wheels-build.yaml
     with:
       build_type: branch
-  test-wheels:
-    name: Test Wheels
+  test-wheels-numba-cuda:
+    name: Test Wheels (Numba-CUDA)
     needs: build-wheels
     secrets: inherit
     uses: ./.github/workflows/wheels-test.yaml
     with:
       build_type: branch
+      test_backend: numba-cuda
+  test-wheels-mlir:
+    name: Test Wheels (MLIR)
+    needs: build-wheels
+    secrets: inherit
+    uses: ./.github/workflows/wheels-test.yaml
+    with:
+      build_type: branch
+      test_backend: mlir
+      matrix_filter: 'map(select(.PY_VER != "3.10"))'
   build-docs:
     name: Build Docs
     needs:
-      - test-conda
-      - test-wheels
+      - test-conda-numba-cuda
+      - test-conda-mlir
+      - test-wheels-numba-cuda
+      - test-wheels-mlir
     secrets: inherit
     uses: ./.github/workflows/build-docs.yml
     with:

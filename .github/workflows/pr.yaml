@@ -10,20 +10,45 @@ concurrency:
   cancel-in-progress: true
 jobs:
   pr-builder:
+    if: always()
     needs:
       - checks
+      - detect-changes
       - build-conda
-      - test-conda
+      - test-conda-numba-cuda
+      - test-conda-mlir
       - build-wheels
-      - test-wheels
+      - test-wheels-numba-cuda
+      - test-wheels-mlir
       - docs-preview
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
+    with:
+      needs: ${{ toJSON(needs) }}
   checks:
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.10
     with:
       enable_check_generated_files: false
+  detect-changes:
+    name: Detect Test Paths
+    needs: checks
+    runs-on: ubuntu-latest
+    outputs:
+      run_numba_cuda_tests: ${{ steps.detect.outputs.run_numba_cuda_tests }}
+      run_mlir_tests: ${{ steps.detect.outputs.run_mlir_tests }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Detect changed test paths
+        id: detect
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          base="$(git merge-base origin/main HEAD)"
+          git diff --name-only "${base}" HEAD | tee changed-files.txt
+          python ci/detect_test_paths.py < changed-files.txt
   build-conda:
     name: Build Conda Python
     needs: checks
@@ -31,13 +56,30 @@ jobs:
     uses: ./.github/workflows/conda-python-build.yaml
     with:
       build_type: pull-request
-  test-conda:
-    name: Test Conda Python
-    needs: build-conda
+  test-conda-numba-cuda:
+    name: Test Conda Python (Numba-CUDA)
+    # Temporarily disabled while the MLIR CI path is being stabilized.
+    if: false
+    needs:
+      - build-conda
+      - detect-changes
     secrets: inherit
     uses: ./.github/workflows/conda-python-test.yaml
     with:
       build_type: pull-request
+      test_backend: numba-cuda
+  test-conda-mlir:
+    name: Test Conda Python (MLIR)
+    if: needs.detect-changes.outputs.run_mlir_tests == 'true'
+    needs:
+      - build-conda
+      - detect-changes
+    secrets: inherit
+    uses: ./.github/workflows/conda-python-test.yaml
+    with:
+      build_type: pull-request
+      test_backend: mlir
+      matrix_filter: 'map(select(.PY_VER != "3.10"))'
   build-wheels:
     name: Build Wheels
     needs: checks
@@ -45,18 +87,40 @@ jobs:
     uses: ./.github/workflows/wheels-build.yaml
     with:
       build_type: pull-request
-  test-wheels:
-    name: Test Wheels
-    needs: build-wheels
+  test-wheels-numba-cuda:
+    name: Test Wheels (Numba-CUDA)
+    # Temporarily disabled while the MLIR CI path is being stabilized.
+    if: false
+    needs:
+      - build-wheels
+      - detect-changes
     secrets: inherit
     uses: ./.github/workflows/wheels-test.yaml
     with:
       build_type: pull-request
+      test_backend: numba-cuda
+  test-wheels-mlir:
+    name: Test Wheels (MLIR)
+    if: needs.detect-changes.outputs.run_mlir_tests == 'true'
+    needs:
+      - build-wheels
+      - detect-changes
+    secrets: inherit
+    uses: ./.github/workflows/wheels-test.yaml
+    with:
+      build_type: pull-request
+      test_backend: mlir
+      matrix_filter: 'map(select(.PY_VER != "3.10"))'
   docs-preview:
     name: Build Docs Preview
+    if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     needs:
-      - test-conda
-      - test-wheels
+      - build-conda
+      - test-conda-numba-cuda
+      - test-conda-mlir
+      - build-wheels
+      - test-wheels-numba-cuda
+      - test-wheels-mlir
     secrets: inherit
     uses: ./.github/workflows/build-docs.yml
     with:
