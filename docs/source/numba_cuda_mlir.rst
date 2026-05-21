@@ -29,11 +29,18 @@ Backend differences
      - Generated bindings target the ``numba-cuda-mlir`` runtime.
    * - Dependency setup
      - Install Numbast with the default ``numba-cuda`` dependency.
-     - Install ``numba-cuda-mlir`` in the environment used to generate and run
-       the bindings.
+     - For dynamic binding generation, install Numbast with the ``mlir`` extra
+       so ``numba-cuda-mlir`` is available.
 
 Dynamic binding generation
 --------------------------
+
+If you intend to use dynamic binding generation with ``numba-cuda-mlir``,
+install Numbast with the ``mlir`` extra:
+
+.. code-block:: bash
+
+   pip install "numbast[mlir]"
 
 For dynamic binding generation, change imports from top-level ``numbast`` to
 ``numbast.experimental.mlir``. The Numbast helper names remain the same.
