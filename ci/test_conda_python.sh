@@ -58,6 +58,8 @@ conda activate test
 set -u
 
 if [[ "${TEST_BACKEND}" == "mlir" ]]; then
+  export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
   rapids-logger "Installing numba-cuda-mlir with pip"
   python -m pip install numba-cuda-mlir
   if python -m pip show numba-cuda; then
