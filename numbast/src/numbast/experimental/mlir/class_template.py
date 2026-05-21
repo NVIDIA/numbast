@@ -14,9 +14,8 @@ from ast_canopy import pylibastcanopy
 import numba_cuda_mlir.types as sttypes
 import numba_cuda_mlir.types as nbtypes
 from numba_cuda_mlir.numba_cuda import types as cuda_nbtypes
-from numba.core import types as legacy_types
-from numba.core.extending import (
-    register_model as legacy_register_model,
+from numba_cuda_mlir.numba_cuda.extending import (
+    register_model as cuda_register_model,
 )
 from numba_cuda_mlir.numba_cuda.typing import signature as nb_signature
 from numba_cuda_mlir.numba_cuda.typing.templates import (
@@ -93,18 +92,18 @@ lower_getattr = lowering_registry.lower_getattr
 
 
 def register_model(type_cls):
-    """Register data-model handlers for both MLIR and legacy contexts."""
+    """Register data-model handlers for both MLIR and CUDA contexts."""
     mlir_decorator = mlir_register_model(type_cls)
-    legacy_decorator = (
-        legacy_register_model(type_cls)
-        if issubclass(type_cls, legacy_types.Type)
+    cuda_decorator = (
+        cuda_register_model(type_cls)
+        if issubclass(type_cls, cuda_nbtypes.Type)
         else None
     )
 
     def _decorator(model_cls):
         model_cls = mlir_decorator(model_cls)
-        if legacy_decorator is not None:
-            model_cls = legacy_decorator(model_cls)
+        if cuda_decorator is not None:
+            model_cls = cuda_decorator(model_cls)
         return model_cls
 
     return _decorator
