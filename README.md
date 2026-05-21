@@ -4,6 +4,13 @@
 
 An automated pipeline to parse CUDA C++ headers and generate Numba-compatible Python bindings.
 
+## Announcement
+
+Numbast now supports generating bindings for the
+[numba-cuda-mlir](https://nvidia.github.io/numba-cuda-mlir/latest/) backend.
+See [Numba-CUDA-MLIR support](https://nvidia.github.io/numbast/latest/numba_cuda_mlir.html)
+for backend differences and migration steps.
+
 Please visit the documentation site to get started:
 
 - [Overview](https://nvidia.github.io/numbast/latest/overview.html)
