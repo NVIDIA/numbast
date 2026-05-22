@@ -10,6 +10,7 @@ repos:
       - id: check-yaml
         exclude: |
           (?x)^(
+              conda/recipe/meta.yaml|
               conda/recipes/ast_canopy/meta.yaml|
               conda/recipes/numbast/meta.yaml|
               conda/recipes/numbast_extensions/meta.yaml
@@ -48,6 +49,7 @@ repos:
       - id: yamlfmt
         exclude: |
           (?x)^(
+              conda/recipe/meta.yaml|
               conda/recipes/ast_canopy/meta.yaml|
               conda/recipes/numbast/meta.yaml|
               conda/recipes/numbast_extensions/meta.yaml
