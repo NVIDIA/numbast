@@ -201,6 +201,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="numba_cuda_mlir.html">
+    Numba-CUDA-MLIR support
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="install.html">
     Install
   </a>
@@ -213,13 +220,6 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="dynamic.html">
-    Dynamic binding generation
-  </a>
-</li>
-
             <li class="nav-item dropdown">
                 <button class="btn dropdown-toggle nav-item" type="button"
                 data-bs-toggle="dropdown" aria-expanded="false"
@@ -228,6 +228,13 @@
                 </button>
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="dynamic.html">
+    Dynamic binding generation
+  </a>
+</li>
+
+
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="template.html">
     Template calls
@@ -418,6 +425,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="numba_cuda_mlir.html">
+    Numba-CUDA-MLIR support
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="install.html">
     Install
   </a>
@@ -520,6 +534,7 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numba_cuda_mlir.html">Numba-CUDA-MLIR support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
 
 
@@ -635,10 +650,9 @@ The docs section below is generated from that schema at build time to avoid
 drift between implementation and documentation.
 For details on <code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code> semantics and generated signatures,
 see <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p>
-<p>The experimental <code class="docutils literal notranslate"><span class="pre">numbast-mlir</span></code> backend is selected with
-<code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code> and is imported from <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code>. It
-requires a user-provided <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation; the default Numbast
-test environments do not install or run it yet.</p>
+<p>The experimental <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code> backend is selected with
+<code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code> and is imported from <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code>. See
+<a class="reference internal" href="numba_cuda_mlir.html"><span class="doc">Numba-CUDA-MLIR support</span></a> for the backend differences and migration guidance.</p>
 <p>Config example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># file: config.yml</span>
 

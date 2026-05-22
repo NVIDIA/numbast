@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Template calls &#8212; Numbast</title>
+    <title>Numba-CUDA-MLIR support &#8212; Numbast</title>
   
   
   
@@ -48,7 +48,7 @@
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=35a8b989"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'template';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'numba_cuda_mlir';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.18.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
@@ -58,13 +58,13 @@
         </script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
 
-    <link rel="canonical" href="docs/template.html" />
+    <link rel="canonical" href="docs/numba_cuda_mlir.html" />
     <link rel="icon" href="_static/favicon.png"/>
 
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Argument intents" href="argument_intents.html" />
-    <link rel="prev" title="Dynamic binding generation" href="dynamic.html" />
+    <link rel="next" title="Install" href="install.html" />
+    <link rel="prev" title="Quickstart" href="quickstart.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -200,8 +200,8 @@
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="numba_cuda_mlir.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
     Numba-CUDA-MLIR support
   </a>
 </li>
@@ -235,8 +235,8 @@
 </li>
 
 
-<li class=" current active">
-  <a class="nav-link dropdown-item nav-internal" href="#">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="template.html">
     Template calls
   </a>
 </li>
@@ -424,8 +424,8 @@
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="numba_cuda_mlir.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
     Numba-CUDA-MLIR support
   </a>
 </li>
@@ -452,8 +452,8 @@
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="template.html">
     Template calls
   </a>
 </li>
@@ -534,7 +534,7 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="numba_cuda_mlir.html">Numba-CUDA-MLIR support</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Numba-CUDA-MLIR support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
 
 
@@ -544,7 +544,7 @@
 <li class="toctree-l1"><a class="reference internal" href="static.html">Static binding generation</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="dynamic.html">Dynamic binding generation</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Template calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template.html">Template calls</a></li>
 <li class="toctree-l1"><a class="reference internal" href="argument_intents.html">Argument intents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supported_declarations.html">Supported declarations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
@@ -605,7 +605,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Template calls</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Numba-CUDA-MLIR support</span></li>
   </ul>
 </nav>
 </div>
@@ -622,71 +622,102 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="template-calls">
-<h1>Template calls<a class="headerlink" href="#template-calls" title="Link to this heading">#</a></h1>
-<p>This page complements <a class="reference internal" href="dynamic.html"><span class="doc">Dynamic binding generation</span></a> with class-template and function-template
-usage patterns.</p>
-<section id="class-template-calls">
-<h2>Class template calls<a class="headerlink" href="#class-template-calls" title="Link to this heading">#</a></h2>
-<p>Class templates use a one-step constructor form:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">TemplateClass</span><span class="p">(</span><span class="o">*</span><span class="n">ctor_args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctor_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">template_kwargs</span><span class="p">)</span>
+  <section id="numba-cuda-mlir-support">
+<h1>Numba-CUDA-MLIR support<a class="headerlink" href="#numba-cuda-mlir-support" title="Link to this heading">#</a></h1>
+<p>Numbast can generate bindings for both the default
+<a class="reference external" href="https://nvidia.github.io/numba-cuda/">Numba-CUDA</a> backend and the
+experimental
+<a class="reference external" href="https://nvidia.github.io/numba-cuda-mlir/latest/">numba-cuda-mlir</a>
+backend. The CUDA C++ parsing workflow is the same for both backends; the
+differences are the Python import namespace, runtime dependency, and static
+binding configuration.</p>
+<section id="backend-differences">
+<h2>Backend differences<a class="headerlink" href="#backend-differences" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Area</p></th>
+<th class="head"><p>Numba-CUDA</p></th>
+<th class="head"><p>numba-cuda-mlir</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Dynamic Numbast imports</p></td>
+<td><p>Import binding helpers from top-level <code class="docutils literal notranslate"><span class="pre">numbast</span></code>.</p></td>
+<td><p>Import binding helpers from <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Static binding generation</p></td>
+<td><p>Use the default static generator configuration.</p></td>
+<td><p>Add <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code> to the static binding config.</p></td>
+</tr>
+<tr class="row-even"><td><p>Generated module target</p></td>
+<td><p>Generated bindings target the <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> runtime.</p></td>
+<td><p>Generated bindings target the <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code> runtime.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Dependency setup</p></td>
+<td><p>Install Numbast with the default <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> dependency.</p></td>
+<td><p>For dynamic binding generation, install Numbast with the <code class="docutils literal notranslate"><span class="pre">mlir</span></code> extra
+so <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code> is available.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="dynamic-binding-generation">
+<h2>Dynamic binding generation<a class="headerlink" href="#dynamic-binding-generation" title="Link to this heading">#</a></h2>
+<p>If you intend to use dynamic binding generation with <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code>,
+install Numbast with the <code class="docutils literal notranslate"><span class="pre">mlir</span></code> extra:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;numbast[mlir]&quot;</span>
 </pre></div>
 </div>
-<section id="class-template-example">
-<h3>Class template example<a class="headerlink" href="#class-template-example" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Given C++:</span>
-<span class="c1"># template &lt;typename T, int BLOCK_DIM_X&gt; struct BlockScan { __device__ BlockScan(); ... };</span>
-<span class="c1"># template &lt;int N, typename T&gt; class Foo { __device__ Foo(T t); ... };</span>
-<span class="n">apis</span> <span class="o">=</span> <span class="n">bind_cxx_class_templates</span><span class="p">(</span>
-    <span class="n">decls</span><span class="o">.</span><span class="n">class_templates</span><span class="p">,</span>
-    <span class="n">header_path</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
-    <span class="n">shim_writer</span><span class="o">=</span><span class="n">shim_writer</span><span class="p">,</span>
+<p>For dynamic binding generation, change imports from top-level <code class="docutils literal notranslate"><span class="pre">numbast</span></code> to
+<code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code>. The Numbast helper names remain the same.</p>
+<p>Before:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numbast</span><span class="w"> </span><span class="kn">import</span> <span class="n">bind_cxx_function</span><span class="p">,</span> <span class="n">bind_cxx_struct</span><span class="p">,</span> <span class="n">MemoryShimWriter</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numbast.experimental.mlir</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">bind_cxx_function</span><span class="p">,</span>
+    <span class="n">bind_cxx_struct</span><span class="p">,</span>
+    <span class="n">MemoryShimWriter</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">BlockScan</span><span class="p">,</span> <span class="n">Foo</span> <span class="o">=</span> <span class="n">apis</span>
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> types, models, and CUDA entry points with the generated
+bindings.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba_cuda_mlir</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span><span class="p">,</span> <span class="n">types</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba_cuda_mlir.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrimitiveModel</span>
+</pre></div>
+</div>
+</section>
+<section id="static-binding-generation">
+<h2>Static binding generation<a class="headerlink" href="#static-binding-generation" title="Link to this heading">#</a></h2>
+<p>For static binding generation, add the <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend</span></code> entry to the same
+config file you use with the default Numbast CLI.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Entry Point</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/header.hpp</span>
+<span class="nt">File List</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/header.hpp</span>
+<span class="nt">GPU Arch</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sm_80&quot;</span><span class="p p-Indicator">]</span>
 
-<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">shim_writer</span><span class="o">.</span><span class="n">links</span><span class="p">())</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
-    <span class="n">block_scan</span> <span class="o">=</span> <span class="n">BlockScan</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">BLOCK_DIM_X</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
-    <span class="n">foo</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="n">inp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">N</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>  <span class="c1"># T is deduced from constructor args.</span>
-    <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">foo</span><span class="o">.</span><span class="n">get_t</span><span class="p">()</span>
+<span class="nt">MLIR Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
-</section>
-</section>
-<section id="function-template-calls">
-<h2>Function template calls<a class="headerlink" href="#function-template-calls" title="Link to this heading">#</a></h2>
-<p>Function templates are bound as normal callable Python handles:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Given C++:</span>
-<span class="c1"># template &lt;typename T&gt; __device__ T add(T a, T b);</span>
-<span class="c1"># template &lt;typename T&gt; __device__ T add(T a, T b, T c);</span>
-<span class="n">funcs</span> <span class="o">=</span> <span class="n">bind_cxx_function_templates</span><span class="p">(</span>
-    <span class="n">function_templates</span><span class="o">=</span><span class="n">decls</span><span class="o">.</span><span class="n">function_templates</span><span class="p">,</span>
-    <span class="n">shim_writer</span><span class="o">=</span><span class="n">shim_writer</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">add</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;add&quot;</span><span class="p">)</span>
+<p>Then run the standard Numbast static binding generator:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>numbast<span class="w"> </span>--cfg-path<span class="w"> </span>config.yml<span class="w"> </span>--output-dir<span class="w"> </span>./output
 </pre></div>
 </div>
-<section id="function-template-example">
-<h3>Function template example<a class="headerlink" href="#function-template-example" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">shim_writer</span><span class="o">.</span><span class="n">links</span><span class="p">())</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
-    <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>        <span class="c1"># picks 2-arg overload</span>
-    <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># picks 3-arg overload</span>
-</pre></div>
-</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>, the CLI routes generation through
+<code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> and writes a module for <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code>.</p>
 </section>
-</section>
-<section id="argument-deduction">
-<h2>Argument deduction<a class="headerlink" href="#argument-deduction" title="Link to this heading">#</a></h2>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p>Class template type parameters can be deduced from constructor arguments.</p></li>
-<li><p>Explicit template kwargs are validated against deduced types, and conflicts
-raise typing errors.</p></li>
-<li><p>Constructor keyword arguments must appear before template-parameter keywords.</p></li>
-<li><p>Function-template overload and template-parameter deduction are performed from
-call argument types at typing time.</p></li>
-<li><p>Argument-intent overrides can change visible call arguments and therefore
-affect deduction behavior; see <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p></li>
+<li><p>The MLIR backend is experimental and is not re-exported from top-level
+<code class="docutils literal notranslate"><span class="pre">numbast</span></code>.</p></li>
+<li><p>The environment that generates or imports MLIR-backed bindings must provide
+<code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code>.</p></li>
+<li><p>Backend-specific static config keys that mention MLIR require
+<code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>.</p></li>
 </ul>
 </section>
 </section>
@@ -702,20 +733,20 @@ affect deduction behavior; see <a class="reference internal" href="argument_inte
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="dynamic.html"
+       href="quickstart.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Dynamic binding generation</p>
+        <p class="prev-next-title">Quickstart</p>
       </div>
     </a>
     <a class="right-next"
-       href="argument_intents.html"
+       href="install.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Argument intents</p>
+        <p class="prev-next-title">Install</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -740,15 +771,10 @@ affect deduction behavior; see <a class="reference internal" href="argument_inte
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-template-calls">Class template calls</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#class-template-example">Class template example</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#function-template-calls">Function template calls</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#function-template-example">Function template example</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#argument-deduction">Argument deduction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-differences">Backend differences</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dynamic-binding-generation">Dynamic binding generation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#static-binding-generation">Static binding generation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
 </ul>
   </nav></div>
 
