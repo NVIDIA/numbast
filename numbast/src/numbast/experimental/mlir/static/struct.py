@@ -9,7 +9,7 @@ import warnings
 
 from numba_cuda_mlir.types import Type
 from numba_cuda_mlir.models import StructModel, PrimitiveModel
-from numba.core.datamodel.models import (
+from numba_cuda_mlir.numba_cuda.datamodel.models import (
     StructModel as NumbaStructModel,
     PrimitiveModel as NumbaPrimitiveModel,
 )

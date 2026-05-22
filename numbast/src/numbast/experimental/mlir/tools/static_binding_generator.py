@@ -13,8 +13,10 @@ import re
 import yaml
 
 from numba_cuda_mlir.numba_cuda.core import config
+from numba_cuda_mlir.numba_cuda.datamodel import (
+    models as cuda_datamodel_models,
+)
 import numba_cuda_mlir.types as mlir_types
-import numba.core.datamodel.models
 import numba_cuda_mlir.models as mlir_models
 
 from ast_canopy import parse_declarations_from_source
@@ -399,7 +401,7 @@ def _str_value_to_numba_datamodel(
 
     Resolution order:
       1. `numba_cuda_mlir.models`
-      2. `numba.core.datamodel.models`
+      2. `numba_cuda_mlir.numba_cuda.datamodel.models`
     """
     converted: dict[str, type] = {}
     for key, model_name in d.items():
@@ -407,11 +409,12 @@ def _str_value_to_numba_datamodel(
             converted[key] = getattr(mlir_models, model_name)
             continue
         try:
-            converted[key] = getattr(numba.core.datamodel.models, model_name)
+            converted[key] = getattr(cuda_datamodel_models, model_name)
         except AttributeError as exc:
             raise AttributeError(
                 f"Unknown data model '{model_name}'. "
-                "Tried numba_cuda_mlir.models and numba.core.datamodel.models."
+                "Tried numba_cuda_mlir.models and "
+                "numba_cuda_mlir.numba_cuda.datamodel.models."
             ) from exc
     return converted
 

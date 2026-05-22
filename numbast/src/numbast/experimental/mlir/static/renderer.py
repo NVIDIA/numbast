@@ -161,7 +161,7 @@ def _numbast_link_shim(builder, shim_obj):
     """Vector type symbols (e.g. float32x4) to emit as VectorType(elt, n). Handled in _get_rendered_imports."""
 
     _imported_numba_types = set()
-    """Set of imported numba type in strings."""
+    """Set of imported numba-cuda-mlir type strings."""
 
     MemoryShimWriterTemplate = """
 c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
@@ -170,7 +170,7 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
     ShimFunctions: list[str] = []
 
     _imported_numba_types = set()
-    """Set of imported numba type in strings."""
+    """Set of imported numba-cuda-mlir type strings."""
 
     includes_template = "#include <{header_path}>"
     """Template for including a header file."""
@@ -198,9 +198,8 @@ c_ext_shim_source = CUSource(\"""{shim_funcs}\""")
             decl: The parsed declaration object the renderer will use to produce code.
 
         Notes:
-            This constructor records "import numba" and "import io" in the class-level Imports set as part of instance initialization.
+            This constructor records "import io" in the class-level Imports set as part of instance initialization.
         """
-        self.Imports.add("import numba")
         self.Imports.add("import io")
         self._decl = decl
 
