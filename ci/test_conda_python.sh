@@ -16,7 +16,11 @@ fi
 
 GIT_DESCRIBE_TAG=$(git describe --abbrev=0)
 PROJECT_VERSION=${GIT_DESCRIBE_TAG:1}
-GIT_DESCRIBE_HASH=$(git rev-parse --short HEAD)
+GIT_DESCRIBE_NUMBER=$(git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count)
+
+if [[ "${GIT_DESCRIBE_NUMBER}" =~ ^[0-9]+$ ]] && [[ "${GIT_DESCRIBE_NUMBER}" -gt 0 ]]; then
+  PROJECT_VERSION="${PROJECT_VERSION}.dev${GIT_DESCRIBE_NUMBER}"
+fi
 
 rapids-logger "Creating Test Environment"
 # TODO: replace this with rapids-dependency-file-generator
@@ -32,14 +36,13 @@ TEST_ENV_PACKAGES=(
   python=${RAPIDS_PY_VERSION}
   pip
   cffi
-  ast_canopy="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*"
-  numbast="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*"
+  ast_canopy="${PROJECT_VERSION}"
+  numbast="${PROJECT_VERSION}"
 )
 
 if [[ "${TEST_BACKEND}" == "numba-cuda" ]]; then
   TEST_ENV_PACKAGES+=(
     "numba-cuda>=0.25.0"
-    numbast-extensions="${PROJECT_VERSION}=*g${GIT_DESCRIBE_HASH}*"
   )
 fi
 
@@ -89,7 +92,7 @@ rapids-logger "Run Tests"
 if [[ "${TEST_BACKEND}" == "mlir" ]]; then
   python ci/run_tests.py --ast-canopy --mlir
 else
-  python ci/run_tests.py --ast-canopy --numbast --cccl
+  python ci/run_tests.py --ast-canopy --numbast
 fi
 
 rapids-logger "Test script exiting with value: $EXITCODE"
