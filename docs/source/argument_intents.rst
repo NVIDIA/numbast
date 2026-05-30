@@ -102,6 +102,13 @@ Intent semantics
 - Parameter is removed from the visible Python call arguments.
 - Numbast allocates temporary storage, passes it to C++, then returns the value to Python.
 - If C++ also returns a non-``void`` value, generated return type is packed as a tuple.
+- Use ``out_return`` for a single scalar or struct-like output object, such as
+  ``float &out`` or ``MyType &out``. It loads one value from the hidden storage
+  after the call.
+- ``out_return`` does not describe fixed-size buffer shape. Use
+  ``out_array_return`` when the hidden output is an array/buffer and Numbast
+  must know the element ``dtype`` and fixed ``length`` to build a
+  ``UniTuple``.
 
 ``out_array_return``
 ^^^^^^^^^^^^^^^^^^^^
@@ -171,4 +178,6 @@ Notes
 - ``out_array_return`` values participate in the same return packing rules as
   ``out_return``. A single ``void`` function output returns the ``UniTuple``
   directly; multiple outputs or a non-``void`` C++ return are packed in an
-  outer ``types.Tuple``.
+  outer heterogeneous ``types.Tuple``. For example, a function returning
+  ``int`` with one ``out_array_return(dtype=float32, length=12)`` has return
+  type ``types.Tuple((int32, UniTuple(float32, 12)))``.
