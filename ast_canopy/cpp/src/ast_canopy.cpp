@@ -9,7 +9,10 @@
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <clang/Lex/MacroInfo.h>
+#include <clang/Lex/Preprocessor.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <utility>
 
@@ -65,6 +68,69 @@ public:
     }
   }
 };
+
+bool filename_is_retained(const std::string &file_name,
+                          const std::vector<std::string> &files_to_retain) {
+  return std::any_of(files_to_retain.begin(), files_to_retain.end(),
+                     [&file_name](const std::string &file_to_retain) {
+                       return file_name == file_to_retain;
+                     });
+}
+
+std::string replacement_text_from_macro_info(const MacroInfo &macro_info,
+                                             const Preprocessor &preprocessor) {
+  std::string replacement_text;
+  for (const Token &token : macro_info.tokens()) {
+    bool invalid = false;
+    std::string spelling = preprocessor.getSpelling(token, &invalid);
+    if (invalid) {
+      continue;
+    }
+
+    if (!replacement_text.empty()) {
+      replacement_text += " ";
+    }
+    replacement_text += spelling;
+  }
+  return replacement_text;
+}
+
+void collect_macro_defines_from_ast(
+    ASTUnit *ast, const std::vector<std::string> &files_to_retain,
+    Declarations *decls) {
+  decls->macro_defines.clear();
+
+  Preprocessor &preprocessor = ast->getPreprocessor();
+  const SourceManager &source_manager = ast->getSourceManager();
+
+  for (const auto &entry : preprocessor.getIdentifierTable()) {
+    const IdentifierInfo *identifier_info = entry.second;
+    if (!identifier_info) {
+      continue;
+    }
+
+    MacroDefinition macro_definition =
+        preprocessor.getMacroDefinition(identifier_info);
+    const MacroInfo *macro_info = macro_definition.getMacroInfo();
+    if (!macro_info || macro_info->isFunctionLike()) {
+      continue;
+    }
+
+    SourceLocation spelling_location =
+        source_manager.getSpellingLoc(macro_info->getDefinitionLoc());
+    if (!spelling_location.isValid()) {
+      continue;
+    }
+
+    std::string file_name = source_manager.getFilename(spelling_location).str();
+    if (!filename_is_retained(file_name, files_to_retain)) {
+      continue;
+    }
+
+    decls->macro_defines[identifier_info->getName().str()] =
+        replacement_text_from_macro_info(*macro_info, preprocessor);
+  }
+}
 
 /**
  * @brief Return the source filename of the declaration.
@@ -215,6 +281,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
                     &ctsd_callback);
 
   finder.matchAST(ast->getASTContext());
+  detail::collect_macro_defines_from_ast(ast.get(), files_to_retain, &decls);
 
 #ifndef NDEBUG
   std::cout << "Records: " << decls.records.size() << std::endl;

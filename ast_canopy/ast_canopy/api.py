@@ -57,6 +57,7 @@ class Declarations:
     class_template_specializations: list[ClassTemplateSpecialization]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
+    macro_defines: dict[str, str]
 
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
@@ -543,6 +544,7 @@ def parse_declarations_from_source(
         class_template_specializations,
         decls.typedefs,
         decls.enums,
+        decls.macro_defines,
     )
 
 
