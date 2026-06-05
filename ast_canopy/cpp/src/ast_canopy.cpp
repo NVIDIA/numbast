@@ -69,6 +69,9 @@ public:
   }
 };
 
+/**
+ * @brief Return whether a source filename is present in the retain list.
+ */
 bool filename_is_retained(const std::string &file_name,
                           const std::vector<std::string> &files_to_retain) {
   return std::any_of(files_to_retain.begin(), files_to_retain.end(),
@@ -77,6 +80,9 @@ bool filename_is_retained(const std::string &file_name,
                      });
 }
 
+/**
+ * @brief Convert an object-like macro's replacement tokens to source text.
+ */
 std::string replacement_text_from_macro_info(const MacroInfo &macro_info,
                                              const Preprocessor &preprocessor) {
   std::string replacement_text;
@@ -95,6 +101,9 @@ std::string replacement_text_from_macro_info(const MacroInfo &macro_info,
   return replacement_text;
 }
 
+/**
+ * @brief Populate object-like macro definitions from a parsed ASTUnit.
+ */
 void collect_macro_defines_from_ast(
     ASTUnit *ast, const std::vector<std::string> &files_to_retain,
     Declarations *decls) {
