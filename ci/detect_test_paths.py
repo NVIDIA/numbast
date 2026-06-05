@@ -11,7 +11,13 @@ from pathlib import Path
 
 MLIR_PREFIX = "numbast/src/numbast/experimental/mlir/"
 
-BOTH_TEST_PATHS = {
+RELEASE_METADATA_PATHS = {
+    "VERSION",
+    "docs/versions.json",
+    "docs/nv-versions.json",
+}
+
+BOTH_TEST_PATHS = RELEASE_METADATA_PATHS | {
     "numbast/src/numbast/__init__.py",
     "numbast/src/numbast/tools/static_binding_generator.py",
     "numbast/src/numbast/tools/static_binding_generator.schema.yaml",
