@@ -14,7 +14,6 @@ from ast_canopy.decl import FunctionTemplate
 
 import numba_cuda_mlir.types as nbtypes
 from numba_cuda_mlir.extending import typing_registry, lowering_registry
-from numba_cuda_mlir.descriptor import mlir_target
 
 from numba_cuda_mlir.numba_cuda.typing import signature as nb_signature
 from numba_cuda_mlir.numba_cuda.typing.templates import AbstractTemplate
@@ -27,6 +26,7 @@ from numbast.experimental.mlir.types import to_c_type_str, to_numba_type
 from numbast.experimental.mlir.utils import (
     deduplicate_overloads,
     get_return_type_strings,
+    refresh_numba_cuda_mlir_registries,
 )
 from numbast.experimental.mlir.shim_writer import ShimWriterBase
 from numbast.experimental.mlir.overload_selection import (
@@ -371,11 +371,12 @@ def bind_cxx_function_template(
             ):
                 return func_cc(builder, target, args, kws)
 
-            mlir_target.target_context.refresh()
+            refresh_numba_cuda_mlir_registries(typing=False)
 
             return nb_signature(return_type, *param_types)
 
     register_global(func, nbtypes.Function(MergedTemplatedFunctionDecl))
+    refresh_numba_cuda_mlir_registries()
     return func
 
 
