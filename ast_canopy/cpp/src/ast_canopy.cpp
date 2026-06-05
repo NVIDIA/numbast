@@ -71,6 +71,15 @@ public:
 
 /**
  * @brief Return whether a source filename is present in the retain list.
+ *
+ * Macro extraction follows the same source-retention policy as declaration
+ * extraction: only entities whose spelling location comes from a retained file
+ * should be surfaced to Python callers.
+ *
+ * @param file_name The source filename reported by Clang's SourceManager.
+ * @param files_to_retain Exact filenames whose declarations and macros should
+ * be included in the parse result.
+ * @return true when file_name exactly matches an entry in files_to_retain.
  */
 bool filename_is_retained(const std::string &file_name,
                           const std::vector<std::string> &files_to_retain) {
@@ -82,6 +91,17 @@ bool filename_is_retained(const std::string &file_name,
 
 /**
  * @brief Convert an object-like macro's replacement tokens to source text.
+ *
+ * Clang stores macro replacement lists as tokens. This helper asks the
+ * preprocessor for each token's spelling and joins the spellings with a single
+ * space to produce a stable, human-readable mapping value for
+ * Declarations::macro_defines. Tokens that cannot be spelled are skipped.
+ *
+ * @param macro_info Clang metadata for an object-like macro definition.
+ * @param preprocessor The preprocessor that owns the source manager and
+ * language options needed to spell tokens.
+ * @return The macro replacement text, or an empty string for flag-style macros
+ * such as `#define FLAG`.
  */
 std::string replacement_text_from_macro_info(const MacroInfo &macro_info,
                                              const Preprocessor &preprocessor) {
@@ -103,6 +123,21 @@ std::string replacement_text_from_macro_info(const MacroInfo &macro_info,
 
 /**
  * @brief Populate object-like macro definitions from a parsed ASTUnit.
+ *
+ * This function reuses the preprocessor state from the ASTUnit created for the
+ * declaration matcher pass; it does not invoke Clang or parse the source a
+ * second time. It walks the identifier table, keeps only active object-like
+ * macros, filters them by their definition spelling location, and writes the
+ * resulting name-to-replacement-text map to Declarations::macro_defines.
+ *
+ * Function-like macros are intentionally ignored for now because the public API
+ * only models simple name-to-value definitions.
+ *
+ * @param ast Parsed ASTUnit whose preprocessor state contains the macro table.
+ * @param files_to_retain Exact source files whose macro definitions should be
+ * returned.
+ * @param decls Output declarations object whose macro_defines map is cleared
+ * and repopulated.
  */
 void collect_macro_defines_from_ast(
     ASTUnit *ast, const std::vector<std::string> &files_to_retain,
