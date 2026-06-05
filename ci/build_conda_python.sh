@@ -14,7 +14,6 @@ export CMAKE_GENERATOR=Ninja
 GIT_DESCRIBE_TAG=$(git describe --abbrev=0)
 export PROJECT_VERSION=${GIT_DESCRIBE_TAG:1}
 export GIT_DESCRIBE_NUMBER=$(git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count)
-export GIT_DESCRIBE_HASH=$(git rev-parse --short HEAD)
 
 # If there were commits since the tag this is a dev build.
 if [[ "${GIT_DESCRIBE_NUMBER}" =~ ^[0-9]+$ ]] && [[ "${GIT_DESCRIBE_NUMBER}" -gt 0 ]]; then
@@ -27,8 +26,6 @@ rapids-logger "Begin py build"
 
 sccache --zero-stats
 
-rapids-conda-retry build conda/recipes/ast_canopy
-rapids-conda-retry build conda/recipes/numbast
-rapids-conda-retry build conda/recipes/numbast_extensions
+rapids-conda-retry build conda/recipe
 
 sccache --show-adv-stats
