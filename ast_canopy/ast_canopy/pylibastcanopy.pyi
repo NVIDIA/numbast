@@ -30,6 +30,7 @@ class Declarations:
     enums: list[Enum]
     function_templates: list[FunctionTemplate]
     functions: list[Function]
+    macro_defines: dict[str, str]
     records: list[Record]
     typedefs: list[Typedef]
     def __init__(self, *args, **kwargs) -> None: ...
