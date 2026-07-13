@@ -52,7 +52,7 @@ STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
 )
 
 # Register custom YAML constructor for !join tag
-yaml.add_constructor("!numbast_join", string_constructor)
+yaml.SafeLoader.add_constructor("!numbast_join", string_constructor)
 
 
 def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
@@ -100,7 +100,7 @@ def _validate_mlir_backend_only_config(config_dict: dict):
 
 def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
     with open(cfg_path) as f:
-        config_dict = yaml.load(f, yaml.Loader)
+        config_dict = yaml.safe_load(f)
     return _config_dict_uses_mlir_backend(config_dict)
 
 
@@ -227,7 +227,7 @@ class Config:
             A new Config instance.
         """
         with open(cfg_path) as f:
-            config_dict = yaml.load(f, yaml.Loader)
+            config_dict = yaml.safe_load(f)
         return cls(config_dict)
 
     @classmethod
