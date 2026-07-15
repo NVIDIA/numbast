@@ -46,7 +46,7 @@ config.CUDA_USE_NVIDIA_BINDING = True
 VERBOSE = True
 
 # Register custom YAML constructor for !join tag
-yaml.add_constructor("!numbast_join", string_constructor)
+yaml.SafeLoader.add_constructor("!numbast_join", string_constructor)
 
 
 def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
@@ -60,7 +60,7 @@ def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
 
 def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
     with open(cfg_path) as f:
-        config_dict = yaml.load(f, yaml.Loader)
+        config_dict = yaml.safe_load(f)
     return _config_dict_uses_mlir_backend(config_dict)
 
 
@@ -263,7 +263,7 @@ class Config:
             A new Config instance.
         """
         with open(cfg_path) as f:
-            config_dict = yaml.load(f, yaml.Loader)
+            config_dict = yaml.safe_load(f)
         return cls(config_dict)
 
     @classmethod
