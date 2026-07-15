@@ -34,7 +34,11 @@ lower_cast = target_registry.lower_cast
 """
 
     MlirRegistrySetup = """
-from numba_cuda_mlir.extending import typing_registry, lowering_registry
+from numba_cuda_mlir.extending import (
+    typing_registry,
+    lowering_registry,
+    refresh_registries as _numbast_refresh_registries,
+)
 register = typing_registry.register
 register_attr = typing_registry.register_attr
 register_global = typing_registry.register_global
@@ -42,6 +46,12 @@ lower = lowering_registry.lower
 lower_attr = lowering_registry.lower_getattr
 lower_constant = lowering_registry.lower_constant
 lower_cast = lowering_registry.lower_cast
+"""
+
+    MlirRegistryRefresh = """
+# Refresh shared registries so generated typing/lowering entries are visible to
+# subsequent compilations in this process.
+_numbast_refresh_registries()
 """
 
     KeyedStringIO = """
@@ -157,6 +167,9 @@ def _numbast_link_shim(builder, shim_obj):
     RegistrySetup: str = ""
     """Rendered registry setup block injected after imports."""
 
+    RegistryRefresh: str = ""
+    """Rendered registry refresh block injected after registrations."""
+
     Imported_VectorTypes: list[str] = []
     """Vector type symbols (e.g. float32x4) to emit as VectorType(elt, n). Handled in _get_rendered_imports."""
 
@@ -265,6 +278,7 @@ def clear_base_renderer_cache():
     BaseRenderer._function_symbols.clear()
     BaseRenderer._enum_symbols.clear()
     BaseRenderer.RegistrySetup = ""
+    BaseRenderer.RegistryRefresh = ""
 
 
 def get_reproducible_info(
@@ -468,6 +482,11 @@ __all__ = _NBTYPE_SYMBOLS + _RECORD_SYMBOLS + _FUNCTION_SYMBOLS + _ENUM_SYMBOLS
     return all_symbols
 
 
+def get_registry_refresh() -> str:
+    """Render the post-registration refresh block for shared MLIR registries."""
+    return BaseRenderer.RegistryRefresh
+
+
 def registry_setup(use_separate_registry: bool) -> str:
     """Get the registry setup code.
 
@@ -485,7 +504,9 @@ def registry_setup(use_separate_registry: bool) -> str:
             "from numba_cuda_mlir.numba_cuda.core.imputils import Registry as TargetRegistry"
         )
         BaseRenderer.RegistrySetup = BaseRenderer.SeparateRegistrySetup
+        BaseRenderer.RegistryRefresh = ""
     else:
         BaseRenderer.RegistrySetup = BaseRenderer.MlirRegistrySetup
+        BaseRenderer.RegistryRefresh = BaseRenderer.MlirRegistryRefresh
 
     return BaseRenderer.RegistrySetup

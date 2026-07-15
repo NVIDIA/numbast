@@ -15,6 +15,7 @@ from numbast.experimental.mlir.static.renderer import (
     get_rendered_imports,
     get_shim,
     get_callconv_utils,
+    get_registry_refresh,
 )
 from numbast.experimental.mlir.static.types import (
     to_numba_type_str,
@@ -841,6 +842,7 @@ class {op_typing_name}(ConcreteTemplate):
             self._python_str += "\n" + get_callconv_utils()
 
         self._python_str += "\n" + "\n".join(python_rendered)
+        self._python_str += "\n" + get_registry_refresh()
 
         c_rendered = []
         for c in self._c_rendered:

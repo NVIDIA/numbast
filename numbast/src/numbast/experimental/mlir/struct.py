@@ -39,6 +39,7 @@ from numbast.experimental.mlir.utils import (
     make_struct_regular_method_shim,
     assemble_arglist_string,
     assemble_dereferenced_params_string,
+    refresh_numba_cuda_mlir_registries,
 )
 from numbast.experimental.mlir.callconv import FunctionCallConv
 from numbast.experimental.mlir.shim_writer import MemoryShimWriter as ShimWriter
@@ -537,6 +538,8 @@ def bind_cxx_struct(
     # ----------------------------------------------------------------------------------
     # Conversion operators:
     bind_cxx_struct_conversion_opeartors(struct_decl, s_type, shim_writer)
+
+    refresh_numba_cuda_mlir_registries()
 
     # Return the handle to the type in Numba
     return S
