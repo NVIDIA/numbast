@@ -5,11 +5,19 @@ from typing import Callable, Tuple
 from collections import defaultdict
 import re
 
-from numba_cuda_mlir.numba_cuda.compiler import ExternFunction  # type: ignore[import-untyped]
+from numba_cuda_mlir.device_declarations import ExternFunction
+from numba_cuda_mlir.extending import refresh_registries
 
 from ast_canopy import pylibastcanopy
 
 OVERLOADS_CNT: dict[str, int] = defaultdict(int)  # overload counter
+
+
+def refresh_numba_cuda_mlir_registries(
+    *, typing: bool = True, target: bool = True
+) -> None:
+    """Make late Numbast registry additions visible to numba-cuda-mlir."""
+    refresh_registries(typing=typing, target=target)
 
 
 def make_device_caller_with_nargs(

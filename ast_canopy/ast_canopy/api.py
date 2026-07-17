@@ -33,6 +33,11 @@ _CUDA_HEADER_PARSING_FLAGS: list[str] = [
     "-nocudalib",
 ]
 
+# CUDA accepts this inline hint spelling, but Clang does not predefine it.
+_CUDA_PARSER_COMPAT_DEFINES: list[str] = [
+    "__inline_hint__=",
+]
+
 
 def _get_shim_include_dir() -> str:
     """Return the absolute path to the local shim include directory"""
@@ -477,7 +482,9 @@ def parse_declarations_from_source(
 
     cuda_wrappers_dir = get_cuda_wrappers_include_dir(clang_resource_dir)
 
-    define_flags = [f"-D{define}" for define in defines]
+    define_flags = [
+        f"-D{define}" for define in [*_CUDA_PARSER_COMPAT_DEFINES, *defines]
+    ]
 
     # The include paths are ordered a below:
     # 1. clang resource file include directory (via -isystem flag)
