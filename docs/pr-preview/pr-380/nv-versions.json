@@ -1,0 +1,30 @@
+[
+  {
+    "version": "latest",
+    "url": "https://nvidia.github.io/numbast/latest/"
+  },
+  {
+    "version": "0.10.1",
+    "url": "https://nvidia.github.io/numbast/0.10.1/"
+  },
+  {
+    "version": "0.10.0",
+    "url": "https://nvidia.github.io/numbast/0.10.0/"
+  },
+  {
+    "version": "0.9.0",
+    "url": "https://nvidia.github.io/numbast/0.9.0/"
+  },
+  {
+    "version": "0.8.0",
+    "url": "https://nvidia.github.io/numbast/0.8.0/"
+  },
+  {
+    "version": "0.7.0",
+    "url": "https://nvidia.github.io/numbast/0.7.0/"
+  },
+  {
+    "version": "0.6.1",
+    "url": "https://nvidia.github.io/numbast/0.6.1/"
+  }
+]
