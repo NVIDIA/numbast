@@ -26,6 +26,34 @@ def test_cfg_path_uses_mlir_backend(tmp_path):
     assert sbg._cfg_path_uses_mlir_backend(cfg_path)
 
 
+def test_cfg_path_supports_numbast_join_tag(tmp_path):
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(
+        'MLIR Backend: !numbast_join ["tr", "ue"]\n',
+        encoding="utf-8",
+    )
+
+    assert sbg._cfg_path_uses_mlir_backend(cfg_path)
+
+
+@pytest.mark.parametrize(
+    "load_config",
+    [sbg._cfg_path_uses_mlir_backend, sbg.Config.from_yaml_path],
+)
+def test_config_load_rejects_python_object_tags(tmp_path, load_config):
+    marker_path = tmp_path / "unsafe-loader-marker"
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(
+        f"!!python/object/apply:builtins.open\n- {marker_path}\n- w\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(yaml.constructor.ConstructorError):
+        load_config(cfg_path)
+
+    assert not marker_path.exists()
+
+
 def test_static_generator_dispatches_mlir_backend(monkeypatch, tmp_path):
     class DummyConfig:
         mlir_backend = True

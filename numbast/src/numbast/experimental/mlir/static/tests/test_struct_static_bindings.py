@@ -109,10 +109,6 @@ def test_myint_cast(decl, impl):
     assert arr.copy_to_host() == pytest.approx([42])
 
 
-@pytest.mark.xfail(
-    reason="numba-cuda-mlir does not support isinstance lowering for generated static types",
-    strict=True,
-)
 def test_static_type_check(decl, impl):
     MyInt = decl["MyInt"]
 
