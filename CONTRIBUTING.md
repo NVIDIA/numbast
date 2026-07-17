@@ -65,6 +65,8 @@ v<VERSION>
 ```
 git push git@github.com:NVIDIA/numbast.git v<VERSION>
 ```
+- Verify the publish workflow uploads PyPI wheels.
+- Open a `@conda-forge-admin, please update version` issue on `conda-forge/numbast-feedstock` and verify the bot opens a feedstock update PR.
 - Verify docs deployment publishes `https://nvidia.github.io/numbast/<VERSION>/` and that `<VERSION>` appears in the docs version picker.
 
 ### Patch releases from a previous tag
@@ -90,7 +92,9 @@ cat /tmp/numbast-v<NEW_VERSION>-changelog.txt >> /tmp/numbast-v<NEW_VERSION>-tag
 git tag -a v<NEW_VERSION> -F /tmp/numbast-v<NEW_VERSION>-tag.txt
 git push origin v<NEW_VERSION>
 ```
-7. Verify docs deployment publishes `https://nvidia.github.io/numbast/<NEW_VERSION>/` and that `<NEW_VERSION>` appears in the docs version picker.
+7. Verify the publish workflow uploads PyPI wheels.
+8. Open a `@conda-forge-admin, please update version` issue on `conda-forge/numbast-feedstock` and verify the bot opens a feedstock update PR.
+9. Verify docs deployment publishes `https://nvidia.github.io/numbast/<NEW_VERSION>/` and that `<NEW_VERSION>` appears in the docs version picker.
 
 Notes:
 - Use branch names that do not start with `v` for maintenance branches (for example, `0.6.x-patch`) to avoid accidental release automation triggers.

@@ -24,9 +24,6 @@ on:
       CPU:
         type: string
         default: "amd64"
-      upload_to_conda:
-        type: boolean
-        required: false
 defaults:
   run:
     shell: bash
@@ -175,8 +172,3 @@ jobs:
         with:
           name: conda-repo-${{ matrix.ARCH }}-${{ matrix.PY_VER }}
           path: ${{ env.RAPIDS_CONDA_BLD_OUTPUT_DIR }}
-      - name: Publish Conda Package
-        if: inputs.upload_to_conda
-        run: "ci/upload_conda.sh"
-        env:
-          CONDA_TOKEN: ${{ secrets.NVIDIA_CONDA_TOKEN }}

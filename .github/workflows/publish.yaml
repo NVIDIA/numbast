@@ -10,13 +10,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-release
   cancel-in-progress: true
 jobs:
-  build-conda:
-    uses: ./.github/workflows/conda-python-build.yaml
-    secrets: inherit
-    with:
-      build_type: release
-      script: "ci/build_conda_python.sh"
-      upload_to_conda: true
   build-wheels:
     uses: ./.github/workflows/wheels-build.yaml
     secrets: inherit
