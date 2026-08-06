@@ -6,8 +6,6 @@ set -euo pipefail
 
 source rapids-configure-sccache
 
-source rapids-date-string
-
 export CMAKE_GENERATOR=Ninja
 
 # Generate package version from git tags.
