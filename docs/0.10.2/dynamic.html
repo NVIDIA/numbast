@@ -28,18 +28,18 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
 
 
@@ -50,7 +50,7 @@
     <script src="_static/copybutton.js?v=35a8b989"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'dynamic';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.10.2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -551,7 +551,21 @@
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.enum.html">numbast.static.enum</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function.html">numbast.static.function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.function_template.html">numbast.static.function_template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.renderer.html">numbast.static.renderer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.struct.html">numbast.static.struct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.typedef.html">numbast.static.typedef</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.types.html">numbast.static.types</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="_autosummary/numbast.types.html">numbast.types</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
 </ul>
 </details></li>
@@ -664,18 +678,18 @@ Bindings are inserted into Numba’s registries on the fly, so you can immediate
 
 <span class="c1"># Query the compute capability of current device</span>
 <span class="n">dev</span> <span class="o">=</span> <span class="n">Device</span><span class="p">()</span>
-<span class="n">cc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;sm_</span><span class="si">{</span><span class="n">dev</span><span class="o">.</span><span class="n">compute_capability</span><span class="o">.</span><span class="n">major</span><span class="si">}{</span><span class="n">dev</span><span class="o">.</span><span class="n">compute_capability</span><span class="o">.</span><span class="n">minor</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sm_</span><span class="si">{</span><span class="n">dev</span><span class="o">.</span><span class="n">compute_capability</span><span class="o">.</span><span class="n">major</span><span class="si">}{</span><span class="n">dev</span><span class="o">.</span><span class="n">compute_capability</span><span class="o">.</span><span class="n">minor</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># Parse the header as AST and read all declarations</span>
-<span class="n">source</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;demo.cuh&quot;</span><span class="p">)</span>
+<span class="n">source</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">"demo.cuh"</span><span class="p">)</span>
 <span class="c1"># Choose a compute capability that matches your GPU</span>
 <span class="n">decls</span> <span class="o">=</span> <span class="n">parse_declarations_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="p">[</span><span class="n">source</span><span class="p">],</span> <span class="n">cc</span><span class="p">)</span>
 
 <span class="c1"># Create a shim and generate bindings</span>
-<span class="n">shim_writer</span> <span class="o">=</span> <span class="n">MemoryShimWriter</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;#include &quot;</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+<span class="n">shim_writer</span> <span class="o">=</span> <span class="n">MemoryShimWriter</span><span class="p">(</span><span class="sa">f</span><span class="s1">'#include "</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s1">"'</span><span class="p">)</span>
 
 <span class="c1"># Make Numba bindings from the declarations</span>
-<span class="c1"># New type &quot;myfloat16&quot; is a Number type, data model is PrimitiveModel.</span>
+<span class="c1"># New type "myfloat16" is a Number type, data model is PrimitiveModel.</span>
 <span class="n">myfloat16</span> <span class="o">=</span> <span class="n">bind_cxx_struct</span><span class="p">(</span><span class="n">shim_writer</span><span class="p">,</span> <span class="n">decls</span><span class="o">.</span><span class="n">structs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">types</span><span class="o">.</span><span class="n">Number</span><span class="p">,</span> <span class="n">PrimitiveModel</span><span class="p">)</span>
 <span class="n">bind_cxx_function</span><span class="p">(</span><span class="n">shim_writer</span><span class="p">,</span> <span class="n">decls</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">hsqrt</span> <span class="o">=</span> <span class="n">bind_cxx_function</span><span class="p">(</span><span class="n">shim_writer</span><span class="p">,</span> <span class="n">decls</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
@@ -705,13 +719,13 @@ specialization through the lower-level struct API.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
     <span class="n">s</span>
     <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">decls</span><span class="o">.</span><span class="n">class_template_specializations</span>
-    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">qual_name</span> <span class="o">==</span> <span class="s2">&quot;Eigen::Matrix&lt;float, 3, 1&gt;&quot;</span>
+    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">qual_name</span> <span class="o">==</span> <span class="s2">"Eigen::Matrix&lt;float, 3, 1&gt;"</span>
 <span class="p">)</span>
 
 <span class="n">Matrix3f</span> <span class="o">=</span> <span class="n">bind_cxx_struct</span><span class="p">(</span>
     <span class="n">shim_writer</span><span class="p">,</span>
     <span class="n">matrix</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Eigen::Matrix&lt;float, 3, 1&gt;&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Eigen::Matrix&lt;float, 3, 1&gt;"</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -736,7 +750,7 @@ pointer types are resolved by looking up their pointee type.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">types</span> <span class="k">as</span> <span class="n">nbtypes</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numbast.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_cxx_type</span>
 
-<span class="n">register_cxx_type</span><span class="p">(</span><span class="s2">&quot;third_party::Handle&quot;</span><span class="p">,</span> <span class="n">nbtypes</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+<span class="n">register_cxx_type</span><span class="p">(</span><span class="s2">"third_party::Handle"</span><span class="p">,</span> <span class="n">nbtypes</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -838,8 +852,8 @@ compute capability of the current device.</p></li>
   
 
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
 
   <footer class="bd-footer">
