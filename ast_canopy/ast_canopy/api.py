@@ -677,7 +677,11 @@ def _validate_compute_capability(compute_capability: Any):
         raise ValueError(
             f"Compute capability must start with 'sm_': {compute_capability}"
         )
-    if not compute_capability[3:].isdigit():
+    architecture = compute_capability[3:]
+    if architecture.endswith("a"):
+        architecture = architecture[:-1]
+    if not architecture.isdigit():
         raise ValueError(
-            f"Compute capability must be in the form of 'sm_<compute_capability>': {compute_capability}"
+            "Compute capability must be in the form of "
+            f"'sm_<compute_capability>[a]': {compute_capability}"
         )
