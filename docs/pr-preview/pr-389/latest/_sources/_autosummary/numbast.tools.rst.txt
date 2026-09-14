@@ -1,0 +1,14 @@
+﻿numbast.tools
+=============
+
+.. automodule:: numbast.tools
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   static_binding_generator
+   yaml_tags
