@@ -13,9 +13,6 @@ File List:
   - "@NVSHMEM_INCLUDE_DIR@/device_host/nvshmem_types.h"
 GPU Arch:
   - "@GPU_ARCH@"
-CUDA Toolkit Include Paths:
-  - "@CUDA_INCLUDE_DIR@"
-  - "@CCCL_INCLUDE_DIR@"
 Clang Include Paths:
   - "@NVSHMEM_INCLUDE_DIR@"
 Predefined Macros:

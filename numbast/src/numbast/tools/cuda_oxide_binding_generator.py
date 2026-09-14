@@ -58,8 +58,8 @@ def _sha256(path: str | os.PathLike[str]) -> str:
     return digest.hexdigest()
 
 
-def _cuda_toolkit_version(config: CudaOxideConfig) -> str | None:
-    candidates = [Path(path) for path in config.cuda_toolkit_include_paths]
+def _cuda_toolkit_version() -> str | None:
+    candidates = []
     for name in ("CUDA_PATH", "CUDA_HOME"):
         value = os.environ.get(name)
         if value:
@@ -562,7 +562,7 @@ def make_manifest(
             "name": "numbast-cuda-oxide",
             "numbast_version": _package_version("numbast"),
             "ast_canopy_version": _package_version("ast_canopy"),
-            "cuda_toolkit_version": _cuda_toolkit_version(config),
+            "cuda_toolkit_version": _cuda_toolkit_version(),
             "generation_command": (
                 [
                     "numbast-cuda-oxide",
@@ -597,9 +597,6 @@ def make_manifest(
             "entry_point": config.entry_point,
             "retained_files": list(config.retain_list),
             "clang_include_paths": list(config.clang_includes_paths),
-            "cuda_toolkit_include_paths": list(
-                config.cuda_toolkit_include_paths
-            ),
             "predefined_macros": list(config.parser_defines),
             "parser": {
                 "bypass_parse_errors": config.bypass_parse_error,
@@ -660,7 +657,6 @@ def generate_cuda_oxide_bindings(
             os.path.abspath(config.entry_point),
             [os.path.abspath(path) for path in config.retain_list],
             compute_capability=config.gpu_arch[0],
-            cudatoolkit_include_dirs=config.cuda_toolkit_include_paths,
             additional_includes=config.clang_includes_paths,
             defines=config.parser_defines,
             bypass_parse_error=config.bypass_parse_error,

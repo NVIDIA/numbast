@@ -102,10 +102,6 @@ class BindingConfig:
         self.clang_includes_paths = _as_list(
             config_dict.get("Clang Include Paths", []), "Clang Include Paths"
         )
-        self.cuda_toolkit_include_paths = _as_list(
-            config_dict.get("CUDA Toolkit Include Paths", []),
-            "CUDA Toolkit Include Paths",
-        )
         self.predefined_macros = _as_list(
             config_dict.get("Predefined Macros", []), "Predefined Macros"
         )
@@ -156,10 +152,7 @@ class BindingConfig:
         for path in self.retain_list:
             if not os.path.exists(path):
                 raise ValueError(f"File in retain list does not exist: {path}")
-        for path in [
-            *self.clang_includes_paths,
-            *self.cuda_toolkit_include_paths,
-        ]:
+        for path in self.clang_includes_paths:
             if not os.path.exists(path):
                 raise ValueError(f"File in include list does not exist: {path}")
 

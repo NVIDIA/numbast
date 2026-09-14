@@ -223,7 +223,6 @@ class Config(BindingConfig):
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
         mlir_backend: bool = False,
-        cuda_toolkit_include_paths: list[str] | None = None,
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
@@ -253,7 +252,6 @@ class Config(BindingConfig):
                 "Struct": exclude_structs or [],
             },
             "Clang Include Paths": clang_includes_paths or [],
-            "CUDA Toolkit Include Paths": cuda_toolkit_include_paths or [],
             "Additional Import": additional_imports or [],
             "Shim Include Override": shim_include_override,
             "Predefined Macros": predefined_macros or [],
@@ -686,7 +684,6 @@ def _static_binding_generator(
         retain_list,
         compute_capability=compute_capability,
         additional_includes=config.clang_includes_paths,
-        cudatoolkit_include_dirs=config.cuda_toolkit_include_paths,
         defines=config.predefined_macros,
         verbose=VERBOSE,
         bypass_parse_error=bypass_parse_error,

@@ -24,13 +24,8 @@ pytestmark = pytest.mark.skipif(
 def test_nvshmem_public_c_device_surface(tmp_path):
     source = Path(NVSHMEM_SOURCE_DIR)
     include = source / "src" / "include"
-    cuda_root = Path(os.environ["CUDA_HOME"])
     symbol_inventory = os.environ.get("NUMBAST_NVSHMEM_SYMBOL_INVENTORY")
     ltoir = os.environ.get("NUMBAST_NVSHMEM_LTOIR", "libnvshmem_device.ltoir")
-    cuda_includes = [str(cuda_root / "include")]
-    cccl_include = cuda_root / "include" / "cccl"
-    if cccl_include.is_dir():
-        cuda_includes.append(str(cccl_include))
 
     cuda_oxide = {
         "LTOIR Inputs": [ltoir],
@@ -63,7 +58,6 @@ def test_nvshmem_public_c_device_surface(tmp_path):
                 str(include / "device_host" / "nvshmem_types.h"),
             ],
             "GPU Arch": [os.environ.get("NUMBAST_NVSHMEM_GPU_ARCH", "sm_80")],
-            "CUDA Toolkit Include Paths": cuda_includes,
             "Clang Include Paths": [str(include)],
             "Predefined Macros": ["NVSHMEM_BUILD_LTOIR_LIBRARY"],
             "Exclude": {"Function": ["atomicAdd_system"]},

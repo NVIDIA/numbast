@@ -67,7 +67,6 @@
     ],
     "config": "examples/cuda_oxide_c_device/numbast.yaml",
     "config_sha256": "245e970cf830a6a0b7ae541f5c7a8fbfca168d5a7e203a824fb2145b910366e5",
-    "cuda_toolkit_include_paths": [],
     "entry_point": "examples/cuda_oxide_c_device/device_api.h",
     "headers": [
       {
