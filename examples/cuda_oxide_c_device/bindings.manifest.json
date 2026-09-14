@@ -1,0 +1,287 @@
+{
+  "artifacts": {
+    "ltoir": [
+      {
+        "path": "examples/cuda_oxide_c_device/device_api.ltoir",
+        "sha256": "af189f3bee3cf7de76eb198d4041fe574e5ea4f2544be18e15ddc7f88ce7e7c5",
+        "status": "present"
+      }
+    ],
+    "ltoir_inputs": [
+      "examples/cuda_oxide_c_device/device_api.ltoir"
+    ],
+    "rust_module": "examples/cuda_oxide_c_device/bindings.rs"
+  },
+  "backend": "cuda-oxide",
+  "compatibility": {
+    "cuda_oxide_nvvm_dialect": "legacy-llvm-7",
+    "modern_nvvm_required_symbols": [],
+    "selected_arch_supports_all_symbols": true
+  },
+  "constants": [
+    {
+      "name": "ROUND1_MODE_ADD",
+      "rust_type": "round1_mode",
+      "source": "enum",
+      "value": "0"
+    },
+    {
+      "name": "ROUND1_MODE_SUBTRACT",
+      "rust_type": "round1_mode",
+      "source": "enum",
+      "value": "1"
+    },
+    {
+      "name": "ROUND1_DEFAULT_HANDLE",
+      "rust_type": "round1_handle_t",
+      "source": "configuration",
+      "value": "0"
+    }
+  ],
+  "counts": {
+    "excluded_declarations": 0,
+    "generated_symbols": 3
+  },
+  "excluded_declarations": [],
+  "generator": {
+    "ast_canopy_version": "0.10.1+source",
+    "cuda_toolkit_version": "13.4.20260601",
+    "generation_command": [
+      "numbast-cuda-oxide",
+      "--cfg-path",
+      "examples/cuda_oxide_c_device/numbast.yaml",
+      "--output-dir",
+      "examples/cuda_oxide_c_device"
+    ],
+    "name": "numbast-cuda-oxide",
+    "numbast_version": "0.10.1+source"
+  },
+  "library": {
+    "name": "Numbast Round 1 C Device Example",
+    "version": 1
+  },
+  "schema_version": 1,
+  "source": {
+    "clang_include_paths": [
+      "examples/cuda_oxide_c_device"
+    ],
+    "config": "examples/cuda_oxide_c_device/numbast.yaml",
+    "config_sha256": "245e970cf830a6a0b7ae541f5c7a8fbfca168d5a7e203a824fb2145b910366e5",
+    "entry_point": "examples/cuda_oxide_c_device/device_api.h",
+    "headers": [
+      {
+        "path": "examples/cuda_oxide_c_device/device_api.h",
+        "sha256": "4d02439cc4b56a75682839a55cb6c46f6aed3239caad366f11aa4edf509471d2"
+      }
+    ],
+    "parser": {
+      "bypass_parse_errors": true,
+      "clang_binary": null
+    },
+    "predefined_macros": [
+      "__CUDA_ARCH__=800"
+    ],
+    "retained_files": [
+      "examples/cuda_oxide_c_device/device_api.h"
+    ]
+  },
+  "symbol_verification": {
+    "available_symbol_count": 3,
+    "missing_symbols": [],
+    "path": "examples/cuda_oxide_c_device/device_api.symbols",
+    "required_symbol_count": 3,
+    "sha256": "a833b7039aa5d0ec2d6be327e9869a48a9c13696b1f7cb048b7ade14e774fdd8",
+    "status": "verified",
+    "unexpected_symbols": []
+  },
+  "symbols": [
+    {
+      "execution_space": "device",
+      "native_name": "round1_accumulate",
+      "parameters": [
+        {
+          "c_name": "values",
+          "c_type": {
+            "array_dimensions": [],
+            "base_name": "int32_t",
+            "c_spelling": "const int32_t *",
+            "pointer_kinds": [
+              "const"
+            ]
+          },
+          "rust_name": "values",
+          "rust_type": "*const i32"
+        },
+        {
+          "c_name": "count",
+          "c_type": {
+            "array_dimensions": [],
+            "base_name": "unsigned long",
+            "c_spelling": "unsigned long",
+            "pointer_kinds": []
+          },
+          "rust_name": "count",
+          "rust_type": "u64"
+        }
+      ],
+      "public_name": "accumulate",
+      "return_type": {
+        "c": {
+          "array_dimensions": [],
+          "base_name": "int32_t",
+          "c_spelling": "int32_t",
+          "pointer_kinds": []
+        },
+        "rust": "i32"
+      },
+      "rust_name": "accumulate"
+    },
+    {
+      "execution_space": "device",
+      "native_name": "round1_add",
+      "parameters": [
+        {
+          "c_name": "left",
+          "c_type": {
+            "array_dimensions": [],
+            "base_name": "int32_t",
+            "c_spelling": "int32_t",
+            "pointer_kinds": []
+          },
+          "rust_name": "left",
+          "rust_type": "i32"
+        },
+        {
+          "c_name": "right",
+          "c_type": {
+            "array_dimensions": [],
+            "base_name": "int32_t",
+            "c_spelling": "int32_t",
+            "pointer_kinds": []
+          },
+          "rust_name": "right",
+          "rust_type": "i32"
+        }
+      ],
+      "public_name": "add",
+      "return_type": {
+        "c": {
+          "array_dimensions": [],
+          "base_name": "int32_t",
+          "c_spelling": "int32_t",
+          "pointer_kinds": []
+        },
+        "rust": "i32"
+      },
+      "rust_name": "add"
+    },
+    {
+      "execution_space": "device",
+      "native_name": "round1_apply",
+      "parameters": [
+        {
+          "c_name": "value",
+          "c_type": {
+            "array_dimensions": [],
+            "base_name": "int32_t",
+            "c_spelling": "int32_t",
+            "pointer_kinds": []
+          },
+          "rust_name": "value",
+          "rust_type": "i32"
+        },
+        {
+          "c_name": "mode",
+          "c_type": {
+            "array_dimensions": [],
+            "base_name": "round1_mode",
+            "c_spelling": "round1_mode",
+            "pointer_kinds": []
+          },
+          "rust_name": "mode",
+          "rust_type": "round1_mode"
+        },
+        {
+          "c_name": "options",
+          "c_type": {
+            "array_dimensions": [],
+            "base_name": "round1_options",
+            "c_spelling": "const round1_options *",
+            "pointer_kinds": [
+              "const"
+            ]
+          },
+          "rust_name": "options",
+          "rust_type": "*const round1_options"
+        }
+      ],
+      "public_name": "apply",
+      "return_type": {
+        "c": {
+          "array_dimensions": [],
+          "base_name": "int32_t",
+          "c_spelling": "int32_t",
+          "pointer_kinds": []
+        },
+        "rust": "i32"
+      },
+      "rust_name": "apply"
+    }
+  ],
+  "target": {
+    "abi": "nvptx64-c",
+    "gpu_arch": "sm_80"
+  },
+  "types": {
+    "cuda_abi_aliases": [],
+    "enums": [
+      {
+        "enumerators": [
+          [
+            "ROUND1_MODE_ADD",
+            "0"
+          ],
+          [
+            "ROUND1_MODE_SUBTRACT",
+            "1"
+          ]
+        ],
+        "name": "round1_mode",
+        "rust_underlying_type": "u32"
+      }
+    ],
+    "records": [
+      {
+        "alignment": 4,
+        "fields": [
+          [
+            "scale",
+            "uint32_t"
+          ],
+          [
+            "bias",
+            "int32_t"
+          ],
+          [
+            "reserved",
+            "char[8]"
+          ]
+        ],
+        "name": "round1_options",
+        "size": 16,
+        "storage_type": "[u32; 4]"
+      }
+    ],
+    "typedefs": [
+      {
+        "name": "round1_handle_t",
+        "underlying": {
+          "array_dimensions": [],
+          "base_name": "unsigned long long",
+          "c_spelling": "unsigned long long",
+          "pointer_kinds": []
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+# Configure @...@ placeholders for the NVSHMEM build being bound.
+
+Name: NVSHMEM CUDA-Oxide Rust Device Bindings
+Version: "@NVSHMEM_VERSION@"
+Backend: cuda-oxide
+Entry Point: "@NVSHMEM_SOURCE_DIR@/contrib/nvshmem4rust/generator/entry_point.h"
+File List:
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmem_coll_defines.cuh"
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmem_defines.h"
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmemx_coll_defines.cuh"
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmemx_defines.h"
+  - "@NVSHMEM_INCLUDE_DIR@/device_host/nvshmem_types.h"
+GPU Arch:
+  - "@GPU_ARCH@"
+Clang Include Paths:
+  - "@NVSHMEM_INCLUDE_DIR@"
+Predefined Macros:
+  - NVSHMEM_BUILD_LTOIR_LIBRARY
+Exclude:
+  Function:
+    # A CUDA implementation detail attributed to the retained public header.
+    - atomicAdd_system
+Skip Prefix: nvshmemi_
+API Prefix Removal:
+  Function:
+    - nvshmemx_
+    - nvshmem_
+Output Name: nvshmem_device.rs
+
+CUDA Oxide:
+  LTOIR Inputs:
+    - "@NVSHMEM_DEVICE_LTOIR@"
+  Manifest Name: nvshmem_device.manifest.json
+  Symbol Inventory: "@NVSHMEM_DEVICE_API_SYMBOLS@"
+  Type Aliases:
+    nvshmem_team_t: int32_t
+    nvshmemx_team_t: nvshmem_team_t
+    nvshmemx_region_handle_t: uint64_t
+    nvshmemx_region_attrs_t: nvshmemx_region_attrs
+  Constants:
+    NVSHMEM_TEAM_INVALID: {Type: nvshmem_team_t, Value: -1}
+    NVSHMEM_TEAM_WORLD: {Type: nvshmem_team_t, Value: 0}
+    NVSHMEM_TEAM_SHARED: {Type: nvshmem_team_t, Value: 1}
+    NVSHMEMX_TEAM_NODE: {Type: nvshmem_team_t, Value: 2}
+    NVSHMEMX_TEAM_SAME_MYPE_NODE: {Type: nvshmem_team_t, Value: 3}
+    NVSHMEM_TEAM_MC_SHARED: {Type: nvshmem_team_t, Value: 6}
+    NVSHMEM_CMP_EQ: {Type: int, Value: 0}
+    NVSHMEM_CMP_NE: {Type: int, Value: 1}
+    NVSHMEM_CMP_GT: {Type: int, Value: 2}
+    NVSHMEM_CMP_LE: {Type: int, Value: 3}
+    NVSHMEM_CMP_LT: {Type: int, Value: 4}
+    NVSHMEM_CMP_GE: {Type: int, Value: 5}
+    NVSHMEM_SIGNAL_SET: {Type: int, Value: 9}
+    NVSHMEM_SIGNAL_ADD: {Type: int, Value: 10}
+    NVSHMEMX_REGION_ATTRS_RESERVED_BYTES: {Type: size_t, Value: 60}
+  # Use together with the exact API symbol inventory above. The inventory
+  # makes a parser recovery that omits declarations fail closed.
+  Bypass Parse Errors: true

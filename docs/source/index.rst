@@ -20,6 +20,7 @@ Announcement
    numba_cuda_mlir
    install
    static
+   cuda_oxide
    dynamic
    template
    argument_intents

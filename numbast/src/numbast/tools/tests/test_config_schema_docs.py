@@ -47,13 +47,15 @@ def test_static_binding_schema_has_expected_keys():
         "Use Separate Registry",
         "Function Argument Intents",
         "MLIR Backend",
+        "Backend",
+        "CUDA Oxide",
     }
     assert expected_keys.issubset(set(properties))
 
     gpu_arch = properties["GPU Arch"]
     assert gpu_arch["type"] == "array"
     assert gpu_arch["maxItems"] == 1
-    assert gpu_arch["items"]["pattern"] == "^sm_[0-9]+$"
+    assert gpu_arch["items"]["pattern"] == "^sm_[0-9]+a?$"
 
 
 def test_generate_schema_reference_from_yaml_schema(tmp_path):
