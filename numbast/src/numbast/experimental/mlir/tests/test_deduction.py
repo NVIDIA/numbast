@@ -161,8 +161,6 @@ def test_non_templated_param_requires_match(deduction_decls):
         "float",
     ]
     assert func.return_type.unqualified_non_ref_type_name == "float"
-    assert func.is_variadic is True
-    assert func.is_c_linkage is False
 
     specialized, intent_errors = deduce_templated_overloads(
         qualname="add_int",
@@ -257,6 +255,8 @@ def test_struct_method_specialization(deduction_decls):
         "float",
     ]
     assert func.return_type.unqualified_non_ref_type_name == "float"
+    assert func.is_variadic is True
+    assert func.is_c_linkage is False
 
 
 def test_unmappable_numba_arg_skips_overload(deduction_decls):
