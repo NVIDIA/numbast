@@ -35,6 +35,7 @@ def test_static_binding_schema_has_expected_keys():
         "Data Models",
         "Exclude",
         "Clang Include Paths",
+        "CUDA Toolkit Include Paths",
         "Additional Import",
         "Shim Include Override",
         "Predefined Macros",

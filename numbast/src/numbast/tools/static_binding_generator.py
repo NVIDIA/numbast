@@ -119,6 +119,7 @@ class Config:
     exclude_functions: list[str]
     exclude_structs: list[str]
     clang_includes_paths: list[str]
+    cuda_toolkit_include_paths: list[str]
     additional_imports: list[str]
     shim_include_override: str | None
     predefined_macros: list[str]
@@ -161,6 +162,9 @@ class Config:
         self.exclude_structs = self.excludes.get("Struct", [])
 
         self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
+        self.cuda_toolkit_include_paths = config_dict.get(
+            "CUDA Toolkit Include Paths", []
+        )
 
         self.additional_imports = config_dict.get("Additional Import", [])
 
@@ -176,6 +180,8 @@ class Config:
             self.exclude_structs = []
         if self.clang_includes_paths is None:
             self.clang_includes_paths = []
+        if self.cuda_toolkit_include_paths is None:
+            self.cuda_toolkit_include_paths = []
 
         self.output_name = config_dict.get("Output Name", None)
 
@@ -241,6 +247,7 @@ class Config:
         exclude_functions: list[str] | None = None,
         exclude_structs: list[str] | None = None,
         clang_includes_paths: list[str] | None = None,
+        cuda_toolkit_include_paths: list[str] | None = None,
         additional_imports: list[str] | None = None,
         shim_include_override: str | None = None,
         predefined_macros: list[str] | None = None,
@@ -282,6 +289,7 @@ class Config:
                 "Struct": exclude_structs or [],
             },
             "Clang Include Paths": clang_includes_paths or [],
+            "CUDA Toolkit Include Paths": cuda_toolkit_include_paths or [],
             "Additional Import": additional_imports or [],
             "Shim Include Override": shim_include_override,
             "Predefined Macros": predefined_macros or [],
@@ -316,7 +324,10 @@ class Config:
         for f in self.retain_list:
             if not os.path.exists(f):
                 raise ValueError(f"File in retain list does not exist: {f}")
-        for f in self.clang_includes_paths:
+        for f in [
+            *self.clang_includes_paths,
+            *self.cuda_toolkit_include_paths,
+        ]:
             if not os.path.exists(f):
                 raise ValueError(f"File in include list does not exist: {f}")
 
@@ -726,6 +737,7 @@ def _static_binding_generator(
         retain_list,
         compute_capability=compute_capability,
         additional_includes=config.clang_includes_paths,
+        cudatoolkit_include_dirs=config.cuda_toolkit_include_paths,
         defines=config.predefined_macros,
         verbose=VERBOSE,
         bypass_parse_error=bypass_parse_error,

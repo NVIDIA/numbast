@@ -122,6 +122,24 @@ Optional keys
       - /opt/extra/include
 
 
+``CUDA Toolkit Include Paths`` : ``array``
+   Explicit CUDA Toolkit include paths passed to AST Canopy. If omitted, AST Canopy discovers the installed toolkit
+   paths.
+
+   Default: ``[]``.
+
+   Constraints:
+
+   - Item type: ``string``
+
+   Example:
+
+   .. code-block:: yaml
+
+      CUDA Toolkit Include Paths:
+      - /usr/local/cuda/include
+
+
 ``Additional Import`` : ``array``
    Extra Python import statements injected into the generated file.
 
@@ -511,6 +529,17 @@ Raw schema
        examples:
          - - /usr/local/cuda/include
            - /opt/extra/include
+     CUDA Toolkit Include Paths:
+       type: array
+       default: []
+       items:
+         type: string
+       description: >
+         Explicit CUDA Toolkit include paths passed to AST Canopy. If omitted, AST Canopy discovers the installed
+         toolkit paths.
+
+       examples:
+         - - /usr/local/cuda/include
      Additional Import:
        type: array
        default: []

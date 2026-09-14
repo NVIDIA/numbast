@@ -96,6 +96,16 @@ properties:
     examples:
       - - /usr/local/cuda/include
         - /opt/extra/include
+  CUDA Toolkit Include Paths:
+    type: array
+    default: []
+    items:
+      type: string
+    description: >
+      Explicit CUDA Toolkit include paths passed to AST Canopy. If omitted, AST Canopy discovers the installed toolkit paths.
+
+    examples:
+      - - /usr/local/cuda/include
   Additional Import:
     type: array
     default: []
