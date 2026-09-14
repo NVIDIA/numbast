@@ -154,6 +154,8 @@ struct Function {
   std::vector<ParamVar> params;
   execution_space exec_space;
   bool is_constexpr;
+  bool is_c_linkage = false;
+  bool is_variadic = false;
   std::string mangled_name;
   std::set<std::string> attributes;
 };

@@ -162,21 +162,28 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("params", &Function::params)
       .def_readwrite("exec_space", &Function::exec_space)
       .def_readwrite("is_constexpr", &Function::is_constexpr)
+      .def_readwrite("is_c_linkage", &Function::is_c_linkage)
+      .def_readwrite("is_variadic", &Function::is_variadic)
       .def_readwrite("mangled_name", &Function::mangled_name)
       .def_readwrite("attributes", &Function::attributes)
       .def(py::pickle(
           [](const Function &f) {
             return py::make_tuple(f.name, f.return_type, f.params, f.exec_space,
-                                  f.qual_name);
+                                  f.qual_name, f.is_c_linkage, f.is_variadic);
           },
           [](py::tuple t) {
-            if (t.size() != 5)
+            if (t.size() != 5 && t.size() != 7)
               throw std::runtime_error(
                   "Invalid function state during unpickle!");
-            return Function{t[0].cast<std::string>(), t[1].cast<Type>(),
-                            t[2].cast<std::vector<ParamVar>>(),
-                            t[3].cast<execution_space>(),
-                            t[4].cast<std::string>()};
+            Function function{t[0].cast<std::string>(), t[1].cast<Type>(),
+                              t[2].cast<std::vector<ParamVar>>(),
+                              t[3].cast<execution_space>(),
+                              t[4].cast<std::string>()};
+            if (t.size() == 7) {
+              function.is_c_linkage = t[5].cast<bool>();
+              function.is_variadic = t[6].cast<bool>();
+            }
+            return function;
           }));
 
   py::class_<Template>(m, "Template")
@@ -235,9 +242,12 @@ PYBIND11_MODULE(pylibastcanopy, m) {
               throw std::runtime_error(
                   "Invalid class template state during unpickle!");
             Function f = t[0].cast<Function>();
-            return Method{f.name,      f.return_type,
+            Method method{f.name,      f.return_type,
                           f.params,    f.exec_space,
                           f.qual_name, t[1].cast<method_kind>()};
+            method.is_c_linkage = f.is_c_linkage;
+            method.is_variadic = f.is_variadic;
+            return method;
           }));
 
   py::class_<Record>(m, "Record")

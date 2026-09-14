@@ -6,6 +6,7 @@
 struct Foo {
   __device__ Foo() = default;
   __device__ Foo(int a) : a(a) {}
+  __device__ int variadic_member(int value, ...);
   int a;
 };
 
@@ -25,3 +26,6 @@ __device__ int inner_func(Foo a, Bar b) { return 0; }
 namespace ns2 {
 __device__ int inner_func(Foo a, Bar b) { return 0; }
 } // namespace ns2
+
+extern "C" __device__ int c_device_func(int value) { return value; }
+extern "C" int c_variadic_func(int value, ...);

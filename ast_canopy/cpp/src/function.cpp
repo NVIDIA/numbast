@@ -131,7 +131,8 @@ make_dependent_signature_fallback(const clang::FunctionDecl *FD,
 Function::Function(const clang::FunctionDecl *FD)
     : name(FD->getNameAsString()), qual_name(FD->getQualifiedNameAsString()),
       return_type(FD->getReturnType(), FD->getASTContext()),
-      is_constexpr(FD->isConstexpr()) {
+      is_constexpr(FD->isConstexpr()), is_c_linkage(FD->isExternC()),
+      is_variadic(FD->isVariadic()) {
   if (qual_name.empty()) {
     qual_name = name;
   }
@@ -150,7 +151,12 @@ Function::Function(const clang::FunctionDecl *FD)
   // the Clang Itanium mangler can segfault when asked to mangle types that
   // are still template-dependent (e.g. methods of uninstantiated class
   // templates such as Eigen::Matrix<Scalar_,...>).
-  if (has_dependent_signature(FD)) {
+  if (is_c_linkage) {
+    // C-linkage declarations are exported under their source spelling. Calling
+    // the Itanium mangler unconditionally produces a C++ symbol that does not
+    // exist in the object file.
+    mangled_name = name;
+  } else if (has_dependent_signature(FD)) {
     mangled_name = make_dependent_signature_fallback(FD, qual_name);
   } else {
     auto &context = FD->getASTContext();

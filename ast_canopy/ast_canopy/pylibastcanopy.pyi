@@ -52,6 +52,8 @@ class Function:
     attributes: set[str]
     exec_space: execution_space
     is_constexpr: bool
+    is_c_linkage: bool
+    is_variadic: bool
     mangled_name: str
     name: str
     qual_name: str
