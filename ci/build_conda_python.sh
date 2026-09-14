@@ -24,6 +24,11 @@ rapids-logger "Begin py build"
 
 sccache --zero-stats
 
-rapids-conda-retry build conda/recipe
+CONDA_BUILD_ARGS=()
+if [[ -n "${PYTHON_VERSION:-}" ]]; then
+  CONDA_BUILD_ARGS+=(--python "${PYTHON_VERSION}")
+fi
+
+rapids-conda-retry build "${CONDA_BUILD_ARGS[@]}" conda/recipe
 
 sccache --show-adv-stats
