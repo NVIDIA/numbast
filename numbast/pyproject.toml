@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
   "numba-cuda>=0.25.0",
+  "numpy<2.5",
   "ast_canopy>=0.5.0",
   "pyyaml",
   "click",

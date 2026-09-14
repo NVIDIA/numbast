@@ -76,6 +76,7 @@ outputs:
         - cuda-version >=12.5,<14
         - cuda-nvrtc
         - numba-cuda >=0.25.0
+        - numpy <2.5
         - pyyaml
         - click
         - jinja2

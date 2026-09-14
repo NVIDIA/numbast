@@ -43,7 +43,7 @@ _CXX_SOURCE = textwrap.dedent(
 
     struct Box {
       template <typename T>
-      __device__ T mul(T a, T b) const { return a * b; }
+      __device__ T mul(T a, T b, ...) const { return a * b; }
 
       template <typename T>
       __device__ void write(T &out, T value) const { out = value; }
@@ -255,6 +255,8 @@ def test_struct_method_specialization(deduction_decls):
         "float",
     ]
     assert func.return_type.unqualified_non_ref_type_name == "float"
+    assert func.is_variadic is True
+    assert func.is_c_linkage is False
 
 
 def test_unmappable_numba_arg_skips_overload(deduction_decls):

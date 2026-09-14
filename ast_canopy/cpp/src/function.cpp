@@ -154,7 +154,7 @@ Function::Function(const clang::FunctionDecl *FD)
   if (is_c_linkage) {
     // C-linkage declarations are exported under their source spelling. Calling
     // the Itanium mangler unconditionally produces a C++ symbol that does not
-    // exist in the object/LTOIR file.
+    // exist in the object file.
     mangled_name = name;
   } else if (has_dependent_signature(FD)) {
     mangled_name = make_dependent_signature_fallback(FD, qual_name);

@@ -201,6 +201,8 @@ def _specialize_function(
             func.mangled_name,
             func.attributes,
             func.parse_entry_point,
+            is_variadic=func.is_variadic,
+            is_c_linkage=func.is_c_linkage,
         )
 
     return Function(
@@ -213,6 +215,8 @@ def _specialize_function(
         func.mangled_name,
         func.attributes,
         func.parse_entry_point,
+        is_c_linkage=func.is_c_linkage,
+        is_variadic=func.is_variadic,
     )
 
 

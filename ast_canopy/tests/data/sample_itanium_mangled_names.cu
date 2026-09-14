@@ -6,6 +6,7 @@
 struct Foo {
   __device__ Foo() = default;
   __device__ Foo(int a) : a(a) {}
+  __device__ int variadic_member(int value, ...);
   int a;
 };
 

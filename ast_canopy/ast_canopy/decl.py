@@ -6,7 +6,8 @@ import typing
 from functools import cached_property
 
 from ast_canopy import pylibastcanopy as bindings
-from ast_canopy.instantiations import ClassInstantiation, FunctionInstantiation
+
+from ast_canopy.instantiations import FunctionInstantiation, ClassInstantiation
 
 CXX_OP_TO_PYTHON_OP = {
     "+": [operator.pos, operator.add],
@@ -258,6 +259,8 @@ class StructMethod(Function):
         mangled_name: str,
         attributes: str,
         parse_entry_point: str,
+        is_variadic: bool = False,
+        is_c_linkage: bool | None = None,
     ):
         super().__init__(
             name,
@@ -269,6 +272,8 @@ class StructMethod(Function):
             mangled_name,
             attributes,
             parse_entry_point,
+            is_c_linkage=is_c_linkage,
+            is_variadic=is_variadic,
         )
         self.kind = kind
         self.is_move_constructor = is_move_constructor
@@ -301,6 +306,8 @@ class StructMethod(Function):
             c_obj.mangled_name,
             c_obj.attributes,
             parse_entry_point,
+            is_variadic=getattr(c_obj, "is_variadic", False),
+            is_c_linkage=getattr(c_obj, "is_c_linkage", None),
         )
 
 
