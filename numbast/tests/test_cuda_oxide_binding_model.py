@@ -8,16 +8,10 @@ import pytest
 from numbast.cuda_oxide_binding_model import (
     BindingModelError,
     build_c_device_model,
-    cuda_abi_alias_for_arch,
-    is_identifier,
     modern_nvvm_required_symbols,
-    parse_c_abi_type,
-    parse_c_type_spelling,
-    rust_identifier,
-    rust_parameter_name,
-    rust_type,
     translate_constant_literal,
 )
+from numbast.rust_types import parse_c_abi_type, rust_type
 
 
 class FakeType:
@@ -85,53 +79,6 @@ def config(**overrides):
     }
     values.update(overrides)
     return SimpleNamespace(**values)
-
-
-def empty_model():
-    return SimpleNamespace(cuda_aliases={}, enums=[], records=[], typedefs=[])
-
-
-@pytest.mark.parametrize("name", ["function", "_function", "function_2"])
-def test_c_and_rust_identifiers_are_accepted(name):
-    assert is_identifier(name)
-    assert rust_identifier(name) == name
-
-
-@pytest.mark.parametrize("name", ["", "2function", "not-an-identifier"])
-def test_invalid_identifiers_are_rejected(name):
-    assert not is_identifier(name)
-    with pytest.raises(ValueError, match="Not a valid C/Rust identifier"):
-        rust_identifier(name)
-
-
-def test_rust_keywords_use_raw_identifiers_when_possible():
-    assert rust_identifier("match") == "r#match"
-    assert rust_identifier("union") == "r#union"
-    assert rust_identifier("self") == "self_"
-
-
-def test_rust_parameter_names_are_sanitized():
-    assert rust_parameter_name("", 3) == "arg3"
-    assert rust_parameter_name("type", 0) == "r#type"
-    assert rust_parameter_name("9bad-name", 0) == "arg_9bad_name"
-
-
-def test_qualified_pointer_depth_and_array_order():
-    type_ = parse_c_abi_type(FakeType("const int *const *volatile"))
-    assert type_.base_name == "int"
-    assert type_.pointer_kinds == ("const", "const")
-    assert rust_type(type_, empty_model()) == "*const *const i32"
-
-    array = parse_c_type_spelling("unsigned int[2][3]")
-    assert array.array_dimensions == (2, 3)
-    assert rust_type(array, empty_model()) == "[[u32; 3]; 2]"
-
-    pointer_to_array = parse_c_type_spelling("const int (*)[2][3]")
-    assert pointer_to_array.pointer_kinds == ("const",)
-    assert pointer_to_array.array_dimensions == (2, 3)
-    assert rust_type(pointer_to_array, empty_model()) == (
-        "*const [[i32; 3]; 2]"
-    )
 
 
 @pytest.mark.parametrize(
@@ -377,8 +324,6 @@ def test_cuda_storage_aliases_and_modern_nvvm_requirements():
         "library_bfloat",
         "library_half",
     ]
-    assert cuda_abi_alias_for_arch("__half", "sm_100") == ("f16", 2, 2)
-
     modern = build_c_device_model(parsed, config(gpu_arch=["sm_100"]))
     assert modern.cuda_aliases["__half"] == ("f16", 2, 2)
 
