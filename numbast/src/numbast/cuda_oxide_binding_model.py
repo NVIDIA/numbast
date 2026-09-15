@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Language-neutral C-device ABI model built from AST Canopy declarations."""
+"""CUDA-Oxide Rust binding model built from AST Canopy declarations."""
 
 from __future__ import annotations
 
@@ -9,12 +9,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from numbast.name_policy import (
-    apply_prefix_removal,
-    is_identifier,
-    rust_identifier,
-    rust_parameter_name,
-)
+from numbast.name_policy import apply_prefix_removal
 
 _QUALIFIERS = re.compile(r"\b(?:const|volatile|restrict|__restrict__)\b")
 _ARRAY_SUFFIX = re.compile(r"\[\s*([0-9]+)\s*\]\s*$")
@@ -27,6 +22,93 @@ _TAG_PREFIX = re.compile(r"^(?:struct|enum|union)\s+")
 _INTEGER_LITERAL = re.compile(
     r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[bB][01]+|0[0-7]*|[0-9]+)(?:[uUlL]+)?$"
 )
+_RUST_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+RUST_KEYWORDS = frozenset(
+    {
+        "Self",
+        "abstract",
+        "as",
+        "async",
+        "await",
+        "become",
+        "box",
+        "break",
+        "const",
+        "continue",
+        "crate",
+        "do",
+        "dyn",
+        "else",
+        "enum",
+        "extern",
+        "false",
+        "final",
+        "fn",
+        "for",
+        "gen",
+        "if",
+        "impl",
+        "in",
+        "let",
+        "loop",
+        "macro",
+        "macro_rules",
+        "match",
+        "mod",
+        "move",
+        "mut",
+        "override",
+        "priv",
+        "pub",
+        "ref",
+        "return",
+        "safe",
+        "self",
+        "static",
+        "struct",
+        "super",
+        "trait",
+        "true",
+        "try",
+        "type",
+        "typeof",
+        "union",
+        "unsafe",
+        "unsized",
+        "use",
+        "virtual",
+        "where",
+        "while",
+        "yield",
+    }
+)
+
+_RUST_NON_RAW_IDENTIFIERS = frozenset({"Self", "_", "crate", "self", "super"})
+
+
+def is_identifier(name: str) -> bool:
+    return bool(_RUST_IDENTIFIER.fullmatch(name))
+
+
+def rust_identifier(name: str) -> str:
+    """Return a source-level Rust identifier for a known-valid identifier."""
+
+    if not is_identifier(name):
+        raise ValueError(f"Not a valid C/Rust identifier: {name!r}")
+    if name in _RUST_NON_RAW_IDENTIFIERS:
+        return f"{name}_"
+    if name in RUST_KEYWORDS:
+        return f"r#{name}"
+    return name
+
+
+def rust_parameter_name(name: str, index: int) -> str:
+    candidate = name or f"arg{index}"
+    candidate = re.sub(r"[^A-Za-z0-9_]", "_", candidate)
+    if not candidate or candidate[0].isdigit():
+        candidate = f"arg_{candidate}"
+    return rust_identifier(candidate)
 
 
 PRIMITIVE_RUST_TYPES = {

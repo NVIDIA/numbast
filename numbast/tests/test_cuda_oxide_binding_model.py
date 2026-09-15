@@ -5,13 +5,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from numbast.binding_model import (
+from numbast.cuda_oxide_binding_model import (
     BindingModelError,
     build_c_device_model,
     cuda_abi_alias_for_arch,
+    is_identifier,
     modern_nvvm_required_symbols,
     parse_c_abi_type,
     parse_c_type_spelling,
+    rust_identifier,
+    rust_parameter_name,
     rust_type,
     translate_constant_literal,
 )
@@ -86,6 +89,31 @@ def config(**overrides):
 
 def empty_model():
     return SimpleNamespace(cuda_aliases={}, enums=[], records=[], typedefs=[])
+
+
+@pytest.mark.parametrize("name", ["function", "_function", "function_2"])
+def test_c_and_rust_identifiers_are_accepted(name):
+    assert is_identifier(name)
+    assert rust_identifier(name) == name
+
+
+@pytest.mark.parametrize("name", ["", "2function", "not-an-identifier"])
+def test_invalid_identifiers_are_rejected(name):
+    assert not is_identifier(name)
+    with pytest.raises(ValueError, match="Not a valid C/Rust identifier"):
+        rust_identifier(name)
+
+
+def test_rust_keywords_use_raw_identifiers_when_possible():
+    assert rust_identifier("match") == "r#match"
+    assert rust_identifier("union") == "r#union"
+    assert rust_identifier("self") == "self_"
+
+
+def test_rust_parameter_names_are_sanitized():
+    assert rust_parameter_name("", 3) == "arg3"
+    assert rust_parameter_name("type", 0) == "r#type"
+    assert rust_parameter_name("9bad-name", 0) == "arg_9bad_name"
 
 
 def test_qualified_pointer_depth_and_array_order():
