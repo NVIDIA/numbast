@@ -33,6 +33,10 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
     qual_name = name;
   }
 
+  // Distinguish unions from structs/classes so downstream consumers can model
+  // them differently (a C union has no direct MLIR/LLVM aggregate equivalent).
+  is_union = RD->isUnion();
+
   // Class default access specifier is private, struct is public.
   AS access = RD->isClass() ? AS::AS_private : AS::AS_public;
 

@@ -232,6 +232,7 @@ struct Record {
   std::vector<ClassTemplate> nested_class_templates;
   std::size_t sizeof_;
   std::size_t alignof_;
+  bool is_union = false; // true for a C/C++ union, false for a struct/class
 
   std::string source_range;
   void print(int) const;

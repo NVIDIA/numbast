@@ -260,6 +260,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("nested_class_templates", &Record::nested_class_templates)
       .def_readwrite("sizeof_", &Record::sizeof_)
       .def_readwrite("alignof_", &Record::alignof_)
+      .def_readwrite("is_union", &Record::is_union)
       .def(py::pickle(
           [](const Record &r) {
             return py::make_tuple(r.name, r.fields, r.methods,
