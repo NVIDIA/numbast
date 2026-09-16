@@ -82,6 +82,7 @@ class ParseError(Exception): ...
 class Record:
     alignof_: int
     fields: list[Field]
+    is_union: bool
     methods: list[Method]
     name: str
     qual_name: str

@@ -467,6 +467,7 @@ class TemplatedStruct(Struct):
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            is_union=getattr(c_obj, "is_union", False),
         )
 
 
@@ -553,6 +554,7 @@ class ClassTemplateSpecialization(Struct):
             record.sizeof_,
             record.alignof_,
             record.parse_entry_point,
+            is_union=record.is_union,
         )
 
         self._instantiation = ClassInstantiation(class_template)

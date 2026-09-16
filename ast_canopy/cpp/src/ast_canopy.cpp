@@ -136,7 +136,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
     throw std::runtime_error("Failed to create a CompilerInvocation.");
   }
   IntrusiveRefCntPtr<FileManager> FileMgr =
-      new FileManager(FileSystemOptions{}, FS);
+      new FileManager(Invocation->getFileSystemOpts(), FS);
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCompilerInvocation(
       Invocation, PCHContainerOps, DiagOpts, Diags, FileMgr));
 #elif CLANG_VERSION_MAJOR == 21
