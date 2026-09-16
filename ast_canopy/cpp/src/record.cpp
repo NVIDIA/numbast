@@ -7,6 +7,7 @@
 
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
+#include <clang/Basic/Version.h>
 
 #include <algorithm>
 
@@ -77,7 +78,11 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   }
 
   if (rp == RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE) {
+#if CLANG_VERSION_MAJOR >= 22
+    clang::QualType type = RD->getASTContext().getCanonicalTagType(RD);
+#else
     clang::QualType type = RD->getASTContext().getTypeDeclType(RD);
+#endif
     clang::ASTContext &ctx = RD->getASTContext();
     // Guard against dependent or incomplete types whose layout cannot be
     // computed.  This can happen for records inside class template

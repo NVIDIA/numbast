@@ -6,9 +6,14 @@
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/Basic/Version.h>
+#include <clang/Basic/FileManager.h>
+#include <clang/Basic/FileSystemOptions.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
+#if CLANG_VERSION_MAJOR >= 22
+#include <clang/Driver/CreateInvocationFromArgs.h>
+#endif
 
 #include <filesystem>
 #include <utility>
@@ -23,8 +28,8 @@
 using namespace clang;
 using namespace clang::ast_matchers;
 
-static_assert(CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR <= 21 &&
-              "ASTCanopy Only Supports Building with CLANG 18 to 21");
+static_assert(CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR <= 22 &&
+              "ASTCanopy Only Supports Building with CLANG 18 to 22");
 namespace ast_canopy {
 
 namespace detail {
@@ -94,7 +99,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
   // Create a diagnostics engine that captures errors. Writes error and fatal
   // errors to the diagnostics_consumer. diagnostics_consumer stores the result
   // to a vector of strings.
-#if CLANG_VERSION_MAJOR == 21
+#if CLANG_VERSION_MAJOR >= 21
   auto DiagOpts = std::make_shared<DiagnosticOptions>();
 #elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
@@ -103,7 +108,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
 #endif
   detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
 
-#if CLANG_VERSION_MAJOR == 21
+#if CLANG_VERSION_MAJOR >= 21
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
   auto Diags = CompilerInstance::createDiagnostics(
       *FS, *DiagOpts, &diagnostics_consumer, false);
@@ -119,7 +124,22 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
 #error Clang version not supported.
 #endif
 
-#if CLANG_VERSION_MAJOR == 21
+#if CLANG_VERSION_MAJOR >= 22
+  // Clang 22 removed ASTUnit::LoadFromCommandLine. Build a CompilerInvocation
+  // from the args and load the AST from it.
+  CreateInvocationOptions CIOpts;
+  CIOpts.Diags = Diags;
+  CIOpts.VFS = FS;
+  std::shared_ptr<CompilerInvocation> Invocation =
+      createInvocation(llvm::ArrayRef<const char *>(argstart, argend), CIOpts);
+  if (!Invocation) {
+    throw std::runtime_error("Failed to create a CompilerInvocation.");
+  }
+  IntrusiveRefCntPtr<FileManager> FileMgr =
+      new FileManager(FileSystemOptions{}, FS);
+  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCompilerInvocation(
+      Invocation, PCHContainerOps, DiagOpts, Diags, FileMgr));
+#elif CLANG_VERSION_MAJOR == 21
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, DiagOpts, Diags, ""));
 #elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
