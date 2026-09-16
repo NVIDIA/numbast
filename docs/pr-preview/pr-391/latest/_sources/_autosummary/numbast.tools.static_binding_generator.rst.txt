@@ -1,0 +1,21 @@
+numbast.tools.static\_binding\_generator
+========================================
+
+.. automodule:: numbast.tools.static_binding_generator
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      log_files_to_generate
+      ruff_format_binding_file
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Config
+      NumbaDataModelDictType
+      NumbaTypeDictType
+   
