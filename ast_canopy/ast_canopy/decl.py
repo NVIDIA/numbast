@@ -360,6 +360,7 @@ class Struct:
         sizeof_: int,
         alignof_: int,
         parse_entry_point: str,
+        is_union: bool = False,
     ):
         self._name = name
         self._qual_name = qual_name
@@ -370,6 +371,7 @@ class Struct:
         self.nested_class_templates = nested_class_templates
         self.sizeof_ = sizeof_
         self.alignof_ = alignof_
+        self.is_union = is_union
 
         self.parse_entry_point = parse_entry_point
 
@@ -426,6 +428,7 @@ class Struct:
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            is_union=getattr(c_obj, "is_union", False),
         )
 
     @property
@@ -464,6 +467,7 @@ class TemplatedStruct(Struct):
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            is_union=getattr(c_obj, "is_union", False),
         )
 
 
@@ -550,6 +554,7 @@ class ClassTemplateSpecialization(Struct):
             record.sizeof_,
             record.alignof_,
             record.parse_entry_point,
+            is_union=record.is_union,
         )
 
         self._instantiation = ClassInstantiation(class_template)
