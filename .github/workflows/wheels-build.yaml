@@ -15,7 +15,7 @@ on:
         default: "cpu16"
       llvm_version:
         type: string
-        default: "20.1.8"
+        default: "22.1.8"
       script:
         type: string
         default: "ci/build_wheels.sh"
