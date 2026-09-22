@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""CUDA-Oxide Rust binding model built from AST Canopy declarations."""
+"""CUDA-Oxide Rust binding plan built from AST Canopy declarations."""
 
 from __future__ import annotations
 
@@ -12,16 +12,16 @@ from typing import Any
 from numbast.name_policy import apply_prefix_removal
 from numbast.rust_types import (
     CUDA_ABI_ALIASES,
-    CAbiType,
     PRIMITIVE_RUST_TYPES,
+    CudaOxideType,
     cuda_abi_alias_for_arch,
     is_identifier,
-    parse_c_abi_type,
-    parse_c_type_spelling,
+    parse_cuda_oxide_type,
+    parse_cuda_oxide_type_spelling,
+    render_rust_type,
     rust_identifier,
     rust_parameter_name,
-    rust_record_storage,
-    rust_type,
+    rust_struct_storage,
 )
 
 _INTEGER_LITERAL = re.compile(
@@ -53,8 +53,8 @@ _LEGACY_NVVM_SMALL_RUST_TYPES = frozenset(
 )
 
 
-class BindingModelError(ValueError):
-    """Raised after collecting every actionable model diagnostic."""
+class CudaOxideBindingError(ValueError):
+    """Raised after collecting every actionable binding diagnostic."""
 
     def __init__(self, diagnostics: list[str]):
         self.diagnostics = sorted(set(diagnostics))
@@ -63,19 +63,19 @@ class BindingModelError(ValueError):
 
 
 @dataclass(frozen=True)
-class AbiParameter:
+class CudaOxideParameter:
     c_name: str
     rust_name: str
-    type_: CAbiType
+    type_: CudaOxideType
 
 
 @dataclass(frozen=True)
-class AbiFunction:
+class CudaOxideFunction:
     native_name: str
     public_name: str
     execution_space: str
-    return_type: CAbiType
-    parameters: tuple[AbiParameter, ...]
+    return_type: CudaOxideType
+    parameters: tuple[CudaOxideParameter, ...]
 
     @property
     def signature_key(self):
@@ -87,14 +87,14 @@ class AbiFunction:
 
 
 @dataclass(frozen=True)
-class AbiEnum:
+class CudaOxideEnum:
     name: str
     rust_underlying_type: str
     enumerators: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True)
-class AbiRecord:
+class CudaOxideStruct:
     name: str
     size: int
     alignment: int
@@ -103,17 +103,17 @@ class AbiRecord:
 
 
 @dataclass(frozen=True)
-class AbiTypedef:
+class CudaOxideTypeAlias:
     name: str
-    underlying: CAbiType
+    underlying: CudaOxideType
 
 
 @dataclass
-class BindingModel:
-    functions: list[AbiFunction] = field(default_factory=list)
-    enums: list[AbiEnum] = field(default_factory=list)
-    records: list[AbiRecord] = field(default_factory=list)
-    typedefs: list[AbiTypedef] = field(default_factory=list)
+class CudaOxideBindingPlan:
+    functions: list[CudaOxideFunction] = field(default_factory=list)
+    enums: list[CudaOxideEnum] = field(default_factory=list)
+    structs: list[CudaOxideStruct] = field(default_factory=list)
+    type_aliases: list[CudaOxideTypeAlias] = field(default_factory=list)
     cuda_aliases: dict[str, tuple[str, int, int]] = field(default_factory=dict)
     exclusions: list[dict[str, str]] = field(default_factory=list)
 
@@ -138,7 +138,7 @@ def translate_constant_literal(value: Any) -> str:
 
 
 def _validate_type(
-    type_: CAbiType,
+    type_: CudaOxideType,
     typedefs: dict[str, Any],
     enums: dict[str, Any],
     records: dict[str, Any],
@@ -173,7 +173,9 @@ def _validate_type(
             return
         seen.add(base)
         try:
-            underlying = parse_c_type_spelling(typedefs[base].underlying_name)
+            underlying = parse_cuda_oxide_type_spelling(
+                typedefs[base].underlying_name
+            )
         except ValueError as error:
             diagnostics.append(f"{context}: typedef {base!r}: {error}")
             return
@@ -191,10 +193,12 @@ def _validate_type(
     diagnostics.append(f"{context}: unsupported C ABI type {base!r}")
 
 
-def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
-    """Select declarations and build the strict Round 1 C-device model."""
+def build_cuda_oxide_binding_plan(
+    declarations: Any, config: Any
+) -> CudaOxideBindingPlan:
+    """Select declarations and build the strict Round 1 binding plan."""
 
-    model = BindingModel()
+    plan = CudaOxideBindingPlan()
     diagnostics: list[str] = []
     typedef_decls = {item.name: item for item in declarations.typedefs}
     enum_decls = {item.name: item for item in declarations.enums if item.name}
@@ -219,7 +223,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
         getattr(function, "is_c_linkage", None) is None
         for function in device_candidates
     ):
-        raise BindingModelError(
+        raise CudaOxideBindingError(
             [
                 (
                     "AST Canopy does not expose Function.is_c_linkage; install the "
@@ -228,12 +232,12 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             ]
         )
 
-    seen_native: dict[str, AbiFunction] = {}
+    seen_native: dict[str, CudaOxideFunction] = {}
     seen_public: dict[str, str] = {}
     for function in declarations.functions:
         space = _execution_space_name(function.exec_space)
         if function.name in config.exclude_functions:
-            model.exclusions.append(
+            plan.exclusions.append(
                 {
                     "kind": "function",
                     "name": function.name,
@@ -242,7 +246,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             )
             continue
         if config.skip_prefix and function.name.startswith(config.skip_prefix):
-            model.exclusions.append(
+            plan.exclusions.append(
                 {
                     "kind": "function",
                     "name": function.name,
@@ -251,7 +255,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             )
             continue
         if space not in {"device", "host_device"}:
-            model.exclusions.append(
+            plan.exclusions.append(
                 {
                     "kind": "function",
                     "name": function.name,
@@ -296,7 +300,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             continue
 
         try:
-            return_type = parse_c_abi_type(function.return_type)
+            return_type = parse_cuda_oxide_type(function.return_type)
         except ValueError as error:
             diagnostics.append(
                 f"function {function.name!r} return type: {error}"
@@ -319,7 +323,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
         used_parameter_names = set()
         for index, parameter in enumerate(function.params):
             try:
-                type_ = parse_c_abi_type(parameter.type_)
+                type_ = parse_cuda_oxide_type(parameter.type_)
             except ValueError as error:
                 diagnostics.append(
                     f"function {function.name!r} parameter {index}: {error}"
@@ -343,7 +347,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
                 parameter_name = f"{parameter_name}_{index}"
             used_parameter_names.add(parameter_name)
             parameters.append(
-                AbiParameter(
+                CudaOxideParameter(
                     c_name=parameter.name,
                     rust_name=parameter_name,
                     type_=type_,
@@ -359,7 +363,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             )
             continue
 
-        bound = AbiFunction(
+        bound = CudaOxideFunction(
             native_name=function.name,
             public_name=public_name,
             execution_space=space,
@@ -369,7 +373,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
         previous = seen_native.get(bound.native_name)
         if previous is not None:
             if previous.signature_key == bound.signature_key:
-                model.exclusions.append(
+                plan.exclusions.append(
                     {
                         "kind": "function",
                         "name": function.name,
@@ -391,13 +395,13 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             continue
         seen_native[bound.native_name] = bound
         seen_public[rust_public_name] = bound.native_name
-        model.functions.append(bound)
+        plan.functions.append(bound)
 
     native_rust_names = {
         rust_identifier(function.native_name): function.native_name
-        for function in model.functions
+        for function in plan.functions
     }
-    for function in model.functions:
+    for function in plan.functions:
         if function.public_name == function.native_name:
             continue
         rendered_public = rust_identifier(function.public_name)
@@ -413,7 +417,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             )
 
     for template in declarations.function_templates:
-        model.exclusions.append(
+        plan.exclusions.append(
             {
                 "kind": "function-template",
                 "name": template.function.name,
@@ -421,7 +425,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             }
         )
     for template in declarations.class_templates:
-        model.exclusions.append(
+        plan.exclusions.append(
             {
                 "kind": "class-template",
                 "name": template.record.name,
@@ -431,7 +435,7 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
 
     used_bases = {
         type_.base_name
-        for function in model.functions
+        for function in plan.functions
         for type_ in [
             function.return_type,
             *(parameter.type_ for parameter in function.parameters),
@@ -441,14 +445,14 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
     while pending:
         base = pending.pop()
         if base in CUDA_ABI_ALIASES:
-            model.cuda_aliases[base] = cuda_abi_alias_for_arch(
+            plan.cuda_aliases[base] = cuda_abi_alias_for_arch(
                 base, config.gpu_arch[0]
             )
         if base in typedef_decls and all(
-            item.name != base for item in model.typedefs
+            item.name != base for item in plan.type_aliases
         ):
             try:
-                underlying = parse_c_type_spelling(
+                underlying = parse_cuda_oxide_type_spelling(
                     typedef_decls[base].underlying_name
                 )
             except ValueError as error:
@@ -461,15 +465,17 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
                     and (base in record_decls or base in enum_decls)
                 )
                 if not identity_tag_alias:
-                    model.typedefs.append(AbiTypedef(base, underlying))
+                    plan.type_aliases.append(
+                        CudaOxideTypeAlias(base, underlying)
+                    )
                     pending.append(underlying.base_name)
-        if base in enum_decls and all(
-            item.name != base for item in model.enums
-        ):
+        if base in enum_decls and all(item.name != base for item in plan.enums):
             declaration = enum_decls[base]
             try:
-                underlying = parse_c_abi_type(declaration.underlying_type)
-                rust_underlying = rust_type(underlying, model, typedef_decls)
+                underlying = parse_cuda_oxide_type(declaration.underlying_type)
+                rust_underlying = render_rust_type(
+                    underlying, plan, typedef_decls
+                )
                 enumerators = tuple(
                     (name, translate_constant_literal(value))
                     for name, value in zip(
@@ -479,20 +485,22 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             except ValueError as error:
                 diagnostics.append(f"enum {base!r}: {error}")
             else:
-                model.enums.append(AbiEnum(base, rust_underlying, enumerators))
+                plan.enums.append(
+                    CudaOxideEnum(base, rust_underlying, enumerators)
+                )
         if base in record_decls and all(
-            item.name != base for item in model.records
+            item.name != base for item in plan.structs
         ):
             declaration = record_decls[base]
             try:
-                storage = rust_record_storage(
+                storage = rust_struct_storage(
                     declaration.sizeof_, declaration.alignof_
                 )
             except ValueError as error:
                 diagnostics.append(f"record {base!r}: {error}")
             else:
-                model.records.append(
-                    AbiRecord(
+                plan.structs.append(
+                    CudaOxideStruct(
                         name=base,
                         size=declaration.sizeof_,
                         alignment=declaration.alignof_,
@@ -506,13 +514,13 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
 
     # Named and anonymous enum values are useful C API constants even when the
     # enum itself is not present in a selected signature.
-    known_enum_names = {item.name for item in model.enums}
+    known_enum_names = {item.name for item in plan.enums}
     for declaration in declarations.enums:
         if declaration.name in known_enum_names:
             continue
         try:
-            underlying = parse_c_abi_type(declaration.underlying_type)
-            rust_underlying = rust_type(underlying, model, typedef_decls)
+            underlying = parse_cuda_oxide_type(declaration.underlying_type)
+            rust_underlying = render_rust_type(underlying, plan, typedef_decls)
             enumerators = tuple(
                 (name, translate_constant_literal(value))
                 for name, value in zip(
@@ -525,34 +533,32 @@ def build_c_device_model(declarations: Any, config: Any) -> BindingModel:
             )
         else:
             synthetic_name = declaration.name or ""
-            model.enums.append(
-                AbiEnum(synthetic_name, rust_underlying, enumerators)
+            plan.enums.append(
+                CudaOxideEnum(synthetic_name, rust_underlying, enumerators)
             )
 
-    model.functions.sort(key=lambda item: item.native_name)
-    model.enums.sort(key=lambda item: (item.name, item.enumerators))
-    model.records.sort(key=lambda item: item.name)
-    model.typedefs.sort(key=lambda item: item.name)
-    model.exclusions.sort(
+    plan.functions.sort(key=lambda item: item.native_name)
+    plan.enums.sort(key=lambda item: (item.name, item.enumerators))
+    plan.structs.sort(key=lambda item: item.name)
+    plan.type_aliases.sort(key=lambda item: item.name)
+    plan.exclusions.sort(
         key=lambda item: (item["kind"], item["name"], item["reason"])
     )
     if diagnostics:
-        raise BindingModelError(diagnostics)
-    return model
+        raise CudaOxideBindingError(diagnostics)
+    return plan
 
 
-def modern_nvvm_required_symbols(model: BindingModel) -> list[str]:
+def modern_nvvm_required_symbols(plan: CudaOxideBindingPlan) -> list[str]:
     """Return symbols whose by-value ABI needs CUDA-Oxide's sm_100+ path."""
 
-    typedefs = {item.name: item.underlying for item in model.typedefs}
+    type_aliases = {item.name: item.underlying for item in plan.type_aliases}
     enums = {
-        item.name: item.rust_underlying_type
-        for item in model.enums
-        if item.name
+        item.name: item.rust_underlying_type for item in plan.enums if item.name
     }
 
     def is_small_by_value(
-        type_: CAbiType, seen: set[str] | None = None
+        type_: CudaOxideType, seen: set[str] | None = None
     ) -> bool:
         if type_.pointer_depth:
             return False
@@ -561,15 +567,15 @@ def modern_nvvm_required_symbols(model: BindingModel) -> list[str]:
             return True
         if base in enums:
             return enums[base] in _LEGACY_NVVM_SMALL_RUST_TYPES
-        if base not in typedefs:
+        if base not in type_aliases:
             return False
         seen = set() if seen is None else seen
         if base in seen:
             return False
-        return is_small_by_value(typedefs[base], {*seen, base})
+        return is_small_by_value(type_aliases[base], {*seen, base})
 
     required = []
-    for function in model.functions:
+    for function in plan.functions:
         signature_types = [
             function.return_type,
             *(parameter.type_ for parameter in function.parameters),

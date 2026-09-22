@@ -6,12 +6,18 @@ from types import SimpleNamespace
 import pytest
 
 from numbast.cuda_oxide_binding_model import (
-    BindingModelError,
-    build_c_device_model,
+    CudaOxideBindingError,
+    CudaOxideBindingPlan,
+    CudaOxideEnum,
+    CudaOxideFunction,
+    CudaOxideParameter,
+    CudaOxideStruct,
+    CudaOxideTypeAlias,
+    build_cuda_oxide_binding_plan,
     modern_nvvm_required_symbols,
     translate_constant_literal,
 )
-from numbast.rust_types import parse_c_abi_type, rust_type
+from numbast.rust_types import parse_cuda_oxide_type, render_rust_type
 
 
 class FakeType:
@@ -90,9 +96,9 @@ def config(**overrides):
         (FakeType(""), "empty type spelling"),
     ],
 )
-def test_type_parser_rejects_non_c_abi_types(type_, message):
+def test_type_parser_rejects_unsupported_cuda_oxide_types(type_, message):
     with pytest.raises(ValueError, match=message):
-        parse_c_abi_type(type_)
+        parse_cuda_oxide_type(type_)
 
 
 @pytest.mark.parametrize(
@@ -136,24 +142,24 @@ def test_selects_c_device_surface_and_records_exclusions():
         ],
     )
 
-    model = build_c_device_model(
+    plan = build_cuda_oxide_binding_plan(
         parsed,
         config(exclude_functions=["excluded"], skip_prefix="internal_"),
     )
 
-    assert [item.native_name for item in model.functions] == ["library_copy"]
-    selected = model.functions[0]
+    assert [item.native_name for item in plan.functions] == ["library_copy"]
+    selected = plan.functions[0]
     assert selected.public_name == "copy"
     assert [parameter.rust_name for parameter in selected.parameters] == [
         "r#in",
         "output",
     ]
     assert [
-        rust_type(parameter.type_, model) for parameter in selected.parameters
+        render_rust_type(parameter.type_, plan)
+        for parameter in selected.parameters
     ] == ["*const f32", "*const *mut i32"]
     assert {
-        (item["kind"], item["name"], item["reason"])
-        for item in model.exclusions
+        (item["kind"], item["name"], item["reason"]) for item in plan.exclusions
     } == {
         ("function", "excluded", "configured"),
         ("function", "host_only", "execution-space:host"),
@@ -183,18 +189,22 @@ def test_selects_c_device_surface_and_records_exclusions():
 def test_strictly_rejects_out_of_contract_device_declarations(
     bad_function, message
 ):
-    with pytest.raises(BindingModelError, match=message):
-        build_c_device_model(declarations(functions=[bad_function]), config())
+    with pytest.raises(CudaOxideBindingError, match=message):
+        build_cuda_oxide_binding_plan(
+            declarations(functions=[bad_function]), config()
+        )
 
 
 def test_requires_ast_canopy_linkage_metadata():
     candidate = function("old_ast", "int")
     del candidate.is_c_linkage
-    with pytest.raises(BindingModelError, match="Function.is_c_linkage"):
-        build_c_device_model(declarations(functions=[candidate]), config())
+    with pytest.raises(CudaOxideBindingError, match="Function.is_c_linkage"):
+        build_cuda_oxide_binding_plan(
+            declarations(functions=[candidate]), config()
+        )
 
 
-def test_collects_typedef_enum_and_opaque_record_abi():
+def test_collects_type_alias_enum_and_opaque_struct():
     record = SimpleNamespace(
         name="handle",
         sizeof_=16,
@@ -208,7 +218,7 @@ def test_collects_typedef_enum_and_opaque_record_abi():
         enumerators=["SUCCESS", "FAILURE"],
         enumerator_values=[0, "0x2u"],
     )
-    model = build_c_device_model(
+    plan = build_cuda_oxide_binding_plan(
         declarations(
             functions=[
                 function(
@@ -224,21 +234,27 @@ def test_collects_typedef_enum_and_opaque_record_abi():
         config(),
     )
 
-    assert [(item.name, item.storage_type) for item in model.records] == [
+    assert isinstance(plan, CudaOxideBindingPlan)
+    assert isinstance(plan.functions[0], CudaOxideFunction)
+    assert isinstance(plan.functions[0].parameters[0], CudaOxideParameter)
+    assert isinstance(plan.enums[0], CudaOxideEnum)
+    assert isinstance(plan.structs[0], CudaOxideStruct)
+    assert isinstance(plan.type_aliases[0], CudaOxideTypeAlias)
+    assert [(item.name, item.storage_type) for item in plan.structs] == [
         ("handle", "[u64; 2]")
     ]
-    assert [(item.name, item.rust_underlying_type) for item in model.enums] == [
+    assert [(item.name, item.rust_underlying_type) for item in plan.enums] == [
         ("status", "u32")
     ]
-    assert model.enums[0].enumerators == (
+    assert plan.enums[0].enumerators == (
         ("SUCCESS", "0"),
         ("FAILURE", "0x2"),
     )
-    assert [item.name for item in model.typedefs] == ["team_t"]
-    assert rust_type(model.typedefs[0].underlying, model) == "i32"
+    assert [item.name for item in plan.type_aliases] == ["team_t"]
+    assert render_rust_type(plan.type_aliases[0].underlying, plan) == "i32"
 
 
-def test_identity_record_typedef_is_emitted_once():
+def test_identity_struct_typedef_does_not_emit_redundant_type_alias():
     record = SimpleNamespace(
         name="record_t",
         sizeof_=4,
@@ -248,7 +264,7 @@ def test_identity_record_typedef_is_emitted_once():
     typedef = SimpleNamespace(
         name="record_t", underlying_name="struct record_t"
     )
-    model = build_c_device_model(
+    plan = build_cuda_oxide_binding_plan(
         declarations(
             functions=[
                 function("library_record", params=(("record", "record_t *"),))
@@ -259,13 +275,15 @@ def test_identity_record_typedef_is_emitted_once():
         config(),
     )
 
-    assert [item.name for item in model.records] == ["record_t"]
-    assert model.typedefs == []
+    assert [item.name for item in plan.structs] == ["record_t"]
+    assert plan.type_aliases == []
 
 
 def test_public_alias_cannot_shadow_another_native_symbol():
-    with pytest.raises(BindingModelError, match="conflicts with native symbol"):
-        build_c_device_model(
+    with pytest.raises(
+        CudaOxideBindingError, match="conflicts with native symbol"
+    ):
+        build_cuda_oxide_binding_plan(
             declarations(
                 functions=[
                     function("library_foo", "int"),
@@ -277,7 +295,7 @@ def test_public_alias_cannot_shadow_another_native_symbol():
 
 
 def test_rust_keyword_function_names_are_preserved():
-    model = build_c_device_model(
+    plan = build_cuda_oxide_binding_plan(
         declarations(
             functions=[
                 function("match", "int"),
@@ -288,15 +306,15 @@ def test_rust_keyword_function_names_are_preserved():
         config(),
     )
 
-    assert [item.native_name for item in model.functions] == [
+    assert [item.native_name for item in plan.functions] == [
         "library_type",
         "match",
         "union",
     ]
-    assert model.functions[0].public_name == "type"
+    assert plan.functions[0].public_name == "type"
 
-    with pytest.raises(BindingModelError, match="exact CUDA-Oxide"):
-        build_c_device_model(
+    with pytest.raises(CudaOxideBindingError, match="exact CUDA-Oxide"):
+        build_cuda_oxide_binding_plan(
             declarations(functions=[function("self", "int")]), config()
         )
 
@@ -313,7 +331,7 @@ def test_cuda_storage_aliases_and_modern_nvvm_requirements():
             function("library_vector", params=(("values", "const double2 *"),)),
         ]
     )
-    legacy = build_c_device_model(parsed, config())
+    legacy = build_cuda_oxide_binding_plan(parsed, config())
 
     assert legacy.cuda_aliases == {
         "__half": ("u16", 2, 2),
@@ -324,16 +342,16 @@ def test_cuda_storage_aliases_and_modern_nvvm_requirements():
         "library_bfloat",
         "library_half",
     ]
-    modern = build_c_device_model(parsed, config(gpu_arch=["sm_100"]))
+    modern = build_cuda_oxide_binding_plan(parsed, config(gpu_arch=["sm_100"]))
     assert modern.cuda_aliases["__half"] == ("f16", 2, 2)
 
 
-def test_invalid_record_storage_is_reported():
+def test_invalid_struct_storage_is_reported():
     record = SimpleNamespace(
         name="bad_record", sizeof_=12, alignof_=8, fields=[]
     )
-    with pytest.raises(BindingModelError, match="cannot represent"):
-        build_c_device_model(
+    with pytest.raises(CudaOxideBindingError, match="cannot represent"):
+        build_cuda_oxide_binding_plan(
             declarations(
                 functions=[
                     function(

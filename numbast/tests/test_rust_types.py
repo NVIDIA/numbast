@@ -6,18 +6,20 @@ from types import SimpleNamespace
 import pytest
 
 from numbast.rust_types import (
-    CAbiType,
+    CudaOxideType,
     cuda_abi_alias_for_arch,
     is_identifier,
+    render_rust_type,
     rust_identifier,
     rust_parameter_name,
-    rust_record_storage,
-    rust_type,
+    rust_struct_storage,
 )
 
 
-def empty_model():
-    return SimpleNamespace(cuda_aliases={}, enums=[], records=[], typedefs=[])
+def empty_plan():
+    return SimpleNamespace(
+        cuda_aliases={}, enums=[], structs=[], type_aliases=[]
+    )
 
 
 @pytest.mark.parametrize("name", ["function", "_function", "function_2"])
@@ -45,28 +47,28 @@ def test_rust_parameter_names_are_sanitized():
     assert rust_parameter_name("9bad-name", 0) == "arg_9bad_name"
 
 
-def test_rust_type_preserves_pointer_and_array_order():
-    pointers = CAbiType(
+def test_cuda_oxide_type_preserves_pointer_and_array_order():
+    pointers = CudaOxideType(
         c_spelling="const int *const *volatile",
         base_name="int",
         pointer_kinds=("const", "const"),
     )
-    assert rust_type(pointers, empty_model()) == "*const *const i32"
+    assert render_rust_type(pointers, empty_plan()) == "*const *const i32"
 
-    array = CAbiType(
+    array = CudaOxideType(
         c_spelling="unsigned int[2][3]",
         base_name="unsigned int",
         array_dimensions=(2, 3),
     )
-    assert rust_type(array, empty_model()) == "[[u32; 3]; 2]"
+    assert render_rust_type(array, empty_plan()) == "[[u32; 3]; 2]"
 
-    pointer_to_array = CAbiType(
+    pointer_to_array = CudaOxideType(
         c_spelling="const int (*)[2][3]",
         base_name="int",
         pointer_kinds=("const",),
         array_dimensions=(2, 3),
     )
-    assert rust_type(pointer_to_array, empty_model()) == (
+    assert render_rust_type(pointer_to_array, empty_plan()) == (
         "*const [[i32; 3]; 2]"
     )
 
@@ -82,7 +84,7 @@ def test_cuda_aliases_are_architecture_sensitive():
     )
 
 
-def test_opaque_record_storage_preserves_size_and_alignment():
-    assert rust_record_storage(16, 8) == "[u64; 2]"
+def test_opaque_struct_storage_preserves_size_and_alignment():
+    assert rust_struct_storage(16, 8) == "[u64; 2]"
     with pytest.raises(ValueError, match="cannot represent"):
-        rust_record_storage(12, 8)
+        rust_struct_storage(12, 8)

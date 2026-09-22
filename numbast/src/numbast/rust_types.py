@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Rust source names and ABI type spellings used by Numbast backends."""
+"""CUDA-Oxide Rust type and identifier policy."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from numbast.cuda_oxide_binding_model import BindingModel
+    from numbast.cuda_oxide_binding_model import CudaOxideBindingPlan
 
 
 _QUALIFIERS = re.compile(r"\b(?:const|volatile|restrict|__restrict__)\b")
@@ -126,7 +126,8 @@ PRIMITIVE_RUST_TYPES = {
 CUDA_ABI_ALIASES = {
     # Pre-Blackwell CUDA-Oxide uses a legacy NVVM dialect that cannot carry
     # half or sub-32-bit values at an extern boundary. The u16 storage spelling
-    # keeps pointer-based APIs usable there; build_c_device_model selects f16
+    # keeps pointer-based APIs usable there; build_cuda_oxide_binding_plan
+    # selects f16
     # for CUDA __half on the modern sm_100+ path, where by-value FFI is legal.
     "__half": ("u16", 2, 2),
     "half": ("u16", 2, 2),
@@ -138,7 +139,7 @@ CUDA_ABI_ALIASES = {
 
 
 @dataclass(frozen=True)
-class CAbiType:
+class CudaOxideType:
     c_spelling: str
     base_name: str
     pointer_kinds: tuple[str, ...] = ()
@@ -176,11 +177,13 @@ def rust_parameter_name(name: str, index: int) -> str:
     return rust_identifier(candidate)
 
 
-def parse_c_abi_type(type_obj: Any) -> CAbiType:
-    """Normalize the qualified C spelling reported by AST Canopy."""
+def parse_cuda_oxide_type(type_obj: Any) -> CudaOxideType:
+    """Build a CUDA-Oxide type from an AST Canopy C type spelling."""
 
     if type_obj.is_left_reference() or type_obj.is_right_reference():
-        raise ValueError("C++ references are outside the Round 1 C ABI")
+        raise ValueError(
+            "C++ references are outside the supported CUDA-Oxide bindings"
+        )
 
     spelling = " ".join(type_obj.name.strip().split())
     if not spelling:
@@ -195,10 +198,12 @@ def parse_c_abi_type(type_obj: Any) -> CAbiType:
         )
     if "(" in parse_spelling or ")" in parse_spelling:
         raise ValueError(
-            "function/member pointers are outside the Round 1 C ABI"
+            "function/member pointers are outside the supported CUDA-Oxide bindings"
         )
     if "&" in parse_spelling:
-        raise ValueError("C++ references are outside the Round 1 C ABI")
+        raise ValueError(
+            "C++ references are outside the supported CUDA-Oxide bindings"
+        )
 
     dimensions = []
     array_source = parse_spelling
@@ -220,7 +225,7 @@ def parse_c_abi_type(type_obj: Any) -> CAbiType:
     if not base_name:
         raise ValueError(f"unable to find a base type in {spelling!r}")
 
-    return CAbiType(
+    return CudaOxideType(
         c_spelling=spelling,
         base_name=base_name,
         pointer_kinds=pointer_kinds,
@@ -241,10 +246,10 @@ class _TypedefType:
         return False
 
 
-def parse_c_type_spelling(spelling: str) -> CAbiType:
-    """Parse a configured C type spelling with the AST type normalization."""
+def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
+    """Build a CUDA-Oxide type from a configured C type spelling."""
 
-    return parse_c_abi_type(_TypedefType(spelling))
+    return parse_cuda_oxide_type(_TypedefType(spelling))
 
 
 def cuda_abi_alias_for_arch(name: str, gpu_arch: str) -> tuple[str, int, int]:
@@ -255,34 +260,33 @@ def cuda_abi_alias_for_arch(name: str, gpu_arch: str) -> tuple[str, int, int]:
     return storage, size, alignment
 
 
-def rust_record_storage(size: int, alignment: int) -> str:
+def rust_struct_storage(size: int, alignment: int) -> str:
     """Return an aligned Rust storage type for an opaque C record."""
 
     cells = {1: "u8", 2: "u16", 4: "u32", 8: "u64", 16: "u128"}
     cell = cells.get(alignment)
     if cell is None or size <= 0 or size % alignment:
         raise ValueError(
-            f"cannot represent size={size}, alignment={alignment} as "
-            "CUDA-Oxide storage"
+            f"cannot represent size={size}, alignment={alignment} as CUDA-Oxide storage"
         )
     return f"[{cell}; {size // alignment}]"
 
 
-def rust_type(
-    type_: CAbiType,
-    model: BindingModel,
+def render_rust_type(
+    type_: CudaOxideType,
+    plan: CudaOxideBindingPlan,
     typedef_decls: dict[str, Any] | None = None,
 ) -> str:
-    """Render a normalized C ABI type as a CUDA-Oxide-compatible Rust type."""
+    """Render a CUDA-Oxide type as Rust source."""
 
     base = type_.base_name
     if base in PRIMITIVE_RUST_TYPES:
         rendered = PRIMITIVE_RUST_TYPES[base]
     elif (
-        base in model.cuda_aliases
-        or any(item.name == base for item in model.enums)
-        or any(item.name == base for item in model.records)
-        or any(item.name == base for item in model.typedefs)
+        base in plan.cuda_aliases
+        or any(item.name == base for item in plan.enums)
+        or any(item.name == base for item in plan.structs)
+        or any(item.name == base for item in plan.type_aliases)
         or typedef_decls
         and base in typedef_decls
     ):
