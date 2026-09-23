@@ -260,17 +260,18 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("nested_class_templates", &Record::nested_class_templates)
       .def_readwrite("sizeof_", &Record::sizeof_)
       .def_readwrite("alignof_", &Record::alignof_)
+      .def_readwrite("is_union", &Record::is_union)
       .def(py::pickle(
           [](const Record &r) {
-            return py::make_tuple(r.name, r.fields, r.methods,
-                                  r.templated_methods, r.nested_records,
-                                  r.nested_class_templates, r.sizeof_,
-                                  r.alignof_, r.source_range, r.qual_name);
+            return py::make_tuple(
+                r.name, r.fields, r.methods, r.templated_methods,
+                r.nested_records, r.nested_class_templates, r.sizeof_,
+                r.alignof_, r.source_range, r.qual_name, r.is_union);
           },
           [](py::tuple t) {
-            if (t.size() != 10)
+            if (t.size() != 10 && t.size() != 11)
               throw std::runtime_error("Invalid record state during unpickle!");
-            return Record{t[0].cast<std::string>(),
+            Record record{t[0].cast<std::string>(),
                           t[1].cast<std::vector<Field>>(),
                           t[2].cast<std::vector<Method>>(),
                           t[3].cast<std::vector<FunctionTemplate>>(),
@@ -280,6 +281,10 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                           t[7].cast<std::size_t>(),
                           t[8].cast<std::string>(),
                           t[9].cast<std::string>()};
+            if (t.size() == 11) {
+              record.is_union = t[10].cast<bool>();
+            }
+            return record;
           }));
 
   py::class_<Typedef>(m, "Typedef")

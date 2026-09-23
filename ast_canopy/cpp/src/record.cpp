@@ -7,6 +7,7 @@
 
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
+#include <clang/Basic/Version.h>
 
 #include <algorithm>
 
@@ -31,6 +32,10 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
     // Keep this stable by falling back to whatever name we have.
     qual_name = name;
   }
+
+  // Distinguish unions from structs/classes so downstream consumers can model
+  // them differently (a C union has no direct MLIR/LLVM aggregate equivalent).
+  is_union = RD->isUnion();
 
   // Class default access specifier is private, struct is public.
   AS access = RD->isClass() ? AS::AS_private : AS::AS_public;
@@ -77,7 +82,11 @@ Record::Record(const clang::CXXRecordDecl *RD, RecordAncestor rp) {
   }
 
   if (rp == RecordAncestor::ANCESTOR_IS_NOT_TEMPLATE) {
+#if CLANG_VERSION_MAJOR >= 22
+    clang::QualType type = RD->getASTContext().getCanonicalTagType(RD);
+#else
     clang::QualType type = RD->getASTContext().getTypeDeclType(RD);
+#endif
     clang::ASTContext &ctx = RD->getASTContext();
     // Guard against dependent or incomplete types whose layout cannot be
     // computed.  This can happen for records inside class template
