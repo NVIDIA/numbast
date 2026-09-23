@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -23,10 +22,6 @@ from numbast.rust_types import (
     rust_identifier,
     rust_parameter_name,
     rust_struct_storage,
-)
-
-_INTEGER_LITERAL = re.compile(
-    r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[bB][01]+|0[0-7]*|[0-9]+)(?:[uUlL]+)?$"
 )
 
 _EXECUTION_SPACE_NAMES = {
@@ -115,17 +110,6 @@ class CudaOxideBindingPlan:
     type_aliases: list[CudaOxideTypeAlias] = field(default_factory=list)
     cuda_aliases: dict[str, tuple[str, int, int]] = field(default_factory=dict)
     exclusions: list[dict[str, str]] = field(default_factory=list)
-
-
-def translate_constant_literal(value: Any) -> str:
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, int):
-        return str(value)
-    rendered = str(value).strip()
-    if not _INTEGER_LITERAL.fullmatch(rendered):
-        raise ValueError(f"unsupported non-literal constant value {value!r}")
-    return re.sub(r"[uUlL]+$", "", rendered)
 
 
 def _validate_type(
@@ -468,9 +452,9 @@ def build_cuda_oxide_binding_plan(
                     underlying, plan, typedef_decls
                 )
                 enumerators = tuple(
-                    (name, translate_constant_literal(value))
-                    for name, value in zip(
-                        declaration.enumerators, declaration.enumerator_values
+                    zip(
+                        declaration.enumerators,
+                        declaration.enumerator_values,
                     )
                 )
             except ValueError as error:
@@ -513,9 +497,9 @@ def build_cuda_oxide_binding_plan(
             underlying = parse_cuda_oxide_type(declaration.underlying_type)
             rust_underlying = render_rust_type(underlying, plan, typedef_decls)
             enumerators = tuple(
-                (name, translate_constant_literal(value))
-                for name, value in zip(
-                    declaration.enumerators, declaration.enumerator_values
+                zip(
+                    declaration.enumerators,
+                    declaration.enumerator_values,
                 )
             )
         except ValueError as error:

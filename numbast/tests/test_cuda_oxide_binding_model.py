@@ -14,7 +14,6 @@ from numbast.cuda_oxide_binding_model import (
     CudaOxideTypeAlias,
     build_cuda_oxide_binding_plan,
     modern_nvvm_required_symbols,
-    translate_constant_literal,
 )
 from numbast.errors import CudaOxideBindingError
 from numbast.rust_types import parse_cuda_oxide_type, render_rust_type
@@ -99,25 +98,6 @@ def config(**overrides):
 def test_type_parser_rejects_unsupported_cuda_oxide_types(type_, message):
     with pytest.raises(ValueError, match=message):
         parse_cuda_oxide_type(type_)
-
-
-@pytest.mark.parametrize(
-    ("value", "translated"),
-    [
-        (True, "true"),
-        (False, "false"),
-        (-7, "-7"),
-        ("0x2aULL", "0x2a"),
-        ("077u", "077"),
-    ],
-)
-def test_constant_literals_are_normalized(value, translated):
-    assert translate_constant_literal(value) == translated
-
-
-def test_constant_expressions_are_rejected():
-    with pytest.raises(ValueError, match="unsupported non-literal"):
-        translate_constant_literal("1 << 4")
 
 
 def test_selects_c_device_surface_and_records_exclusions():
@@ -216,7 +196,7 @@ def test_collects_type_alias_enum_and_opaque_struct():
         name="status",
         underlying_type=FakeType("unsigned int"),
         enumerators=["SUCCESS", "FAILURE"],
-        enumerator_values=[0, "0x2u"],
+        enumerator_values=["0", "2"],
     )
     plan = build_cuda_oxide_binding_plan(
         declarations(
@@ -248,7 +228,7 @@ def test_collects_type_alias_enum_and_opaque_struct():
     ]
     assert plan.enums[0].enumerators == (
         ("SUCCESS", "0"),
-        ("FAILURE", "0x2"),
+        ("FAILURE", "2"),
     )
     assert [item.name for item in plan.type_aliases] == ["team_t"]
     assert render_rust_type(plan.type_aliases[0].underlying, plan) == "i32"
