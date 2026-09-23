@@ -9,6 +9,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from numbast.errors import CudaOxideBindingError
 from numbast.name_policy import apply_prefix_removal
 from numbast.rust_types import (
     CUDA_ABI_ALIASES,
@@ -51,15 +52,6 @@ _LEGACY_NVVM_SMALL_C_TYPES = frozenset(
 _LEGACY_NVVM_SMALL_RUST_TYPES = frozenset(
     {"bool", "i8", "i16", "u8", "u16", "f16"}
 )
-
-
-class CudaOxideBindingError(ValueError):
-    """Raised after collecting every actionable binding diagnostic."""
-
-    def __init__(self, diagnostics: list[str]):
-        self.diagnostics = sorted(set(diagnostics))
-        details = "\n".join(f"  - {item}" for item in self.diagnostics)
-        super().__init__(f"CUDA-Oxide binding generation failed:\n{details}")
 
 
 @dataclass(frozen=True)

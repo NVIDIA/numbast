@@ -1,5 +1,7 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
 
 
 class BaseASTError(Exception):
@@ -38,3 +40,12 @@ class MangledFunctionNameConflictError(BaseASTError):
     @property
     def mangled_name(self):
         return self._mangled_name
+
+
+class CudaOxideBindingError(ValueError):
+    """Raised after collecting every actionable CUDA-Oxide diagnostic."""
+
+    def __init__(self, diagnostics: list[str]):
+        self.diagnostics = sorted(set(diagnostics))
+        details = "\n".join(f"  - {item}" for item in self.diagnostics)
+        super().__init__(f"CUDA-Oxide binding generation failed:\n{details}")

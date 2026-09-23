@@ -6,7 +6,6 @@ from types import SimpleNamespace
 import pytest
 
 from numbast.cuda_oxide_binding_model import (
-    CudaOxideBindingError,
     CudaOxideBindingPlan,
     CudaOxideEnum,
     CudaOxideFunction,
@@ -17,6 +16,7 @@ from numbast.cuda_oxide_binding_model import (
     modern_nvvm_required_symbols,
     translate_constant_literal,
 )
+from numbast.errors import CudaOxideBindingError
 from numbast.rust_types import parse_cuda_oxide_type, render_rust_type
 
 
