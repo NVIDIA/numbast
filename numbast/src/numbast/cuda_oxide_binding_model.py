@@ -29,6 +29,13 @@ _INTEGER_LITERAL = re.compile(
     r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[bB][01]+|0[0-7]*|[0-9]+)(?:[uUlL]+)?$"
 )
 
+_EXECUTION_SPACE_NAMES = {
+    "execution_space.undefined": "undefined",
+    "execution_space.host": "host",
+    "execution_space.device": "device",
+    "execution_space.host_device": "host_device",
+    "execution_space.global_": "global",
+}
 _CUDA_OXIDE_RESERVED_PREFIX = "cuda_oxide_"
 _LEGACY_NVVM_SMALL_C_TYPES = frozenset(
     {
@@ -108,14 +115,6 @@ class CudaOxideBindingPlan:
     type_aliases: list[CudaOxideTypeAlias] = field(default_factory=list)
     cuda_aliases: dict[str, tuple[str, int, int]] = field(default_factory=dict)
     exclusions: list[dict[str, str]] = field(default_factory=list)
-
-
-def _execution_space_name(value: Any) -> str:
-    name = getattr(value, "name", None)
-    if name:
-        return name[:-1] if name.endswith("_") else name
-    rendered = str(value).rsplit(".", 1)[-1]
-    return rendered[:-1] if rendered.endswith("_") else rendered
 
 
 def translate_constant_literal(value: Any) -> str:
@@ -204,7 +203,7 @@ def build_cuda_oxide_binding_plan(
     device_candidates = [
         function
         for function in declarations.functions
-        if _execution_space_name(function.exec_space)
+        if _EXECUTION_SPACE_NAMES[str(function.exec_space)]
         in {"device", "host_device"}
         and function.name not in config.exclude_functions
         and not (
@@ -227,7 +226,7 @@ def build_cuda_oxide_binding_plan(
     seen_native: dict[str, CudaOxideFunction] = {}
     seen_public: dict[str, str] = {}
     for function in declarations.functions:
-        space = _execution_space_name(function.exec_space)
+        space = _EXECUTION_SPACE_NAMES[str(function.exec_space)]
         if function.name in config.exclude_functions:
             plan.exclusions.append(
                 {

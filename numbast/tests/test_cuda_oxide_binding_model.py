@@ -49,7 +49,7 @@ def function(
             SimpleNamespace(name=param_name, type_=FakeType(param_type))
             for param_name, param_type in params
         ],
-        exec_space=SimpleNamespace(name=execution_space),
+        exec_space=f"execution_space.{execution_space}",
         is_c_linkage=c_linkage,
         is_variadic=variadic,
         mangled_name=(
