@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -114,21 +115,32 @@ class CudaOxideBindingPlan:
     def _add_exclusion(self, kind: str, name: str, reason: str):
         self.exclusions.append({"kind": kind, "name": name, "reason": reason})
 
-    def _require_linkage_metadata(self, declarations: Any, config: Any):
-        device_candidates = [
-            function
-            for function in declarations.functions
-            if _EXECUTION_SPACE_NAMES[str(function.exec_space)]
-            in {"device", "host_device"}
-            and function.name not in config.exclude_functions
-            and not (
+    def _select_functions(
+        self, functions: Iterable[Any], config: Any
+    ) -> list[tuple[Any, str]]:
+        selected = []
+        for function in functions:
+            space = _EXECUTION_SPACE_NAMES[str(function.exec_space)]
+            if function.name in config.exclude_functions:
+                self._add_exclusion("function", function.name, "configured")
+                continue
+            if config.skip_prefix and function.name.startswith(
                 config.skip_prefix
-                and function.name.startswith(config.skip_prefix)
-            )
-        ]
-        if device_candidates and any(
+            ):
+                self._add_exclusion("function", function.name, "skip-prefix")
+                continue
+            if space not in {"device", "host_device"}:
+                self._add_exclusion(
+                    "function", function.name, f"execution-space:{space}"
+                )
+                continue
+            selected.append((function, space))
+        return selected
+
+    def _require_linkage_metadata(self, functions: Iterable[Any]):
+        if any(
             getattr(function, "is_c_linkage", None) is None
-            for function in device_candidates
+            for function in functions
         ):
             raise CudaOxideBindingError(
                 [
@@ -281,25 +293,14 @@ class CudaOxideBindingPlan:
         }
         prefix_removal = config.api_prefix_removal.get("Function", [])
 
-        plan._require_linkage_metadata(declarations, config)
+        candidates = plan._select_functions(declarations.functions, config)
+        plan._require_linkage_metadata(
+            function for function, _space in candidates
+        )
 
         seen_native: dict[str, CudaOxideFunction] = {}
         seen_public: dict[str, str] = {}
-        for function in declarations.functions:
-            space = _EXECUTION_SPACE_NAMES[str(function.exec_space)]
-            if function.name in config.exclude_functions:
-                plan._add_exclusion("function", function.name, "configured")
-                continue
-            if config.skip_prefix and function.name.startswith(
-                config.skip_prefix
-            ):
-                plan._add_exclusion("function", function.name, "skip-prefix")
-                continue
-            if space not in {"device", "host_device"}:
-                plan._add_exclusion(
-                    "function", function.name, f"execution-space:{space}"
-                )
-                continue
+        for function, space in candidates:
             if not function.is_c_linkage:
                 diagnostics.append(
                     f"function {function.name!r}: device declaration does not have C linkage"

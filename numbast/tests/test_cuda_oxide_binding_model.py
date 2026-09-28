@@ -182,6 +182,28 @@ def test_requires_ast_canopy_linkage_metadata():
         )
 
 
+def test_linkage_metadata_is_only_required_for_selected_functions():
+    ignored = [
+        function("excluded"),
+        function("internal_detail"),
+        function("host_only", execution_space="host"),
+    ]
+    for candidate in ignored:
+        del candidate.is_c_linkage
+
+    plan = CudaOxideBindingPlan.from_declarations(
+        declarations(functions=ignored),
+        config(exclude_functions=["excluded"], skip_prefix="internal_"),
+    )
+
+    assert plan.functions == []
+    assert {(item["name"], item["reason"]) for item in plan.exclusions} == {
+        ("excluded", "configured"),
+        ("host_only", "execution-space:host"),
+        ("internal_detail", "skip-prefix"),
+    }
+
+
 def test_collects_type_alias_enum_and_opaque_struct():
     record = SimpleNamespace(
         name="handle",
