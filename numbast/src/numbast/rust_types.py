@@ -126,7 +126,7 @@ PRIMITIVE_RUST_TYPES = {
 CUDA_ABI_ALIASES = {
     # Pre-Blackwell CUDA-Oxide uses a legacy NVVM dialect that cannot carry
     # half or sub-32-bit values at an extern boundary. The u16 storage spelling
-    # keeps pointer-based APIs usable there; build_cuda_oxide_binding_plan
+    # keeps pointer-based APIs usable there; CudaOxideBindingPlan construction
     # selects f16
     # for CUDA __half on the modern sm_100+ path, where by-value FFI is legal.
     "__half": ("u16", 2, 2),

@@ -12,8 +12,6 @@ from numbast.cuda_oxide_binding_model import (
     CudaOxideParameter,
     CudaOxideStruct,
     CudaOxideTypeAlias,
-    build_cuda_oxide_binding_plan,
-    modern_nvvm_required_symbols,
 )
 from numbast.errors import CudaOxideBindingError
 from numbast.rust_types import parse_cuda_oxide_type, render_rust_type
@@ -122,7 +120,7 @@ def test_selects_c_device_surface_and_records_exclusions():
         ],
     )
 
-    plan = build_cuda_oxide_binding_plan(
+    plan = CudaOxideBindingPlan.from_declarations(
         parsed,
         config(exclude_functions=["excluded"], skip_prefix="internal_"),
     )
@@ -170,7 +168,7 @@ def test_strictly_rejects_out_of_contract_device_declarations(
     bad_function, message
 ):
     with pytest.raises(CudaOxideBindingError, match=message):
-        build_cuda_oxide_binding_plan(
+        CudaOxideBindingPlan.from_declarations(
             declarations(functions=[bad_function]), config()
         )
 
@@ -179,7 +177,7 @@ def test_requires_ast_canopy_linkage_metadata():
     candidate = function("old_ast", "int")
     del candidate.is_c_linkage
     with pytest.raises(CudaOxideBindingError, match="Function.is_c_linkage"):
-        build_cuda_oxide_binding_plan(
+        CudaOxideBindingPlan.from_declarations(
             declarations(functions=[candidate]), config()
         )
 
@@ -198,7 +196,7 @@ def test_collects_type_alias_enum_and_opaque_struct():
         enumerators=["SUCCESS", "FAILURE"],
         enumerator_values=["0", "2"],
     )
-    plan = build_cuda_oxide_binding_plan(
+    plan = CudaOxideBindingPlan.from_declarations(
         declarations(
             functions=[
                 function(
@@ -244,7 +242,7 @@ def test_identity_struct_typedef_does_not_emit_redundant_type_alias():
     typedef = SimpleNamespace(
         name="record_t", underlying_name="struct record_t"
     )
-    plan = build_cuda_oxide_binding_plan(
+    plan = CudaOxideBindingPlan.from_declarations(
         declarations(
             functions=[
                 function("library_record", params=(("record", "record_t *"),))
@@ -263,7 +261,7 @@ def test_public_alias_cannot_shadow_another_native_symbol():
     with pytest.raises(
         CudaOxideBindingError, match="conflicts with native symbol"
     ):
-        build_cuda_oxide_binding_plan(
+        CudaOxideBindingPlan.from_declarations(
             declarations(
                 functions=[
                     function("library_foo", "int"),
@@ -275,7 +273,7 @@ def test_public_alias_cannot_shadow_another_native_symbol():
 
 
 def test_rust_keyword_function_names_are_preserved():
-    plan = build_cuda_oxide_binding_plan(
+    plan = CudaOxideBindingPlan.from_declarations(
         declarations(
             functions=[
                 function("match", "int"),
@@ -294,7 +292,7 @@ def test_rust_keyword_function_names_are_preserved():
     assert plan.functions[0].public_name == "type"
 
     with pytest.raises(CudaOxideBindingError, match="exact CUDA-Oxide"):
-        build_cuda_oxide_binding_plan(
+        CudaOxideBindingPlan.from_declarations(
             declarations(functions=[function("self", "int")]), config()
         )
 
@@ -311,18 +309,20 @@ def test_cuda_storage_aliases_and_modern_nvvm_requirements():
             function("library_vector", params=(("values", "const double2 *"),)),
         ]
     )
-    legacy = build_cuda_oxide_binding_plan(parsed, config())
+    legacy = CudaOxideBindingPlan.from_declarations(parsed, config())
 
     assert legacy.cuda_aliases == {
         "__half": ("u16", 2, 2),
         "__nv_bfloat16": ("u16", 2, 2),
         "double2": ("[u128; 1]", 16, 16),
     }
-    assert modern_nvvm_required_symbols(legacy) == [
+    assert legacy.modern_nvvm_required_symbols() == [
         "library_bfloat",
         "library_half",
     ]
-    modern = build_cuda_oxide_binding_plan(parsed, config(gpu_arch=["sm_100"]))
+    modern = CudaOxideBindingPlan.from_declarations(
+        parsed, config(gpu_arch=["sm_100"])
+    )
     assert modern.cuda_aliases["__half"] == ("f16", 2, 2)
 
 
@@ -331,7 +331,7 @@ def test_invalid_struct_storage_is_reported():
         name="bad_record", sizeof_=12, alignof_=8, fields=[]
     )
     with pytest.raises(CudaOxideBindingError, match="cannot represent"):
-        build_cuda_oxide_binding_plan(
+        CudaOxideBindingPlan.from_declarations(
             declarations(
                 functions=[
                     function(
