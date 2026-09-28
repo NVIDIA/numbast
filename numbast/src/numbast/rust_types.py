@@ -7,10 +7,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from numbast.cuda_oxide_binding_model import CudaOxideBindingPlan
+from typing import Any
 
 
 _QUALIFIERS = re.compile(r"\b(?:const|volatile|restrict|__restrict__)\b")
@@ -270,32 +267,3 @@ def rust_struct_storage(size: int, alignment: int) -> str:
             f"cannot represent size={size}, alignment={alignment} as CUDA-Oxide storage"
         )
     return f"[{cell}; {size // alignment}]"
-
-
-def render_rust_type(
-    type_: CudaOxideType,
-    plan: CudaOxideBindingPlan,
-    typedef_decls: dict[str, Any] | None = None,
-) -> str:
-    """Render a CUDA-Oxide type as Rust source."""
-
-    base = type_.base_name
-    if base in PRIMITIVE_RUST_TYPES:
-        rendered = PRIMITIVE_RUST_TYPES[base]
-    elif (
-        base in plan.cuda_aliases
-        or any(item.name == base for item in plan.enums)
-        or any(item.name == base for item in plan.structs)
-        or any(item.name == base for item in plan.type_aliases)
-        or typedef_decls
-        and base in typedef_decls
-    ):
-        rendered = rust_identifier(base)
-    else:
-        raise ValueError(f"unsupported C ABI type {base!r}")
-
-    for dimension in reversed(type_.array_dimensions):
-        rendered = f"[{rendered}; {dimension}]"
-    for pointer_kind in type_.pointer_kinds:
-        rendered = f"*{pointer_kind} {rendered}"
-    return rendered

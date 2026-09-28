@@ -19,7 +19,6 @@ from numbast.rust_types import (
     is_identifier,
     parse_cuda_oxide_type,
     parse_cuda_oxide_type_spelling,
-    render_rust_type,
     rust_identifier,
     rust_parameter_name,
     rust_struct_storage,
@@ -89,6 +88,34 @@ class CudaOxideBindingPlan:
     type_aliases: list[CudaOxideTypeAlias] = field(default_factory=list)
     cuda_aliases: dict[str, tuple[str, int, int]] = field(default_factory=dict)
     exclusions: list[dict[str, str]] = field(default_factory=list)
+
+    def render_rust_type(
+        self,
+        type_: CudaOxideType,
+        typedef_decls: dict[str, Any] | None = None,
+    ) -> str:
+        """Render a type using the names defined by this binding plan."""
+
+        base = type_.base_name
+        if base in PRIMITIVE_RUST_TYPES:
+            rendered = PRIMITIVE_RUST_TYPES[base]
+        elif (
+            base in self.cuda_aliases
+            or any(item.name == base for item in self.enums)
+            or any(item.name == base for item in self.structs)
+            or any(item.name == base for item in self.type_aliases)
+            or typedef_decls
+            and base in typedef_decls
+        ):
+            rendered = rust_identifier(base)
+        else:
+            raise ValueError(f"unsupported C ABI type {base!r}")
+
+        for dimension in reversed(type_.array_dimensions):
+            rendered = f"[{rendered}; {dimension}]"
+        for pointer_kind in type_.pointer_kinds:
+            rendered = f"*{pointer_kind} {rendered}"
+        return rendered
 
     def _add_exclusion(self, kind: str, name: str, reason: str):
         self.exclusions.append({"kind": kind, "name": name, "reason": reason})
@@ -238,7 +265,7 @@ class CudaOxideBindingPlan:
     ):
         try:
             underlying = parse_cuda_oxide_type(declaration.underlying_type)
-            rust_underlying = render_rust_type(underlying, self, typedefs)
+            rust_underlying = self.render_rust_type(underlying, typedefs)
         except ValueError as error:
             diagnostics.append(f"{context}: {error}")
             return

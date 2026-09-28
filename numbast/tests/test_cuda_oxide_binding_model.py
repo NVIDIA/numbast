@@ -14,7 +14,7 @@ from numbast.cuda_oxide_binding_model import (
     CudaOxideTypeAlias,
 )
 from numbast.errors import CudaOxideBindingError
-from numbast.rust_types import parse_cuda_oxide_type, render_rust_type
+from numbast.rust_types import parse_cuda_oxide_type
 
 
 class FakeType:
@@ -133,7 +133,7 @@ def test_selects_c_device_surface_and_records_exclusions():
         "output",
     ]
     assert [
-        render_rust_type(parameter.type_, plan)
+        plan.render_rust_type(parameter.type_)
         for parameter in selected.parameters
     ] == ["*const f32", "*const *mut i32"]
     assert {
@@ -256,7 +256,7 @@ def test_collects_type_alias_enum_and_opaque_struct():
         ("FAILURE", "2"),
     )
     assert [item.name for item in plan.type_aliases] == ["team_t"]
-    assert render_rust_type(plan.type_aliases[0].underlying, plan) == "i32"
+    assert plan.render_rust_type(plan.type_aliases[0].underlying) == "i32"
 
 
 def test_identity_struct_typedef_does_not_emit_redundant_type_alias():
