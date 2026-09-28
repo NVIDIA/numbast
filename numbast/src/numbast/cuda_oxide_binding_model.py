@@ -33,28 +33,6 @@ _EXECUTION_SPACE_NAMES = {
     "execution_space.global_": "global",
 }
 _CUDA_OXIDE_RESERVED_PREFIX = "cuda_oxide_"
-_LEGACY_NVVM_SMALL_C_TYPES = frozenset(
-    {
-        "_Bool",
-        "bool",
-        "char",
-        "int8_t",
-        "int16_t",
-        "short",
-        "signed char",
-        "signed short",
-        "uint8_t",
-        "uint16_t",
-        "unsigned char",
-        "unsigned short",
-        "__half",
-        "half",
-        "__nv_bfloat16",
-    }
-)
-_LEGACY_NVVM_SMALL_RUST_TYPES = frozenset(
-    {"bool", "i8", "i16", "u8", "u16", "f16"}
-)
 
 
 @dataclass(frozen=True)
@@ -561,42 +539,3 @@ class CudaOxideBindingPlan:
         if diagnostics:
             raise CudaOxideBindingError(diagnostics)
         return plan
-
-    def modern_nvvm_required_symbols(self) -> list[str]:
-        """Return symbols whose by-value ABI needs CUDA-Oxide's sm_100+ path."""
-
-        type_aliases = {
-            item.name: item.underlying for item in self.type_aliases
-        }
-        enums = {
-            item.name: item.rust_underlying_type
-            for item in self.enums
-            if item.name
-        }
-
-        def is_small_by_value(
-            type_: CudaOxideType, seen: set[str] | None = None
-        ) -> bool:
-            if type_.pointer_depth:
-                return False
-            base = type_.base_name
-            if base in _LEGACY_NVVM_SMALL_C_TYPES:
-                return True
-            if base in enums:
-                return enums[base] in _LEGACY_NVVM_SMALL_RUST_TYPES
-            if base not in type_aliases:
-                return False
-            seen = set() if seen is None else seen
-            if base in seen:
-                return False
-            return is_small_by_value(type_aliases[base], {*seen, base})
-
-        required = []
-        for function in self.functions:
-            signature_types = [
-                function.return_type,
-                *(parameter.type_ for parameter in function.parameters),
-            ]
-            if any(is_small_by_value(type_) for type_ in signature_types):
-                required.append(function.native_name)
-        return required

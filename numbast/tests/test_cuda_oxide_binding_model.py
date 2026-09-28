@@ -324,14 +324,13 @@ def test_rust_keyword_function_names_are_preserved():
         )
 
 
-def test_cuda_storage_aliases_and_modern_nvvm_requirements():
+def test_cuda_storage_aliases_are_architecture_specific():
     parsed = declarations(
         functions=[
-            function("library_half", "__half", (("value", "__half"),)),
+            function("library_half", params=(("value", "__half *"),)),
             function(
                 "library_bfloat",
-                "__nv_bfloat16",
-                (("value", "__nv_bfloat16"),),
+                params=(("value", "__nv_bfloat16 *"),),
             ),
             function("library_vector", params=(("values", "const double2 *"),)),
         ]
@@ -343,10 +342,6 @@ def test_cuda_storage_aliases_and_modern_nvvm_requirements():
         "__nv_bfloat16": ("u16", 2, 2),
         "double2": ("[u128; 1]", 16, 16),
     }
-    assert legacy.modern_nvvm_required_symbols() == [
-        "library_bfloat",
-        "library_half",
-    ]
     modern = CudaOxideBindingPlan.from_declarations(
         parsed, config(gpu_arch=["sm_100"])
     )
