@@ -154,6 +154,11 @@ def test_selects_c_device_surface_and_records_exclusions():
         (function("cpp", "int", c_linkage=False), "does not have C linkage"),
         (function("variadic", "int", variadic=True), "variadic"),
         (function("unknown", "mystery_t"), "unsupported C ABI type"),
+        (function("bad_return", ""), "return type: empty type spelling"),
+        (
+            function("bad_parameter", params=(("value", ""),)),
+            "parameter 0: empty type spelling",
+        ),
         (
             function("vector", params=(("value", "double2"),)),
             "only supports it behind a pointer",

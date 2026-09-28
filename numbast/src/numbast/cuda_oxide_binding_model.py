@@ -213,6 +213,30 @@ class CudaOxideBindingPlan:
             return
         diagnostics.append(f"{context}: unsupported C ABI type {base!r}")
 
+    def _parse_and_validate_type(
+        self,
+        type_: Any,
+        typedefs: dict[str, Any],
+        enums: dict[str, Any],
+        records: dict[str, Any],
+        diagnostics: list[str],
+        context: str,
+    ) -> CudaOxideType | None:
+        try:
+            parsed = parse_cuda_oxide_type(type_)
+        except ValueError as error:
+            diagnostics.append(f"{context}: {error}")
+            return None
+        self._validate_type(
+            parsed,
+            typedefs,
+            enums,
+            records,
+            diagnostics,
+            context,
+        )
+        return parsed
+
     def _add_template_exclusions(self, declarations: Any):
         for template in declarations.function_templates:
             self._add_exclusion(
@@ -337,21 +361,17 @@ class CudaOxideBindingPlan:
                 )
                 continue
 
-            try:
-                return_type = parse_cuda_oxide_type(function.return_type)
-            except ValueError as error:
-                diagnostics.append(
-                    f"function {function.name!r} return type: {error}"
-                )
-                continue
-            plan._validate_type(
-                return_type,
+            return_context = f"function {function.name!r} return type"
+            return_type = plan._parse_and_validate_type(
+                function.return_type,
                 typedef_decls,
                 enum_decls,
                 record_decls,
                 diagnostics,
-                f"function {function.name!r} return type",
+                return_context,
             )
+            if return_type is None:
+                continue
             if return_type.array_dimensions:
                 diagnostics.append(
                     f"function {function.name!r}: array return types are unsupported"
@@ -360,21 +380,19 @@ class CudaOxideBindingPlan:
             parameters = []
             used_parameter_names = set()
             for index, parameter in enumerate(function.params):
-                try:
-                    type_ = parse_cuda_oxide_type(parameter.type_)
-                except ValueError as error:
-                    diagnostics.append(
-                        f"function {function.name!r} parameter {index}: {error}"
-                    )
-                    continue
-                plan._validate_type(
-                    type_,
+                parameter_context = (
+                    f"function {function.name!r} parameter {index}"
+                )
+                type_ = plan._parse_and_validate_type(
+                    parameter.type_,
                     typedef_decls,
                     enum_decls,
                     record_decls,
                     diagnostics,
-                    f"function {function.name!r} parameter {index}",
+                    parameter_context,
                 )
+                if type_ is None:
+                    continue
                 if type_.array_dimensions and not type_.pointer_depth:
                     diagnostics.append(
                         f"function {function.name!r} parameter {index}: by-value arrays "
