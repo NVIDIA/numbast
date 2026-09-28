@@ -461,7 +461,9 @@ class CudaOxideBindingPlan:
 
         # Native extern declarations and public aliases share the Rust value
         # namespace. Check aliases against every native name after collection
-        # so the result does not depend on declaration order.
+        # so the result does not depend on declaration order. This restriction
+        # belongs to the current flat renderer; a renderer that keeps native
+        # externs in a private `ffi` module could allow these names to overlap.
         native_rust_names = {
             rust_identifier(function.native_name): function.native_name
             for function in plan.functions
