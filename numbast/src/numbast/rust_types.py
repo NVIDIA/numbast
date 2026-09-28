@@ -182,7 +182,13 @@ def parse_cuda_oxide_type(type_obj: Any) -> CudaOxideType:
             "C++ references are outside the supported CUDA-Oxide bindings"
         )
 
-    spelling = " ".join(type_obj.name.strip().split())
+    return parse_cuda_oxide_type_spelling(type_obj.name)
+
+
+def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
+    """Build a CUDA-Oxide type from a C type spelling."""
+
+    spelling = " ".join(spelling.strip().split())
     if not spelling:
         raise ValueError("empty type spelling")
     parse_spelling = spelling
@@ -228,25 +234,6 @@ def parse_cuda_oxide_type(type_obj: Any) -> CudaOxideType:
         pointer_kinds=pointer_kinds,
         array_dimensions=tuple(dimensions),
     )
-
-
-class _TypedefType:
-    """Small adapter allowing typedef spellings to use the common parser."""
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def is_left_reference(self):
-        return False
-
-    def is_right_reference(self):
-        return False
-
-
-def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
-    """Build a CUDA-Oxide type from a configured C type spelling."""
-
-    return parse_cuda_oxide_type(_TypedefType(spelling))
 
 
 def cuda_abi_alias_for_arch(name: str, gpu_arch: str) -> tuple[str, int, int]:

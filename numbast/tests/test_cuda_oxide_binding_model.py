@@ -14,7 +14,10 @@ from numbast.cuda_oxide_binding_model import (
     CudaOxideTypeAlias,
 )
 from numbast.errors import CudaOxideBindingError
-from numbast.rust_types import parse_cuda_oxide_type
+from numbast.rust_types import (
+    parse_cuda_oxide_type,
+    parse_cuda_oxide_type_spelling,
+)
 
 
 class FakeType:
@@ -96,6 +99,16 @@ def config(**overrides):
 def test_type_parser_rejects_unsupported_cuda_oxide_types(type_, message):
     with pytest.raises(ValueError, match=message):
         parse_cuda_oxide_type(type_)
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    ["int", "const float *", "unsigned int[2][3]", "const int (*)[2]"],
+)
+def test_ast_type_and_spelling_parser_agree(spelling):
+    assert parse_cuda_oxide_type(FakeType(spelling)) == (
+        parse_cuda_oxide_type_spelling(spelling)
+    )
 
 
 def test_selects_c_device_surface_and_records_exclusions():
