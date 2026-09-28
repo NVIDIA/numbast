@@ -317,6 +317,8 @@ class CudaOxideBindingPlan:
         }
         prefix_removal = config.api_prefix_removal.get("Function", [])
 
+        # Apply configured exclusions and skip prefixes, then retain only
+        # device and host-device functions as Round 1 binding candidates.
         candidates = plan._select_functions(declarations.functions, config)
         plan._require_linkage_metadata(
             function for function, _space in candidates
@@ -361,6 +363,8 @@ class CudaOxideBindingPlan:
                 )
                 continue
 
+            # Normalize and validate the return type against the supported
+            # CUDA-Oxide ABI surface.
             return_context = f"function {function.name!r} return type"
             return_type = plan._parse_and_validate_type(
                 function.return_type,
@@ -377,6 +381,8 @@ class CudaOxideBindingPlan:
                     f"function {function.name!r}: array return types are unsupported"
                 )
 
+            # Normalize parameter types and turn C parameter names into
+            # Rust-compatible identifiers.
             parameters = []
             used_parameter_names = set()
             for index, parameter in enumerate(function.params):
@@ -426,6 +432,8 @@ class CudaOxideBindingPlan:
                 return_type=return_type,
                 parameters=tuple(parameters),
             )
+            # The same native C symbol is either a duplicate declaration or an
+            # ABI conflict; C linkage does not support overloads.
             previous = seen_native.get(bound.native_name)
             if previous is not None:
                 if previous.signature_key == bound.signature_key:
@@ -437,6 +445,8 @@ class CudaOxideBindingPlan:
                         f"function {function.name!r}: C symbol has conflicting signatures"
                     )
                 continue
+            # Prefix removal must not map two native C symbols to the same
+            # public Rust identifier.
             rust_public_name = rust_identifier(public_name)
             prior_native = seen_public.get(rust_public_name)
             if prior_native is not None and prior_native != function.name:
@@ -449,6 +459,9 @@ class CudaOxideBindingPlan:
             seen_public[rust_public_name] = bound.native_name
             plan.functions.append(bound)
 
+        # Native extern declarations and public aliases share the Rust value
+        # namespace. Check aliases against every native name after collection
+        # so the result does not depend on declaration order.
         native_rust_names = {
             rust_identifier(function.native_name): function.native_name
             for function in plan.functions
@@ -470,6 +483,9 @@ class CudaOxideBindingPlan:
 
         plan._add_template_exclusions(declarations)
 
+        # Collect declarations for every base type referenced by function
+        # returns and parameters. Typedefs enqueue their underlying base types
+        # so the worklist covers the complete transitive dependency chain.
         used_bases = {
             type_.base_name
             for function in plan.functions
