@@ -84,6 +84,28 @@ def test_cuda_oxide_type_preserves_pointer_and_array_order():
     assert plan.render_rust_type(array_of_pointers) == "[[*const i32; 3]; 2]"
 
 
+def test_cuda_oxide_type_equality_ignores_source_spelling():
+    spaced = CudaOxideType(
+        c_spelling="int *",
+        base_name="int",
+        layers=(CudaOxidePointer("mut"),),
+    )
+    compact = CudaOxideType(
+        c_spelling="int*",
+        base_name="int",
+        layers=(CudaOxidePointer("mut"),),
+    )
+    const_pointer = CudaOxideType(
+        c_spelling="const int *",
+        base_name="int",
+        layers=(CudaOxidePointer("const"),),
+    )
+
+    assert spaced == compact
+    assert hash(spaced) == hash(compact)
+    assert spaced != const_pointer
+
+
 def test_cuda_oxide_type_uses_ast_canopy_structure():
     path = Path(__file__).parent / "data" / "sample_cuda_oxide_types.cuh"
     declarations = parse_declarations_from_source(

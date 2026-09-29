@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 
@@ -150,7 +150,7 @@ CudaOxideTypeLayer = CudaOxidePointer | CudaOxideArray
 
 @dataclass(frozen=True)
 class CudaOxideType:
-    c_spelling: str
+    c_spelling: str = field(compare=False)
     base_name: str
     # Ordered from the outermost type constructor to the named base type.
     layers: tuple[CudaOxideTypeLayer, ...] = ()
