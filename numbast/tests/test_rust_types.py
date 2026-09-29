@@ -12,8 +12,10 @@ from numbast.rust_types import (
     CudaOxidePointer,
     CudaOxideType,
     cuda_abi_alias_for_arch,
+    cuda_arch_number,
     is_identifier,
     parse_cuda_oxide_type,
+    parse_cuda_oxide_type_spelling,
     rust_identifier,
     rust_parameter_name,
     rust_struct_storage,
@@ -128,6 +130,12 @@ def test_cuda_oxide_type_uses_ast_canopy_structure():
         == "*mut [i32; 4]"
     )
     assert (
+        plan.render_rust_type(
+            parse_cuda_oxide_type(fields["pointer_to_const_array"])
+        )
+        == "*const [i32; 4]"
+    )
+    assert (
         plan.render_rust_type(parse_cuda_oxide_type(fields["pointer_to_const"]))
         == "*const i32"
     )
@@ -141,11 +149,23 @@ def test_cuda_aliases_are_architecture_sensitive():
     assert cuda_abi_alias_for_arch("__half", "sm_90") == ("u16", 2, 2)
     assert cuda_abi_alias_for_arch("__half", "sm_90a") == ("u16", 2, 2)
     assert cuda_abi_alias_for_arch("__half", "sm_100") == ("f16", 2, 2)
+    assert cuda_abi_alias_for_arch("__half", "sm_100f") == ("f16", 2, 2)
+    assert cuda_arch_number("sm_103f") == 103
+    assert cuda_arch_number("compute_90a") == 90
     assert cuda_abi_alias_for_arch("double2", "sm_100") == (
         "[u128; 1]",
         16,
         16,
     )
+    with pytest.raises(ValueError, match="unsupported CUDA GPU architecture"):
+        cuda_arch_number("sm_invalid")
+
+
+def test_legacy_pointer_to_array_spelling_preserves_element_pointers():
+    plan = CudaOxideBindingPlan()
+    parsed = parse_cuda_oxide_type_spelling("int *(*)[4]")
+
+    assert plan.render_rust_type(parsed) == "*mut [*mut i32; 4]"
 
 
 def test_opaque_struct_storage_preserves_size_and_alignment():

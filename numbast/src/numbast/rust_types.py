@@ -19,6 +19,7 @@ _POINTER_TO_ARRAY = re.compile(
 )
 _TAG_PREFIX = re.compile(r"^(?:struct|enum|union)\s+")
 _RUST_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_CUDA_ARCH = re.compile(r"^(?:sm|compute)_([0-9]+)[a-z]*$")
 
 RUST_KEYWORDS = frozenset(
     {
@@ -228,7 +229,7 @@ def parse_cuda_oxide_type(type_obj: Any) -> CudaOxideType:
             pointee = _require_inner_type(current, kind)
             layers.append(
                 CudaOxidePointer(
-                    "const" if pointee.is_const_qualified() else "mut"
+                    "const" if _is_const_pointee(pointee) else "mut"
                 )
             )
             current = pointee
@@ -280,6 +281,27 @@ def _require_inner_type(type_obj: Any, kind: str) -> Any:
     if inner is None:
         raise ValueError(f"{kind} type is missing its inner type")
     return inner
+
+
+def _is_const_pointee(type_obj: Any) -> bool:
+    """Return whether a pointee is const, including const array elements."""
+
+    current = type_obj
+    while True:
+        if current.is_const_qualified():
+            return True
+        kind = _type_kind_name(current.kind)
+        if kind in {
+            "sugar",
+            "adjusted",
+            "constant_array",
+            "incomplete_array",
+            "variable_array",
+            "dependent_sized_array",
+        }:
+            current = _require_inner_type(current, kind)
+            continue
+        return False
 
 
 def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
@@ -336,8 +358,17 @@ def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
     )
     array_layers = tuple(CudaOxideArray(size) for size in dimensions)
     if pointer_to_array_dimensions is not None:
-        layers = pointer_layers + tuple(
-            CudaOxideArray(size) for size in pointer_to_array_dimensions
+        # The parenthesized stars wrap the array, while any stars in the base
+        # group remain inside it: ``int *(*)[4]`` is ``*mut [*mut i32; 4]``.
+        wrapping_pointer_count = pointer_to_array.group("pointers").count("*")
+        wrapping_pointers = pointer_layers[:wrapping_pointer_count]
+        element_pointers = pointer_layers[wrapping_pointer_count:]
+        layers = (
+            wrapping_pointers
+            + tuple(
+                CudaOxideArray(size) for size in pointer_to_array_dimensions
+            )
+            + element_pointers
         )
     else:
         layers = array_layers + pointer_layers
@@ -349,9 +380,18 @@ def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
     )
 
 
+def cuda_arch_number(gpu_arch: str) -> int:
+    """Return the numeric compute capability from a CUDA architecture name."""
+
+    match = _CUDA_ARCH.fullmatch(gpu_arch)
+    if match is None:
+        raise ValueError(f"unsupported CUDA GPU architecture {gpu_arch!r}")
+    return int(match.group(1))
+
+
 def cuda_abi_alias_for_arch(name: str, gpu_arch: str) -> tuple[str, int, int]:
     storage, size, alignment = CUDA_ABI_ALIASES[name]
-    architecture = int(gpu_arch.split("_", 1)[1].split("a", 1)[0])
+    architecture = cuda_arch_number(gpu_arch)
     if architecture >= 100 and name in {"__half", "half"}:
         storage = "f16"
     return storage, size, alignment

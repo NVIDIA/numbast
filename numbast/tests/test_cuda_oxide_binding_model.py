@@ -222,6 +222,28 @@ def test_selects_c_device_surface_and_records_exclusions():
     }
 
 
+def test_parameter_names_remain_unique_after_generated_suffix_collision():
+    plan = CudaOxideBindingPlan.from_declarations(
+        declarations(
+            functions=[
+                function(
+                    "parameters",
+                    params=(("arg2_2", "int"), ("arg2", "int"), ("", "int")),
+                )
+            ]
+        ),
+        config(),
+    )
+
+    assert [
+        parameter.rust_name for parameter in plan.functions[0].parameters
+    ] == [
+        "arg2_2",
+        "arg2",
+        "arg2_3",
+    ]
+
+
 @pytest.mark.parametrize(
     ("bad_function", "message"),
     [
@@ -426,6 +448,70 @@ def test_cuda_storage_aliases_are_architecture_specific():
         parsed, config(gpu_arch=["sm_100"])
     )
     assert modern.cuda_aliases["__half"] == ("f16", 2, 2)
+
+
+@pytest.mark.parametrize(
+    "type_name",
+    [
+        "bool",
+        "char",
+        "short",
+        "uint8_t",
+        "uint16_t",
+        "__half",
+        "__nv_bfloat16",
+    ],
+)
+def test_pre_blackwell_rejects_sub_32_bit_values_at_extern_boundary(type_name):
+    parsed = declarations(
+        functions=[function("small_value", params=(("value", type_name),))]
+    )
+
+    with pytest.raises(CudaOxideBindingError, match=r"sm_100\+"):
+        CudaOxideBindingPlan.from_declarations(parsed, config())
+
+    modern = CudaOxideBindingPlan.from_declarations(
+        parsed, config(gpu_arch=["sm_100f"])
+    )
+    assert modern.functions[0].parameters[0].type_.base_name == type_name
+
+
+def test_pre_blackwell_allows_sub_32_bit_values_behind_pointers():
+    plan = CudaOxideBindingPlan.from_declarations(
+        declarations(
+            functions=[
+                function(
+                    "small_pointers",
+                    params=(("character", "char *"), ("half", "__half *")),
+                )
+            ]
+        ),
+        config(),
+    )
+
+    assert len(plan.functions[0].parameters) == 2
+
+
+def test_pre_blackwell_rejects_enum_with_sub_32_bit_underlying_type():
+    enum = SimpleNamespace(
+        name="small_enum",
+        underlying_type=FakeType("unsigned short"),
+        enumerators=["VALUE"],
+        enumerator_values=["0"],
+    )
+
+    with pytest.raises(CudaOxideBindingError, match=r"sm_100\+"):
+        CudaOxideBindingPlan.from_declarations(
+            declarations(
+                functions=[
+                    function(
+                        "small_enum_value", params=(("value", "small_enum"),)
+                    )
+                ],
+                enums=[enum],
+            ),
+            config(),
+        )
 
 
 def test_invalid_struct_storage_is_reported():

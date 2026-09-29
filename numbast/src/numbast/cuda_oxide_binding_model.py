@@ -18,6 +18,7 @@ from numbast.rust_types import (
     CudaOxidePointer,
     CudaOxideType,
     cuda_abi_alias_for_arch,
+    cuda_arch_number,
     is_identifier,
     parse_cuda_oxide_type,
     rust_identifier,
@@ -33,6 +34,25 @@ _EXECUTION_SPACE_NAMES = {
     "execution_space.global_": "global",
 }
 _CUDA_OXIDE_RESERVED_PREFIX = "cuda_oxide_"
+_PRE_BLACKWELL_BY_VALUE_UNSUPPORTED = frozenset(
+    {
+        "_Bool",
+        "bool",
+        "char",
+        "int8_t",
+        "int16_t",
+        "short",
+        "signed char",
+        "signed short",
+        "uint8_t",
+        "uint16_t",
+        "unsigned char",
+        "unsigned short",
+        "__half",
+        "half",
+        "__nv_bfloat16",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -166,10 +186,22 @@ class CudaOxideBindingPlan:
         records: dict[str, Any],
         diagnostics: list[str],
         context: str,
+        architecture: int,
         seen: set[str] | None = None,
         behind_pointer: bool = False,
     ):
         base = type_.base_name
+        by_value = not type_.pointer_depth and not behind_pointer
+        if (
+            architecture < 100
+            and by_value
+            and base in _PRE_BLACKWELL_BY_VALUE_UNSUPPORTED
+        ):
+            diagnostics.append(
+                f"{context}: {base!r} is passed by value; CUDA-Oxide "
+                "requires its sm_100+ NVVM path for sub-32-bit extern values"
+            )
+            return
         if base in PRIMITIVE_RUST_TYPES:
             return
         if base in CUDA_ABI_ALIASES:
@@ -184,6 +216,22 @@ class CudaOxideBindingPlan:
                 )
             return
         if base in enums:
+            try:
+                underlying = parse_cuda_oxide_type(enums[base].underlying_type)
+            except ValueError as error:
+                diagnostics.append(f"{context}: enum {base!r}: {error}")
+                return
+            self._validate_type(
+                underlying,
+                typedefs,
+                enums,
+                records,
+                diagnostics,
+                context,
+                architecture,
+                seen,
+                behind_pointer or bool(type_.pointer_depth),
+            )
             return
         if base in records:
             if not type_.pointer_depth and not behind_pointer:
@@ -214,6 +262,7 @@ class CudaOxideBindingPlan:
                 records,
                 diagnostics,
                 context,
+                architecture,
                 seen,
                 behind_pointer or bool(type_.pointer_depth),
             )
@@ -228,6 +277,7 @@ class CudaOxideBindingPlan:
         records: dict[str, Any],
         diagnostics: list[str],
         context: str,
+        architecture: int,
     ) -> CudaOxideType | None:
         try:
             parsed = parse_cuda_oxide_type(type_)
@@ -241,6 +291,7 @@ class CudaOxideBindingPlan:
             records,
             diagnostics,
             context,
+            architecture,
         )
         return parsed
 
@@ -323,6 +374,7 @@ class CudaOxideBindingPlan:
             if item.name not in config.exclude_structs
         }
         prefix_removal = config.api_prefix_removal.get("Function", [])
+        architecture = cuda_arch_number(config.gpu_arch[0])
 
         # Apply configured exclusions and skip prefixes, then retain only
         # device and host-device functions as Round 1 binding candidates.
@@ -380,6 +432,7 @@ class CudaOxideBindingPlan:
                 record_decls,
                 diagnostics,
                 return_context,
+                architecture,
             )
             if return_type is None:
                 continue
@@ -403,6 +456,7 @@ class CudaOxideBindingPlan:
                     record_decls,
                     diagnostics,
                     parameter_context,
+                    architecture,
                 )
                 if type_ is None:
                     continue
@@ -412,8 +466,14 @@ class CudaOxideBindingPlan:
                         "are unsupported"
                     )
                 parameter_name = rust_parameter_name(parameter.name, index)
+                parameter_name_base = parameter_name.removeprefix("r#")
+                suffix = index
                 if parameter_name in used_parameter_names:
-                    parameter_name = f"{parameter_name}_{index}"
+                    while parameter_name in used_parameter_names:
+                        parameter_name = rust_identifier(
+                            f"{parameter_name_base}_{suffix}"
+                        )
+                        suffix += 1
                 used_parameter_names.add(parameter_name)
                 parameters.append(
                     CudaOxideParameter(
