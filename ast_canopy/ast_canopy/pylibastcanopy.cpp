@@ -62,10 +62,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .value("typedef_", type_kind::typedef_)
       .value("function", type_kind::function)
       .value("member_pointer", type_kind::member_pointer)
-      .value("elaborated", type_kind::elaborated)
-      .value("paren", type_kind::paren)
-      .value("attributed", type_kind::attributed)
       .value("adjusted", type_kind::adjusted)
+      .value("sugar", type_kind::sugar)
       .value("other", type_kind::other);
 
   py::class_<Type>(m, "Type")

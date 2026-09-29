@@ -66,10 +66,8 @@ enum class type_kind {
   typedef_,
   function,
   member_pointer,
-  elaborated,
-  paren,
-  attributed,
   adjusted,
+  sugar,
   other
 };
 

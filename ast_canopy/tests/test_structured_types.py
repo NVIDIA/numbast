@@ -27,9 +27,7 @@ def _fields(declarations):
 def _semantic_type(type_):
     transparent_kinds = {
         bindings.type_kind.adjusted,
-        bindings.type_kind.attributed,
-        bindings.type_kind.elaborated,
-        bindings.type_kind.paren,
+        bindings.type_kind.sugar,
     }
     while type_.kind in transparent_kinds:
         type_ = type_.inner_type

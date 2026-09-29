@@ -182,20 +182,17 @@ Type::Type(const clang::QualType &qualtype, const clang::ASTContext &context) {
                  llvm::dyn_cast<clang::MemberPointerType>(type)) {
     kind = type_kind::member_pointer;
     add_inner_type(member_pointer->getPointeeType());
-  } else if (const auto *elaborated =
-                 llvm::dyn_cast<clang::ElaboratedType>(type)) {
-    kind = type_kind::elaborated;
-    add_inner_type(elaborated->getNamedType());
-  } else if (const auto *paren = llvm::dyn_cast<clang::ParenType>(type)) {
-    kind = type_kind::paren;
-    add_inner_type(paren->getInnerType());
-  } else if (const auto *attributed =
-                 llvm::dyn_cast<clang::AttributedType>(type)) {
-    kind = type_kind::attributed;
-    add_inner_type(attributed->getModifiedType());
   } else if (const auto *adjusted = llvm::dyn_cast<clang::AdjustedType>(type)) {
     kind = type_kind::adjusted;
     add_inner_type(adjusted->getAdjustedType());
+  } else if (const clang::QualType desugared =
+                 qualtype.getSingleStepDesugaredType(context);
+             desugared != qualtype) {
+    // Clang's individual transparent sugar classes are not a stable API. For
+    // example, ElaboratedType was removed in Clang 22. Preserve the structural
+    // layer through QualType's version-stable, one-step desugaring API instead.
+    kind = type_kind::sugar;
+    add_inner_type(desugared);
   } else {
     kind = type_kind::other;
   }
