@@ -33,6 +33,34 @@ class FakeType:
         return self._right_reference
 
 
+class StructuredType:
+    def __init__(
+        self,
+        kind,
+        *,
+        name="deliberately unparsable spelling",
+        type_name="",
+        inner_type=None,
+        array_size=None,
+        const=False,
+    ):
+        self.kind = kind
+        self.name = name
+        self.type_name = type_name
+        self.inner_type = inner_type
+        self.array_size = array_size
+        self._const = const
+
+    def is_left_reference(self):
+        return self.kind == "lvalue_reference"
+
+    def is_right_reference(self):
+        return self.kind == "rvalue_reference"
+
+    def is_const_qualified(self):
+        return self._const
+
+
 def function(
     name,
     return_type="void",
@@ -44,9 +72,20 @@ def function(
 ):
     return SimpleNamespace(
         name=name,
-        return_type=FakeType(return_type),
+        return_type=(
+            FakeType(return_type)
+            if isinstance(return_type, str)
+            else return_type
+        ),
         params=[
-            SimpleNamespace(name=param_name, type_=FakeType(param_type))
+            SimpleNamespace(
+                name=param_name,
+                type_=(
+                    FakeType(param_type)
+                    if isinstance(param_type, str)
+                    else param_type
+                ),
+            )
             for param_name, param_type in params
         ],
         exec_space=f"execution_space.{execution_space}",
@@ -108,6 +147,28 @@ def test_type_parser_rejects_unsupported_cuda_oxide_types(type_, message):
 def test_ast_type_and_spelling_parser_agree(spelling):
     assert parse_cuda_oxide_type(FakeType(spelling)) == (
         parse_cuda_oxide_type_spelling(spelling)
+    )
+
+
+def test_structured_ast_type_does_not_parse_its_spelling():
+    integer = StructuredType("builtin", type_name="int", const=True)
+    pointer = StructuredType("pointer", inner_type=integer)
+    array_of_pointers = StructuredType(
+        "constant_array", inner_type=pointer, array_size=4
+    )
+    pointer_to_array = StructuredType(
+        "pointer",
+        inner_type=StructuredType(
+            "constant_array", inner_type=integer, array_size=4, const=True
+        ),
+    )
+
+    plan = CudaOxideBindingPlan()
+    assert plan.render_rust_type(parse_cuda_oxide_type(array_of_pointers)) == (
+        "[*const i32; 4]"
+    )
+    assert plan.render_rust_type(parse_cuda_oxide_type(pointer_to_array)) == (
+        "*const [i32; 4]"
     )
 
 
@@ -229,7 +290,11 @@ def test_collects_type_alias_enum_and_opaque_struct():
         alignof_=8,
         fields=[SimpleNamespace(name="value", type_=FakeType("long"))],
     )
-    typedef = SimpleNamespace(name="team_t", underlying_name="int")
+    typedef = SimpleNamespace(
+        name="team_t",
+        underlying_name="this spelling must not be parsed",
+        underlying_type=StructuredType("builtin", type_name="int"),
+    )
     enum = SimpleNamespace(
         name="status",
         underlying_type=FakeType("unsigned int"),
@@ -280,7 +345,9 @@ def test_identity_struct_typedef_does_not_emit_redundant_type_alias():
         fields=[SimpleNamespace(name="value", type_=FakeType("int"))],
     )
     typedef = SimpleNamespace(
-        name="record_t", underlying_name="struct record_t"
+        name="record_t",
+        underlying_name="this spelling must not be parsed",
+        underlying_type=StructuredType("record", type_name="record_t"),
     )
     plan = CudaOxideBindingPlan.from_declarations(
         declarations(

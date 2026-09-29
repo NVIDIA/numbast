@@ -136,15 +136,44 @@ CUDA_ABI_ALIASES = {
 
 
 @dataclass(frozen=True)
+class CudaOxidePointer:
+    kind: str
+
+
+@dataclass(frozen=True)
+class CudaOxideArray:
+    size: int
+
+
+CudaOxideTypeLayer = CudaOxidePointer | CudaOxideArray
+
+
+@dataclass(frozen=True)
 class CudaOxideType:
     c_spelling: str
     base_name: str
-    pointer_kinds: tuple[str, ...] = ()
-    array_dimensions: tuple[int, ...] = ()
+    # Ordered from the outermost type constructor to the named base type.
+    layers: tuple[CudaOxideTypeLayer, ...] = ()
 
     @property
     def pointer_depth(self) -> int:
-        return len(self.pointer_kinds)
+        return sum(isinstance(layer, CudaOxidePointer) for layer in self.layers)
+
+    @property
+    def pointer_kinds(self) -> tuple[str, ...]:
+        return tuple(
+            layer.kind
+            for layer in reversed(self.layers)
+            if isinstance(layer, CudaOxidePointer)
+        )
+
+    @property
+    def array_dimensions(self) -> tuple[int, ...]:
+        return tuple(
+            layer.size
+            for layer in self.layers
+            if isinstance(layer, CudaOxideArray)
+        )
 
     def manifest_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -175,29 +204,103 @@ def rust_parameter_name(name: str, index: int) -> str:
 
 
 def parse_cuda_oxide_type(type_obj: Any) -> CudaOxideType:
-    """Build a CUDA-Oxide type from an AST Canopy C type spelling."""
+    """Build a CUDA-Oxide type from an AST Canopy structured type."""
 
     if type_obj.is_left_reference() or type_obj.is_right_reference():
         raise ValueError(
             "C++ references are outside the supported CUDA-Oxide bindings"
         )
 
-    return parse_cuda_oxide_type_spelling(type_obj.name)
+    # Compatibility for callers providing an AST Canopy object from before
+    # structured type metadata was added. Objects produced by the AST Canopy
+    # version shipped with Numbast always take the structural path below.
+    if not hasattr(type_obj, "kind"):
+        return parse_cuda_oxide_type_spelling(type_obj.name)
+
+    layers: list[CudaOxideTypeLayer] = []
+    current = type_obj
+    while True:
+        kind = _type_kind_name(current.kind)
+        if kind in {"sugar", "adjusted"}:
+            current = _require_inner_type(current, kind)
+            continue
+        if kind == "pointer":
+            pointee = _require_inner_type(current, kind)
+            layers.append(
+                CudaOxidePointer(
+                    "const" if pointee.is_const_qualified() else "mut"
+                )
+            )
+            current = pointee
+            continue
+        if kind == "constant_array":
+            if current.array_size is None:
+                raise ValueError("constant array is missing its size")
+            layers.append(CudaOxideArray(current.array_size))
+            current = _require_inner_type(current, kind)
+            continue
+        if kind in {
+            "incomplete_array",
+            "variable_array",
+            "dependent_sized_array",
+        }:
+            raise ValueError(
+                "only fixed-size arrays are supported by CUDA-Oxide bindings"
+            )
+        if kind in {"lvalue_reference", "rvalue_reference"}:
+            raise ValueError(
+                "C++ references are outside the supported CUDA-Oxide bindings"
+            )
+        if kind in {"function", "member_pointer"}:
+            raise ValueError(
+                "function/member pointers are outside the supported CUDA-Oxide bindings"
+            )
+        if kind in {"builtin", "record", "enum_", "typedef_"}:
+            if not current.type_name:
+                raise ValueError(f"{kind} type is missing its name")
+            return CudaOxideType(
+                c_spelling=type_obj.name,
+                base_name=current.type_name,
+                layers=tuple(layers),
+            )
+        if kind == "unknown":
+            return parse_cuda_oxide_type_spelling(type_obj.name)
+        raise ValueError(f"unsupported AST type kind {kind!r}")
+
+
+def _type_kind_name(kind: Any) -> str:
+    name = getattr(kind, "name", None)
+    if name is not None:
+        return name
+    return str(kind).rsplit(".", 1)[-1]
+
+
+def _require_inner_type(type_obj: Any, kind: str) -> Any:
+    inner = type_obj.inner_type
+    if inner is None:
+        raise ValueError(f"{kind} type is missing its inner type")
+    return inner
 
 
 def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
-    """Build a CUDA-Oxide type from a C type spelling."""
+    """Build a CUDA-Oxide type from a legacy C type spelling."""
 
     spelling = " ".join(spelling.strip().split())
     if not spelling:
         raise ValueError("empty type spelling")
     parse_spelling = spelling
     pointer_to_array = _POINTER_TO_ARRAY.fullmatch(parse_spelling)
+    pointer_to_array_dimensions: list[int] | None = None
     if pointer_to_array is not None:
+        pointer_to_array_dimensions = [
+            int(size)
+            for size in re.findall(
+                r"\[\s*([0-9]+)\s*\]", pointer_to_array.group("arrays")
+            )
+        ]
         parse_spelling = (
             f"{pointer_to_array.group('base')} "
             f"{pointer_to_array.group('pointers')}"
-            f"{pointer_to_array.group('arrays')}"
         )
     if "(" in parse_spelling or ")" in parse_spelling:
         raise ValueError(
@@ -208,7 +311,7 @@ def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
             "C++ references are outside the supported CUDA-Oxide bindings"
         )
 
-    dimensions = []
+    dimensions: list[int] = []
     array_source = parse_spelling
     while True:
         match = _ARRAY_SUFFIX.search(array_source)
@@ -228,11 +331,21 @@ def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
     if not base_name:
         raise ValueError(f"unable to find a base type in {spelling!r}")
 
+    pointer_layers = tuple(
+        CudaOxidePointer(kind) for kind in reversed(pointer_kinds)
+    )
+    array_layers = tuple(CudaOxideArray(size) for size in dimensions)
+    if pointer_to_array_dimensions is not None:
+        layers = pointer_layers + tuple(
+            CudaOxideArray(size) for size in pointer_to_array_dimensions
+        )
+    else:
+        layers = array_layers + pointer_layers
+
     return CudaOxideType(
         c_spelling=spelling,
         base_name=base_name,
-        pointer_kinds=pointer_kinds,
-        array_dimensions=tuple(dimensions),
+        layers=layers,
     )
 
 

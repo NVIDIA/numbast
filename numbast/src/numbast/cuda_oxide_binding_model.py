@@ -14,11 +14,12 @@ from numbast.name_policy import apply_prefix_removal
 from numbast.rust_types import (
     CUDA_ABI_ALIASES,
     PRIMITIVE_RUST_TYPES,
+    CudaOxideArray,
+    CudaOxidePointer,
     CudaOxideType,
     cuda_abi_alias_for_arch,
     is_identifier,
     parse_cuda_oxide_type,
-    parse_cuda_oxide_type_spelling,
     rust_identifier,
     rust_parameter_name,
     rust_struct_storage,
@@ -111,10 +112,11 @@ class CudaOxideBindingPlan:
         else:
             raise ValueError(f"unsupported C ABI type {base!r}")
 
-        for dimension in reversed(type_.array_dimensions):
-            rendered = f"[{rendered}; {dimension}]"
-        for pointer_kind in type_.pointer_kinds:
-            rendered = f"*{pointer_kind} {rendered}"
+        for layer in reversed(type_.layers):
+            if isinstance(layer, CudaOxideArray):
+                rendered = f"[{rendered}; {layer.size}]"
+            elif isinstance(layer, CudaOxidePointer):
+                rendered = f"*{layer.kind} {rendered}"
         return rendered
 
     def _add_exclusion(self, kind: str, name: str, reason: str):
@@ -199,8 +201,8 @@ class CudaOxideBindingPlan:
                 return
             seen.add(base)
             try:
-                underlying = parse_cuda_oxide_type_spelling(
-                    typedefs[base].underlying_name
+                underlying = parse_cuda_oxide_type(
+                    typedefs[base].underlying_type
                 )
             except ValueError as error:
                 diagnostics.append(f"{context}: typedef {base!r}: {error}")
@@ -512,8 +514,8 @@ class CudaOxideBindingPlan:
                 item.name != base for item in plan.type_aliases
             ):
                 try:
-                    underlying = parse_cuda_oxide_type_spelling(
-                        typedef_decls[base].underlying_name
+                    underlying = parse_cuda_oxide_type(
+                        typedef_decls[base].underlying_type
                     )
                 except ValueError as error:
                     diagnostics.append(f"typedef {base!r}: {error}")
