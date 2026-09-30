@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import pytest
 
 from numbast.cuda_oxide_binding_model import (
@@ -73,6 +75,7 @@ def test_renders_complete_cuda_oxide_plan():
     assert "pub const STATUS_SUCCESS: status = 0;" in rendered
     assert "pub const r#match: status = 1;" in rendered
     assert "pub const ANONYMOUS_VALUE: i32 = 4;" in rendered
+    assert rendered.count("#[allow(non_upper_case_globals)]") == 3
     assert (
         "pub fn library_copy(r#in: *const f32, handle: *mut handle_t) -> status;"
         in rendered
@@ -145,4 +148,13 @@ def test_renders_explicit_constants_and_checks_parsed_collisions():
     with pytest.raises(CudaOxideBindingError, match="conflicts with parsed"):
         render_cuda_oxide_bindings(
             plan, [CudaOxideConstant("PARSED_VALUE", "i32", "1")]
+        )
+
+    with pytest.raises(CudaOxideBindingError, match="conflicts with explicit"):
+        render_cuda_oxide_bindings(
+            CudaOxideBindingPlan(),
+            [
+                CudaOxideConstant("DUPLICATE", "i32", "1"),
+                CudaOxideConstant("DUPLICATE", "i32", "2"),
+            ],
         )
