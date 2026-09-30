@@ -28,7 +28,7 @@ TEST_ENV_PACKAGES=(
   -c "$(pwd)/conda-repo"
   click
   pytest
-  "clangdev>=18,<22.0"
+  "clangdev>=18,<23.0"
   cuda-nvcc
   cuda-version=${RAPIDS_CUDA_VERSION%.*}
   cuda-nvrtc

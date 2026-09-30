@@ -32,14 +32,14 @@ outputs:
         - pybind11
         - setuptools_scm
         - scikit-build-core
-        - clangdev >=18,<22
+        - clangdev >=18,<23
         - llvmdev >=14
         - llvm >=14
       run:
         - python
         - cuda-version >=12.5,<14
         - cuda-nvcc
-        - clangdev >=18,<22
+        - clangdev >=18,<23
         # Needed by clang CUDA wrappers at runtime.
         - libcurand-dev
         - cuda-pathfinder

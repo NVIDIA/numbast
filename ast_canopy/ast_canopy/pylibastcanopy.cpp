@@ -47,26 +47,71 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .value("protected_", access_kind::protected_)
       .value("private_", access_kind::private_);
 
+  py::enum_<type_kind>(m, "type_kind")
+      .value("unknown", type_kind::unknown)
+      .value("builtin", type_kind::builtin)
+      .value("pointer", type_kind::pointer)
+      .value("lvalue_reference", type_kind::lvalue_reference)
+      .value("rvalue_reference", type_kind::rvalue_reference)
+      .value("constant_array", type_kind::constant_array)
+      .value("incomplete_array", type_kind::incomplete_array)
+      .value("variable_array", type_kind::variable_array)
+      .value("dependent_sized_array", type_kind::dependent_sized_array)
+      .value("record", type_kind::record)
+      .value("enum_", type_kind::enum_)
+      .value("typedef_", type_kind::typedef_)
+      .value("function", type_kind::function)
+      .value("member_pointer", type_kind::member_pointer)
+      .value("adjusted", type_kind::adjusted)
+      .value("sugar", type_kind::sugar)
+      .value("other", type_kind::other);
+
   py::class_<Type>(m, "Type")
       .def(py::init<>())
       .def(py::init<std::string, std::string, bool, bool>())
       .def_readwrite("name", &Type::name)
       .def_readwrite("unqualified_non_ref_type_name",
                      &Type::unqualified_non_ref_type_name)
+      .def_readwrite("kind", &Type::kind)
+      .def_readonly("array_size", &Type::array_size)
+      .def_readwrite("type_name", &Type::type_name)
+      .def_property_readonly("inner_type", &Type::inner_type,
+                             py::return_value_policy::reference_internal)
       .def("is_right_reference", &Type::is_right_reference)
       .def("is_left_reference", &Type::is_left_reference)
+      .def("is_const_qualified", &Type::is_const_qualified)
+      .def("is_volatile_qualified", &Type::is_volatile_qualified)
+      .def("is_restrict_qualified", &Type::is_restrict_qualified)
       .def("__repr__", [](const Type &t) { return "<Type: " + t.name + ">"; })
       .def(py::pickle(
           [](const Type &f) {
-            return py::make_tuple(f.name, f.unqualified_non_ref_type_name,
-                                  f.is_right_reference(),
-                                  f.is_left_reference());
+            std::vector<Type> inner_types;
+            if (const Type *inner = f.inner_type())
+              inner_types.push_back(*inner);
+            return py::make_tuple(
+                f.name, f.unqualified_non_ref_type_name, f.is_right_reference(),
+                f.is_left_reference(), f.kind, f.is_const_qualified(),
+                f.is_volatile_qualified(), f.is_restrict_qualified(),
+                inner_types, f.array_size, f.type_name);
           },
           [](py::tuple t) {
-            if (t.size() != 4)
+            if (t.size() == 4) {
+              return Type{t[0].cast<std::string>(), t[1].cast<std::string>(),
+                          t[2].cast<bool>(), t[3].cast<bool>()};
+            }
+            if (t.size() != 11)
               throw std::runtime_error("Invalid type state during unpickle!");
-            return Type{t[0].cast<std::string>(), t[1].cast<std::string>(),
-                        t[2].cast<bool>(), t[3].cast<bool>()};
+            return Type{t[0].cast<std::string>(),
+                        t[1].cast<std::string>(),
+                        t[2].cast<bool>(),
+                        t[3].cast<bool>(),
+                        t[4].cast<type_kind>(),
+                        t[5].cast<bool>(),
+                        t[6].cast<bool>(),
+                        t[7].cast<bool>(),
+                        t[8].cast<std::vector<Type>>(),
+                        t[9].cast<std::optional<std::uint64_t>>(),
+                        t[10].cast<std::string>()};
           }));
 
   py::class_<Enum>(m, "Enum")
@@ -260,17 +305,18 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("nested_class_templates", &Record::nested_class_templates)
       .def_readwrite("sizeof_", &Record::sizeof_)
       .def_readwrite("alignof_", &Record::alignof_)
+      .def_readwrite("is_union", &Record::is_union)
       .def(py::pickle(
           [](const Record &r) {
-            return py::make_tuple(r.name, r.fields, r.methods,
-                                  r.templated_methods, r.nested_records,
-                                  r.nested_class_templates, r.sizeof_,
-                                  r.alignof_, r.source_range, r.qual_name);
+            return py::make_tuple(
+                r.name, r.fields, r.methods, r.templated_methods,
+                r.nested_records, r.nested_class_templates, r.sizeof_,
+                r.alignof_, r.source_range, r.qual_name, r.is_union);
           },
           [](py::tuple t) {
-            if (t.size() != 10)
+            if (t.size() != 10 && t.size() != 11)
               throw std::runtime_error("Invalid record state during unpickle!");
-            return Record{t[0].cast<std::string>(),
+            Record record{t[0].cast<std::string>(),
                           t[1].cast<std::vector<Field>>(),
                           t[2].cast<std::vector<Method>>(),
                           t[3].cast<std::vector<FunctionTemplate>>(),
@@ -280,22 +326,32 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                           t[7].cast<std::size_t>(),
                           t[8].cast<std::string>(),
                           t[9].cast<std::string>()};
+            if (t.size() == 11) {
+              record.is_union = t[10].cast<bool>();
+            }
+            return record;
           }));
 
   py::class_<Typedef>(m, "Typedef")
       .def_readwrite("name", &Typedef::name)
       .def_readwrite("qual_name", &Typedef::qual_name)
       .def_readwrite("underlying_name", &Typedef::underlying_name)
+      .def_readwrite("underlying_type", &Typedef::underlying_type)
       .def(py::pickle(
           [](const Typedef &t) {
-            return py::make_tuple(t.name, t.underlying_name, t.qual_name);
+            return py::make_tuple(t.name, t.underlying_name, t.qual_name,
+                                  t.underlying_type);
           },
           [](py::tuple t) {
-            if (t.size() != 3)
+            if (t.size() == 3) {
+              return Typedef{t[0].cast<std::string>(), t[1].cast<std::string>(),
+                             t[2].cast<std::string>()};
+            }
+            if (t.size() != 4)
               throw std::runtime_error(
                   "Invalid typedef state during unpickle!");
             return Typedef{t[0].cast<std::string>(), t[1].cast<std::string>(),
-                           t[2].cast<std::string>()};
+                           t[2].cast<std::string>(), t[3].cast<Type>()};
           }));
 
   py::class_<ClassTemplateSpecialization, Record>(m,
