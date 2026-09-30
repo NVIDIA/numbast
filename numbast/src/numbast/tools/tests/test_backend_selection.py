@@ -128,5 +128,3 @@ def test_the_legacy_boolean_still_reaches_config(tmp_path):
 
     assert config.backend == "numba-mlir"
     assert config.mlir_backend is True
-
-
