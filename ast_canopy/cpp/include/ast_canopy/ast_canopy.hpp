@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <set>
@@ -47,21 +48,64 @@ enum class template_param_kind { type, non_type, template_ };
 
 enum class access_kind { public_, protected_, private_ };
 
+// A stable, serializable view of the Clang type classes needed by AST Canopy
+// consumers. Qualifiers are stored on every Type node, while inner_type()
+// links pointer, reference, array, typedef, and transparent sugar nodes.
+enum class type_kind {
+  unknown,
+  builtin,
+  pointer,
+  lvalue_reference,
+  rvalue_reference,
+  constant_array,
+  incomplete_array,
+  variable_array,
+  dependent_sized_array,
+  record,
+  enum_,
+  typedef_,
+  function,
+  member_pointer,
+  adjusted,
+  sugar,
+  other
+};
+
 struct Type {
   Type() = default;
   Type(std::string name, std::string unqualified_non_ref_type_name,
        bool is_right_reference, bool is_left_reference);
+  Type(std::string name, std::string unqualified_non_ref_type_name,
+       bool is_right_reference, bool is_left_reference, type_kind kind,
+       bool is_const_qualified, bool is_volatile_qualified,
+       bool is_restrict_qualified, std::vector<Type> inner_types,
+       std::optional<std::uint64_t> array_size, std::string type_name);
   Type(const clang::QualType &, const clang::ASTContext &context);
 
   std::string name;
   std::string unqualified_non_ref_type_name;
+  type_kind kind = type_kind::unknown;
+  std::optional<std::uint64_t> array_size;
+  std::string type_name;
 
   bool is_right_reference() const { return _is_right_reference; }
   bool is_left_reference() const { return _is_left_reference; }
+  bool is_const_qualified() const { return _is_const_qualified; }
+  bool is_volatile_qualified() const { return _is_volatile_qualified; }
+  bool is_restrict_qualified() const { return _is_restrict_qualified; }
+  const Type *inner_type() const {
+    return _inner_types.empty() ? nullptr : &_inner_types.front();
+  }
 
 private:
-  bool _is_right_reference;
-  bool _is_left_reference;
+  // A vector provides recursive value storage while maintaining the invariant
+  // that the currently supported structural nodes have at most one child.
+  std::vector<Type> _inner_types;
+  bool _is_right_reference = false;
+  bool _is_left_reference = false;
+  bool _is_const_qualified = false;
+  bool _is_volatile_qualified = false;
+  bool _is_restrict_qualified = false;
 };
 
 struct Enum {
@@ -246,16 +290,23 @@ struct ClassTemplate : public Template {
 
 struct Typedef {
   Typedef(const std::string &name, const std::string &underlying_name)
-      : name(name), qual_name(name), underlying_name(underlying_name) {}
+      : name(name), qual_name(name), underlying_name(underlying_name),
+        underlying_type(underlying_name, underlying_name, false, false) {}
   Typedef(const std::string &name, const std::string &underlying_name,
           const std::string &qual_name)
-      : name(name), qual_name(qual_name), underlying_name(underlying_name) {}
+      : name(name), qual_name(qual_name), underlying_name(underlying_name),
+        underlying_type(underlying_name, underlying_name, false, false) {}
+  Typedef(const std::string &name, const std::string &underlying_name,
+          const std::string &qual_name, const Type &underlying_type)
+      : name(name), qual_name(qual_name), underlying_name(underlying_name),
+        underlying_type(underlying_type) {}
   Typedef(const clang::TypedefDecl *,
           std::unordered_map<int64_t, std::string> *);
 
   std::string name;
   std::string qual_name;
   std::string underlying_name;
+  Type underlying_type;
 };
 
 struct ClassTemplateSpecialization : public Record {
