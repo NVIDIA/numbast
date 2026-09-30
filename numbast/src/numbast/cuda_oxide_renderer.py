@@ -32,7 +32,7 @@ def _render_constants(
     constants: Iterable[CudaOxideConstant],
 ) -> list[str]:
     lines: list[str] = []
-    occupied: dict[str, tuple[str, str, str]] = {}
+    occupied: dict[str, tuple[str, str, str, str]] = {}
 
     for enum in plan.enums:
         enum_type = (
@@ -48,17 +48,16 @@ def _render_constants(
                     [f"enum constant has invalid name {name!r}"]
                 ) from error
 
-            item = (name, enum_type, value)
+            item = (name, enum_type, value, "parsed")
             previous = occupied.get(rust_name)
             if previous is not None:
                 if previous == item:
                     continue
-                raise CudaOxideBindingError(
-                    [
-                        f"constant name collision: {previous[0]!r} and "
-                        f"{name!r} both map to {rust_name!r}"
-                    ]
+                message = (
+                    f"constant name collision: {previous[0]!r} and {name!r} "
+                    f"both map to {rust_name!r}"
                 )
+                raise CudaOxideBindingError([message])
             occupied[rust_name] = item
             lines.append(f"pub const {rust_name}: {enum_type} = {value};")
 
@@ -71,16 +70,17 @@ def _render_constants(
             ) from error
         previous = occupied.get(rust_name)
         if previous is not None:
-            raise CudaOxideBindingError(
-                [
-                    f"constant {constant.name!r} conflicts with parsed "
-                    f"constant {previous[0]!r}"
-                ]
+            origin = previous[3]
+            message = (
+                f"constant {constant.name!r} conflicts with {origin} "
+                f"constant {previous[0]!r}"
             )
+            raise CudaOxideBindingError([message])
         occupied[rust_name] = (
             constant.name,
             constant.rust_type,
             constant.value,
+            "explicit",
         )
         lines.append(
             f"pub const {rust_name}: {constant.rust_type} = {constant.value};"
@@ -91,7 +91,7 @@ def _render_constants(
         for function in plan.functions
         for name in (function.native_name, function.public_name)
     }
-    for rust_name, (name, _enum_type, _value) in occupied.items():
+    for rust_name, (name, _enum_type, _value, _origin) in occupied.items():
         function_name = function_names.get(rust_name)
         if function_name is not None:
             raise CudaOxideBindingError(
@@ -207,8 +207,9 @@ def render_cuda_oxide_bindings(
         )
 
     if constant_lines:
-        lines.append("#[allow(non_upper_case_globals)]")
-        lines.extend(constant_lines)
+        for constant_line in constant_lines:
+            lines.append("#[allow(non_upper_case_globals)]")
+            lines.append(constant_line)
         lines.append("")
 
     lines.extend(
