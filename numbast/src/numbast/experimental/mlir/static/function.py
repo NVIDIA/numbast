@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import re
 from textwrap import indent
 from logging import getLogger, FileHandler
 import tempfile
@@ -24,15 +23,14 @@ from numbast.experimental.mlir.static.types import (
 from numbast.experimental.mlir.intent import ArgIntent, compute_intent_plan
 from numbast.experimental.mlir.utils import (
     make_function_shim,
-    _apply_prefix_removal,
 )
+from numbast.curate import plan_functions
 from numbast.experimental.mlir.errors import (
     TypeNotFoundError,
     MangledFunctionNameConflictError,
 )
 
 from ast_canopy.decl import Function
-from ast_canopy.pylibastcanopy import execution_space
 
 file_logger = getLogger(f"{__name__}")
 logger_path = os.path.join(tempfile.gettempdir(), "numbast_function.log")
@@ -45,29 +43,6 @@ function_mangled_name_registry: set[str] = set()
 
 function_apis_registry: set[str] = set()
 """A set of created function API names."""
-
-
-def _matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
-    """Check if a function name matches any of the provided regex patterns.
-
-    NOTE: This function assumes all input patterns are valid regex patterns.
-
-    Parameters
-    ----------
-    name : str
-        Function name to check
-    patterns : list[str]
-        List of regex patterns to match against
-
-    Returns
-    -------
-    bool
-        True if the name matches any pattern, False otherwise
-    """
-    for pattern in patterns:
-        if re.search(pattern, name):
-            return True
-    return False
 
 
 class StaticFunctionRenderer(BaseRenderer):
@@ -508,20 +483,21 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
         decl: Function,
         header_path: str,
         use_cooperative: bool,
-        function_prefix_removal: list[str] = [],
+        exposed_name: str | None = None,
         function_argument_intents: dict | None = None,
     ):
         """
-        Initialize the non-operator function renderer, compute the Python-facing function name by removing configured prefixes, and update tracked function symbols accordingly.
+        Initialize the non-operator function renderer and update tracked function symbols to use the public name.
 
         Parameters:
             decl (Function): The parsed function declaration to render.
             header_path (str): Path to the C++ header containing the declaration.
             use_cooperative (bool): Whether the function requires cooperative launch support.
-            function_prefix_removal (list[str]): List of prefixes to remove from the original function name to produce the Python-visible name.
+            exposed_name (str | None): Public name for the function, already resolved by
+                :mod:`numbast.curate` (prefix removal applied). Defaults to the C++ name.
 
         Notes:
-            This initializer replaces the original C++ name in the renderer's tracked function symbols with the computed Python name.
+            This initializer replaces the original C++ name in the renderer's tracked function symbols with the public name.
         """
         super().__init__(
             decl,
@@ -529,9 +505,7 @@ class StaticNonOperatorFunctionRenderer(StaticFunctionRenderer):
             use_cooperative,
             function_argument_intents=function_argument_intents,
         )
-        self._python_func_name = _apply_prefix_removal(
-            decl.name, function_prefix_removal
-        )
+        self._python_func_name = exposed_name or decl.name
 
         # Override the base class symbol tracking to use the Python function name
         # Remove the original name that was added by the base class
@@ -648,24 +622,18 @@ class {op_typing_name}(ConcreteTemplate):
         self._python_rendered: list[str] = []
         self._c_rendered: list[str] = []
 
-    def _should_skip_function(self, decl: Function) -> bool:
-        """Check if a function should be skipped based on various criteria."""
-        if decl.name in self._excludes:
-            return True
-
-        if self._skip_prefix and decl.name.startswith(self._skip_prefix):
-            return True
-
-        if self._skip_non_device and decl.exec_space not in {
-            execution_space.device,
-            execution_space.host_device,
-        }:
-            warn(
-                f"Skipping non-device function {decl.name} in {self._header_path}"
-            )
-            return True
-
-        return False
+    def _build_plans(self):
+        """Resolve curation for the declarations this renderer was given."""
+        return plan_functions(
+            self._decls,
+            header_path=self._header_path,
+            excludes=self._excludes,
+            skip_prefix=self._skip_prefix,
+            skip_non_device=self._skip_non_device,
+            cooperative_launch_required=self._cooperative_launch_required,
+            prefix_removal=self._function_prefix_removal,
+            argument_intents=self._function_argument_intents,
+        )
 
     def _create_operator_renderer(
         self, decl: Function
@@ -703,20 +671,17 @@ class {op_typing_name}(ConcreteTemplate):
             return None
 
     def _create_function_renderer(
-        self, decl: Function
+        self, plan
     ) -> StaticNonOperatorFunctionRenderer | None:
         """Create a renderer for non-operator functions."""
+        decl = plan.decl
         try:
-            name = decl.name
-            use_cooperative = _matches_any_regex_pattern(
-                name, self._cooperative_launch_required
-            )
             return StaticNonOperatorFunctionRenderer(
                 decl,
                 self._header_path,
-                use_cooperative,
-                self._function_prefix_removal,
-                function_argument_intents=self._function_argument_intents,
+                plan.use_cooperative,
+                plan.exposed_name,
+                function_argument_intents=plan.argument_intents,
             )
         except TypeNotFoundError as e:
             warn(
@@ -804,9 +769,8 @@ class {op_typing_name}(ConcreteTemplate):
         """Render python bindings and shim functions."""
         self.Imports.add("from numba_cuda_mlir.numba_cuda import CUSource")
 
-        for decl in self._decls:
-            if self._should_skip_function(decl):
-                continue
+        for plan in self._build_plans():
+            decl = plan.decl
 
             renderer: Union[
                 StaticOverloadedOperatorRenderer,
@@ -817,7 +781,7 @@ class {op_typing_name}(ConcreteTemplate):
             if decl.is_overloaded_operator():
                 renderer = self._create_operator_renderer(decl)
             elif not decl.is_operator:
-                renderer = self._create_function_renderer(decl)
+                renderer = self._create_function_renderer(plan)
 
             if renderer:
                 self._process_renderer(renderer)
