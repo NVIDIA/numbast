@@ -15,7 +15,6 @@ import shutil
 import subprocess
 import sys
 
-import pytest
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -50,9 +49,7 @@ def test_import_block_is_emitted_in_a_canonical_order():
     )
     try:
         lines = [
-            line
-            for line in get_rendered_imports().splitlines()
-            if line.strip()
+            line for line in get_rendered_imports().splitlines() if line.strip()
         ]
     finally:
         BaseRenderer.Imports.clear()
@@ -124,9 +121,7 @@ def test_generation_is_byte_identical_across_hash_seeds(tmp_path, arch_str):
     assert _generate(project, 1) == _generate(project, 999)
 
 
-def test_generation_emits_the_same_lines_in_the_same_order(
-    tmp_path, arch_str
-):
+def test_generation_emits_the_same_lines_in_the_same_order(tmp_path, arch_str):
     """Guards the failure mode specifically: same lines, shuffled.
 
     Before the fix the two runs were identical as *multisets* of lines and
