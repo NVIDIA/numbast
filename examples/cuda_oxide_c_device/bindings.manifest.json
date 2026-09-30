@@ -14,9 +14,7 @@
   },
   "backend": "cuda-oxide",
   "compatibility": {
-    "cuda_oxide_nvvm_dialect": "legacy-llvm-7",
-    "modern_nvvm_required_symbols": [],
-    "selected_arch_supports_all_symbols": true
+    "cuda_oxide_nvvm_dialect": "legacy-llvm-7"
   },
   "constants": [
     {

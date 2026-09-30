@@ -17,13 +17,13 @@ pointers, typedefs, enums, opaque handles, the CUDA half/bfloat16 and
 
 CUDA-Oxide's pre-Blackwell NVVM path cannot call extern functions that pass
 sub-32-bit integers, Boolean values, CUDA half, or bfloat16 by value. Numbast
-still emits the complete selected C surface, uses storage-compatible types for
-pointer APIs, lists every affected symbol in ``compatibility`` in the manifest,
-and marks whether the configured architecture supports the whole surface.
-Calling those functions requires ``sm_100`` or newer. On that modern path,
-CUDA ``__half`` maps to Rust's nightly ``f16`` and the consuming crate must
-enable ``#![feature(f16)]``. This restriction comes from CUDA-Oxide's selected
-NVVM dialect; no hidden ABI shim is generated to bypass it.
+rejects those by-value declarations when the configured target is below
+``sm_100``. Pointer-based uses remain valid because their extern ABI passes an
+address. A complete API containing narrow by-value declarations therefore
+requires ``sm_100`` or newer, or explicit exclusion of those declarations. On
+the modern path, CUDA ``__half`` maps to Rust's nightly ``f16`` and the
+consuming crate must enable ``#![feature(f16)]``. No hidden ABI widening or
+shim is generated to bypass the target restriction.
 
 It intentionally rejects C++ linkage, overloads, references, variadics,
 by-value records, and unknown ABI types. Function templates and class templates
@@ -104,9 +104,8 @@ The versioned JSON manifest records:
 - every intentional exclusion; and
 - exact symbol-verification status.
 
-The ``compatibility`` object also identifies declarations that require the
-modern ``sm_100+`` CUDA-Oxide NVVM path because they pass sub-32-bit values by
-value.
+The ``compatibility`` object records the CUDA-Oxide NVVM dialect selected by
+the configured architecture.
 
 The LTOIR producer and Rust build should consume the same architecture,
 headers, macros, and library version. Numbast records link inputs; CUDA-Oxide

@@ -57,7 +57,7 @@ def test_nvshmem_public_c_device_surface(tmp_path):
                 str(include / "device" / "nvshmemx_defines.h"),
                 str(include / "device_host" / "nvshmem_types.h"),
             ],
-            "GPU Arch": [os.environ.get("NUMBAST_NVSHMEM_GPU_ARCH", "sm_80")],
+            "GPU Arch": [os.environ.get("NUMBAST_NVSHMEM_GPU_ARCH", "sm_100")],
             "Clang Include Paths": [str(include)],
             "Predefined Macros": ["NVSHMEM_BUILD_LTOIR_LIBRARY"],
             "Exclude": {"Function": ["atomicAdd_system"]},
@@ -97,13 +97,8 @@ def test_nvshmem_public_c_device_surface(tmp_path):
         if item["name"] == "nvshmemx_smem_amount_t"
     )
     assert smem_enum["rust_underlying_type"] == "u32"
-    compatibility = manifest["compatibility"]
-    modern_only = compatibility["modern_nvvm_required_symbols"]
-    assert modern_only
-    assert set(modern_only).issubset(symbols)
-    architecture = int(config.gpu_arch[0].split("_", 1)[1].rstrip("a"))
-    assert compatibility["selected_arch_supports_all_symbols"] is (
-        architecture >= 100
+    assert manifest["compatibility"]["cuda_oxide_nvvm_dialect"] == (
+        "modern-opaque-pointer"
     )
     assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
     if symbol_inventory:

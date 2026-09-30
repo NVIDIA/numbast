@@ -438,8 +438,6 @@ def make_manifest(
                 if architecture >= 100
                 else "legacy-llvm-7"
             ),
-            "modern_nvvm_required_symbols": [],
-            "selected_arch_supports_all_symbols": True,
         },
         "source": {
             "config": config_path,
