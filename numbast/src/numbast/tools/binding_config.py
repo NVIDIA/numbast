@@ -11,13 +11,13 @@ without importing a compiler runtime intended for generated Python bindings.
 from __future__ import annotations
 
 import os
-import re
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from numbast.tools.yaml_tags import string_constructor
+from numbast.rust_types import cuda_arch_number
 
 yaml.SafeLoader.add_constructor("!numbast_join", string_constructor)
 
@@ -253,13 +253,12 @@ class CudaOxideConfig(BindingConfig):
             raise TypeError(
                 'Configuration option "CUDA Oxide.Clang Binary" must be a string.'
             )
-        arch_match = re.fullmatch(r"sm_([0-9]+)(?:a)?", self.gpu_arch[0])
-        if arch_match is None:
+        try:
+            self.gpu_arch_number = cuda_arch_number(self.gpu_arch[0])
+        except ValueError as error:
             raise ValueError(
-                'CUDA-Oxide "GPU Arch" must use the form "sm_<digits>" or '
-                '"sm_<digits>a".'
-            )
-        self.gpu_arch_number = int(arch_match.group(1))
+                'CUDA-Oxide "GPU Arch" must use a supported sm_<digits> target.'
+            ) from error
         expected_cuda_arch = str(self.gpu_arch_number * 10)
         cuda_arch_macros = [
             macro

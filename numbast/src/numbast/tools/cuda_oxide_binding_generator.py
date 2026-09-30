@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import tempfile
 from dataclasses import asdict
 from importlib import metadata
@@ -16,23 +17,29 @@ from typing import Any
 
 import click
 
-from numbast.binding_model import (
-    CUDA_ABI_ALIASES,
-    AbiTypedef,
-    BindingModel,
-    BindingModelError,
-    build_c_device_model,
-    cuda_abi_alias_for_arch,
-    modern_nvvm_required_symbols,
-    parse_c_type_spelling,
-    rust_type,
-    translate_constant_literal,
+from numbast.cuda_oxide_binding_model import (
+    CudaOxideBindingPlan,
+    CudaOxideTypeAlias,
 )
-from numbast.name_policy import is_identifier, rust_identifier
+from numbast.cuda_oxide_renderer import (
+    CudaOxideConstant,
+    render_cuda_oxide_bindings as render_cuda_oxide_plan,
+)
+from numbast.errors import CudaOxideBindingError
+from numbast.rust_types import (
+    CUDA_ABI_ALIASES,
+    cuda_abi_alias_for_arch,
+    is_identifier,
+    parse_cuda_oxide_type_spelling,
+    rust_identifier,
+)
 from numbast.tools.binding_config import CudaOxideConfig
 
 MANIFEST_SCHEMA_VERSION = 1
-_RUST_MAX_WIDTH = 100
+_CONFIGURED_INTEGER = re.compile(
+    r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[bB][01]+|0[oO][0-7]+|0[0-7]*|[0-9]+)"
+    r"(?:[uUlL]+)?$"
+)
 
 
 def _package_version(package: str) -> str:
@@ -116,12 +123,14 @@ def _write_text_atomic(path: Path, contents: str):
                 pass
 
 
-def _add_supplemental_typedefs(model: BindingModel, config: CudaOxideConfig):
+def _add_supplemental_type_aliases(
+    plan: CudaOxideBindingPlan, config: CudaOxideConfig
+):
     occupied = {
-        *(item.name for item in model.enums if item.name),
-        *(item.name for item in model.records),
-        *(item.name for item in model.typedefs),
-        *model.cuda_aliases,
+        *(item.name for item in plan.enums if item.name),
+        *(item.name for item in plan.structs),
+        *(item.name for item in plan.type_aliases),
+        *plan.cuda_aliases,
     }
     diagnostics = []
     for name, spelling in sorted(config.type_aliases.items()):
@@ -131,12 +140,12 @@ def _add_supplemental_typedefs(model: BindingModel, config: CudaOxideConfig):
             )
             continue
         try:
-            underlying = parse_c_type_spelling(spelling)
+            underlying = parse_cuda_oxide_type_spelling(spelling)
         except ValueError as error:
             diagnostics.append(f"supplemental type alias {name!r}: {error}")
             continue
         existing = next(
-            (item for item in model.typedefs if item.name == name), None
+            (item for item in plan.type_aliases if item.name == name), None
         )
         if existing is not None and existing.underlying == underlying:
             continue
@@ -145,15 +154,17 @@ def _add_supplemental_typedefs(model: BindingModel, config: CudaOxideConfig):
                 f"supplemental type alias {name!r} conflicts with a parsed type"
             )
             continue
-        model.typedefs.append(AbiTypedef(name, underlying))
+        plan.type_aliases.append(CudaOxideTypeAlias(name, underlying))
         if underlying.base_name in CUDA_ABI_ALIASES:
-            model.cuda_aliases[underlying.base_name] = cuda_abi_alias_for_arch(
+            plan.cuda_aliases[underlying.base_name] = cuda_abi_alias_for_arch(
                 underlying.base_name, config.gpu_arch[0]
             )
         occupied.add(name)
 
     # Validate after all aliases are installed so forward alias references work.
-    aliases = {item.name: item.underlying.base_name for item in model.typedefs}
+    aliases = {
+        item.name: item.underlying.base_name for item in plan.type_aliases
+    }
 
     def visit(name: str, path: tuple[str, ...]):
         if name in path:
@@ -167,18 +178,18 @@ def _add_supplemental_typedefs(model: BindingModel, config: CudaOxideConfig):
     for name in sorted(aliases):
         visit(name, ())
 
-    for alias in model.typedefs:
+    for alias in plan.type_aliases:
         try:
-            rust_type(alias.underlying, model)
+            plan.render_rust_type(alias.underlying)
         except ValueError as error:
             diagnostics.append(f"type alias {alias.name!r}: {error}")
 
     rendered_names: dict[str, str] = {}
     type_names = [
-        *(item.name for item in model.enums if item.name),
-        *(item.name for item in model.records),
-        *(item.name for item in model.typedefs),
-        *model.cuda_aliases,
+        *(item.name for item in plan.enums if item.name),
+        *(item.name for item in plan.structs),
+        *(item.name for item in plan.type_aliases),
+        *plan.cuda_aliases,
     ]
     for name in sorted(type_names):
         rendered_name = rust_identifier(name)
@@ -189,259 +200,103 @@ def _add_supplemental_typedefs(model: BindingModel, config: CudaOxideConfig):
                 f"map to {rendered_name!r}"
             )
         rendered_names[rendered_name] = name
-    model.typedefs.sort(key=lambda item: item.name)
+    plan.type_aliases.sort(key=lambda item: item.name)
     if diagnostics:
-        raise BindingModelError(diagnostics)
+        raise CudaOxideBindingError(diagnostics)
 
 
-def _render_constants(model: BindingModel, config: CudaOxideConfig):
-    lines = []
-    rendered = []
-    occupied: dict[str, tuple[str, tuple[str, str]]] = {}
+def _render_configured_integer(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if not isinstance(value, str):
+        raise TypeError("Value must be a boolean, integer, or integer literal")
 
-    for enum in model.enums:
-        enum_type = (
-            rust_identifier(enum.name)
-            if enum.name
-            else enum.rust_underlying_type
-        )
-        for name, value in enum.enumerators:
-            if not is_identifier(name):
-                raise BindingModelError(
-                    [f"enum constant has invalid name {name!r}"]
-                )
-            rust_constant_name = rust_identifier(name)
-            item = (enum_type, value)
-            previous = occupied.get(rust_constant_name)
-            if previous is not None:
-                previous_name, previous_item = previous
-                if previous_name == name and previous_item == item:
-                    continue
-                raise BindingModelError(
-                    [
-                        f"constant name collision: {previous_name!r} and {name!r} "
-                        f"both map to {rust_constant_name!r}"
-                    ]
-                )
-            occupied[rust_constant_name] = (name, item)
-            lines.append(
-                f"pub const {rust_constant_name}: {enum_type} = {value};"
-            )
-            rendered.append(
-                {
-                    "name": name,
-                    "rust_type": enum_type,
-                    "value": value,
-                    "source": "enum",
-                }
-            )
+    rendered = value.strip()
+    if not _CONFIGURED_INTEGER.fullmatch(rendered):
+        raise ValueError(f"unsupported integer literal {value!r}")
+    rendered = re.sub(r"[uUlL]+$", "", rendered)
+    sign = ""
+    if rendered[0] in "+-":
+        sign = "-" if rendered[0] == "-" else ""
+        rendered = rendered[1:]
+    if len(rendered) > 1 and rendered[0] == "0" and rendered[1] not in "xXbBoO":
+        rendered = f"0o{rendered[1:]}"
+    return f"{sign}{rendered}"
 
+
+def _configured_constants(
+    plan: CudaOxideBindingPlan, config: CudaOxideConfig
+) -> tuple[list[CudaOxideConstant], list[dict[str, str]]]:
+    constants = []
+    manifest_items = []
+    diagnostics = []
     for name, spec in sorted(config.constants.items()):
-        if not is_identifier(name):
-            raise BindingModelError(
-                [f"supplemental constant has invalid name {name!r}"]
-            )
-        if not isinstance(spec, dict) or set(spec) != {"Type", "Value"}:
-            raise BindingModelError(
-                [
-                    (
-                        f"supplemental constant {name!r} must contain exactly "
-                        '"Type" and "Value"'
-                    )
-                ]
-            )
-        if not isinstance(spec["Type"], str):
-            raise BindingModelError(
-                [
-                    f"supplemental constant {name!r}: Type must be a C type spelling"
-                ]
-            )
         try:
-            c_type = parse_c_type_spelling(spec["Type"])
-            if (
-                c_type.pointer_depth
-                or c_type.array_dimensions
-                or c_type.base_name == "void"
-            ):
+            if not is_identifier(name):
+                raise ValueError(f"invalid name {name!r}")
+            if not isinstance(spec, dict) or set(spec) != {"Type", "Value"}:
+                raise ValueError('must contain exactly "Type" and "Value"')
+            if not isinstance(spec["Type"], str):
+                raise TypeError("Type must be a C type spelling")
+            type_ = parse_cuda_oxide_type_spelling(spec["Type"])
+            if type_.layers or type_.base_name == "void":
                 raise ValueError(
                     "constant type must be a non-void scalar or alias"
                 )
-            rust_name = rust_type(c_type, model)
-            value = translate_constant_literal(spec["Value"])
+            rust_type = plan.render_rust_type(type_)
+            value = _render_configured_integer(spec["Value"])
         except (TypeError, ValueError) as error:
-            raise BindingModelError(
-                [f"supplemental constant {name!r}: {error}"]
-            )
-        rust_constant_name = rust_identifier(name)
-        if rust_constant_name in occupied:
-            previous_name = occupied[rust_constant_name][0]
-            raise BindingModelError(
-                [
-                    f"supplemental constant {name!r} conflicts with parsed "
-                    f"constant {previous_name!r}"
-                ]
-            )
-        occupied[rust_constant_name] = (name, (rust_name, value))
-        lines.append(f"pub const {rust_constant_name}: {rust_name} = {value};")
-        rendered.append(
+            diagnostics.append(f"supplemental constant {name!r}: {error}")
+            continue
+        constants.append(CudaOxideConstant(name, rust_type, value))
+        manifest_items.append(
             {
                 "name": name,
-                "rust_type": rust_name,
+                "rust_type": rust_type,
                 "value": value,
                 "source": "configuration",
             }
         )
-    return lines, rendered
-
-
-def _render_extern_function(function, model: BindingModel) -> list[str]:
-    parameters = [
-        f"{parameter.rust_name}: {rust_type(parameter.type_, model)}"
-        for parameter in function.parameters
-    ]
-    result = ""
-    if not (
-        function.return_type.base_name == "void"
-        and not function.return_type.pointer_depth
-        and not function.return_type.array_dimensions
-    ):
-        result = f" -> {rust_type(function.return_type, model)}"
-
-    name = rust_identifier(function.native_name)
-    single_line = f"    pub fn {name}({', '.join(parameters)}){result};"
-    if len(single_line) < _RUST_MAX_WIDTH:
-        return [single_line]
-    if len(single_line) == _RUST_MAX_WIDTH:
-        if not result:
-            return [single_line]
-        signature = f"    pub fn {name}({', '.join(parameters)})"
-        return [signature, f"        {result.strip()};"]
-    return [
-        f"    pub fn {name}(",
-        *(f"        {parameter}," for parameter in parameters),
-        f"    ){result};",
-    ]
+    if diagnostics:
+        raise CudaOxideBindingError(diagnostics)
+    return constants, manifest_items
 
 
 def render_cuda_oxide_bindings(
-    model: BindingModel, config: CudaOxideConfig, config_path: str | None = None
+    plan: CudaOxideBindingPlan,
+    config: CudaOxideConfig,
+    config_path: str | None = None,
 ) -> tuple[str, list[dict[str, str]]]:
-    """Render an includable Rust module with no C++ shim layer."""
+    """Add configured declarations and render an includable Rust module."""
 
-    _add_supplemental_typedefs(model, config)
-    constant_lines, rendered_constants = _render_constants(model, config)
-    lines = [
-        "// SPDX-License-Identifier: Apache-2.0",
-        "// Automatically generated by Numbast; do not edit.",
-        f"// Source config: {config_path or '<programmatic>'}",
-        "// Raw declarations are unsafe and resolve directly from external CUDA LTOIR.",
-        "",
-        "#[allow(unused_imports)]",
-        "use cuda_device::device;",
-        "",
-    ]
-    modern_only_symbols = modern_nvvm_required_symbols(model)
-    architecture = config.gpu_arch_number
-    if modern_only_symbols and architecture < 100:
-        lines.extend(
-            [
-                (
-                    f"// Compatibility: {len(modern_only_symbols)} declaration(s) "
-                    "pass sub-32-bit values by value."
-                ),
-                "// CUDA-Oxide can call those declarations only on sm_100+; see the manifest.",
-                "",
-            ]
-        )
-
-    for name, (storage, size, alignment) in sorted(model.cuda_aliases.items()):
-        rust_name = rust_identifier(name)
-        lines.extend(
-            [
-                f"/// CUDA ABI storage: size {size}, alignment {alignment}.",
-                "#[allow(non_camel_case_types)]",
-                f"pub type {rust_name} = {storage};",
-                f"const _: [(); {size}] = [(); core::mem::size_of::<{rust_name}>()];",
-                f"const _: [(); {alignment}] = [(); core::mem::align_of::<{rust_name}>()];",
-                "",
-            ]
-        )
-    for record in model.records:
-        rust_name = rust_identifier(record.name)
-        lines.extend(
-            [
-                "/// Opaque POD storage used behind a device-extern pointer.",
-                f"/// C layout: size {record.size}, alignment {record.alignment}.",
-                "#[allow(non_camel_case_types)]",
-                f"pub type {rust_name} = {record.storage_type};",
-                f"const _: [(); {record.size}] = [(); core::mem::size_of::<{rust_name}>()];",
-                f"const _: [(); {record.alignment}] = [(); core::mem::align_of::<{rust_name}>()];",
-                "",
-            ]
-        )
-    for enum in model.enums:
-        if not enum.name:
-            continue
-        lines.extend(
-            [
-                "#[allow(non_camel_case_types)]",
-                f"pub type {rust_identifier(enum.name)} = {enum.rust_underlying_type};",
-                "",
-            ]
-        )
-    for typedef in model.typedefs:
-        if typedef.name in model.cuda_aliases:
-            continue
-        lines.extend(
-            [
-                "#[allow(non_camel_case_types)]",
-                (
-                    f"pub type {rust_identifier(typedef.name)} = "
-                    f"{rust_type(typedef.underlying, model)};"
-                ),
-                "",
-            ]
-        )
-    if constant_lines:
-        lines.extend(["#[allow(non_upper_case_globals)]"])
-        lines.extend(constant_lines)
-        lines.append("")
-
-    value_names = {rust_identifier(item["name"]) for item in rendered_constants}
-    for function in model.functions:
-        if (
-            rust_identifier(function.public_name) in value_names
-            or rust_identifier(function.native_name) in value_names
-        ):
-            raise BindingModelError(
-                [
-                    f"public function name {function.public_name!r} conflicts with a constant"
-                ]
-            )
-
-    lines.extend(
-        ["#[device]", "#[allow(improper_ctypes)]", 'unsafe extern "C" {']
+    _add_supplemental_type_aliases(plan, config)
+    configured_constants, manifest_constants = _configured_constants(
+        plan, config
     )
-    for function in model.functions:
-        lines.extend(_render_extern_function(function, model))
-    lines.extend(["}", ""])
+    rendered = render_cuda_oxide_plan(plan, configured_constants)
+    lines = rendered.splitlines()
+    lines.insert(2, f"// Source config: {config_path or '<programmatic>'}")
 
-    aliases = [
-        function
-        for function in model.functions
-        if function.public_name != function.native_name
+    parsed_constants = [
+        {
+            "name": name,
+            "rust_type": (
+                rust_identifier(enum.name)
+                if enum.name
+                else enum.rust_underlying_type
+            ),
+            "value": value,
+            "source": "enum",
+        }
+        for enum in plan.enums
+        for name, value in enum.enumerators
     ]
-    if aliases:
-        lines.append(
-            "// Prefix-stripped public names preserve the native link symbol above."
-        )
-        for function in aliases:
-            lines.append(
-                f"pub use self::{rust_identifier(function.native_name)} as "
-                f"{rust_identifier(function.public_name)};"
-            )
-        lines.append("")
-    return "\n".join(lines), rendered_constants
+    return "\n".join(lines) + "\n", [
+        *parsed_constants,
+        *manifest_constants,
+    ]
 
 
 def _read_symbol_inventory(path: str) -> set[str]:
@@ -461,15 +316,17 @@ def _read_symbol_inventory(path: str) -> set[str]:
                     f"{candidate!r}"
                 )
     if diagnostics:
-        raise BindingModelError(diagnostics)
+        raise CudaOxideBindingError(diagnostics)
     return symbols
 
 
-def verify_symbol_inventory(model: BindingModel, path: str) -> dict[str, Any]:
+def verify_symbol_inventory(
+    plan: CudaOxideBindingPlan, path: str
+) -> dict[str, Any]:
     """Require exact parity with a curated nm-style API symbol inventory."""
 
     available = _read_symbol_inventory(path)
-    expected = {function.native_name for function in model.functions}
+    expected = {function.native_name for function in plan.functions}
     missing = sorted(expected - available)
     unexpected = sorted(available - expected)
     diagnostics = []
@@ -488,7 +345,7 @@ def verify_symbol_inventory(model: BindingModel, path: str) -> dict[str, Any]:
             f"symbol(s): {preview}{suffix}; provide the selected public API inventory"
         )
     if diagnostics:
-        raise BindingModelError(diagnostics)
+        raise CudaOxideBindingError(diagnostics)
     return {
         "status": "verified",
         "path": path,
@@ -500,7 +357,7 @@ def verify_symbol_inventory(model: BindingModel, path: str) -> dict[str, Any]:
     }
 
 
-def _type_manifest(model: BindingModel) -> dict[str, Any]:
+def _type_manifest(plan: CudaOxideBindingPlan) -> dict[str, Any]:
     return {
         "cuda_abi_aliases": [
             {
@@ -509,26 +366,26 @@ def _type_manifest(model: BindingModel) -> dict[str, Any]:
                 "size": values[1],
                 "alignment": values[2],
             }
-            for name, values in sorted(model.cuda_aliases.items())
+            for name, values in sorted(plan.cuda_aliases.items())
         ],
-        "enums": [asdict(item) for item in model.enums],
-        "records": [asdict(item) for item in model.records],
+        "enums": [asdict(item) for item in plan.enums],
+        "records": [asdict(item) for item in plan.structs],
         "typedefs": [
             {"name": item.name, "underlying": item.underlying.manifest_dict()}
-            for item in model.typedefs
+            for item in plan.type_aliases
         ],
     }
 
 
 def make_manifest(
-    model: BindingModel,
+    plan: CudaOxideBindingPlan,
     config: CudaOxideConfig,
     rust_output: str,
     constants: list[dict[str, str]],
     config_path: str | None = None,
 ) -> dict[str, Any]:
     symbols = []
-    for function in model.functions:
+    for function in plan.functions:
         symbols.append(
             {
                 "native_name": function.native_name,
@@ -537,14 +394,14 @@ def make_manifest(
                 "execution_space": function.execution_space,
                 "return_type": {
                     "c": function.return_type.manifest_dict(),
-                    "rust": rust_type(function.return_type, model),
+                    "rust": plan.render_rust_type(function.return_type),
                 },
                 "parameters": [
                     {
                         "c_name": parameter.c_name,
                         "rust_name": parameter.rust_name,
                         "c_type": parameter.type_.manifest_dict(),
-                        "rust_type": rust_type(parameter.type_, model),
+                        "rust_type": plan.render_rust_type(parameter.type_),
                     }
                     for parameter in function.parameters
                 ],
@@ -552,7 +409,6 @@ def make_manifest(
         )
 
     source_paths = sorted({config.entry_point, *config.retain_list})
-    modern_only_symbols = modern_nvvm_required_symbols(model)
     architecture = config.gpu_arch_number
     manifest = {
         "schema_version": MANIFEST_SCHEMA_VERSION,
@@ -582,10 +438,8 @@ def make_manifest(
                 if architecture >= 100
                 else "legacy-llvm-7"
             ),
-            "modern_nvvm_required_symbols": modern_only_symbols,
-            "selected_arch_supports_all_symbols": (
-                architecture >= 100 or not modern_only_symbols
-            ),
+            "modern_nvvm_required_symbols": [],
+            "selected_arch_supports_all_symbols": True,
         },
         "source": {
             "config": config_path,
@@ -622,17 +476,17 @@ def make_manifest(
             ],
         },
         "symbols": symbols,
-        "types": _type_manifest(model),
+        "types": _type_manifest(plan),
         "constants": constants,
-        "excluded_declarations": model.exclusions,
+        "excluded_declarations": plan.exclusions,
         "counts": {
             "generated_symbols": len(symbols),
-            "excluded_declarations": len(model.exclusions),
+            "excluded_declarations": len(plan.exclusions),
         },
     }
     if config.symbol_inventory:
         manifest["symbol_verification"] = verify_symbol_inventory(
-            model, config.symbol_inventory
+            plan, config.symbol_inventory
         )
     else:
         manifest["symbol_verification"] = {
@@ -663,8 +517,8 @@ def generate_cuda_oxide_bindings(
             clang_binary=config.clang_binary,
         )
 
-    model = build_c_device_model(declarations, config)
-    rendered, constants = render_cuda_oxide_bindings(model, config, config_path)
+    plan = CudaOxideBindingPlan.from_declarations(declarations, config)
+    rendered, constants = render_cuda_oxide_bindings(plan, config, config_path)
 
     output_directory = Path(output_dir)
     output_directory.mkdir(parents=True, exist_ok=True)
@@ -672,7 +526,7 @@ def generate_cuda_oxide_bindings(
     rust_path = output_directory / output_name
     manifest_path = output_directory / config.manifest_name
     manifest = make_manifest(
-        model, config, str(rust_path), constants, config_path=config_path
+        plan, config, str(rust_path), constants, config_path=config_path
     )
 
     _write_text_atomic(rust_path, rendered)
@@ -702,7 +556,7 @@ def cuda_oxide_binding_generator(cfg_path: str, output_dir: str):
             config, output_dir, config_path=cfg_path
         )
     except (
-        BindingModelError,
+        CudaOxideBindingError,
         OSError,
         RuntimeError,
         TypeError,
