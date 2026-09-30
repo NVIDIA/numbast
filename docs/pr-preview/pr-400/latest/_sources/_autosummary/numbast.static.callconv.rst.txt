@@ -1,0 +1,6 @@
+numbast.static.callconv
+=======================
+
+.. automodule:: numbast.static.callconv
+
+   
