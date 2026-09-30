@@ -29,7 +29,7 @@ dependencies = [
 root = ".."
 
 [project.scripts]
-numbast = "numbast.tool:static_binding_generator"
+numbast = "numbast.cli:static_binding_generator"
 
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"
