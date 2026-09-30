@@ -2,7 +2,8 @@
 
 # Numbast
 
-An automated pipeline to parse CUDA C++ headers and generate Numba-compatible Python bindings.
+An automated pipeline to parse CUDA C++ headers and generate device bindings
+for Numba CUDA and Rust/CUDA-Oxide.
 
 ## Announcement
 
@@ -16,6 +17,7 @@ Please visit the documentation site to get started:
 - [Overview](https://nvidia.github.io/numbast/latest/overview.html)
 - [Quickstart](https://nvidia.github.io/numbast/latest/quickstart.html)
 - [Install](https://nvidia.github.io/numbast/latest/install.html)
+- [CUDA-Oxide device bindings](https://nvidia.github.io/numbast/latest/cuda_oxide.html)
 - [AST Canopy overview](https://nvidia.github.io/numbast/latest/ast_canopy_overview.html)
 - [API reference](https://nvidia.github.io/numbast/latest/api_reference.html)
 

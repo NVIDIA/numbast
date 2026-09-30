@@ -58,6 +58,14 @@ Optional keys
 ``Version`` : ``string | number``
    Optional config metadata field.
 
+``Backend`` : ``string``
+   Optional output backend selector. Omit it for the existing Numba static bindings or select ``cuda-oxide`` for direct
+   Rust device externs.
+
+   Constraints:
+
+   - Allowed values: ``cuda-oxide``
+
 ``Types`` : ``object``
    Mapping of struct names to Numba type class names.
 
@@ -308,6 +316,13 @@ Optional keys
       MLIR Backend: true
 
 
+``CUDA Oxide`` : ``object``
+   Settings used only by the ``cuda-oxide`` backend.
+
+   Constraints:
+
+   - No unspecified sub-keys
+
 Optional nested keys
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -406,6 +421,52 @@ Optional nested keys
       teardown: 'lambda mod: print(''unloaded'', mod)'
 
 
+.. rubric:: ``CUDA Oxide``
+
+``LTOIR Inputs`` : ``array``
+   Ordered external CUDA LTOIR artifacts that provide the generated device symbols. Numbast records these paths but does
+   not build them.
+
+   Constraints:
+
+   - Min items: 1
+   - Item type: ``string``
+
+``Manifest Name`` : ``string``
+   Optional output filename for the versioned JSON manifest.
+
+``Symbol Inventory`` : ``string``
+   Optional exact newline- or nm-style inventory of the selected public API. Generation fails if a symbol is present on
+   only one side.
+
+``Type Aliases`` : ``object``
+   Supplemental C typedefs expressed as C-to-C mappings. This is for aliases defined by preprocessor profiles; arbitrary
+   Rust source is not accepted.
+
+   Default: ``{}``.
+
+   Example:
+
+   .. code-block:: yaml
+
+      Type Aliases:
+        nvshmem_team_t: int
+
+
+``Constants`` : ``object``
+   Typed literal constants missing from the parsed AST.
+
+   Default: ``{}``.
+
+``Bypass Parse Errors`` : ``boolean``
+   Continue after recoverable Clang parser errors. Strict parsing is the default and is recommended for complete API
+   coverage. Pair recovery mode with an exact Symbol Inventory to detect parser omissions.
+
+   Default: ``false``.
+
+``Clang Binary`` : ``string``
+   Optional clang++ executable used by AST Canopy.
+
 Raw schema
 ----------
 
@@ -432,6 +493,13 @@ Raw schema
      Version:
        type: [string, number]
        description: Optional config metadata field.
+     Backend:
+       type: string
+       enum: [cuda-oxide]
+       description: >
+         Optional output backend selector. Omit it for the existing Numba static bindings or select ``cuda-oxide`` for
+         direct Rust device externs.
+
      Entry Point:
        type: string
        description: Path to the input CUDA C/C++ header file.
@@ -443,7 +511,7 @@ Raw schema
        maxItems: 1
        items:
          type: string
-         pattern: "^sm_[0-9]+$"
+         pattern: "^sm_[0-9]+a?$"
        description: >
          Target GPU architecture list. Exactly one architecture is currently supported per run.
 
@@ -664,3 +732,63 @@ Raw schema
 
        examples:
          - true
+     CUDA Oxide:
+       type: object
+       additionalProperties: false
+       description: Settings used only by the ``cuda-oxide`` backend.
+       required: [LTOIR Inputs]
+       properties:
+         LTOIR Inputs:
+           type: array
+           minItems: 1
+           items:
+             type: string
+           description: >
+             Ordered external CUDA LTOIR artifacts that provide the generated device symbols. Numbast records these
+             paths but does not build them.
+
+         Manifest Name:
+           type: string
+           description: Optional output filename for the versioned JSON manifest.
+         Symbol Inventory:
+           type: string
+           description: >
+             Optional exact newline- or nm-style inventory of the selected public API. Generation fails if a symbol is
+             present on only one side.
+
+         Type Aliases:
+           type: object
+           default: {}
+           additionalProperties:
+             type: string
+           description: >
+             Supplemental C typedefs expressed as C-to-C mappings. This is for aliases defined by preprocessor profiles;
+             arbitrary Rust source is not accepted.
+
+           examples:
+             - nvshmem_team_t: int
+         Constants:
+           type: object
+           default: {}
+           description: Typed literal constants missing from the parsed AST.
+           additionalProperties:
+             type: object
+             additionalProperties: false
+             required: [Type, Value]
+             properties:
+               Type:
+                 type: string
+                 description: C scalar type or configured C type alias.
+               Value:
+                 type: [integer, boolean, string]
+                 description: Integer or boolean literal; expressions are rejected.
+         Bypass Parse Errors:
+           type: boolean
+           default: false
+           description: >
+             Continue after recoverable Clang parser errors. Strict parsing is the default and is recommended for
+             complete API coverage. Pair recovery mode with an exact Symbol Inventory to detect parser omissions.
+
+         Clang Binary:
+           type: string
+           description: Optional clang++ executable used by AST Canopy.

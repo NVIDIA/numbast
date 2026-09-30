@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name = "numbast"
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
-description = "Generate Numba CUDA bindings from CUDA C++ declarations."
+description = "Generate Numba CUDA and CUDA-Oxide bindings from CUDA declarations."
 requires-python = ">=3.7"
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -29,7 +29,8 @@ dependencies = [
 root = ".."
 
 [project.scripts]
-numbast = "numbast.tool:static_binding_generator"
+numbast = "numbast.tools.static_binding_generator:static_binding_generator"
+numbast-cuda-oxide = "numbast.tools.cuda_oxide_binding_generator:cuda_oxide_binding_generator"
 
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"

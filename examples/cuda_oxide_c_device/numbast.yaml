@@ -1,0 +1,29 @@
+Name: Numbast Round 1 C Device Example
+Version: 1
+Entry Point: examples/cuda_oxide_c_device/device_api.h
+File List:
+  - examples/cuda_oxide_c_device/device_api.h
+GPU Arch:
+  - sm_80
+Backend: cuda-oxide
+Clang Include Paths:
+  - examples/cuda_oxide_c_device
+API Prefix Removal:
+  Function:
+    - round1_
+Output Name: bindings.rs
+CUDA Oxide:
+  LTOIR Inputs:
+    - examples/cuda_oxide_c_device/device_api.ltoir
+  Manifest Name: bindings.manifest.json
+  Symbol Inventory: examples/cuda_oxide_c_device/device_api.symbols
+  Type Aliases:
+    round1_handle_t: unsigned long long
+  Constants:
+    ROUND1_DEFAULT_HANDLE:
+      Type: round1_handle_t
+      Value: 0
+  # CUDA 13.4 currently needs AST Canopy's recoverable-error path for a
+  # Toolkit math-header diagnostic. Unsupported selected declarations still
+  # fail during target-neutral model construction.
+  Bypass Parse Errors: true
