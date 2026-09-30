@@ -11,7 +11,10 @@ from numbast.cuda_oxide_binding_model import (
     CudaOxideStruct,
     CudaOxideTypeAlias,
 )
-from numbast.cuda_oxide_renderer import render_cuda_oxide_bindings
+from numbast.cuda_oxide_renderer import (
+    CudaOxideConstant,
+    render_cuda_oxide_bindings,
+)
 from numbast.errors import CudaOxideBindingError
 from numbast.rust_types import (
     CudaOxidePointer,
@@ -120,12 +123,26 @@ def test_rejects_invalid_or_colliding_constant_names(enums):
 def test_rejects_constant_and_function_name_collision():
     plan = CudaOxideBindingPlan(
         functions=[
-            CudaOxideFunction(
-                "VALUE", "VALUE", "device", type_("void"), ()
-            )
+            CudaOxideFunction("VALUE", "VALUE", "device", type_("void"), ())
         ],
         enums=[CudaOxideEnum("", "i32", (("VALUE", "1"),))],
     )
 
     with pytest.raises(CudaOxideBindingError, match="conflicts with function"):
         render_cuda_oxide_bindings(plan)
+
+
+def test_renders_explicit_constants_and_checks_parsed_collisions():
+    plan = CudaOxideBindingPlan(
+        enums=[CudaOxideEnum("", "i32", (("PARSED_VALUE", "1"),))]
+    )
+
+    rendered = render_cuda_oxide_bindings(
+        plan, [CudaOxideConstant("CONFIGURED_VALUE", "u32", "2")]
+    )
+    assert "pub const CONFIGURED_VALUE: u32 = 2;" in rendered
+
+    with pytest.raises(CudaOxideBindingError, match="conflicts with parsed"):
+        render_cuda_oxide_bindings(
+            plan, [CudaOxideConstant("PARSED_VALUE", "i32", "1")]
+        )
