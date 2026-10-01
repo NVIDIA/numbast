@@ -182,6 +182,8 @@ def render_cuda_oxide_bindings(
 
     # Model C/CUDA enums as ABI integer aliases plus constants instead of Rust
     # enums so duplicate enumerators and unknown native values remain valid.
+    # TODO: Consider opt-in Rust enums for closed value sets or transparent
+    # newtypes when stronger typing must still preserve unknown native values.
     for enum in plan.enums:
         if not enum.name:
             continue
