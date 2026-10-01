@@ -70,6 +70,12 @@ def test_renders_complete_cuda_oxide_plan():
     assert "pub type __half = f16;" in rendered
     assert "core::mem::align_of::<__half>()" in rendered
     assert "pub type handle = [u64; 2];" in rendered
+    assert (
+        rendered.count(
+            "// Compile-time checks that Rust storage matches the CUDA ABI."
+        )
+        == 2
+    )
     assert "pub type status = u32;" in rendered
     assert "pub type handle_t = handle;" in rendered
     assert "pub const STATUS_SUCCESS: status = 0;" in rendered
