@@ -10,6 +10,7 @@ use cuda_device::device;
 /// C layout: size 16, alignment 4.
 #[allow(non_camel_case_types)]
 pub type round1_options = [u32; 4];
+// Compile-time checks that Rust storage matches the CUDA ABI.
 const _: [(); 16] = [(); core::mem::size_of::<round1_options>()];
 const _: [(); 4] = [(); core::mem::align_of::<round1_options>()];
 

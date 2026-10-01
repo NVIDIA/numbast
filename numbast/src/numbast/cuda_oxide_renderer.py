@@ -152,6 +152,7 @@ def render_cuda_oxide_bindings(
                 f"/// CUDA ABI storage: size {size}, alignment {alignment}.",
                 "#[allow(non_camel_case_types)]",
                 f"pub type {rust_name} = {storage};",
+                "// Compile-time checks that Rust storage matches the CUDA ABI.",
                 f"const _: [(); {size}] = [(); core::mem::size_of::<{rust_name}>()];",
                 (
                     f"const _: [(); {alignment}] = "
@@ -169,6 +170,7 @@ def render_cuda_oxide_bindings(
                 f"/// C layout: size {struct.size}, alignment {struct.alignment}.",
                 "#[allow(non_camel_case_types)]",
                 f"pub type {rust_name} = {struct.storage_type};",
+                "// Compile-time checks that Rust storage matches the CUDA ABI.",
                 f"const _: [(); {struct.size}] = [(); core::mem::size_of::<{rust_name}>()];",
                 (
                     f"const _: [(); {struct.alignment}] = "
@@ -178,6 +180,8 @@ def render_cuda_oxide_bindings(
             ]
         )
 
+    # Model C/CUDA enums as ABI integer aliases plus constants instead of Rust
+    # enums so duplicate enumerators and unknown native values remain valid.
     for enum in plan.enums:
         if not enum.name:
             continue
