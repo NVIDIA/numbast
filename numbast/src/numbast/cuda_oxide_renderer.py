@@ -59,7 +59,12 @@ def _render_constants(
                 )
                 raise CudaOxideBindingError([message])
             occupied[rust_name] = item
-            lines.append(f"pub const {rust_name}: {enum_type} = {value};")
+            lines.extend(
+                [
+                    "#[allow(non_upper_case_globals)]",
+                    f"pub const {rust_name}: {enum_type} = {value};",
+                ]
+            )
 
     for constant in constants:
         try:
@@ -82,8 +87,14 @@ def _render_constants(
             constant.value,
             "explicit",
         )
-        lines.append(
-            f"pub const {rust_name}: {constant.rust_type} = {constant.value};"
+        lines.extend(
+            [
+                "#[allow(non_upper_case_globals)]",
+                (
+                    f"pub const {rust_name}: {constant.rust_type} = "
+                    f"{constant.value};"
+                ),
+            ]
         )
 
     function_names = {
@@ -213,9 +224,7 @@ def render_cuda_oxide_bindings(
         )
 
     if constant_lines:
-        for constant_line in constant_lines:
-            lines.append("#[allow(non_upper_case_globals)]")
-            lines.append(constant_line)
+        lines.extend(constant_lines)
         lines.append("")
 
     lines.extend(
