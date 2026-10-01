@@ -9,13 +9,16 @@ any one of them changes the surface of all of them at once.
 """
 
 import os
+from types import SimpleNamespace
 
 import pytest
 
 from ast_canopy import parse_declarations_from_source
+from ast_canopy.pylibastcanopy import execution_space
 
 from numbast.curate import (
     function_skip_reason,
+    is_device_space,
     matches_any_regex_pattern,
     plan_functions,
 )
@@ -62,6 +65,70 @@ def test_regex_patterns_are_unanchored():
 
 def test_no_patterns_matches_nothing():
     assert not matches_any_regex_pattern("acmeCompute", [])
+
+
+@pytest.mark.parametrize(
+    "space,expected",
+    [
+        (execution_space.device, True),
+        (execution_space.host_device, True),
+        (execution_space.host, False),
+        (execution_space.undefined, False),
+        (execution_space.global_, False),
+    ],
+)
+def test_only_device_and_host_device_count_as_device(space, expected):
+    """``host_device`` is easy to forget, and dropping it would skip every
+    ``__host__ __device__`` function in the input."""
+    assert is_device_space(space) is expected
+
+
+@pytest.mark.parametrize(
+    "space,expected",
+    [
+        (execution_space.device, True),
+        (execution_space.host_device, True),
+        (execution_space.host, False),
+        (execution_space.undefined, False),
+    ],
+)
+def test_the_rule_accepts_a_stringified_execution_space(space, expected):
+    """Both representations are in use and must give the same answer.
+
+    Declarations from a parse carry the enum; callers that assemble
+    declarations without one, to stay fast and clang-free, carry
+    ``str(exec_space)``. A rule that only understood the enum would silently
+    treat every such declaration as host-only and curate the whole input away.
+    """
+    assert is_device_space(str(space)) is expected
+
+
+def test_an_unrecognised_execution_space_is_not_device():
+    """Not device, rather than an error: the conservative answer is to skip."""
+    assert is_device_space("execution_space.not_a_real_space") is False
+
+
+def test_skip_reason_reads_a_stringified_execution_space(decls):
+    """The predicate's tolerance has to reach the rule that uses it."""
+    stub = SimpleNamespace(
+        name="hostOnlyStub", exec_space=str(execution_space.host)
+    )
+    assert (
+        function_skip_reason(
+            stub, excludes=[], skip_prefix=None, skip_non_device=True
+        )
+        == "non_device"
+    )
+
+    stub = SimpleNamespace(
+        name="deviceStub", exec_space=str(execution_space.device)
+    )
+    assert (
+        function_skip_reason(
+            stub, excludes=[], skip_prefix=None, skip_non_device=True
+        )
+        is None
+    )
 
 
 def test_in_scope_declarations_have_no_skip_reason(decls):

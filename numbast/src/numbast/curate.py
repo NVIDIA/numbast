@@ -17,6 +17,7 @@ from numbast.model import FunctionPlan
 from numbast.name_policy import apply_prefix_removal
 
 __all__ = [
+    "is_device_space",
     "matches_any_regex_pattern",
     "function_skip_reason",
     "plan_functions",
@@ -25,6 +26,23 @@ __all__ = [
 _DEVICE_SPACES = frozenset(
     {execution_space.device, execution_space.host_device}
 )
+#: Derived from the members above rather than written out, so the two spellings
+#: cannot drift apart.
+_DEVICE_SPACE_NAMES = frozenset(str(space) for space in _DEVICE_SPACES)
+
+
+def is_device_space(exec_space) -> bool:
+    """True for ``__device__`` and ``__host__ __device__`` functions.
+
+    Accepts either an ``execution_space`` member or its string form. Both are
+    in use: declarations from a parse carry the enum, while callers that
+    assemble declarations without one -- to stay fast and clang-free -- carry
+    the stringified space. The rule has to mean the same thing either way, so
+    it is this predicate's job to know that and nobody else's.
+    """
+    return (
+        exec_space in _DEVICE_SPACES or str(exec_space) in _DEVICE_SPACE_NAMES
+    )
 
 
 def matches_any_regex_pattern(name: str, patterns: list[str]) -> bool:
@@ -54,7 +72,7 @@ def function_skip_reason(
     if skip_prefix and decl.name.startswith(skip_prefix):
         return "skip_prefix"
 
-    if skip_non_device and decl.exec_space not in _DEVICE_SPACES:
+    if skip_non_device and not is_device_space(decl.exec_space):
         return "non_device"
 
     return None
