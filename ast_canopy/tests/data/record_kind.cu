@@ -18,10 +18,19 @@ public:
   int a;
 };
 
+// All three kinds nested under one parent, so a single parse can show that
+// nesting preserves the kind rather than flattening it to one answer.
 struct WithNested {
   int tag;
-  union Payload {
+  union NestedUnion {
     int as_int;
     double as_double;
-  } payload;
+  } nested_union;
+  struct NestedStruct {
+    int a;
+  } nested_struct;
+  class NestedClass {
+  public:
+    int a;
+  } nested_class;
 };

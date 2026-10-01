@@ -48,10 +48,33 @@ def test_union_is_distinguished_from_struct(data_folder):
     assert records["PlainClass"].is_union is False
 
 
-def test_nested_union_is_distinguished(data_folder):
-    records = _records(data_folder)
-    nested = {r.name: r for r in records["WithNested"].nested_records}
-    assert nested["Payload"].is_union is True
+def test_nested_record_kinds_are_distinguished(data_folder):
+    """Nesting preserves the kind rather than collapsing it to one answer.
+
+    All three kinds are checked, not just the union: a test that looked at a
+    nested union alone would also pass against an implementation that reported
+    every nested record as a union, or that inherited the flag from the parent.
+    Comparing the whole mapping rather than individual keys additionally
+    catches a nested record going missing.
+    """
+    parent = _records(data_folder)["WithNested"]
+
+    # ``nested_records`` also reports the parent itself -- C++ gives every
+    # class an injected-class-name, which is a member type. Note that it is
+    # only reported for ``struct`` and ``union``: in a ``class`` the injected
+    # name is private, and non-public members are filtered out. That asymmetry
+    # is incidental to the kind flag, so it is dropped here rather than pinned.
+    nested = {
+        r.name: r.is_union
+        for r in parent.nested_records
+        if r.name != parent.name
+    }
+
+    assert nested == {
+        "NestedUnion": True,
+        "NestedStruct": False,
+        "NestedClass": False,
+    }
 
 
 def test_is_union_survives_a_pickle_round_trip(data_folder, monkeypatch):
@@ -74,3 +97,24 @@ def test_is_union_survives_a_pickle_round_trip(data_folder, monkeypatch):
         assert pickle.loads(pickle.dumps(record)).is_union == record.is_union, (
             name
         )
+
+
+def test_nested_record_kinds_survive_a_pickle_round_trip(
+    data_folder, monkeypatch
+):
+    """Nested records reach the far side through their own code path.
+
+    ``__setstate__`` rebuilds them by casting the nested vector, so a nested
+    record's kind is restored by a separate recursive step rather than by the
+    field read that restores the parent's. Checking only top-level records
+    would leave that step unexercised.
+    """
+    parent = _native_records(data_folder, monkeypatch)["WithNested"]
+    before = {r.name: r.is_union for r in parent.nested_records}
+
+    restored = pickle.loads(pickle.dumps(parent))
+    after = {r.name: r.is_union for r in restored.nested_records}
+
+    # A union among them, or the comparison would hold for the wrong reason.
+    assert any(before.values()), before
+    assert after == before
