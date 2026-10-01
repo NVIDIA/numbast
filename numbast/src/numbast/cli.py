@@ -3,14 +3,7 @@ from importlib import import_module
 import click
 import yaml
 
-from numbast.tools.yaml_tags import string_constructor
-
-
-class _ConfigLoader(yaml.SafeLoader):
-    pass
-
-
-_ConfigLoader.add_constructor("!numbast_join", string_constructor)
+from numbast.tools.binding_config import load_binding_config
 
 
 @click.command()
@@ -36,15 +29,9 @@ def static_binding_generator(
 ):
     """Generate CUDA static bindings using the backend selected in the config."""
     try:
-        with open(cfg_path) as config_file:
-            config = yaml.load(config_file, Loader=_ConfigLoader)
-    except yaml.YAMLError as error:
+        config = load_binding_config(cfg_path)
+    except (TypeError, yaml.YAMLError) as error:
         raise click.BadParameter(str(error), param_hint="--cfg-path") from error
-
-    if not isinstance(config, dict):
-        raise click.BadParameter(
-            "Expected a YAML mapping.", param_hint="--cfg-path"
-        )
 
     use_mlir = bool(
         config.get("MLIR Backend", config.get("mlir_backend", False))

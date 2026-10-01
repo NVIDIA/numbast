@@ -47,13 +47,27 @@ def test_static_binding_schema_has_expected_keys():
         "Use Separate Registry",
         "Function Argument Intents",
         "MLIR Backend",
+        "CUDA Oxide",
     }
     assert expected_keys.issubset(set(properties))
 
     gpu_arch = properties["GPU Arch"]
     assert gpu_arch["type"] == "array"
     assert gpu_arch["maxItems"] == 1
-    assert gpu_arch["items"]["pattern"] == "^sm_[0-9]+$"
+    assert gpu_arch["items"]["pattern"] == "^sm_[0-9]+a?$"
+
+    cuda_oxide = properties["CUDA Oxide"]
+    assert cuda_oxide["required"] == ["LTOIR Inputs"]
+    assert {
+        "LTOIR Inputs",
+        "Output Name",
+        "Manifest Name",
+        "Symbol Inventory",
+        "Type Aliases",
+        "Constants",
+        "Bypass Parse Errors",
+        "Clang Binary",
+    } == set(cuda_oxide["properties"])
 
 
 def test_generate_schema_reference_from_yaml_schema(tmp_path):
@@ -86,6 +100,7 @@ def test_generate_schema_reference_from_yaml_schema(tmp_path):
     assert "``Entry Point``" in rendered
     assert "``Use Separate Registry``" in rendered
     assert "``MLIR Backend``" in rendered
+    assert "``CUDA Oxide``" in rendered
     assert "``Module Link Variables Used``" in rendered
     assert "Raw schema" in rendered
     assert "$schema: " in rendered

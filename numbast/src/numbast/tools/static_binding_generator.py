@@ -10,8 +10,6 @@ import importlib
 import warnings
 import re
 
-import yaml
-
 from numba import config
 import numba.types
 import numba.core.datamodel.models
@@ -42,7 +40,7 @@ from numbast.static.function_template import StaticFunctionTemplatesRenderer
 from numbast.static.class_template import StaticClassTemplatesRenderer
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
-from numbast.tools.yaml_tags import string_constructor
+from numbast.tools.binding_config import BindingConfig, load_binding_config
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
@@ -50,9 +48,6 @@ VERBOSE = True
 STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
     os.path.dirname(__file__), "static_binding_generator.schema.yaml"
 )
-
-# Register custom YAML constructor for !join tag
-yaml.SafeLoader.add_constructor("!numbast_join", string_constructor)
 
 
 def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
@@ -99,12 +94,10 @@ def _validate_mlir_backend_only_config(config_dict: dict):
 
 
 def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
-    with open(cfg_path) as f:
-        config_dict = yaml.safe_load(f)
-    return _config_dict_uses_mlir_backend(config_dict)
+    return _config_dict_uses_mlir_backend(load_binding_config(cfg_path))
 
 
-class Config:
+class Config(BindingConfig):
     """Configuration object for static binding generation.
 
     The canonical list of YAML keys, value types, defaults, and constraints is
@@ -147,20 +140,11 @@ class Config:
         """
         self.mlir_backend = _config_dict_uses_mlir_backend(config_dict)
         _validate_mlir_backend_only_config(config_dict)
-
-        self.entry_point = config_dict["Entry Point"]
-        self.gpu_arch = config_dict["GPU Arch"]
-        self.retain_list = config_dict["File List"]
+        super().__init__(config_dict)
         self.types = _str_value_to_numba_type(config_dict.get("Types", {}))
         self.datamodels = _str_value_to_numba_datamodel(
             config_dict.get("Data Models", {})
         )
-
-        self.excludes = config_dict.get("Exclude", {})
-        self.exclude_functions = self.excludes.get("Function", [])
-        self.exclude_structs = self.excludes.get("Struct", [])
-
-        self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
 
         self.additional_imports = config_dict.get("Additional Import", [])
 
@@ -168,67 +152,23 @@ class Config:
             "Shim Include Override", None
         )
 
-        self.predefined_macros = config_dict.get("Predefined Macros", [])
-
-        if self.exclude_functions is None:
-            self.exclude_functions = []
-        if self.exclude_structs is None:
-            self.exclude_structs = []
-        if self.clang_includes_paths is None:
-            self.clang_includes_paths = []
-
         self.output_name = config_dict.get("Output Name", None)
 
         self.cooperative_launch_required_functions_regex = config_dict.get(
             "Cooperative Launch Required Functions Regex", []
         )
 
-        self.api_prefix_removal = config_dict.get("API Prefix Removal", {})
-
-        # Ensure prefix removal values are lists
-        if self.api_prefix_removal:
-            for key, value in self.api_prefix_removal.items():
-                if not isinstance(value, list):
-                    self.api_prefix_removal[key] = [value]
-
         self.module_callbacks = config_dict.get("Module Callbacks", {})
         self.module_link_variables_used = (
             config_dict.get("Module Link Variables Used", []) or []
         )
-        self.skip_prefix = config_dict.get("Skip Prefix", None)
-
         self.separate_registry = config_dict.get("Use Separate Registry", False)
 
         self.function_argument_intents = (
             config_dict.get("Function Argument Intents", {}) or {}
         )
 
-        # TODO: support multiple GPU architectures
-        if len(self.gpu_arch) > 1:
-            raise NotImplementedError(
-                "Multiple GPU architectures are not supported yet."
-            )
-
-        self._verify_exists()
         self._verify_regex_patterns()
-
-    @classmethod
-    def from_yaml_path(cls, cfg_path: str) -> "Config":
-        """Create a Config instance from a YAML file path.
-
-        Parameters
-        ----------
-        cfg_path : str
-            Path to the YAML configuration file.
-
-        Returns
-        -------
-        Config
-            A new Config instance.
-        """
-        with open(cfg_path) as f:
-            config_dict = yaml.safe_load(f)
-        return cls(config_dict)
 
     @classmethod
     def from_params(
@@ -307,18 +247,6 @@ class Config:
 
         instance = cls(config_dict)
         return instance
-
-    def _verify_exists(self):
-        if not os.path.exists(self.entry_point):
-            raise ValueError(
-                f"Input header file does not exist: {self.entry_point}"
-            )
-        for f in self.retain_list:
-            if not os.path.exists(f):
-                raise ValueError(f"File in retain list does not exist: {f}")
-        for f in self.clang_includes_paths:
-            if not os.path.exists(f):
-                raise ValueError(f"File in include list does not exist: {f}")
 
     def _verify_regex_patterns(self):
         for pattern in self.cooperative_launch_required_functions_regex:
