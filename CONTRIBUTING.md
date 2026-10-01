@@ -2,6 +2,12 @@
 
 If you are interested in contributing to Numbast, your contributions will fall
 into three categories:
+
+Before working on a fix or feature pull request, comment on the relevant
+issue—or open one if needed—to communicate your intent. A maintainer will
+triage the issue at the earliest possible date. Please begin work only after
+the issue has been assigned to you.
+
 1. You want to report a bug, feature request, or documentation issue
     - File an [issue](https://github.com/nvidia/numbast/issues/new/choose)
     describing what you encountered or what you want to see changed.
@@ -10,12 +16,14 @@ into three categories:
     - The team will evaluate the issues and triage them, scheduling
     them for a release. If you believe the issue needs priority attention
     comment on the issue to notify the team.
-2. You want to propose a new Feature and implement it
-    - Post about your intended feature, and we shall discuss the design and
-    implementation.
-    - Once we agree that the plan looks good, go ahead and implement it, using
-    the [code contributions](#code-contributions) guide below.
+2. You want to propose a new feature and implement it
+    - Open an issue about your intended feature, and we shall discuss the
+    design and implementation.
+    - Once the plan is agreed upon and the issue is assigned to you, implement
+    it using the [code contributions](#code-contributions) guide below.
 3. You want to implement a feature or bug-fix for an outstanding issue
+    - Comment on the issue to communicate your intention to work on it and wait
+    for it to be assigned to you.
     - Follow the [code contributions](#code-contributions) guide below.
     - If you need more context on a particular issue, please ask and we shall
     provide.
@@ -28,7 +36,9 @@ into three categories:
     to learn how to setup the development environment.
 2. Find an issue to work on. The best way is to look for the [good first issue](https://github.com/nvidia/numbast/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
     or [help wanted](https://github.com/nvidia/numbast/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) labels
-3. Comment on the issue saying you are going to work on it.
+3. Comment on the issue to communicate your intention to work on it. A
+    maintainer will triage the issue at the earliest possible date; wait until
+    the issue is assigned to you before starting work.
 4. Get familiar with the developer guide relevant for you:
     * TBA
 5. Code! Make sure to update unit tests!

@@ -1,0 +1,409 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+"""CUDA-Oxide Rust type and identifier policy."""
+
+from __future__ import annotations
+
+import re
+from dataclasses import asdict, dataclass, field
+from typing import Any
+
+
+_QUALIFIERS = re.compile(r"\b(?:const|volatile|restrict|__restrict__)\b")
+_ARRAY_SUFFIX = re.compile(r"\[\s*([0-9]+)\s*\]\s*$")
+_POINTER_TO_ARRAY = re.compile(
+    r"^(?P<base>.+?)\(\s*(?P<pointers>(?:\*\s*"
+    r"(?:(?:const|volatile|restrict|__restrict__)\s*)*)+)\)"
+    r"(?P<arrays>(?:\s*\[\s*[0-9]+\s*\])+\s*)$"
+)
+_TAG_PREFIX = re.compile(r"^(?:struct|enum|union)\s+")
+_RUST_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_CUDA_ARCH = re.compile(r"^(?:sm|compute)_([0-9]+)[a-z]*$")
+
+RUST_KEYWORDS = frozenset(
+    {
+        "Self",
+        "abstract",
+        "as",
+        "async",
+        "await",
+        "become",
+        "box",
+        "break",
+        "const",
+        "continue",
+        "crate",
+        "do",
+        "dyn",
+        "else",
+        "enum",
+        "extern",
+        "false",
+        "final",
+        "fn",
+        "for",
+        "gen",
+        "if",
+        "impl",
+        "in",
+        "let",
+        "loop",
+        "macro",
+        "macro_rules",
+        "match",
+        "mod",
+        "move",
+        "mut",
+        "override",
+        "priv",
+        "pub",
+        "ref",
+        "return",
+        "safe",
+        "self",
+        "static",
+        "struct",
+        "super",
+        "trait",
+        "true",
+        "try",
+        "type",
+        "typeof",
+        "union",
+        "unsafe",
+        "unsized",
+        "use",
+        "virtual",
+        "where",
+        "while",
+        "yield",
+    }
+)
+
+_RUST_NON_RAW_IDENTIFIERS = frozenset({"Self", "_", "crate", "self", "super"})
+
+PRIMITIVE_RUST_TYPES = {
+    "_Bool": "bool",
+    "bool": "bool",
+    "char": "i8",
+    "double": "f64",
+    "float": "f32",
+    "int": "i32",
+    "int8_t": "i8",
+    "int16_t": "i16",
+    "int32_t": "i32",
+    "int64_t": "i64",
+    "intptr_t": "isize",
+    "long": "i64",
+    "long long": "i64",
+    "ptrdiff_t": "isize",
+    "short": "i16",
+    "signed char": "i8",
+    "signed int": "i32",
+    "signed long": "i64",
+    "signed long long": "i64",
+    "signed short": "i16",
+    "size_t": "usize",
+    "uint8_t": "u8",
+    "uint16_t": "u16",
+    "uint32_t": "u32",
+    "uint64_t": "u64",
+    "uintptr_t": "usize",
+    "unsigned char": "u8",
+    "unsigned int": "u32",
+    "unsigned long": "u64",
+    "unsigned long long": "u64",
+    "unsigned short": "u16",
+    "void": "core::ffi::c_void",
+}
+
+# CUDA-Oxide currently admits scalar and fixed-array pointees at device extern
+# boundaries. These aliases preserve the CUDA storage ABI without requiring a
+# C++ bridge.
+CUDA_ABI_ALIASES = {
+    # Pre-Blackwell CUDA-Oxide uses a legacy NVVM dialect that cannot carry
+    # half or sub-32-bit values at an extern boundary. The u16 storage spelling
+    # keeps pointer-based APIs usable there; CudaOxideBindingPlan construction
+    # selects f16
+    # for CUDA __half on the modern sm_100+ path, where by-value FFI is legal.
+    "__half": ("u16", 2, 2),
+    "half": ("u16", 2, 2),
+    "__nv_bfloat16": ("u16", 2, 2),
+    # CUDA gives double2 16-byte alignment. A Rust [f64; 2] is only 8-byte
+    # aligned, so use an opaque 128-bit storage cell at the raw ABI boundary.
+    "double2": ("[u128; 1]", 16, 16),
+}
+
+
+@dataclass(frozen=True)
+class CudaOxidePointer:
+    kind: str
+
+
+@dataclass(frozen=True)
+class CudaOxideArray:
+    size: int
+
+
+CudaOxideTypeLayer = CudaOxidePointer | CudaOxideArray
+
+
+@dataclass(frozen=True)
+class CudaOxideType:
+    c_spelling: str = field(compare=False)
+    base_name: str
+    # Ordered from the outermost type constructor to the named base type.
+    layers: tuple[CudaOxideTypeLayer, ...] = ()
+
+    @property
+    def pointer_depth(self) -> int:
+        return sum(isinstance(layer, CudaOxidePointer) for layer in self.layers)
+
+    @property
+    def pointer_kinds(self) -> tuple[str, ...]:
+        return tuple(
+            layer.kind
+            for layer in reversed(self.layers)
+            if isinstance(layer, CudaOxidePointer)
+        )
+
+    @property
+    def array_dimensions(self) -> tuple[int, ...]:
+        return tuple(
+            layer.size
+            for layer in self.layers
+            if isinstance(layer, CudaOxideArray)
+        )
+
+    def manifest_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def is_identifier(name: str) -> bool:
+    return bool(_RUST_IDENTIFIER.fullmatch(name))
+
+
+def rust_identifier(name: str) -> str:
+    """Return a source-level Rust identifier for a known-valid identifier."""
+
+    if not is_identifier(name):
+        raise ValueError(f"Not a valid C/Rust identifier: {name!r}")
+    if name in _RUST_NON_RAW_IDENTIFIERS:
+        return f"{name}_"
+    if name in RUST_KEYWORDS:
+        return f"r#{name}"
+    return name
+
+
+def rust_parameter_name(name: str, index: int) -> str:
+    candidate = name or f"arg{index}"
+    candidate = re.sub(r"[^A-Za-z0-9_]", "_", candidate)
+    if not candidate or candidate[0].isdigit():
+        candidate = f"arg_{candidate}"
+    return rust_identifier(candidate)
+
+
+def parse_cuda_oxide_type(type_obj: Any) -> CudaOxideType:
+    """Build a CUDA-Oxide type from an AST Canopy structured type."""
+
+    if type_obj.is_left_reference() or type_obj.is_right_reference():
+        raise ValueError(
+            "C++ references are outside the supported CUDA-Oxide bindings"
+        )
+
+    # Compatibility for callers providing an AST Canopy object from before
+    # structured type metadata was added. Objects produced by the AST Canopy
+    # version shipped with Numbast always take the structural path below.
+    if not hasattr(type_obj, "kind"):
+        return parse_cuda_oxide_type_spelling(type_obj.name)
+
+    layers: list[CudaOxideTypeLayer] = []
+    current = type_obj
+    while True:
+        kind = _type_kind_name(current.kind)
+        if kind in {"sugar", "adjusted"}:
+            current = _require_inner_type(current, kind)
+            continue
+        if kind == "pointer":
+            pointee = _require_inner_type(current, kind)
+            layers.append(
+                CudaOxidePointer(
+                    "const" if _is_const_pointee(pointee) else "mut"
+                )
+            )
+            current = pointee
+            continue
+        if kind == "constant_array":
+            if current.array_size is None:
+                raise ValueError("constant array is missing its size")
+            layers.append(CudaOxideArray(current.array_size))
+            current = _require_inner_type(current, kind)
+            continue
+        if kind in {
+            "incomplete_array",
+            "variable_array",
+            "dependent_sized_array",
+        }:
+            raise ValueError(
+                "only fixed-size arrays are supported by CUDA-Oxide bindings"
+            )
+        if kind in {"lvalue_reference", "rvalue_reference"}:
+            raise ValueError(
+                "C++ references are outside the supported CUDA-Oxide bindings"
+            )
+        if kind in {"function", "member_pointer"}:
+            raise ValueError(
+                "function/member pointers are outside the supported CUDA-Oxide bindings"
+            )
+        if kind in {"builtin", "record", "enum_", "typedef_"}:
+            if not current.type_name:
+                raise ValueError(f"{kind} type is missing its name")
+            return CudaOxideType(
+                c_spelling=type_obj.name,
+                base_name=current.type_name,
+                layers=tuple(layers),
+            )
+        if kind == "unknown":
+            return parse_cuda_oxide_type_spelling(type_obj.name)
+        raise ValueError(f"unsupported AST type kind {kind!r}")
+
+
+def _type_kind_name(kind: Any) -> str:
+    name = getattr(kind, "name", None)
+    if name is not None:
+        return name
+    return str(kind).rsplit(".", 1)[-1]
+
+
+def _require_inner_type(type_obj: Any, kind: str) -> Any:
+    inner = type_obj.inner_type
+    if inner is None:
+        raise ValueError(f"{kind} type is missing its inner type")
+    return inner
+
+
+def _is_const_pointee(type_obj: Any) -> bool:
+    """Return whether a pointee is const, including const array elements."""
+
+    current = type_obj
+    while True:
+        if current.is_const_qualified():
+            return True
+        kind = _type_kind_name(current.kind)
+        if kind in {
+            "sugar",
+            "adjusted",
+            "constant_array",
+            "incomplete_array",
+            "variable_array",
+            "dependent_sized_array",
+        }:
+            current = _require_inner_type(current, kind)
+            continue
+        return False
+
+
+def parse_cuda_oxide_type_spelling(spelling: str) -> CudaOxideType:
+    """Build a CUDA-Oxide type from a legacy C type spelling."""
+
+    spelling = " ".join(spelling.strip().split())
+    if not spelling:
+        raise ValueError("empty type spelling")
+    parse_spelling = spelling
+    pointer_to_array = _POINTER_TO_ARRAY.fullmatch(parse_spelling)
+    pointer_to_array_dimensions: list[int] | None = None
+    if pointer_to_array is not None:
+        pointer_to_array_dimensions = [
+            int(size)
+            for size in re.findall(
+                r"\[\s*([0-9]+)\s*\]", pointer_to_array.group("arrays")
+            )
+        ]
+        parse_spelling = (
+            f"{pointer_to_array.group('base')} "
+            f"{pointer_to_array.group('pointers')}"
+        )
+    if "(" in parse_spelling or ")" in parse_spelling:
+        raise ValueError(
+            "function/member pointers are outside the supported CUDA-Oxide bindings"
+        )
+    if "&" in parse_spelling:
+        raise ValueError(
+            "C++ references are outside the supported CUDA-Oxide bindings"
+        )
+
+    dimensions: list[int] = []
+    array_source = parse_spelling
+    while True:
+        match = _ARRAY_SUFFIX.search(array_source)
+        if match is None:
+            break
+        dimensions.insert(0, int(match.group(1)))
+        array_source = array_source[: match.start()].rstrip()
+
+    segments = array_source.split("*")
+    base_segment = segments[0].strip()
+    pointer_kinds = tuple(
+        "const" if re.search(r"\bconst\b", segment) else "mut"
+        for segment in segments[:-1]
+    )
+    base_name = _QUALIFIERS.sub("", base_segment)
+    base_name = _TAG_PREFIX.sub("", " ".join(base_name.split()))
+    if not base_name:
+        raise ValueError(f"unable to find a base type in {spelling!r}")
+
+    pointer_layers = tuple(
+        CudaOxidePointer(kind) for kind in reversed(pointer_kinds)
+    )
+    array_layers = tuple(CudaOxideArray(size) for size in dimensions)
+    if pointer_to_array_dimensions is not None:
+        # The parenthesized stars wrap the array, while any stars in the base
+        # group remain inside it: ``int *(*)[4]`` is ``*mut [*mut i32; 4]``.
+        wrapping_pointer_count = pointer_to_array.group("pointers").count("*")
+        wrapping_pointers = pointer_layers[:wrapping_pointer_count]
+        element_pointers = pointer_layers[wrapping_pointer_count:]
+        layers = (
+            wrapping_pointers
+            + tuple(
+                CudaOxideArray(size) for size in pointer_to_array_dimensions
+            )
+            + element_pointers
+        )
+    else:
+        layers = array_layers + pointer_layers
+
+    return CudaOxideType(
+        c_spelling=spelling,
+        base_name=base_name,
+        layers=layers,
+    )
+
+
+def cuda_arch_number(gpu_arch: str) -> int:
+    """Return the numeric compute capability from a CUDA architecture name."""
+
+    match = _CUDA_ARCH.fullmatch(gpu_arch)
+    if match is None:
+        raise ValueError(f"unsupported CUDA GPU architecture {gpu_arch!r}")
+    return int(match.group(1))
+
+
+def cuda_abi_alias_for_arch(name: str, gpu_arch: str) -> tuple[str, int, int]:
+    storage, size, alignment = CUDA_ABI_ALIASES[name]
+    architecture = cuda_arch_number(gpu_arch)
+    if architecture >= 100 and name in {"__half", "half"}:
+        storage = "f16"
+    return storage, size, alignment
+
+
+def rust_struct_storage(size: int, alignment: int) -> str:
+    """Return an aligned Rust storage type for an opaque C record."""
+
+    cells = {1: "u8", 2: "u16", 4: "u32", 8: "u64", 16: "u128"}
+    cell = cells.get(alignment)
+    if cell is None or size <= 0 or size % alignment:
+        raise ValueError(
+            f"cannot represent size={size}, alignment={alignment} as CUDA-Oxide storage"
+        )
+    return f"[{cell}; {size // alignment}]"

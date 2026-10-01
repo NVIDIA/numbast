@@ -376,7 +376,8 @@ def get_callconv_utils() -> str:
 
 
 def get_rendered_imports(additional_imports: list[str] = []) -> str:
-    imports = "\n".join(BaseRenderer.Imports) + "\n"
+    # Sorted, not set-ordered -- see the note in numbast.static.renderer.
+    imports = "\n".join(sorted(BaseRenderer.Imports)) + "\n"
     for imprt in additional_imports:
         imports += f"import {imprt}\n"
 
