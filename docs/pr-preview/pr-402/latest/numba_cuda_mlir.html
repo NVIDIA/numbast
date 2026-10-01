@@ -706,7 +706,10 @@ config file you use with the default Numbast CLI.</p>
 </pre></div>
 </div>
 <p>With <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>, the CLI routes generation through
-<code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> and writes a module for <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> and writes a module for <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code>.
+Both <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">numbast</span></code> and the installed <code class="docutils literal notranslate"><span class="pre">numbast</span></code> command select the
+backend before importing its generator, so MLIR generation does not require
+<code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> to be installed.</p>
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
