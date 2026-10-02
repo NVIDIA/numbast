@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import click
+from click.core import ParameterSource
 import os
 import json
 from collections import defaultdict
@@ -768,6 +769,21 @@ def ruff_format_binding_file(binding_file_path: str):
     print("Formatted.")
 
 
+def _params_the_user_set(ctx) -> dict:
+    """The options this invocation actually passed, for the provenance stamp.
+
+    See the fuller note on the copy in ``numbast.tools`` -- stamping
+    ``ctx.params`` wholesale records the CLI's signature rather than the
+    invocation, so adding an option rewrites the provenance comment in every
+    generated file without any binding changing.
+    """
+    return {
+        name: value
+        for name, value in ctx.params.items()
+        if ctx.get_parameter_source(name) is not ParameterSource.DEFAULT
+    }
+
+
 @click.command()
 @click.pass_context
 @click.option(
@@ -817,7 +833,7 @@ def static_binding_generator(
         output_dir,
         log_generates=True,
         cfg_file_path=cfg_path,
-        sbg_params=ctx.params,
+        sbg_params=_params_the_user_set(ctx),
         bypass_parse_error=bypass_parse_error,
     )
 

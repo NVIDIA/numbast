@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import click
+from click.core import ParameterSource
 import os
 import json
 from collections import defaultdict
@@ -25,6 +26,12 @@ from ast_canopy.decl import (
 )
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
+from numbast.backends.registry import (
+    BACKEND_CONFIG_KEY,
+    NUMBA_MLIR,
+    available_backends,
+    resolve_backend_name,
+)
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_shim,
@@ -56,12 +63,7 @@ yaml.SafeLoader.add_constructor("!numbast_join", string_constructor)
 
 
 def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
-    return bool(
-        config_dict.get(
-            "MLIR Backend",
-            config_dict.get("mlir_backend", False),
-        )
-    )
+    return resolve_backend_name(config_dict) == NUMBA_MLIR
 
 
 _MLIR_BACKEND_ONLY_CONFIG_KEYS = ("Module Link Variables Used",)
@@ -95,13 +97,41 @@ def _validate_mlir_backend_only_config(config_dict: dict):
         options = ", ".join(f'"{key}"' for key in keys)
         message = f"Configuration options {options} require"
 
-    raise ValueError(f'{message} "MLIR Backend: true".')
+    raise ValueError(
+        f'{message} "{BACKEND_CONFIG_KEY}: {NUMBA_MLIR}" '
+        '(or the legacy "MLIR Backend: true").'
+    )
 
 
-def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
+def _params_the_user_set(ctx) -> dict:
+    """The options this invocation actually passed, for the provenance stamp.
+
+    Stamping ``ctx.params`` wholesale records the CLI's *signature* rather than
+    the invocation: every option appears, including ones nobody passed, so
+    adding an option rewrites the provenance comment in every generated file
+    without any binding changing. That makes a regeneration impossible to
+    review as a diff and byte-level comparison of generated output useless.
+
+    Options left at their default also carry no information a reader does not
+    already have -- the default is discoverable from ``--help`` -- while the
+    ones that were passed are exactly what is needed to reproduce the run.
+    """
+    return {
+        name: value
+        for name, value in ctx.params.items()
+        if ctx.get_parameter_source(name) is not ParameterSource.DEFAULT
+    }
+
+
+def _backend_name_from_cfg_path(cfg_path: str, override: str | None = None):
+    """Name the backend selected by the config file at ``cfg_path``.
+
+    Read straight from the YAML rather than from a :class:`Config`, because
+    which backend is selected determines which ``Config`` class to build.
+    """
     with open(cfg_path) as f:
         config_dict = yaml.safe_load(f)
-    return _config_dict_uses_mlir_backend(config_dict)
+    return resolve_backend_name(config_dict, override)
 
 
 class Config:
@@ -130,9 +160,10 @@ class Config:
     skip_prefix: str | None
     separate_registry: bool
     function_argument_intents: dict
+    backend: str
     mlir_backend: bool
 
-    def __init__(self, config_dict: dict):
+    def __init__(self, config_dict: dict, backend_override: str | None = None):
         """
         Initialize a Config object from a configuration dictionary.
 
@@ -140,12 +171,20 @@ class Config:
             config_dict (dict): Mapping of configuration keys to values.
                 See :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH` for the
                 authoritative schema documentation.
+            backend_override (str | None): Backend name that wins over the
+                configuration, as supplied by ``--backend``. Passed in rather
+                than re-read so that a caller who already resolved the backend
+                cannot end up disagreeing with this object about it.
 
         Raises:
             NotImplementedError: if more than one GPU architecture is provided.
             ValueError: if required files or include paths referenced by the configuration do not exist, or if any provided regex is invalid.
         """
-        self.mlir_backend = _config_dict_uses_mlir_backend(config_dict)
+        self.backend = resolve_backend_name(config_dict, backend_override)
+        # Kept as a derived attribute: it is what the dispatch below and
+        # several callers already read, and it cannot now disagree with
+        # ``backend``.
+        self.mlir_backend = self.backend == NUMBA_MLIR
         _validate_mlir_backend_only_config(config_dict)
 
         self.entry_point = config_dict["Entry Point"]
@@ -213,13 +252,17 @@ class Config:
         self._verify_regex_patterns()
 
     @classmethod
-    def from_yaml_path(cls, cfg_path: str) -> "Config":
+    def from_yaml_path(
+        cls, cfg_path: str, backend_override: str | None = None
+    ) -> "Config":
         """Create a Config instance from a YAML file path.
 
         Parameters
         ----------
         cfg_path : str
             Path to the YAML configuration file.
+        backend_override : str | None
+            Backend name that wins over the configuration file's own.
 
         Returns
         -------
@@ -228,7 +271,7 @@ class Config:
         """
         with open(cfg_path) as f:
             config_dict = yaml.safe_load(f)
-        return cls(config_dict)
+        return cls(config_dict, backend_override)
 
     @classmethod
     def from_params(
@@ -253,6 +296,7 @@ class Config:
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
         mlir_backend: bool = False,
+        backend: str | None = None,
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
@@ -262,6 +306,7 @@ class Config:
             cooperative_launch_required_functions_regex (list[str] | None): Regular expression patterns that identify functions requiring cooperative launch handling; defaults to an empty list if omitted.
             api_prefix_removal (dict[str, list[str]] | None): Mapping of API names to lists of symbol-name prefixes to remove when generating bindings; defaults to an empty dict if omitted.
             module_callbacks (dict[str, str] | None): Mapping of callback identifiers to their fully qualified callable names to be invoked from the generated module; defaults to an empty dict if omitted.
+            backend (str | None): Name of the emission backend. Takes precedence over ``mlir_backend``, which is the older boolean spelling of ``backend="numba-mlir"``.
 
         Returns:
             Config: A Config instance populated with the provided parameters (types and datamodels are converted to their type names in the underlying config dictionary).
@@ -295,6 +340,7 @@ class Config:
             "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
             "MLIR Backend": mlir_backend,
+            BACKEND_CONFIG_KEY: backend,
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -917,12 +963,22 @@ def ruff_format_binding_file(binding_file_path: str):
     type=bool,
     default=False,
 )
+@click.option(
+    "--backend",
+    type=str,
+    default=None,
+    help=(
+        'Emission backend, overriding the config\'s "Backend" key. One of: '
+        + ", ".join(available_backends())
+    ),
+)
 def static_binding_generator(
     ctx,
     cfg_path,
     output_dir,
     run_ruff_format,
     bypass_parse_error,
+    backend,
 ):
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
@@ -931,8 +987,11 @@ def static_binding_generator(
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
+    BACKEND: Emission backend, overriding the config's "Backend" key.
     """
-    if _cfg_path_uses_mlir_backend(cfg_path):
+    sbg_params = _params_the_user_set(ctx)
+
+    if _backend_name_from_cfg_path(cfg_path, backend) == NUMBA_MLIR:
         from numbast.experimental.mlir.tools.static_binding_generator import (
             Config as MlirConfig,
         )
@@ -943,18 +1002,18 @@ def static_binding_generator(
             output_dir,
             log_generates=True,
             cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
+            sbg_params=sbg_params,
             bypass_parse_error=bypass_parse_error,
         )
     else:
         reset_renderer()
-        cfg = Config.from_yaml_path(cfg_path)
+        cfg = Config.from_yaml_path(cfg_path, backend)
         output_file = _static_binding_generator(
             cfg,
             output_dir,
             log_generates=True,
             cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
+            sbg_params=sbg_params,
             bypass_parse_error=bypass_parse_error,
         )
 

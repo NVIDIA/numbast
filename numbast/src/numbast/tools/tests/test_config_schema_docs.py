@@ -47,6 +47,7 @@ def test_static_binding_schema_has_expected_keys():
         "Use Separate Registry",
         "Function Argument Intents",
         "MLIR Backend",
+        "Backend",
     }
     assert expected_keys.issubset(set(properties))
 
@@ -86,6 +87,7 @@ def test_generate_schema_reference_from_yaml_schema(tmp_path):
     assert "``Entry Point``" in rendered
     assert "``Use Separate Registry``" in rendered
     assert "``MLIR Backend``" in rendered
+    assert "``Backend``" in rendered
     assert "``Module Link Variables Used``" in rendered
     assert "Raw schema" in rendered
     assert "$schema: " in rendered
