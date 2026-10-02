@@ -1,0 +1,20 @@
+numbast.tools.config.shared
+===========================
+
+.. automodule:: numbast.tools.config.shared
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      config_uses_mlir_backend
+      load_binding_config
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BindingConfigLoader
+      SharedConfig
+   

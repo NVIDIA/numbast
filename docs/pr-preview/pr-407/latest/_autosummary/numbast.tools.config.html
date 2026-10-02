@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ast_canopy.decl &#8212; Numbast</title>
+    <title>numbast.tools.config &#8212; Numbast</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=35a8b989"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/ast_canopy.decl';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/numbast.tools.config';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.22.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
@@ -57,13 +57,13 @@
         </script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
 
-    <link rel="canonical" href="docs/_autosummary/ast_canopy.decl.html" />
+    <link rel="canonical" href="docs/_autosummary/numbast.tools.config.html" />
     <link rel="icon" href="../_static/favicon.png"/>
 
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="numbast.static" href="numbast.static.html" />
-    <link rel="prev" title="API reference" href="../api_reference.html" />
+    <link rel="next" title="numbast.tools.config.cuda_oxide" href="numbast.tools.config.cuda_oxide.html" />
+    <link rel="prev" title="numbast.tools" href="numbast.tools.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -545,7 +545,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../api_reference.html">API reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">ast_canopy.decl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.callconv.html">numbast.static.callconv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="numbast.static.class_template.html">numbast.static.class_template</a></li>
@@ -559,8 +559,8 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="numbast.types.html">numbast.types</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3 has-children"><a class="reference internal" href="numbast.tools.config.html">numbast.tools.config</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="numbast.tools.html">numbast.tools</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 current active has-children"><a aria-current="page" class="current reference internal" href="#">numbast.tools.config</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="numbast.tools.config.cuda_oxide.html">numbast.tools.config.cuda_oxide</a></li>
 <li class="toctree-l4"><a class="reference internal" href="numbast.tools.config.numba.html">numbast.tools.config.numba</a></li>
 <li class="toctree-l4"><a class="reference internal" href="numbast.tools.config.shared.html">numbast.tools.config.shared</a></li>
@@ -609,7 +609,10 @@
     
     <li class="breadcrumb-item"><a href="../api_reference.html" class="nav-link">API reference</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">ast_canopy.decl</span></li>
+    
+    <li class="breadcrumb-item"><a href="numbast.tools.html" class="nav-link">numbast.tools</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">numbast.tools.config</span></li>
   </ul>
 </nav>
 </div>
@@ -626,40 +629,20 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-ast_canopy.decl">
-<span id="ast-canopy-decl"></span><h1>ast_canopy.decl<a class="headerlink" href="#module-ast_canopy.decl" title="Link to this heading">#</a></h1>
-<p class="rubric">Classes</p>
+  <section id="module-numbast.tools.config">
+<span id="numbast-tools-config"></span><h1>numbast.tools.config<a class="headerlink" href="#module-numbast.tools.config" title="Link to this heading">#</a></h1>
+<p>Configuration models for Numbast binding generators.</p>
+<p class="rubric">Modules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.ClassTemplate" title="ast_canopy.decl.ClassTemplate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClassTemplate</span></code></a>(record, template_parameters, ...)</p></td>
-<td><p>Represents a C++ class template declaration.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="numbast.tools.config.cuda_oxide.html#module-numbast.tools.config.cuda_oxide" title="numbast.tools.config.cuda_oxide"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda_oxide</span></code></a></p></td>
+<td><p>Configuration for CUDA-Oxide Rust binding generation.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.ClassTemplateSpecialization" title="ast_canopy.decl.ClassTemplateSpecialization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClassTemplateSpecialization</span></code></a>(record, ...)</p></td>
-<td><p>Represents a C++ class template specialization declaration.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="numbast.tools.config.numba.html#module-numbast.tools.config.numba" title="numbast.tools.config.numba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numba</span></code></a></p></td>
+<td><p>Configuration for Numba Python binding generation.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.ConstExprVar" title="ast_canopy.decl.ConstExprVar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConstExprVar</span></code></a>(name, type_, value_serialized)</p></td>
-<td><p>Represents a constexpr variable extracted from C++.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Function" title="ast_canopy.decl.Function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Function</span></code></a>(name, qual_name, return_type, ...)</p></td>
-<td><p>Represents a C++ function.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.FunctionTemplate" title="ast_canopy.decl.FunctionTemplate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FunctionTemplate</span></code></a>(template_parameters, ...)</p></td>
-<td><p>Represents a C++ function template declaration.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Struct" title="ast_canopy.decl.Struct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Struct</span></code></a>(name, qual_name, fields, methods, ...)</p></td>
-<td><p>Represents a C++ record (struct/class) and its metadata.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.StructMethod" title="ast_canopy.decl.StructMethod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StructMethod</span></code></a>(name, qual_name, return_type, ...)</p></td>
-<td><p>Represents a method of a C++ struct/class.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.Template" title="ast_canopy.decl.Template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Template</span></code></a>(template_parameters, ...)</p></td>
-<td><p>Base class for C++ template declarations.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.TemplatedStruct" title="ast_canopy.decl.TemplatedStruct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemplatedStruct</span></code></a>(name, qual_name, fields, ...)</p></td>
-<td><p>A <code class="docutils literal notranslate"><span class="pre">Struct</span></code> whose methods include templated methods.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api_reference.html#ast_canopy.decl.TemplatedStructMethod" title="ast_canopy.decl.TemplatedStructMethod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemplatedStructMethod</span></code></a>(name, qual_name, ...)</p></td>
-<td><p>Struct/class method whose name may include template parameters.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="numbast.tools.config.shared.html#module-numbast.tools.config.shared" title="numbast.tools.config.shared"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shared</span></code></a></p></td>
+<td><p>Configuration shared by Numbast binding generators.</p></td>
 </tr>
 </tbody>
 </table>
@@ -677,20 +660,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../api_reference.html"
+       href="numbast.tools.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">API reference</p>
+        <p class="prev-next-title">numbast.tools</p>
       </div>
     </a>
     <a class="right-next"
-       href="numbast.static.html"
+       href="numbast.tools.config.cuda_oxide.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">numbast.static</p>
+        <p class="prev-next-title">numbast.tools.config.cuda_oxide</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

@@ -1,0 +1,12 @@
+numbast.tools.config.numba
+==========================
+
+.. automodule:: numbast.tools.config.numba
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      NumbaConfig
+   
