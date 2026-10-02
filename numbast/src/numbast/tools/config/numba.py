@@ -10,7 +10,7 @@ import re
 from numba import types
 from numba.core.datamodel import models
 
-from numbast.tools.config.common import (
+from numbast.tools.config.shared import (
     SharedConfig,
     config_uses_mlir_backend,
 )

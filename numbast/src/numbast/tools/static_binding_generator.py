@@ -37,7 +37,7 @@ from numbast.static.function_template import StaticFunctionTemplatesRenderer
 from numbast.static.class_template import StaticClassTemplatesRenderer
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
-from numbast.tools.config.common import (
+from numbast.tools.config.shared import (
     config_uses_mlir_backend,
     load_binding_config,
 )

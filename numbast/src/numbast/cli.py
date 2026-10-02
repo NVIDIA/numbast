@@ -3,7 +3,7 @@ from importlib import import_module
 import click
 import yaml
 
-from numbast.tools.config.common import load_binding_config
+from numbast.tools.config.shared import load_binding_config
 
 
 @click.command()

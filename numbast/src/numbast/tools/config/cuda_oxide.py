@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from numbast.rust_types import cuda_arch_number
-from numbast.tools.config.common import SharedConfig, _as_list
+from numbast.tools.config.shared import SharedConfig, _as_list
 
 
 def _as_bool(value: Any, key: str) -> bool:
