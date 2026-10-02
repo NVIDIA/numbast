@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import copy
+import subprocess
+import sys
+import textwrap
 
 import pytest
 import yaml
 
-from numbast.tools.binding_config import CudaOxideConfig
-from numbast.tools.static_binding_generator import Config
+from numbast.tools.config.cuda_oxide import CudaOxideConfig
+from numbast.tools.config.numba import NumbaConfig
 
 
 def _shared_config(tmp_path):
@@ -41,7 +44,7 @@ def _shared_config(tmp_path):
 def test_shared_document_builds_independent_backend_configs(tmp_path):
     raw_config = _shared_config(tmp_path)
 
-    numba_config = Config(raw_config)
+    numba_config = NumbaConfig(raw_config)
     rust_config = CudaOxideConfig(raw_config)
 
     assert numba_config.entry_point == rust_config.entry_point
@@ -64,7 +67,7 @@ def test_shared_config_normalization_does_not_mutate_input(tmp_path):
     raw_config = _shared_config(tmp_path)
     original = copy.deepcopy(raw_config)
 
-    numba_config = Config(raw_config)
+    numba_config = NumbaConfig(raw_config)
     rust_config = CudaOxideConfig(raw_config)
 
     numba_config.gpu_arch.append("sm_100")
@@ -92,7 +95,7 @@ CUDA Oxide:
         encoding="utf-8",
     )
 
-    assert Config.from_yaml_path(config_path).predefined_macros == [
+    assert NumbaConfig.from_yaml_path(config_path).predefined_macros == [
         "LIBRARY_DEVICE_API"
     ]
     assert CudaOxideConfig.from_yaml_path(config_path).predefined_macros == [
@@ -154,3 +157,21 @@ def test_binding_config_loader_remains_safe(tmp_path):
         CudaOxideConfig.from_yaml_path(config_path)
 
     assert not marker_path.exists()
+
+
+def test_cuda_oxide_config_import_does_not_load_numba():
+    script = textwrap.dedent(
+        """
+        import sys
+
+        from numbast.tools.config.cuda_oxide import CudaOxideConfig
+
+        assert "numba" not in sys.modules
+        """
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True
+    )
+
+    assert result.returncode == 0, result.stderr
