@@ -54,7 +54,9 @@ def _normalize_prefixes(value: Any) -> dict[str, list[str]]:
     if value is None:
         return {}
     if not isinstance(value, dict):
-        raise TypeError('Configuration option "API Prefix Removal" must be a mapping.')
+        raise TypeError(
+            'Configuration option "API Prefix Removal" must be a mapping.'
+        )
 
     normalized = {}
     for kind, prefixes in value.items():
@@ -84,7 +86,8 @@ class SharedConfig:
         ]
         if missing:
             raise ValueError(
-                "Missing required configuration option(s): " + ", ".join(missing)
+                "Missing required configuration option(s): "
+                + ", ".join(missing)
             )
 
         self.raw_config = copy.deepcopy(config_dict)
@@ -117,19 +120,29 @@ class SharedConfig:
         self.skip_prefix = config_dict.get("Skip Prefix")
 
         if not isinstance(self.entry_point, str):
-            raise TypeError('Configuration option "Entry Point" must be a string.')
+            raise TypeError(
+                'Configuration option "Entry Point" must be a string.'
+            )
         if not self.gpu_arch:
             raise ValueError("At least one GPU architecture must be provided.")
         if not all(isinstance(arch, str) for arch in self.gpu_arch):
-            raise ValueError('Configuration option "GPU Arch" must contain strings.')
+            raise ValueError(
+                'Configuration option "GPU Arch" must contain strings.'
+            )
         if len(self.gpu_arch) > 1:
             raise NotImplementedError(
                 "Multiple GPU architectures are not supported yet."
             )
         if not all(isinstance(path, str) for path in self.retain_list):
-            raise ValueError('Configuration option "File List" must contain strings.')
-        if self.skip_prefix is not None and not isinstance(self.skip_prefix, str):
-            raise ValueError('Configuration option "Skip Prefix" must be a string.')
+            raise ValueError(
+                'Configuration option "File List" must contain strings.'
+            )
+        if self.skip_prefix is not None and not isinstance(
+            self.skip_prefix, str
+        ):
+            raise ValueError(
+                'Configuration option "Skip Prefix" must be a string.'
+            )
 
         self._verify_exists()
 
@@ -141,7 +154,9 @@ class SharedConfig:
 
     def _verify_exists(self):
         if not os.path.exists(self.entry_point):
-            raise ValueError(f"Input header file does not exist: {self.entry_point}")
+            raise ValueError(
+                f"Input header file does not exist: {self.entry_point}"
+            )
         for path in self.retain_list:
             if not os.path.exists(path):
                 raise ValueError(f"File in retain list does not exist: {path}")

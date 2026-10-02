@@ -98,7 +98,9 @@ class NumbaConfig(SharedConfig):
         )
 
         self.additional_imports = config_dict.get("Additional Import", [])
-        self.shim_include_override = config_dict.get("Shim Include Override", None)
+        self.shim_include_override = config_dict.get(
+            "Shim Include Override", None
+        )
         self.output_name = config_dict.get("Output Name", None)
         self.cooperative_launch_required_functions_regex = config_dict.get(
             "Cooperative Launch Required Functions Regex", []
@@ -137,7 +139,7 @@ class NumbaConfig(SharedConfig):
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
         mlir_backend: bool = False,
-    ) -> "NumbaConfig":
+    ) -> NumbaConfig:
         """Construct configuration from explicit parameters."""
 
         if types is None:
@@ -172,7 +174,9 @@ class NumbaConfig(SharedConfig):
         }
 
         if types:
-            config_dict["Types"] = {key: value.__name__ for key, value in types.items()}
+            config_dict["Types"] = {
+                key: value.__name__ for key, value in types.items()
+            }
         if datamodels:
             config_dict["Data Models"] = {
                 key: value.__name__ for key, value in datamodels.items()

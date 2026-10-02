@@ -41,7 +41,9 @@ class CudaOxideConfig(SharedConfig):
 
         section = config_dict.get("CUDA Oxide")
         if not isinstance(section, dict):
-            raise TypeError('Configuration option "CUDA Oxide" must be a mapping.')
+            raise TypeError(
+                'Configuration option "CUDA Oxide" must be a mapping.'
+            )
         supported_options = {
             "Bypass Parse Errors",
             "Clang Binary",
@@ -104,7 +106,9 @@ class CudaOxideConfig(SharedConfig):
         self.symbol_inventory = section.get("Symbol Inventory")
         if self.symbol_inventory is not None:
             if not isinstance(self.symbol_inventory, str):
-                raise ValueError('"CUDA Oxide.Symbol Inventory" must be a file path.')
+                raise ValueError(
+                    '"CUDA Oxide.Symbol Inventory" must be a file path.'
+                )
             if not os.path.isfile(self.symbol_inventory):
                 raise ValueError(
                     f"Symbol inventory file does not exist: {self.symbol_inventory}"
@@ -115,7 +119,9 @@ class CudaOxideConfig(SharedConfig):
             "CUDA Oxide.Bypass Parse Errors",
         )
         self.clang_binary = section.get("Clang Binary")
-        if self.clang_binary is not None and not isinstance(self.clang_binary, str):
+        if self.clang_binary is not None and not isinstance(
+            self.clang_binary, str
+        ):
             raise TypeError(
                 'Configuration option "CUDA Oxide.Clang Binary" must be a string.'
             )
