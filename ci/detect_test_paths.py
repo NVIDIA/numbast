@@ -20,6 +20,7 @@ RELEASE_METADATA_PATHS = {
 BOTH_TEST_PATHS = RELEASE_METADATA_PATHS | {
     "numbast/src/numbast/__init__.py",
     "numbast/src/numbast/tools/static_binding_generator.py",
+    "numbast/src/numbast/tools/binding_config.py",
     "numbast/src/numbast/tools/static_binding_generator.schema.yaml",
     "numbast/src/numbast/tools/tests/test_mlir_backend_routing.py",
     "numbast/src/numbast/__main__.py",
