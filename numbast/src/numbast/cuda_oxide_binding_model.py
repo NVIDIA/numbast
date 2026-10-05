@@ -9,6 +9,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
+from numbast.curate import function_skip_reason
 from numbast.errors import CudaOxideBindingError
 from numbast.name_policy import apply_prefix_removal
 from numbast.rust_types import (
@@ -32,6 +33,14 @@ _EXECUTION_SPACE_NAMES = {
     "execution_space.device": "device",
     "execution_space.host_device": "host_device",
     "execution_space.global_": "global",
+}
+#: How this backend words the curation reasons from :mod:`numbast.curate` in
+#: its own exclusion report. ``non_device`` is absent deliberately: that report
+#: names the offending execution space, which the shared code has no opinion
+#: about.
+_EXCLUSION_REPORT_NAMES = {
+    "excluded": "configured",
+    "skip_prefix": "skip-prefix",
 }
 _CUDA_OXIDE_RESERVED_PREFIX = "cuda_oxide_"
 _PRE_BLACKWELL_BY_VALUE_UNSUPPORTED = frozenset(
@@ -145,21 +154,28 @@ class CudaOxideBindingPlan:
     def _select_functions(
         self, functions: Iterable[Any], config: Any
     ) -> list[tuple[Any, str]]:
+        """Drop the functions this backend is not asked to bind.
+
+        Which functions are in scope is a property of the declaration and the
+        user's configuration, not of Rust, so the rules come from
+        :mod:`numbast.curate` and are shared with every other backend. Only the
+        wording of the exclusion report is local.
+        """
         selected = []
         for function in functions:
             space = _EXECUTION_SPACE_NAMES[str(function.exec_space)]
-            if function.name in config.exclude_functions:
-                self._add_exclusion("function", function.name, "configured")
-                continue
-            if config.skip_prefix and function.name.startswith(
-                config.skip_prefix
-            ):
-                self._add_exclusion("function", function.name, "skip-prefix")
-                continue
-            if space not in {"device", "host_device"}:
-                self._add_exclusion(
-                    "function", function.name, f"execution-space:{space}"
-                )
+            reason = function_skip_reason(
+                function,
+                excludes=config.exclude_functions,
+                skip_prefix=config.skip_prefix,
+                skip_non_device=True,
+            )
+            if reason is not None:
+                if reason == "non_device":
+                    detail = f"execution-space:{space}"
+                else:
+                    detail = _EXCLUSION_REPORT_NAMES[reason]
+                self._add_exclusion("function", function.name, detail)
                 continue
             selected.append((function, space))
         return selected
