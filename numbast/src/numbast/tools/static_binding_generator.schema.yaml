@@ -239,11 +239,20 @@ properties:
                 type: string
                 enum: ["in", "inout_ptr", "out_ptr", "out_return"]
             required: ["intent"]
+  Backend:
+    type: [string, "null"]
+    default: null
+    description: >
+      Name of the emission backend. ``numba`` generates Numba bindings; ``mlir`` routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided ``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so naming it is an error that says so. Defaults to ``numba``. An unrecognised name is an error rather than a fallback. May be overridden per invocation with ``--backend``.
+
+    examples:
+      - "numba"
+      - "mlir"
   MLIR Backend:
     type: boolean
     default: false
     description: >
-      Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a user-provided ``numba_cuda_mlir`` installation.
+      Deprecated spelling of ``Backend: mlir``, retained so that existing configurations keep working. ``Backend`` takes precedence if both are set.
 
     examples:
       - true
