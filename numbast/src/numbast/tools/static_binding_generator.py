@@ -20,6 +20,12 @@ from ast_canopy.decl import (
 )
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
+from numbast.backends.registry import (
+    MLIR,
+    NUMBA,
+    available_backends,
+    resolve_backend_name,
+)
 from numbast.provenance import params_the_user_set
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
@@ -38,10 +44,7 @@ from numbast.static.function_template import StaticFunctionTemplatesRenderer
 from numbast.static.class_template import StaticClassTemplatesRenderer
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
-from numbast.tools.config.shared import (
-    config_uses_mlir_backend,
-    load_binding_config,
-)
+from numbast.tools.config.shared import load_binding_config
 from numbast.tools.config.numba import (
     NumbaConfig,
     _str_value_to_numba_datamodel,
@@ -56,12 +59,13 @@ STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
 )
 
 
-def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
-    return config_uses_mlir_backend(config_dict)
+def _backend_name_from_cfg_path(cfg_path: str, override: str | None = None):
+    """Name the backend selected by the config file at ``cfg_path``.
 
-
-def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
-    return _config_dict_uses_mlir_backend(load_binding_config(cfg_path))
+    Read straight from the YAML rather than from a :class:`Config`, because
+    which backend is selected determines which ``Config`` class to build.
+    """
+    return resolve_backend_name(load_binding_config(cfg_path), override)
 
 
 Config = NumbaConfig
@@ -644,12 +648,22 @@ def ruff_format_binding_file(binding_file_path: str):
     type=bool,
     default=False,
 )
+@click.option(
+    "--backend",
+    type=str,
+    default=None,
+    help=(
+        'Emission backend, overriding the config\'s "Backend" key. One of: '
+        + ", ".join(available_backends())
+    ),
+)
 def static_binding_generator(
     ctx,
     cfg_path,
     output_dir,
     run_ruff_format,
     bypass_parse_error,
+    backend,
 ):
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
@@ -658,10 +672,24 @@ def static_binding_generator(
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
+    BACKEND: Emission backend, overriding the config's "Backend" key.
     """
     sbg_params = params_the_user_set(ctx)
 
-    if _cfg_path_uses_mlir_backend(cfg_path):
+    name = _backend_name_from_cfg_path(cfg_path, backend)
+
+    if name not in (NUMBA, MLIR):
+        # Reached only when this driver is invoked directly, since the
+        # dispatcher refuses an unservable name first. Without this, a
+        # registered backend nobody has wired up here would fall through and
+        # generate Numba bindings -- a wrong answer that looks like a right one.
+        raise click.BadParameter(
+            f"This driver generates {NUMBA!r} and {MLIR!r} bindings and "
+            f"cannot generate {name!r}.",
+            param_hint="--backend" if backend else "--cfg-path",
+        )
+
+    if name == MLIR:
         from numbast.experimental.mlir.tools.static_binding_generator import (
             Config as MlirConfig,
         )
@@ -677,7 +705,7 @@ def static_binding_generator(
         )
     else:
         reset_renderer()
-        cfg = Config.from_yaml_path(cfg_path)
+        cfg = Config.from_yaml_path(cfg_path, backend)
         output_file = _static_binding_generator(
             cfg,
             output_dir,

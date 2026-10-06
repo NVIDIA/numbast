@@ -23,7 +23,7 @@ def test_cfg_path_uses_mlir_backend(tmp_path):
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.dump({"MLIR Backend": True}), encoding="utf-8")
 
-    assert sbg._cfg_path_uses_mlir_backend(cfg_path)
+    assert sbg._backend_name_from_cfg_path(cfg_path) == "mlir"
 
 
 def test_cfg_path_supports_numbast_join_tag(tmp_path):
@@ -33,12 +33,12 @@ def test_cfg_path_supports_numbast_join_tag(tmp_path):
         encoding="utf-8",
     )
 
-    assert sbg._cfg_path_uses_mlir_backend(cfg_path)
+    assert sbg._backend_name_from_cfg_path(cfg_path) == "mlir"
 
 
 @pytest.mark.parametrize(
     "load_config",
-    [sbg._cfg_path_uses_mlir_backend, sbg.Config.from_yaml_path],
+    [sbg._backend_name_from_cfg_path, sbg.Config.from_yaml_path],
 )
 def test_config_load_rejects_python_object_tags(tmp_path, load_config):
     marker_path = tmp_path / "unsafe-loader-marker"
@@ -106,7 +106,7 @@ def test_mlir_only_config_requires_mlir_backend(tmp_path, key, value):
     config = _minimal_config(tmp_path)
     config[key] = value
 
-    with pytest.raises(ValueError, match=f"{key}.*MLIR Backend: true"):
+    with pytest.raises(ValueError, match=f"{key}.*Backend: mlir"):
         sbg.Config(config)
 
 
