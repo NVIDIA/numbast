@@ -828,19 +828,20 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Name of the emission backend. <code class="docutils literal notranslate"><span class="pre">numba</span></code> generates Numba bindings; <code class="docutils literal notranslate"><span class="pre">numba-mlir</span></code> routes generation to the
-experimental <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend, which requires a user-provided <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation.
+<dt><code class="docutils literal notranslate"><span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Name of the emission backend. <code class="docutils literal notranslate"><span class="pre">numba</span></code> generates Numba bindings; <code class="docutils literal notranslate"><span class="pre">mlir</span></code> routes generation to the experimental
+<code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend, which requires a user-provided <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation;
+<code class="docutils literal notranslate"><span class="pre">cuda-oxide</span></code> is registered for the Rust renderer but has no driver yet, so naming it is an error that says so.
 Defaults to <code class="docutils literal notranslate"><span class="pre">numba</span></code>. An unrecognised name is an error rather than a fallback. May be overridden per invocation with
 <code class="docutils literal notranslate"><span class="pre">--backend</span></code>.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba</span>
-<span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-mlir</span>
+<span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mlir</span>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Deprecated spelling of <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-mlir</span></code>, retained so that existing configurations keep working. <code class="docutils literal notranslate"><span class="pre">Backend</span></code>
-takes precedence if both are set.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Deprecated spelling of <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">mlir</span></code>, retained so that existing configurations keep working. <code class="docutils literal notranslate"><span class="pre">Backend</span></code> takes
+precedence if both are set.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">MLIR Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -1170,20 +1171,21 @@ takes precedence if both are set.</p>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Name of the emission backend. ``numba`` generates Numba bindings; ``numba-mlir`` routes generation to the</span>
+<span class="w">      </span><span class="no">Name of the emission backend. ``numba`` generates Numba bindings; ``mlir`` routes generation to the</span>
 <span class="w">      </span><span class="no">experimental ``numbast.experimental.mlir`` backend, which requires a user-provided ``numba_cuda_mlir``</span>
-<span class="w">      </span><span class="no">installation. Defaults to ``numba``. An unrecognised name is an error rather than a fallback. May be overridden</span>
-<span class="w">      </span><span class="no">per invocation with ``--backend``.</span>
+<span class="w">      </span><span class="no">installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so naming it is an</span>
+<span class="w">      </span><span class="no">error that says so. Defaults to ``numba``. An unrecognised name is an error rather than a fallback. May be</span>
+<span class="w">      </span><span class="no">overridden per invocation with ``--backend``.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba"</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba-mlir"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"mlir"</span>
 <span class="w">  </span><span class="nt">MLIR Backend</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Deprecated spelling of ``Backend: numba-mlir``, retained so that existing configurations keep working.</span>
-<span class="w">      </span><span class="no">``Backend`` takes precedence if both are set.</span>
+<span class="w">      </span><span class="no">Deprecated spelling of ``Backend: mlir``, retained so that existing configurations keep working. ``Backend``</span>
+<span class="w">      </span><span class="no">takes precedence if both are set.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
