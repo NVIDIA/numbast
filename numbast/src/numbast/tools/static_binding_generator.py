@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import click
-from click.core import ParameterSource
 import os
 import json
 from collections import defaultdict
@@ -26,6 +25,7 @@ from ast_canopy.decl import (
 )
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
+from numbast.provenance import params_the_user_set
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_shim,
@@ -97,26 +97,6 @@ def _validate_mlir_backend_only_config(config_dict: dict):
         message = f"Configuration options {options} require"
 
     raise ValueError(f'{message} "MLIR Backend: true".')
-
-
-def _params_the_user_set(ctx) -> dict:
-    """The options this invocation actually passed, for the provenance stamp.
-
-    Stamping ``ctx.params`` wholesale records the CLI's *signature* rather than
-    the invocation: every option appears, including ones nobody passed, so
-    adding an option rewrites the provenance comment in every generated file
-    without any binding changing. That makes a regeneration impossible to
-    review as a diff and byte-level comparison of generated output useless.
-
-    Options left at their default also carry no information a reader does not
-    already have -- the default is discoverable from ``--help`` -- while the
-    ones that were passed are exactly what is needed to reproduce the run.
-    """
-    return {
-        name: value
-        for name, value in ctx.params.items()
-        if ctx.get_parameter_source(name) is not ParameterSource.DEFAULT
-    }
 
 
 def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
@@ -953,7 +933,7 @@ def static_binding_generator(
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
-    sbg_params = _params_the_user_set(ctx)
+    sbg_params = params_the_user_set(ctx)
 
     if _cfg_path_uses_mlir_backend(cfg_path):
         from numbast.experimental.mlir.tools.static_binding_generator import (
