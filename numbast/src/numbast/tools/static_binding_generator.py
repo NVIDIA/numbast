@@ -25,6 +25,7 @@ from ast_canopy.decl import (
 )
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
+from numbast.provenance import params_the_user_set
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_shim,
@@ -932,6 +933,8 @@ def static_binding_generator(
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
+    sbg_params = params_the_user_set(ctx)
+
     if _cfg_path_uses_mlir_backend(cfg_path):
         from numbast.experimental.mlir.tools.static_binding_generator import (
             Config as MlirConfig,
@@ -943,7 +946,7 @@ def static_binding_generator(
             output_dir,
             log_generates=True,
             cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
+            sbg_params=sbg_params,
             bypass_parse_error=bypass_parse_error,
         )
     else:
@@ -954,7 +957,7 @@ def static_binding_generator(
             output_dir,
             log_generates=True,
             cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
+            sbg_params=sbg_params,
             bypass_parse_error=bypass_parse_error,
         )
 

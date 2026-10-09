@@ -23,6 +23,7 @@ from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function, Struct
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
+from numbast.provenance import params_the_user_set
 from numbast.experimental.mlir.static import reset_renderer
 from numbast.experimental.mlir.static.renderer import (
     get_shim,
@@ -817,7 +818,7 @@ def static_binding_generator(
         output_dir,
         log_generates=True,
         cfg_file_path=cfg_path,
-        sbg_params=ctx.params,
+        sbg_params=params_the_user_set(ctx),
         bypass_parse_error=bypass_parse_error,
     )
 
