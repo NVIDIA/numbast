@@ -78,7 +78,7 @@ outputs:
         - numba-cuda >=0.25.0
         - numpy <2.5
         - pyyaml
-        - click
+        - click >=8.0
         - jinja2
     test:
       imports:

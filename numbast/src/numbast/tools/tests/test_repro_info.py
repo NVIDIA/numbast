@@ -43,3 +43,49 @@ def test_repro_info(run_in_isolated_folder, arch_str):
                     expected_info.discard(k)
 
     assert len(expected_info) == 0
+
+
+def _stamped_params(binding: str) -> str:
+    marker = "# Static binding generator parameters: "
+    for line in binding.splitlines():
+        if line.startswith(marker):
+            return line[len(marker) :]
+    raise AssertionError("no parameter stamp in the generated binding")
+
+
+def test_the_parameter_stamp_omits_options_left_at_their_default(
+    run_in_isolated_folder, arch_str
+):
+    """The stamp describes the invocation, not the CLI's option list.
+
+    Recording every option, passed or not, couples generated output to the
+    generator's *signature*: adding an option rewrites the stamp in every
+    generated file while no binding changes, which makes a regeneration
+    impossible to review as a diff and byte-level comparison useless. A default
+    also tells the reader nothing that ``--help`` does not.
+    """
+    res = run_in_isolated_folder(
+        "cfg.yml.j2",
+        "data.cuh",
+        {"arch_str": arch_str},
+        omit_optional_options=True,
+    )
+    params = _stamped_params(res["binding"])
+
+    assert "cfg_path" in params, params
+    assert "output_dir" in params, params
+    assert "run_ruff_format" not in params, params
+    assert "bypass_parse_error" not in params, params
+
+
+def test_the_parameter_stamp_keeps_options_that_were_passed(
+    run_in_isolated_folder, arch_str
+):
+    """The complement of the above: what was set is what needs recording."""
+    res = run_in_isolated_folder(
+        "cfg.yml.j2", "data.cuh", {"arch_str": arch_str}
+    )
+    params = _stamped_params(res["binding"])
+
+    assert "run_ruff_format" in params, params
+    assert "bypass_parse_error" in params, params

@@ -23,6 +23,8 @@ from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function, Struct
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
+from numbast.backends.registry import MLIR
+from numbast.provenance import params_the_user_set
 from numbast.experimental.mlir.static import reset_renderer
 from numbast.experimental.mlir.static.renderer import (
     get_shim,
@@ -794,12 +796,23 @@ def ruff_format_binding_file(binding_file_path: str):
     type=bool,
     default=False,
 )
+@click.option(
+    "--backend",
+    type=str,
+    default=None,
+    help=(
+        f'Emission backend. This driver only serves "{MLIR}", so the option '
+        "exists to accept the name the dispatcher resolved and to reject a "
+        "request this driver cannot honour."
+    ),
+)
 def static_binding_generator(
     ctx,
     cfg_path,
     output_dir,
     run_ruff_format,
     bypass_parse_error,
+    backend,
 ):
     """
     A CLI tool to generate CUDA static bindings for CUDA C++ headers.
@@ -808,7 +821,15 @@ def static_binding_generator(
     OUTPUT_DIR: Path to the output directory where the processed files will be saved.
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
+    BACKEND: Emission backend; only the MLIR backend is served here.
     """
+    if backend is not None and backend != MLIR:
+        raise click.BadParameter(
+            f"This driver generates {MLIR!r} bindings and cannot generate "
+            f"{backend!r}.",
+            param_hint="--backend",
+        )
+
     reset_renderer()
 
     cfg = Config.from_yaml_path(cfg_path)
@@ -817,7 +838,7 @@ def static_binding_generator(
         output_dir,
         log_generates=True,
         cfg_file_path=cfg_path,
-        sbg_params=ctx.params,
+        sbg_params=params_the_user_set(ctx),
         bypass_parse_error=bypass_parse_error,
     )
 
