@@ -86,12 +86,12 @@ class CudaOxideConfig(SharedConfig):
                 '"CUDA Oxide.Manifest Name" and "CUDA Oxide.Output Name" must differ.'
             )
 
-        self.constants = copy.deepcopy(section.get("Constants", {}) or {})
+        self.constants = copy.deepcopy(section.get("Constants", {}))
         if not isinstance(self.constants, dict):
             raise TypeError(
                 'Configuration option "CUDA Oxide.Constants" must be a mapping.'
             )
-        self.type_aliases = copy.deepcopy(section.get("Type Aliases", {}) or {})
+        self.type_aliases = copy.deepcopy(section.get("Type Aliases", {}))
         if not isinstance(self.type_aliases, dict) or not all(
             isinstance(name, str)
             and isinstance(underlying, str)

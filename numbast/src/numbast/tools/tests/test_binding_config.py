@@ -145,6 +145,35 @@ def test_cuda_oxide_rejects_unknown_nested_options(tmp_path):
         CudaOxideConfig(raw_config)
 
 
+@pytest.mark.parametrize(
+    ("key", "error"),
+    [("Constants", TypeError), ("Type Aliases", ValueError)],
+)
+@pytest.mark.parametrize("value", [False, [], None, 0, ""])
+def test_cuda_oxide_rejects_falsey_non_mapping_options(
+    tmp_path, key, error, value
+):
+    raw_config = _shared_config(tmp_path)
+    raw_config["CUDA Oxide"][key] = value
+
+    with pytest.raises(error, match=rf"CUDA Oxide\.{key}"):
+        CudaOxideConfig(raw_config)
+
+
+@pytest.mark.parametrize("explicit_empty", [False, True])
+def test_cuda_oxide_optional_mappings_default_to_empty(
+    tmp_path, explicit_empty
+):
+    raw_config = _shared_config(tmp_path)
+    if explicit_empty:
+        raw_config["CUDA Oxide"].update({"Constants": {}, "Type Aliases": {}})
+
+    config = CudaOxideConfig(raw_config)
+
+    assert config.constants == {}
+    assert config.type_aliases == {}
+
+
 def test_binding_config_loader_remains_safe(tmp_path):
     marker_path = tmp_path / "unsafe-loader-marker"
     config_path = tmp_path / "config.yaml"
