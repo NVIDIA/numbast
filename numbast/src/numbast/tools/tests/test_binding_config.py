@@ -129,6 +129,16 @@ def test_cuda_oxide_output_and_manifest_names_must_differ(tmp_path):
         CudaOxideConfig(raw_config)
 
 
+@pytest.mark.parametrize("config_class", [NumbaConfig, CudaOxideConfig])
+@pytest.mark.parametrize("macro", [123, {"ENABLE": 1}, None, False, []])
+def test_shared_config_rejects_non_string_macros(tmp_path, config_class, macro):
+    raw_config = _shared_config(tmp_path)
+    raw_config["Predefined Macros"].append(macro)
+
+    with pytest.raises(ValueError, match="Predefined Macros.*contain strings"):
+        config_class(raw_config)
+
+
 def test_cuda_oxide_rejects_mismatched_cuda_arch_macro(tmp_path):
     raw_config = _shared_config(tmp_path)
     raw_config["Predefined Macros"].append("__CUDA_ARCH__=800")

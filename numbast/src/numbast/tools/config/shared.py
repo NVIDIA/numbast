@@ -114,6 +114,10 @@ class SharedConfig:
         self.predefined_macros = _as_list(
             config_dict.get("Predefined Macros", []), "Predefined Macros"
         )
+        if not all(isinstance(macro, str) for macro in self.predefined_macros):
+            raise ValueError(
+                'Configuration option "Predefined Macros" must contain strings.'
+            )
         self.api_prefix_removal = _normalize_prefixes(
             config_dict.get("API Prefix Removal", {})
         )
