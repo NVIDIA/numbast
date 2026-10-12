@@ -9,7 +9,7 @@ platforms = ["linux-64"]
 [feature.required.dependencies]
 python = ">=3.10"
 pyyaml = "*"
-click = "*"
+click = ">=8.0"
 jinja2 = "*"
 
 [feature.test.dependencies]

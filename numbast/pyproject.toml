@@ -21,7 +21,7 @@ dependencies = [
   "numpy<2.5",
   "ast_canopy>=0.5.0",
   "pyyaml",
-  "click",
+  "click>=8.0",
   "jinja2",
 ]
 
