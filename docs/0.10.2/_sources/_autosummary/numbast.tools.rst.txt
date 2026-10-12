@@ -10,5 +10,6 @@
    :toctree:
    :recursive:
 
+   config
    static_binding_generator
    yaml_tags
