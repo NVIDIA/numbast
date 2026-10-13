@@ -93,6 +93,9 @@ Then run the standard Numbast static binding generator:
 
 With ``MLIR Backend: true``, the CLI routes generation through
 ``numbast.experimental.mlir`` and writes a module for ``numba-cuda-mlir``.
+Both ``python -m numbast`` and the installed ``numbast`` command select the
+backend before importing its generator, so MLIR generation does not require
+``numba-cuda`` to be installed.
 
 Notes
 -----

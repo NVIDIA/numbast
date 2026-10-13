@@ -11,8 +11,8 @@ Clang Include Paths:
 API Prefix Removal:
   Function:
     - round1_
-Output Name: bindings.rs
 CUDA Oxide:
+  Output Name: bindings.rs
   LTOIR Inputs:
     - examples/cuda_oxide_c_device/device_api.ltoir
   Manifest Name: bindings.manifest.json

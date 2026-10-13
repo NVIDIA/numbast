@@ -28,8 +28,8 @@ shim is generated to bypass the target restriction.
 It intentionally rejects C++ linkage, overloads, references, variadics,
 by-value records, and unknown ABI types. Function templates and class templates
 are recorded as Round 1 exclusions. Argument-intent adapters are a later
-feature; a nonempty ``Function Argument Intents`` mapping is rejected rather
-than silently ignored, and every generated raw call is ``unsafe``.
+feature. The Numba-only ``Function Argument Intents`` mapping is ignored by
+CUDA-Oxide, and every generated raw call is ``unsafe``.
 
 The output contains direct CUDA-Oxide declarations:
 
@@ -65,10 +65,10 @@ section to the existing Numbast YAML shape:
   Skip Prefix: library_detail_
   API Prefix Removal:
     Function: [library_]
-  Output Name: library_device.rs
 
   Backend: cuda-oxide
   CUDA Oxide:
+    Output Name: library_device.rs
     LTOIR Inputs: [lib/library_device.ltoir]
     Manifest Name: library_device.manifest.json
     Symbol Inventory: build/library_device_api.symbols
@@ -76,6 +76,11 @@ section to the existing Numbast YAML shape:
       library_handle_t: unsigned long long
     Constants:
       LIBRARY_DEFAULT_HANDLE: {Type: library_handle_t, Value: 0}
+
+The same document can be used in separate Numba and CUDA-Oxide invocations.
+The top-level ``Output Name`` names the Python output; ``CUDA Oxide.Output Name``
+names the Rust output. Adding a ``CUDA Oxide`` section alone does not select
+the Rust backend.
 
 ``Type Aliases`` are C-to-C declarations, not arbitrary Rust snippets.
 ``Constants`` accept typed integer or Boolean literals for definitions absent

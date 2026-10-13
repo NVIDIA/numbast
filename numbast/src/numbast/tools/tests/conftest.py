@@ -54,7 +54,12 @@ def run_in_isolated_folder(tmpdir):
         load_symbols=False,
         show_binding=False,
         bypass_parse_error=False,
+        omit_optional_options=False,
     ):
+        # ``omit_optional_options`` invokes the CLI with only the two required
+        # options, leaving the rest at their defaults. Tests that care what the
+        # generator records about its own invocation need a run where something
+        # was in fact left unset.
         root = tmpdir
         config_folder = root.mkdir("config")
         output_folder = root.mkdir("output")
@@ -79,20 +84,17 @@ def run_in_isolated_folder(tmpdir):
 
         runner = CliRunner(catch_exceptions=False)
 
+        args = ["--cfg-path", config_path, "--output-dir", output_folder]
+        if not omit_optional_options:
+            args += [
+                "-fmt",
+                "true" if ruff_format else "false",
+                "-noraise",
+                "true" if bypass_parse_error else "false",
+            ]
+
         with warnings.catch_warnings(record=True) as w:
-            result = runner.invoke(
-                static_binding_generator,
-                [
-                    "--cfg-path",
-                    config_path,
-                    "--output-dir",
-                    output_folder,
-                    "-fmt",
-                    "true" if ruff_format else "false",
-                    "-noraise",
-                    "true" if bypass_parse_error else "false",
-                ],
-            )
+            result = runner.invoke(static_binding_generator, args)
 
         assert result.exit_code == 0, result.stdout
 

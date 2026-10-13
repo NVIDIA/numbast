@@ -253,7 +253,12 @@ def get_callconv_utils() -> str:
 
 
 def get_rendered_imports(additional_imports: list[str] = []) -> str:
-    imports = "\n".join(BaseRenderer.Imports) + "\n"
+    # Sorted, not set-ordered: `Imports` is a set, so iterating it directly
+    # emits the same imports in a different order on every interpreter run
+    # (PYTHONHASHSEED randomises str hashing). That makes generated bindings
+    # differ run-to-run, which defeats caching, build reproducibility, and any
+    # attempt to review a regeneration as a diff.
+    imports = "\n".join(sorted(BaseRenderer.Imports)) + "\n"
     for imprt in additional_imports:
         imports += f"import {imprt}\n"
 

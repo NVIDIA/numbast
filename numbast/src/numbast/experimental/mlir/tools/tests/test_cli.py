@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from pathlib import Path
+import subprocess
+import sys
 
 from click.testing import CliRunner
 
@@ -14,6 +17,42 @@ import pytest
 from numbast.experimental.mlir.tools.static_binding_generator import (
     static_binding_generator,
 )
+
+
+@pytest.mark.parametrize("entry_point", ["module", "console"])
+def test_public_cli_generates_mlir_bindings(tmp_path, arch_str, entry_point):
+    header = Path(__file__).with_name("data.cuh")
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(
+        f"MLIR Backend: true\n"
+        f"Entry Point: {header}\n"
+        f"File List: [{header}]\n"
+        f"GPU Arch: [{arch_str}]\n"
+        "Types: {Foo: Type}\n"
+        "Data Models: {Foo: StructModel}\n"
+    )
+    command = (
+        [sys.executable, "-m", "numbast"]
+        if entry_point == "module"
+        else [str(Path(sys.executable).with_name("numbast"))]
+    )
+    result = subprocess.run(
+        [
+            *command,
+            "--cfg-path",
+            str(config_path),
+            "--output-dir",
+            str(tmp_path),
+            "-fmt",
+            "false",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    binding = (tmp_path / "data.py").read_text()
+    assert "from numba_cuda_mlir" in binding
+    assert "from numba.cuda" not in binding
 
 
 @pytest.fixture

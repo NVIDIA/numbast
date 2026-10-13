@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from numbast.cuda_oxide_binding_model import (
@@ -115,17 +117,25 @@ def test_void_return_and_long_signatures_are_rendered():
 
 
 @pytest.mark.parametrize(
-    "enums",
+    "enums, expected_message",
     [
-        [
-            CudaOxideEnum("", "i32", (("self", "1"),)),
-            CudaOxideEnum("", "i32", (("self_", "2"),)),
-        ],
-        [CudaOxideEnum("", "i32", (("not-an-identifier", "1"),))],
+        (
+            [
+                CudaOxideEnum("", "i32", (("self", "1"),)),
+                CudaOxideEnum("", "i32", (("self_", "2"),)),
+            ],
+            "constant name collision: 'self' and 'self_' both map to 'self_'",
+        ),
+        (
+            [CudaOxideEnum("", "i32", (("not-an-identifier", "1"),))],
+            "enum constant has invalid name 'not-an-identifier'",
+        ),
     ],
 )
-def test_rejects_invalid_or_colliding_constant_names(enums):
-    with pytest.raises(CudaOxideBindingError):
+def test_rejects_invalid_or_colliding_constant_names(enums, expected_message):
+    with pytest.raises(
+        CudaOxideBindingError, match=re.escape(expected_message)
+    ):
         render_cuda_oxide_bindings(CudaOxideBindingPlan(enums=enums))
 
 

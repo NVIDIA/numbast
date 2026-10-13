@@ -59,7 +59,12 @@ def _render_constants(
                 )
                 raise CudaOxideBindingError([message])
             occupied[rust_name] = item
-            lines.append(f"pub const {rust_name}: {enum_type} = {value};")
+            lines.extend(
+                [
+                    "#[allow(non_upper_case_globals)]",
+                    f"pub const {rust_name}: {enum_type} = {value};",
+                ]
+            )
 
     for constant in constants:
         try:
@@ -82,8 +87,14 @@ def _render_constants(
             constant.value,
             "explicit",
         )
-        lines.append(
-            f"pub const {rust_name}: {constant.rust_type} = {constant.value};"
+        lines.extend(
+            [
+                "#[allow(non_upper_case_globals)]",
+                (
+                    f"pub const {rust_name}: {constant.rust_type} = "
+                    f"{constant.value};"
+                ),
+            ]
         )
 
     function_names = {
@@ -182,6 +193,8 @@ def render_cuda_oxide_bindings(
 
     # Model C/CUDA enums as ABI integer aliases plus constants instead of Rust
     # enums so duplicate enumerators and unknown native values remain valid.
+    # TODO: Consider opt-in Rust enums for closed value sets or transparent
+    # newtypes when stronger typing must still preserve unknown native values.
     for enum in plan.enums:
         if not enum.name:
             continue
@@ -211,9 +224,7 @@ def render_cuda_oxide_bindings(
         )
 
     if constant_lines:
-        for constant_line in constant_lines:
-            lines.append("#[allow(non_upper_case_globals)]")
-            lines.append(constant_line)
+        lines.extend(constant_lines)
         lines.append("")
 
     lines.extend(

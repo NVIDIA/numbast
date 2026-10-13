@@ -21,7 +21,7 @@ dependencies = [
   "numpy<2.5",
   "ast_canopy>=0.5.0",
   "pyyaml",
-  "click",
+  "click>=8.0",
   "jinja2",
 ]
 
@@ -29,7 +29,7 @@ dependencies = [
 root = ".."
 
 [project.scripts]
-numbast = "numbast.tools.static_binding_generator:static_binding_generator"
+numbast = "numbast.cli:static_binding_generator"
 numbast-cuda-oxide = "numbast.tools.cuda_oxide_binding_generator:cuda_oxide_binding_generator"
 
 [project.urls]

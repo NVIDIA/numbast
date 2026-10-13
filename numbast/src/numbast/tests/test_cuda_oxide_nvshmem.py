@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from numbast.tools.binding_config import CudaOxideConfig
+from numbast.tools.config.cuda_oxide import CudaOxideConfig
 from numbast.tools.cuda_oxide_binding_generator import (
     generate_cuda_oxide_bindings,
 )

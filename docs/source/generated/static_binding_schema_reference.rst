@@ -178,7 +178,8 @@ Optional keys
 
 
 ``Output Name`` : ``string | null``
-   Output binding filename. Defaults to `<entry-point-basename>.py`.
+   Output filename for the Numba binding. Defaults to `<entry-point-basename>.py`. CUDA-Oxide uses its nested ``Output
+   Name``.
 
    Default: ``null``.
 
@@ -288,8 +289,9 @@ Optional keys
 
 
 ``Function Argument Intents`` : ``object``
-   Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
-   :doc:`/argument_intents` for intent semantics and generated signature behavior.
+   Numba-only per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
+   CUDA-Oxide ignores this backend-specific option. See :doc:`/argument_intents` for intent semantics and generated
+   signature behavior.
 
    Default: ``{}``.
 
@@ -317,7 +319,8 @@ Optional keys
 
 
 ``CUDA Oxide`` : ``object``
-   Settings used only by the ``cuda-oxide`` backend.
+   Settings used when the shared document is consumed by the CUDA-Oxide backend. Their presence does not cause a Numba
+   invocation to emit Rust.
 
    Constraints:
 
@@ -432,16 +435,27 @@ Optional nested keys
    - Min items: 1
    - Item type: ``string``
 
+``Output Name`` : ``string``
+   Rust output filename. Defaults to `<entry-point-basename>.rs`.
+
+   Constraints:
+
+   - Pattern: ``^[^/\\]+$``
+
 ``Manifest Name`` : ``string``
-   Optional output filename for the versioned JSON manifest.
+   Optional output filename for the versioned JSON manifest. Defaults to the Rust output stem followed by
+   `.manifest.json`.
+
+   Constraints:
+
+   - Pattern: ``^[^/\\]+$``
 
 ``Symbol Inventory`` : ``string``
    Optional exact newline- or nm-style inventory of the selected public API. Generation fails if a symbol is present on
    only one side.
 
 ``Type Aliases`` : ``object``
-   Supplemental C typedefs expressed as C-to-C mappings. This is for aliases defined by preprocessor profiles; arbitrary
-   Rust source is not accepted.
+   Supplemental C typedefs expressed as C-to-C mappings. Arbitrary Rust source is not accepted.
 
    Default: ``{}``.
 
@@ -459,8 +473,8 @@ Optional nested keys
    Default: ``{}``.
 
 ``Bypass Parse Errors`` : ``boolean``
-   Continue after recoverable Clang parser errors. Strict parsing is the default and is recommended for complete API
-   coverage. Pair recovery mode with an exact Symbol Inventory to detect parser omissions.
+   Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an exact
+   Symbol Inventory to detect parser omissions.
 
    Default: ``false``.
 
@@ -475,10 +489,11 @@ Raw schema
    # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
    # SPDX-License-Identifier: Apache-2.0
    $schema: "https://json-schema.org/draft/2020-12/schema"
-   title: Numbast Static Binding Generator Config
+   title: Numbast Binding Generator Config
    description: >
-     Canonical schema describing supported YAML keys and value shapes accepted by the Numbast static binding generator
-     configuration loader.
+     Canonical schema for a shared Numbast binding configuration. Parser and declaration-selection options are shared
+     across backends, while backend-specific output settings remain in their own sections. The same document can
+     therefore be used in separate Numba and CUDA-Oxide invocations.
 
    type: object
    additionalProperties: true
@@ -607,7 +622,10 @@ Raw schema
      Output Name:
        type: [string, "null"]
        default: null
-       description: Output binding filename. Defaults to `<entry-point-basename>.py`.
+       description: >
+         Output filename for the Numba binding. Defaults to `<entry-point-basename>.py`. CUDA-Oxide uses its nested
+         ``Output Name``.
+
        examples:
          - bindings_my_lib.py
      Cooperative Launch Required Functions Regex:
@@ -704,8 +722,9 @@ Raw schema
        type: object
        default: {}
        description: >
-         Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
-         :doc:`/argument_intents` for intent semantics and generated signature behavior.
+         Numba-only per-function argument intent overrides. Function keys map to parameter-name or parameter-index
+         entries. CUDA-Oxide ignores this backend-specific option. See :doc:`/argument_intents` for intent semantics and
+         generated signature behavior.
 
        examples:
          - my_function:
@@ -735,7 +754,10 @@ Raw schema
      CUDA Oxide:
        type: object
        additionalProperties: false
-       description: Settings used only by the ``cuda-oxide`` backend.
+       description: >
+         Settings used when the shared document is consumed by the CUDA-Oxide backend. Their presence does not cause a
+         Numba invocation to emit Rust.
+
        required: [LTOIR Inputs]
        properties:
          LTOIR Inputs:
@@ -747,9 +769,23 @@ Raw schema
              Ordered external CUDA LTOIR artifacts that provide the generated device symbols. Numbast records these
              paths but does not build them.
 
+         Output Name:
+           type: string
+           pattern: "^[^/\\\\]+$"
+           not:
+             enum: [., ..]
+           description: >
+             Rust output filename. Defaults to `<entry-point-basename>.rs`.
+
          Manifest Name:
            type: string
-           description: Optional output filename for the versioned JSON manifest.
+           pattern: "^[^/\\\\]+$"
+           not:
+             enum: [., ..]
+           description: >
+             Optional output filename for the versioned JSON manifest. Defaults to the Rust output stem followed by
+             `.manifest.json`.
+
          Symbol Inventory:
            type: string
            description: >
@@ -762,8 +798,7 @@ Raw schema
            additionalProperties:
              type: string
            description: >
-             Supplemental C typedefs expressed as C-to-C mappings. This is for aliases defined by preprocessor profiles;
-             arbitrary Rust source is not accepted.
+             Supplemental C typedefs expressed as C-to-C mappings. Arbitrary Rust source is not accepted.
 
            examples:
              - nvshmem_team_t: int
@@ -781,13 +816,13 @@ Raw schema
                  description: C scalar type or configured C type alias.
                Value:
                  type: [integer, boolean, string]
-                 description: Integer or boolean literal; expressions are rejected.
+                 description: Integer or Boolean literal; expressions are rejected.
          Bypass Parse Errors:
            type: boolean
            default: false
            description: >
-             Continue after recoverable Clang parser errors. Strict parsing is the default and is recommended for
-             complete API coverage. Pair recovery mode with an exact Symbol Inventory to detect parser omissions.
+             Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an
+             exact Symbol Inventory to detect parser omissions.
 
          Clang Binary:
            type: string

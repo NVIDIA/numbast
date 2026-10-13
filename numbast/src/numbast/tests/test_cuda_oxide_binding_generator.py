@@ -10,10 +10,13 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
+from click.testing import CliRunner
 
+from numbast.cli import static_binding_generator
 from numbast.cuda_oxide_binding_model import CudaOxideBindingPlan
 from numbast.errors import CudaOxideBindingError
-from numbast.tools.binding_config import CudaOxideConfig
+from numbast.tools.config.cuda_oxide import CudaOxideConfig
 from numbast.tools.cuda_oxide_binding_generator import (
     generate_cuda_oxide_bindings,
     render_cuda_oxide_bindings,
@@ -81,9 +84,9 @@ def config(tmp_path):
             "GPU Arch": ["sm_90"],
             "File List": [str(header)],
             "Backend": "cuda-oxide",
-            "Output Name": "bindings.rs",
             "API Prefix Removal": {"Function": ["library_"]},
             "CUDA Oxide": {
+                "Output Name": "bindings.rs",
                 "LTOIR Inputs": ["libdevice_api.ltoir"],
                 "Manifest Name": "bindings.manifest.json",
                 "Type Aliases": {"team_t": "int"},
@@ -362,16 +365,57 @@ def test_unknown_cuda_oxide_configuration_is_rejected(config):
         CudaOxideConfig(raw)
 
 
-def test_round_one_rejects_argument_intents(config):
+def test_round_one_ignores_numba_argument_intents(config):
     raw = copy.deepcopy(config.raw_config)
     raw["Function Argument Intents"] = {"library_copy": {"output": "out"}}
-    with pytest.raises(ValueError, match="Round 2"):
-        CudaOxideConfig(raw)
+    assert CudaOxideConfig(raw).output_name == config.output_name
+
+
+@pytest.mark.parametrize("entry_point", ["dispatcher", "dedicated", "legacy"])
+def test_shared_yaml_generates_rust_with_independent_output(
+    config, tmp_path, monkeypatch, entry_point
+):
+    from numbast.tools import cuda_oxide_binding_generator as generator
+
+    raw = copy.deepcopy(config.raw_config)
+    raw["Output Name"] = "python_bindings.py"
+    raw["Function Argument Intents"] = {"library_copy": {"output": "out"}}
+    config_path = tmp_path / "shared.yaml"
+    config_path.write_text(yaml.safe_dump(raw), encoding="utf-8")
+    parsed = declarations(functions=[function("library_copy", "int")])
+
+    def generate(config, output_dir, config_path):
+        return generate_cuda_oxide_bindings(
+            config, output_dir, config_path=config_path, declarations=parsed
+        )
+
+    monkeypatch.setattr(generator, "generate_cuda_oxide_bindings", generate)
+    if entry_point == "dispatcher":
+        command = static_binding_generator
+    elif entry_point == "dedicated":
+        command = generator.cuda_oxide_binding_generator
+    else:
+        from numbast.tools.static_binding_generator import (
+            static_binding_generator as command,
+        )
+
+    result = CliRunner().invoke(
+        command,
+        ["--cfg-path", str(config_path), "--output-dir", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    rust_path = tmp_path / "bindings.rs"
+    assert "pub fn library_copy() -> i32;" in rust_path.read_text()
+    manifest = json.loads((tmp_path / "bindings.manifest.json").read_text())
+    assert manifest["artifacts"]["rust_module"] == str(rust_path)
+    assert manifest["symbols"][0]["native_name"] == "library_copy"
+    assert not (tmp_path / "python_bindings.py").exists()
 
 
 def test_rust_output_and_manifest_names_must_differ(config):
     raw = copy.deepcopy(config.raw_config)
-    raw["CUDA Oxide"]["Manifest Name"] = raw["Output Name"]
+    raw["CUDA Oxide"]["Manifest Name"] = raw["CUDA Oxide"]["Output Name"]
     with pytest.raises(ValueError, match="must differ"):
         CudaOxideConfig(raw)
 
@@ -385,8 +429,8 @@ def test_real_ast_canopy_c_device_parse(tmp_path):
             "File List": [str(header)],
             "GPU Arch": ["sm_80"],
             "Backend": "cuda-oxide",
-            "Output Name": "bindings.rs",
             "CUDA Oxide": {
+                "Output Name": "bindings.rs",
                 "LTOIR Inputs": ["device_api.ltoir"],
                 "Bypass Parse Errors": True,
             },

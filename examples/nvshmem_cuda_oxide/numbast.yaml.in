@@ -26,9 +26,9 @@ API Prefix Removal:
   Function:
     - nvshmemx_
     - nvshmem_
-Output Name: nvshmem_device.rs
 
 CUDA Oxide:
+  Output Name: nvshmem_device.rs
   LTOIR Inputs:
     - "@NVSHMEM_DEVICE_LTOIR@"
   Manifest Name: nvshmem_device.manifest.json

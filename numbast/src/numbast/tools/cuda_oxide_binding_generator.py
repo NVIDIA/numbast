@@ -33,7 +33,7 @@ from numbast.rust_types import (
     parse_cuda_oxide_type_spelling,
     rust_identifier,
 )
-from numbast.tools.binding_config import CudaOxideConfig
+from numbast.tools.config.cuda_oxide import CudaOxideConfig
 
 MANIFEST_SCHEMA_VERSION = 1
 _CONFIGURED_INTEGER = re.compile(
