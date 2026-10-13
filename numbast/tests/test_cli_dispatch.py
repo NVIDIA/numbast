@@ -181,6 +181,46 @@ def test_invalid_config_does_not_import_backend(tmp_path, monkeypatch, config):
     assert "Invalid value for --cfg-path" in result.output
 
 
+@pytest.mark.parametrize("mlir_backend", [False, True])
+def test_cuda_oxide_dispatch_forwards_only_supported_options(
+    tmp_path, monkeypatch, mlir_backend
+):
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(
+        f"Backend: cuda-oxide\nMLIR Backend: {str(mlir_backend).lower()}\n"
+    )
+    calls = []
+
+    @click.command()
+    @click.option("--cfg-path")
+    @click.option("--output-dir")
+    def generator(cfg_path, output_dir):
+        assert cfg_path == str(config_path)
+        assert output_dir == str(tmp_path)
+
+    def import_backend(name):
+        calls.append(name)
+        return SimpleNamespace(cuda_oxide_binding_generator=generator)
+
+    monkeypatch.setattr(cli, "import_module", import_backend)
+    result = CliRunner().invoke(
+        cli.static_binding_generator,
+        [
+            "--cfg-path",
+            str(config_path),
+            "--output-dir",
+            str(tmp_path),
+            "-fmt",
+            "false",
+            "-noraise",
+            "true",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert calls == ["numbast.tools.cuda_oxide_binding_generator"]
+
+
 def test_module_help_does_not_import_backends():
     script = """
 import importlib.abc

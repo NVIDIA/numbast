@@ -1,0 +1,15 @@
+/target/
+/.oxide-artifacts/
+/*.cubin
+/*.cudafe*
+/*.cpp*.ii
+/*.fatbin*
+/*.gpu
+/*.ii
+/*.ll
+/*.ltoir
+/*.module_id
+/*.o
+/*.options
+/*.ptx
+/*.target

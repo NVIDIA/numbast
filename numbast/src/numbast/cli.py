@@ -33,6 +33,12 @@ def static_binding_generator(
     except (TypeError, yaml.YAMLError) as error:
         raise click.BadParameter(str(error), param_hint="--cfg-path") from error
 
+    if config.get("Backend") == "cuda-oxide":
+        generator = import_module(
+            "numbast.tools.cuda_oxide_binding_generator"
+        ).cuda_oxide_binding_generator
+        return ctx.invoke(generator, cfg_path=cfg_path, output_dir=output_dir)
+
     use_mlir = bool(
         config.get("MLIR Backend", config.get("mlir_backend", False))
     )

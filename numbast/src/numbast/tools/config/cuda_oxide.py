@@ -39,6 +39,11 @@ class CudaOxideConfig(SharedConfig):
     def __init__(self, config_dict: dict[str, Any]):
         super().__init__(config_dict)
 
+        if config_dict.get("Backend") not in (None, "cuda-oxide"):
+            raise ValueError(
+                'The CUDA-Oxide generator requires "Backend: cuda-oxide".'
+            )
+
         section = config_dict.get("CUDA Oxide")
         if not isinstance(section, dict):
             raise TypeError(

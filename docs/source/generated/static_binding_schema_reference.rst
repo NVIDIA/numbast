@@ -58,6 +58,14 @@ Optional keys
 ``Version`` : ``string | number``
    Optional config metadata field.
 
+``Backend`` : ``string``
+   Optional output backend selector. Omit it for the existing Numba static bindings or select ``cuda-oxide`` for direct
+   Rust device externs.
+
+   Constraints:
+
+   - Allowed values: ``cuda-oxide``
+
 ``Types`` : ``object``
    Mapping of struct names to Numba type class names.
 
@@ -500,6 +508,13 @@ Raw schema
      Version:
        type: [string, number]
        description: Optional config metadata field.
+     Backend:
+       type: string
+       enum: [cuda-oxide]
+       description: >
+         Optional output backend selector. Omit it for the existing Numba static bindings or select ``cuda-oxide`` for
+         direct Rust device externs.
+
      Entry Point:
        type: string
        description: Path to the input CUDA C/C++ header file.

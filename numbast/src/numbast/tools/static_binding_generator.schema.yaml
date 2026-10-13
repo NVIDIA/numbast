@@ -18,6 +18,12 @@ properties:
   Version:
     type: [string, number]
     description: Optional config metadata field.
+  Backend:
+    type: string
+    enum: [cuda-oxide]
+    description: >
+      Optional output backend selector. Omit it for the existing Numba static bindings or select ``cuda-oxide`` for direct Rust device externs.
+
   Entry Point:
     type: string
     description: Path to the input CUDA C/C++ header file.

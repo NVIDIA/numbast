@@ -661,6 +661,17 @@ def static_binding_generator(
     """
     sbg_params = params_the_user_set(ctx)
 
+    if load_binding_config(cfg_path).get("Backend") == "cuda-oxide":
+        from numbast.tools.cuda_oxide_binding_generator import (
+            cuda_oxide_binding_generator,
+        )
+
+        return ctx.invoke(
+            cuda_oxide_binding_generator,
+            cfg_path=cfg_path,
+            output_dir=output_dir,
+        )
+
     if _cfg_path_uses_mlir_backend(cfg_path):
         from numbast.experimental.mlir.tools.static_binding_generator import (
             Config as MlirConfig,

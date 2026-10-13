@@ -47,6 +47,7 @@ def test_static_binding_schema_has_expected_keys():
         "Use Separate Registry",
         "Function Argument Intents",
         "MLIR Backend",
+        "Backend",
         "CUDA Oxide",
     }
     assert expected_keys.issubset(set(properties))
