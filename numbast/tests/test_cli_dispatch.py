@@ -122,6 +122,12 @@ def test_both_entry_points_stamp_the_same_options(tmp_path, monkeypatch):
             "numbast.experimental.mlir.tools",
         ),
         ("MLIR Backend: false\nmlir_backend: true", "numbast.tools"),
+        ("Backend: numba", "numbast.tools"),
+        ("Backend: mlir", "numbast.experimental.mlir.tools"),
+        (
+            "Backend: mlir\nMLIR Backend: false",
+            "numbast.experimental.mlir.tools",
+        ),
     ],
 )
 def test_dispatch_forwards_options(tmp_path, monkeypatch, config, backend):
@@ -160,7 +166,83 @@ def test_dispatch_forwards_options(tmp_path, monkeypatch, config, backend):
         "output_dir": str(tmp_path),
         "run_ruff_format": False,
         "bypass_parse_error": True,
+        # The resolved name, not the flag. A generator that re-read the config
+        # would otherwise be free to disagree with the dispatch that chose it.
+        "backend": "mlir" if "mlir" in backend else "numba",
     }
+
+
+def test_the_flag_overrides_the_config_at_the_real_entry_point(
+    tmp_path, monkeypatch
+):
+    """``--backend`` has to be declared here or it is unreachable.
+
+    This is the only installed command, so an override the dispatcher does not
+    accept is an override nobody can use.
+    """
+    config_path = tmp_path / "config.yml"
+    config_path.write_text("Backend: mlir")
+    calls = []
+
+    @click.command()
+    @click.pass_context
+    def generator(ctx, **options):
+        click.echo(json.dumps(options))
+
+    def import_backend(name):
+        calls.append(name)
+        return SimpleNamespace(static_binding_generator=generator)
+
+    monkeypatch.setattr(cli, "import_module", import_backend)
+    result = CliRunner().invoke(
+        cli.static_binding_generator,
+        [
+            f"--cfg-path={config_path}",
+            "--output-dir",
+            str(tmp_path),
+            "--backend",
+            "numba",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert calls == ["numbast.tools.static_binding_generator"]
+    assert json.loads(result.output)["backend"] == "numba"
+
+
+@pytest.mark.parametrize(
+    ("args", "config", "hint"),
+    [
+        # A name the user typed is blamed on the flag, one the file chose on
+        # the file, so the message points at the thing worth editing.
+        (["--backend", "nonesuch"], "{}", "--backend"),
+        ([], "Backend: nonesuch", "--cfg-path"),
+        (["--backend", "cuda-oxide"], "{}", "--backend"),
+        ([], "Backend: cuda-oxide", "--cfg-path"),
+    ],
+)
+def test_an_unusable_backend_fails_before_importing_one(
+    tmp_path, monkeypatch, args, config, hint
+):
+    """Including ``cuda-oxide``, which is registered but has no driver.
+
+    Importing first would make a missing driver indistinguishable from a
+    backend whose dependencies are not installed.
+    """
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(config)
+
+    def unexpected_import(name):
+        pytest.fail(f"Imported a backend for an unusable name: {name}")
+
+    monkeypatch.setattr(cli, "import_module", unexpected_import)
+    result = CliRunner().invoke(
+        cli.static_binding_generator,
+        ["--cfg-path", str(config_path), "--output-dir", str(tmp_path), *args],
+    )
+
+    assert result.exit_code == 2
+    assert hint in result.output
 
 
 @pytest.mark.parametrize("config", ["", "[]", "[", "!!python/object:dict {}"])

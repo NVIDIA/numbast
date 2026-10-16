@@ -11,6 +11,7 @@ from typing import Any
 
 import yaml
 
+from numbast.backends.registry import MLIR, resolve_backend_name
 from numbast.tools.yaml_tags import string_constructor
 
 
@@ -32,14 +33,15 @@ def load_binding_config(path: str | os.PathLike[str]) -> dict[str, Any]:
 
 
 def config_uses_mlir_backend(config_dict: dict) -> bool:
-    """Return whether the Python bindings use the MLIR implementation."""
+    """Return whether the Python bindings use the MLIR implementation.
 
-    return bool(
-        config_dict.get(
-            "MLIR Backend",
-            config_dict.get("mlir_backend", False),
-        )
-    )
+    Asks the registry rather than reading the legacy boolean directly, so that
+    this answers for ``Backend: mlir`` too. Reading the boolean here would
+    return ``False`` for a configuration that names the MLIR backend, which is
+    a wrong answer that looks like a right one.
+    """
+
+    return resolve_backend_name(config_dict) == MLIR
 
 
 def _as_list(value: Any, key: str) -> list:

@@ -13,6 +13,7 @@ import yaml
 
 from numbast.tools.config.cuda_oxide import CudaOxideConfig
 from numbast.tools.config.numba import NumbaConfig
+from numbast.tools.config.shared import config_uses_mlir_backend
 
 
 def _shared_config(tmp_path):
@@ -196,6 +197,30 @@ def test_binding_config_loader_remains_safe(tmp_path):
         CudaOxideConfig.from_yaml_path(config_path)
 
     assert not marker_path.exists()
+
+
+@pytest.mark.parametrize(
+    ("config_dict", "expected"),
+    [
+        ({"Backend": "mlir"}, True),
+        ({"MLIR Backend": True}, True),
+        ({"mlir_backend": True}, True),
+        ({"Backend": "numba"}, False),
+        ({}, False),
+    ],
+)
+def test_config_uses_mlir_backend_agrees_with_the_registry(
+    config_dict, expected
+):
+    """``Backend: mlir`` must count, not just the legacy boolean.
+
+    Reading the boolean directly answers ``False`` for a configuration that
+    names the MLIR backend, so an MLIR-only option would be rejected and
+    MLIR work would route to the Numba renderer -- which still emits a
+    binding, so nothing would look wrong.
+    """
+
+    assert config_uses_mlir_backend(config_dict) is expected
 
 
 def test_cuda_oxide_config_import_does_not_load_numba():
