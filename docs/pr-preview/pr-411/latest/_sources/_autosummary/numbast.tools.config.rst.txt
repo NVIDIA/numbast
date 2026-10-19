@@ -1,0 +1,15 @@
+numbast.tools.config
+====================
+
+.. automodule:: numbast.tools.config
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   cuda_oxide
+   numba
+   shared
