@@ -30,6 +30,7 @@ root = ".."
 
 [project.scripts]
 numbast = "numbast.cli:static_binding_generator"
+numbast-cuda-oxide = "numbast.tools.cuda_oxide_binding_generator:cuda_oxide_binding_generator"
 
 [project.urls]
 homepage = "https://github.com/NVIDIA/numbast"
