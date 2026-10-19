@@ -24,7 +24,7 @@ def test_public_cli_generates_mlir_bindings(tmp_path, arch_str, entry_point):
     header = Path(__file__).with_name("data.cuh")
     config_path = tmp_path / "config.yml"
     config_path.write_text(
-        f"MLIR Backend: true\n"
+        f"Backend: numba-cuda-mlir\n"
         f"Entry Point: {header}\n"
         f"File List: [{header}]\n"
         f"GPU Arch: [{arch_str}]\n"
@@ -89,7 +89,7 @@ def test_cli_yml_invalid_inputs(tmpdir, args, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 File List:
     - {data}
@@ -128,7 +128,7 @@ def test_cli_yml_inputs_full_spec(tmpdir, kernel, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}
@@ -179,7 +179,7 @@ def test_cli_yml_inputs_full_spec_with_cc(tmpdir, cc, expected):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {cc}
@@ -227,7 +227,7 @@ def test_yaml_deduce_missing_types(tmpdir, kernel, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}
@@ -274,7 +274,7 @@ def test_yaml_deduce_missing_datamodels(tmpdir, kernel, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}
@@ -322,7 +322,7 @@ def test_yaml_exclude_function(tmpdir, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}
@@ -383,7 +383,7 @@ def test_yaml_exclude_function_empty_list(tmpdir, kernel, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}
@@ -432,7 +432,7 @@ def test_yaml_exclude_struct(tmpdir, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}
@@ -490,7 +490,7 @@ def test_yaml_exclude_struct_empty_list(tmpdir, kernel, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}
@@ -579,7 +579,7 @@ def test_implicit_ctor_lowering(tmpdir, implicit_conversion_kernel, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}

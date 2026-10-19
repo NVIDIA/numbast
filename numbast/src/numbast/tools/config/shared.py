@@ -31,17 +31,6 @@ def load_binding_config(path: str | os.PathLike[str]) -> dict[str, Any]:
     return config
 
 
-def config_uses_mlir_backend(config_dict: dict) -> bool:
-    """Return whether the Python bindings use the MLIR implementation."""
-
-    return bool(
-        config_dict.get(
-            "MLIR Backend",
-            config_dict.get("mlir_backend", False),
-        )
-    )
-
-
 def _as_list(value: Any, key: str) -> list:
     if value is None:
         return []

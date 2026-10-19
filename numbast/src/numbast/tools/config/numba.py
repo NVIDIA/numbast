@@ -10,10 +10,12 @@ import re
 from numba import types
 from numba.core.datamodel import models
 
-from numbast.tools.config.shared import (
-    SharedConfig,
-    config_uses_mlir_backend,
+from numbast.backends.registry import (
+    BACKEND_CONFIG_KEY,
+    MLIR,
+    resolve_backend_name,
 )
+from numbast.tools.config.shared import SharedConfig
 
 
 _MLIR_BACKEND_ONLY_CONFIG_KEYS = ("Module Link Variables Used",)
@@ -30,7 +32,7 @@ def _config_value_is_set(value) -> bool:
 
 
 def _validate_mlir_backend_only_config(config_dict: dict):
-    if config_uses_mlir_backend(config_dict):
+    if resolve_backend_name(config_dict) == MLIR:
         return
 
     keys = [
@@ -47,7 +49,7 @@ def _validate_mlir_backend_only_config(config_dict: dict):
         options = ", ".join(f'"{key}"' for key in keys)
         message = f"Configuration options {options} require"
 
-    raise ValueError(f'{message} "MLIR Backend: true".')
+    raise ValueError(f'{message} "{BACKEND_CONFIG_KEY}: {MLIR}".')
 
 
 def _str_value_to_numba_type(values: dict[str, str]) -> dict[str, type]:
@@ -86,10 +88,14 @@ class NumbaConfig(SharedConfig):
     skip_prefix: str | None
     separate_registry: bool
     function_argument_intents: dict
+    backend: str
     mlir_backend: bool
 
     def __init__(self, config_dict: dict):
-        self.mlir_backend = config_uses_mlir_backend(config_dict)
+        self.backend = resolve_backend_name(config_dict)
+        # Kept as a derived attribute: it is what the dispatch and several
+        # callers already read, and it cannot now disagree with ``backend``.
+        self.mlir_backend = self.backend == MLIR
         _validate_mlir_backend_only_config(config_dict)
         super().__init__(config_dict)
         self.types = _str_value_to_numba_type(config_dict.get("Types", {}))
@@ -138,9 +144,12 @@ class NumbaConfig(SharedConfig):
         skip_prefix: str | None = None,
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
-        mlir_backend: bool = False,
+        backend: str | None = None,
     ) -> NumbaConfig:
-        """Construct configuration from explicit parameters."""
+        """Construct configuration from explicit parameters.
+
+        ``backend`` names the emission backend.
+        """
 
         if types is None:
             raise ValueError("Types must be provided")
@@ -170,7 +179,7 @@ class NumbaConfig(SharedConfig):
             "Skip Prefix": skip_prefix,
             "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
-            "MLIR Backend": mlir_backend,
+            BACKEND_CONFIG_KEY: backend,
         }
 
         if types:

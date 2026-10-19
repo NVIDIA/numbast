@@ -114,14 +114,13 @@ def test_both_entry_points_stamp_the_same_options(tmp_path, monkeypatch):
     ("config", "backend"),
     [
         ("{}", "numbast.tools"),
-        ("MLIR Backend: false", "numbast.tools"),
-        ("MLIR Backend: true", "numbast.experimental.mlir.tools"),
-        ("mlir_backend: true", "numbast.experimental.mlir.tools"),
+        ("Backend: numba-cuda", "numbast.tools"),
+        ("Backend: numba-cuda-mlir", "numbast.experimental.mlir.tools"),
+        ("Backend: [numba-cuda-mlir]", "numbast.experimental.mlir.tools"),
         (
-            'MLIR Backend: !numbast_join ["tr", "ue"]',
+            'Backend: !numbast_join ["numba-cuda", "-mlir"]',
             "numbast.experimental.mlir.tools",
         ),
-        ("MLIR Backend: false\nmlir_backend: true", "numbast.tools"),
     ],
 )
 def test_dispatch_forwards_options(tmp_path, monkeypatch, config, backend):
@@ -161,6 +160,38 @@ def test_dispatch_forwards_options(tmp_path, monkeypatch, config, backend):
         "run_ruff_format": False,
         "bypass_parse_error": True,
     }
+
+
+@pytest.mark.parametrize(
+    ("config", "hint"),
+    [
+        ("Backend: nonesuch", "--cfg-path"),
+        ("Backend: cuda-oxide", "--cfg-path"),
+        ("Backend: [numba-cuda, cuda-oxide]", "--cfg-path"),
+    ],
+)
+def test_an_unusable_backend_fails_before_importing_one(
+    tmp_path, monkeypatch, config, hint
+):
+    """Including ``cuda-oxide``, which is registered but has no driver.
+
+    Importing first would make a missing driver indistinguishable from a
+    backend whose dependencies are not installed.
+    """
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(config)
+
+    def unexpected_import(name):
+        pytest.fail(f"Imported a backend for an unusable name: {name}")
+
+    monkeypatch.setattr(cli, "import_module", unexpected_import)
+    result = CliRunner().invoke(
+        cli.static_binding_generator,
+        ["--cfg-path", str(config_path), "--output-dir", str(tmp_path)],
+    )
+
+    assert result.exit_code == 2
+    assert hint in result.output
 
 
 @pytest.mark.parametrize("config", ["", "[]", "[", "!!python/object:dict {}"])
