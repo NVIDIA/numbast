@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-
 # yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
 language: en-US
 tone_instructions: |
