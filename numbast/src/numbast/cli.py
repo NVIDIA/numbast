@@ -3,6 +3,13 @@ from importlib import import_module
 import click
 import yaml
 
+from numbast.backends.registry import (
+    BackendNotFoundError,
+    BackendNotRunnableError,
+    MultipleBackendsError,
+    generator_module,
+    resolve_backend_name,
+)
 from numbast.tools.config.shared import load_binding_config
 
 
@@ -33,13 +40,14 @@ def static_binding_generator(
     except (TypeError, yaml.YAMLError) as error:
         raise click.BadParameter(str(error), param_hint="--cfg-path") from error
 
-    use_mlir = bool(
-        config.get("MLIR Backend", config.get("mlir_backend", False))
-    )
-    module_name = (
-        "numbast.experimental.mlir.tools.static_binding_generator"
-        if use_mlir
-        else "numbast.tools.static_binding_generator"
-    )
+    try:
+        module_name = generator_module(resolve_backend_name(config))
+    except (
+        BackendNotFoundError,
+        BackendNotRunnableError,
+        MultipleBackendsError,
+    ) as error:
+        raise click.BadParameter(str(error), param_hint="--cfg-path") from error
+
     generator = import_module(module_name).static_binding_generator
     return ctx.forward(generator)

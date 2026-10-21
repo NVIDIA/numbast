@@ -59,7 +59,6 @@ def make_binding(tmpdir, data_folder):
             types=types,
             datamodels=datamodels,
             separate_registry=False,
-            mlir_backend=True,
         )
         cfg.function_argument_intents = function_argument_intents or {}
         _static_binding_generator(cfg, tmpdir)

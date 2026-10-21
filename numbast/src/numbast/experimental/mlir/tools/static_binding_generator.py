@@ -23,6 +23,12 @@ from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function, Struct
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
+from numbast.backends.registry import (
+    BACKEND_CONFIG_KEY,
+    NUMBA_CUDA_MLIR,
+    resolve_backend_name,
+)
+from numbast.tools.config.shared import load_binding_config
 from numbast.provenance import params_the_user_set
 from numbast.experimental.mlir.static import reset_renderer
 from numbast.experimental.mlir.static.renderer import (
@@ -51,12 +57,7 @@ yaml.SafeLoader.add_constructor("!numbast_join", string_constructor)
 
 
 def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
-    return bool(
-        config_dict.get(
-            "MLIR Backend",
-            config_dict.get("mlir_backend", False),
-        )
-    )
+    return resolve_backend_name(config_dict) == NUMBA_CUDA_MLIR
 
 
 def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
@@ -175,7 +176,7 @@ class Config:
                 - "Use Separate Registry": boolean flag.
                 - "Separate Registry": deprecated alias for "Use Separate Registry".
                 - "Function Argument Intents": mapping of function argument intent specifications.
-                - "MLIR Backend": boolean flag selecting the experimental MLIR generator.
+                - "Backend": name of the emission backend.
 
         Raises:
             NotImplementedError: if more than one GPU architecture is provided.
@@ -289,7 +290,7 @@ class Config:
         skip_prefix: str | None = None,
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
-        mlir_backend: bool = True,
+        backend: str = NUMBA_CUDA_MLIR,
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
@@ -331,7 +332,7 @@ class Config:
             "Skip Prefix": skip_prefix,
             "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
-            "MLIR Backend": mlir_backend,
+            BACKEND_CONFIG_KEY: backend,
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -810,6 +811,18 @@ def static_binding_generator(
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
+    # Reached only when this driver is invoked directly, since the dispatcher
+    # routes by the same name. Without this, a configuration selecting another
+    # backend would still get MLIR bindings here -- a wrong answer that looks
+    # like a right one, because both backends write the same file name.
+    name = resolve_backend_name(load_binding_config(cfg_path))
+    if name != NUMBA_CUDA_MLIR:
+        raise click.BadParameter(
+            f"This driver generates {NUMBA_CUDA_MLIR!r} bindings and cannot "
+            f"generate {name!r}.",
+            param_hint="--cfg-path",
+        )
+
     reset_renderer()
 
     cfg = Config.from_yaml_path(cfg_path)
