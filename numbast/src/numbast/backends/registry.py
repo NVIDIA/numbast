@@ -34,8 +34,8 @@ three backends says a name must identify exactly one.
 __all__ = [
     "BACKEND_CONFIG_KEY",
     "CUDA_OXIDE",
-    "MLIR",
-    "NUMBA",
+    "NUMBA_CUDA_MLIR",
+    "NUMBA_CUDA",
     "BackendNotFoundError",
     "BackendNotRunnableError",
     "MultipleBackendsError",
@@ -47,8 +47,8 @@ __all__ = [
 
 BACKEND_CONFIG_KEY = "Backend"
 
-NUMBA = "numba-cuda"
-MLIR = "numba-cuda-mlir"
+NUMBA_CUDA = "numba-cuda"
+NUMBA_CUDA_MLIR = "numba-cuda-mlir"
 CUDA_OXIDE = "cuda-oxide"
 
 #: Each registered backend, mapped to the module whose
@@ -61,12 +61,12 @@ CUDA_OXIDE = "cuda-oxide"
 #: than "no such backend". It also leaves the remaining work as one edit here
 #: rather than a design.
 _BACKENDS: dict[str, str | None] = {
-    NUMBA: "numbast.tools.static_binding_generator",
-    MLIR: "numbast.experimental.mlir.tools.static_binding_generator",
+    NUMBA_CUDA: "numbast.tools.static_binding_generator",
+    NUMBA_CUDA_MLIR: "numbast.experimental.mlir.tools.static_binding_generator",
     CUDA_OXIDE: None,
 }
 
-DEFAULT_BACKEND = NUMBA
+DEFAULT_BACKEND = NUMBA_CUDA
 
 
 class BackendNotFoundError(Exception):

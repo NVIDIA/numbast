@@ -86,7 +86,7 @@ def run_in_isolated_folder(tmpdir):
         with open(config_path, "w") as f:
             f.write(config)
 
-        runner = CliRunner(catch_exceptions=False)
+        runner = CliRunner()
 
         args = ["--cfg-path", config_path, "--output-dir", output_folder]
         if not omit_optional_options:
@@ -98,7 +98,9 @@ def run_in_isolated_folder(tmpdir):
             ]
 
         with warnings.catch_warnings(record=True) as w:
-            result = runner.invoke(static_binding_generator, args)
+            result = runner.invoke(
+                static_binding_generator, args, catch_exceptions=False
+            )
 
         assert result.exit_code == 0, result.stdout
 

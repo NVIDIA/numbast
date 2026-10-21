@@ -21,8 +21,8 @@ from ast_canopy.decl import (
 from ast_canopy.pylibastcanopy import Enum, Typedef
 
 from numbast.backends.registry import (
-    MLIR,
-    NUMBA,
+    NUMBA_CUDA_MLIR,
+    NUMBA_CUDA,
     resolve_backend_name,
 )
 from numbast.provenance import params_the_user_set
@@ -666,18 +666,18 @@ def static_binding_generator(
 
     name = _backend_name_from_cfg_path(cfg_path)
 
-    if name not in (NUMBA, MLIR):
+    if name not in (NUMBA_CUDA, NUMBA_CUDA_MLIR):
         # Reached only when this driver is invoked directly, since the
         # dispatcher refuses an unservable name first. Without this, a
         # registered backend nobody has wired up here would fall through and
         # generate Numba bindings -- a wrong answer that looks like a right one.
         raise click.BadParameter(
-            f"This driver generates {NUMBA!r} and {MLIR!r} bindings and "
+            f"This driver generates {NUMBA_CUDA!r} and {NUMBA_CUDA_MLIR!r} bindings and "
             f"cannot generate {name!r}.",
             param_hint="--cfg-path",
         )
 
-    if name == MLIR:
+    if name == NUMBA_CUDA_MLIR:
         from numbast.experimental.mlir.tools.static_binding_generator import (
             Config as MlirConfig,
         )

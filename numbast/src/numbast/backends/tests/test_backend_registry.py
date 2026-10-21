@@ -7,8 +7,8 @@ import pytest
 
 from numbast.backends.registry import (
     CUDA_OXIDE,
-    NUMBA,
-    MLIR,
+    NUMBA_CUDA,
+    NUMBA_CUDA_MLIR,
     BackendNotFoundError,
     BackendNotRunnableError,
     MultipleBackendsError,
@@ -20,16 +20,16 @@ from numbast.backends.registry import (
 
 
 def test_the_default_backend_is_numba():
-    assert resolve_backend_name({}) == NUMBA
+    assert resolve_backend_name({}) == NUMBA_CUDA
 
 
 def test_an_absent_config_resolves_rather_than_raising():
     """An empty YAML file parses to ``None``, not to ``{}``."""
-    assert resolve_backend_name(None) == NUMBA
+    assert resolve_backend_name(None) == NUMBA_CUDA
 
 
 def test_a_named_backend_is_selected():
-    assert resolve_backend_name({"Backend": MLIR}) == MLIR
+    assert resolve_backend_name({"Backend": NUMBA_CUDA_MLIR}) == NUMBA_CUDA_MLIR
 
 
 def test_a_single_name_may_be_written_as_a_list():
@@ -38,7 +38,9 @@ def test_a_single_name_may_be_written_as_a_list():
     One parse feeding several renderers is the eventual shape, and the key
     should not have to change spelling when that arrives.
     """
-    assert resolve_backend_name({"Backend": [MLIR]}) == MLIR
+    assert (
+        resolve_backend_name({"Backend": [NUMBA_CUDA_MLIR]}) == NUMBA_CUDA_MLIR
+    )
 
 
 def test_naming_two_backends_is_an_error_rather_than_a_silent_choice():
@@ -48,18 +50,20 @@ def test_naming_two_backends_is_an_error_rather_than_a_silent_choice():
     something that cannot happen, and picking one would look like success.
     """
     with pytest.raises(MultipleBackendsError) as excinfo:
-        resolve_backend_name({"Backend": [NUMBA, CUDA_OXIDE]})
+        resolve_backend_name({"Backend": [NUMBA_CUDA, CUDA_OXIDE]})
 
     message = str(excinfo.value)
-    assert NUMBA in message and CUDA_OXIDE in message
+    assert NUMBA_CUDA in message and CUDA_OXIDE in message
 
 
 def test_an_empty_list_falls_back_to_the_default():
     """``Backend:`` with nothing under it parses to an empty list."""
-    assert resolve_backend_name({"Backend": []}) == NUMBA
+    assert resolve_backend_name({"Backend": []}) == NUMBA_CUDA
 
 
-@pytest.mark.parametrize("value", [True, 3, {"name": MLIR}, [MLIR, 7]])
+@pytest.mark.parametrize(
+    "value", [True, 3, {"name": NUMBA_CUDA_MLIR}, [NUMBA_CUDA_MLIR, 7]]
+)
 def test_a_backend_that_is_not_a_name_is_rejected(value):
     """Including ``True``, which is what the boolean spelling now parses to."""
     with pytest.raises(BackendNotFoundError):
@@ -88,7 +92,9 @@ def test_the_error_names_the_backends_that_do_exist():
 
 
 def test_available_backends_is_sorted_and_complete():
-    assert available_backends() == sorted([NUMBA, MLIR, CUDA_OXIDE])
+    assert available_backends() == sorted(
+        [NUMBA_CUDA, NUMBA_CUDA_MLIR, CUDA_OXIDE]
+    )
 
 
 def test_a_third_backend_is_nameable_at_all():
@@ -100,13 +106,13 @@ def test_a_third_backend_is_nameable_at_all():
     assert resolve_backend_name({"Backend": CUDA_OXIDE}) == CUDA_OXIDE
 
 
-@pytest.mark.parametrize("name", [NUMBA, MLIR])
+@pytest.mark.parametrize("name", [NUMBA_CUDA, NUMBA_CUDA_MLIR])
 def test_a_runnable_backend_names_its_driver(name):
     assert generator_module(name).endswith("static_binding_generator")
 
 
 def test_runnable_backends_excludes_the_driverless_one():
-    assert runnable_backends() == sorted([NUMBA, MLIR])
+    assert runnable_backends() == sorted([NUMBA_CUDA, NUMBA_CUDA_MLIR])
     assert CUDA_OXIDE in available_backends()
 
 

@@ -12,7 +12,7 @@ from numba.core.datamodel import models
 
 from numbast.backends.registry import (
     BACKEND_CONFIG_KEY,
-    MLIR,
+    NUMBA_CUDA_MLIR,
     resolve_backend_name,
 )
 from numbast.tools.config.shared import SharedConfig
@@ -32,7 +32,7 @@ def _config_value_is_set(value) -> bool:
 
 
 def _validate_mlir_backend_only_config(config_dict: dict):
-    if resolve_backend_name(config_dict) == MLIR:
+    if resolve_backend_name(config_dict) == NUMBA_CUDA_MLIR:
         return
 
     keys = [
@@ -49,7 +49,7 @@ def _validate_mlir_backend_only_config(config_dict: dict):
         options = ", ".join(f'"{key}"' for key in keys)
         message = f"Configuration options {options} require"
 
-    raise ValueError(f'{message} "{BACKEND_CONFIG_KEY}: {MLIR}".')
+    raise ValueError(f'{message} "{BACKEND_CONFIG_KEY}: {NUMBA_CUDA_MLIR}".')
 
 
 def _str_value_to_numba_type(values: dict[str, str]) -> dict[str, type]:
@@ -95,7 +95,7 @@ class NumbaConfig(SharedConfig):
         self.backend = resolve_backend_name(config_dict)
         # Kept as a derived attribute: it is what the dispatch and several
         # callers already read, and it cannot now disagree with ``backend``.
-        self.mlir_backend = self.backend == MLIR
+        self.mlir_backend = self.backend == NUMBA_CUDA_MLIR
         _validate_mlir_backend_only_config(config_dict)
         super().__init__(config_dict)
         self.types = _str_value_to_numba_type(config_dict.get("Types", {}))
