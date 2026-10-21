@@ -799,7 +799,7 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Link</span> <span class="pre">Variables</span> <span class="pre">Used</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Experimental MLIR-backend-only linker metadata variables to mark as used. Requires <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Link</span> <span class="pre">Variables</span> <span class="pre">Used</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Experimental MLIR-backend-only linker metadata variables to mark as used. Requires <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-cuda-mlir</span></code>.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
 <p>Constraints:</p>
 <ul class="simple">
@@ -837,11 +837,19 @@ signature behavior.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Route static binding generation to the experimental <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend. This requires a
-user-provided <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">array</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Name of the emission backend, or a list of names. <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> generates Numba bindings; <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code> routes
+generation to the experimental <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend, which requires a user-provided
+<code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation; <code class="docutils literal notranslate"><span class="pre">cuda-oxide</span></code> is registered for the Rust renderer but has no driver yet, so naming
+it is an error that says so. Defaults to <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code>. An unrecognised name is an error rather than a fallback.
+Naming more than one backend is an error for now, since a single run drives a single renderer.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
+</ul>
 <p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">MLIR Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-cuda</span>
+<span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-cuda-mlir</span>
 </pre></div>
 </div>
 </dd>
@@ -1178,7 +1186,8 @@ Symbol Inventory to detect parser omissions.</p>
 <span class="w">    </span><span class="nt">items</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.</span>
+<span class="w">      </span><span class="no">Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``Backend:</span>
+<span class="w">      </span><span class="no">numba-cuda-mlir``.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"__numbast_module_used"</span>
@@ -1220,15 +1229,21 @@ Symbol Inventory to detect parser omissions.</p>
 <span class="w">                </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">                </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"in"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"inout_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_return"</span><span class="p p-Indicator">]</span>
 <span class="w">            </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"intent"</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">MLIR Backend</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">Backend</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">array</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a</span>
-<span class="w">      </span><span class="no">user-provided ``numba_cuda_mlir`` installation.</span>
+<span class="w">      </span><span class="no">Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir``</span>
+<span class="w">      </span><span class="no">routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided</span>
+<span class="w">      </span><span class="no">``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so</span>
+<span class="w">      </span><span class="no">naming it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a</span>
+<span class="w">      </span><span class="no">fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba-cuda"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba-cuda-mlir"</span>
 <span class="w">  </span><span class="nt">CUDA Oxide</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>

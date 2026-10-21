@@ -8,7 +8,6 @@ numbast.tools.config.shared
 
    .. autosummary::
    
-      config_uses_mlir_backend
       load_binding_config
    
    .. rubric:: Classes

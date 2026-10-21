@@ -240,7 +240,7 @@ Optional keys
 
 
 ``Module Link Variables Used`` : ``array``
-   Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.
+   Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``Backend: numba-cuda-mlir``.
 
    Default: ``[]``.
 
@@ -297,17 +297,25 @@ Optional keys
           0: in
 
 
-``MLIR Backend`` : ``boolean``
-   Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a
-   user-provided ``numba_cuda_mlir`` installation.
+``Backend`` : ``string | array | null``
+   Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir`` routes
+   generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided
+   ``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so naming
+   it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a fallback.
+   Naming more than one backend is an error for now, since a single run drives a single renderer.
 
-   Default: ``false``.
+   Default: ``null``.
+
+   Constraints:
+
+   - Item type: ``string``
 
    Example:
 
    .. code-block:: yaml
 
-      MLIR Backend: true
+      Backend: numba-cuda
+      Backend: numba-cuda-mlir
 
 
 ``CUDA Oxide`` : ``object``
@@ -685,7 +693,8 @@ Raw schema
        items:
          type: string
        description: >
-         Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.
+         Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``Backend:
+         numba-cuda-mlir``.
 
        examples:
          - - "__numbast_module_used"
@@ -727,15 +736,21 @@ Raw schema
                    type: string
                    enum: ["in", "inout_ptr", "out_ptr", "out_return"]
                required: ["intent"]
-     MLIR Backend:
-       type: boolean
-       default: false
+     Backend:
+       type: [string, array, "null"]
+       items:
+         type: string
+       default: null
        description: >
-         Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a
-         user-provided ``numba_cuda_mlir`` installation.
+         Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir``
+         routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided
+         ``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so
+         naming it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a
+         fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.
 
        examples:
-         - true
+         - "numba-cuda"
+         - "numba-cuda-mlir"
      CUDA Oxide:
        type: object
        additionalProperties: false
