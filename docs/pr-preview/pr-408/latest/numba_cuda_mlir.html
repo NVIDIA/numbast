@@ -565,6 +565,12 @@
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/numbast.types.html">numbast.types</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="_autosummary/numbast.tools.config.html">numbast.tools.config</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.cuda_oxide.html">numbast.tools.config.cuda_oxide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.numba.html">numbast.tools.config.numba</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.shared.html">numbast.tools.config.shared</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
 </ul>
@@ -647,7 +653,7 @@ binding configuration.</p>
 </tr>
 <tr class="row-odd"><td><p>Static binding generation</p></td>
 <td><p>Use the default static generator configuration.</p></td>
-<td><p>Add <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code> to the static binding config.</p></td>
+<td><p>Add <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-cuda-mlir</span></code> to the static binding config.</p></td>
 </tr>
 <tr class="row-even"><td><p>Generated module target</p></td>
 <td><p>Generated bindings target the <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> runtime.</p></td>
@@ -692,21 +698,21 @@ bindings.</p>
 </section>
 <section id="static-binding-generation">
 <h2>Static binding generation<a class="headerlink" href="#static-binding-generation" title="Link to this heading">#</a></h2>
-<p>For static binding generation, add the <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend</span></code> entry to the same
-config file you use with the default Numbast CLI.</p>
+<p>For static binding generation, add the <code class="docutils literal notranslate"><span class="pre">Backend</span></code> entry to the same config
+file you use with the default Numbast CLI.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Entry Point</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/header.hpp</span>
 <span class="nt">File List</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/library/header.hpp</span>
 <span class="nt">GPU Arch</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"sm_80"</span><span class="p p-Indicator">]</span>
 
-<span class="nt">MLIR Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-cuda-mlir</span>
 </pre></div>
 </div>
 <p>Then run the standard Numbast static binding generator:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>numbast<span class="w"> </span>--cfg-path<span class="w"> </span>config.yml<span class="w"> </span>--output-dir<span class="w"> </span>./output
 </pre></div>
 </div>
-<p>With <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>, the CLI routes generation through
+<p>With <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-cuda-mlir</span></code>, the CLI routes generation through
 <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> and writes a module for <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code>.
 Both <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">numbast</span></code> and the installed <code class="docutils literal notranslate"><span class="pre">numbast</span></code> command select the
 backend before importing its generator, so MLIR generation does not require
@@ -720,7 +726,7 @@ backend before importing its generator, so MLIR generation does not require
 <li><p>The environment that generates or imports MLIR-backed bindings must provide
 <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code>.</p></li>
 <li><p>Backend-specific static config keys that mention MLIR require
-<code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-cuda-mlir</span></code>.</p></li>
 </ul>
 </section>
 </section>

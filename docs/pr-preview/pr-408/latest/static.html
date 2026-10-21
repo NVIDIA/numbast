@@ -565,6 +565,12 @@
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/numbast.types.html">numbast.types</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="_autosummary/numbast.tools.config.html">numbast.tools.config</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.cuda_oxide.html">numbast.tools.config.cuda_oxide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.numba.html">numbast.tools.config.numba</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.shared.html">numbast.tools.config.shared</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
 </ul>
@@ -651,7 +657,8 @@ drift between implementation and documentation.
 For details on <code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code> semantics and generated signatures,
 see <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a>.</p>
 <p>The experimental <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code> backend is selected with
-<code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code> and is imported from <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code>. See
+<code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-cuda-mlir</span></code> and is imported from <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code>.
+See
 <a class="reference internal" href="numba_cuda_mlir.html"><span class="doc">Numba-CUDA-MLIR support</span></a> for the backend differences and migration guidance.</p>
 <p>Config example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># file: config.yml</span>
@@ -835,7 +842,8 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Output binding filename. Defaults to <cite>&lt;entry-point-basename&gt;.py</cite>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Output filename for the Numba binding. Defaults to <cite>&lt;entry-point-basename&gt;.py</cite>. CUDA-Oxide uses its nested <code class="docutils literal notranslate"><span class="pre">Output</span>
+<span class="pre">Name</span></code>.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Output Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
@@ -884,7 +892,7 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Link</span> <span class="pre">Variables</span> <span class="pre">Used</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Experimental MLIR-backend-only linker metadata variables to mark as used. Requires <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Link</span> <span class="pre">Variables</span> <span class="pre">Used</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Experimental MLIR-backend-only linker metadata variables to mark as used. Requires <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-cuda-mlir</span></code>.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
 <p>Constraints:</p>
 <ul class="simple">
@@ -910,8 +918,9 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
-<a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a> for intent semantics and generated signature behavior.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Numba-only per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
+CUDA-Oxide ignores this backend-specific option. See <a class="reference internal" href="argument_intents.html"><span class="doc">Argument intents</span></a> for intent semantics and generated
+signature behavior.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Function Argument Intents</span><span class="p">:</span>
@@ -921,25 +930,28 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Name of the emission backend. <code class="docutils literal notranslate"><span class="pre">numba</span></code> generates Numba bindings; <code class="docutils literal notranslate"><span class="pre">mlir</span></code> routes generation to the experimental
-<code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend, which requires a user-provided <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation;
-<code class="docutils literal notranslate"><span class="pre">cuda-oxide</span></code> is registered for the Rust renderer but has no driver yet, so naming it is an error that says so.
-Defaults to <code class="docutils literal notranslate"><span class="pre">numba</span></code>. An unrecognised name is an error rather than a fallback. May be overridden per invocation with
-<code class="docutils literal notranslate"><span class="pre">--backend</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">array</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Name of the emission backend, or a list of names. <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> generates Numba bindings; <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code> routes
+generation to the experimental <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend, which requires a user-provided
+<code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation; <code class="docutils literal notranslate"><span class="pre">cuda-oxide</span></code> is registered for the Rust renderer but has no driver yet, so naming
+it is an error that says so. Defaults to <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code>. An unrecognised name is an error rather than a fallback.
+Naming more than one backend is an error for now, since a single run drives a single renderer.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
+</ul>
 <p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba</span>
-<span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mlir</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-cuda</span>
+<span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-cuda-mlir</span>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Deprecated spelling of <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">mlir</span></code>, retained so that existing configurations keep working. <code class="docutils literal notranslate"><span class="pre">Backend</span></code> takes
-precedence if both are set.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
-<p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">MLIR Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</pre></div>
-</div>
+<dt><code class="docutils literal notranslate"><span class="pre">CUDA</span> <span class="pre">Oxide</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Settings used when the shared document is consumed by the CUDA-Oxide backend. Their presence does not cause a Numba
+invocation to emit Rust.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>No unspecified sub-keys</p></li>
+</ul>
 </dd>
 </dl>
 <section id="optional-nested-keys">
@@ -1012,6 +1024,50 @@ precedence if both are set.</p>
 </div>
 </dd>
 </dl>
+<p class="rubric"><code class="docutils literal notranslate"><span class="pre">CUDA</span> <span class="pre">Oxide</span></code></p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">LTOIR</span> <span class="pre">Inputs</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Ordered external CUDA LTOIR artifacts that provide the generated device symbols. Numbast records these paths but does
+not build them.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Min items: 1</p></li>
+<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Rust output filename. Defaults to <cite>&lt;entry-point-basename&gt;.rs</cite>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Pattern: <code class="docutils literal notranslate"><span class="pre">^[^/\\]+$</span></code></p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Manifest</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Optional output filename for the versioned JSON manifest. Defaults to the Rust output stem followed by
+<cite>.manifest.json</cite>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Pattern: <code class="docutils literal notranslate"><span class="pre">^[^/\\]+$</span></code></p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Symbol</span> <span class="pre">Inventory</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Optional exact newline- or nm-style inventory of the selected public API. Generation fails if a symbol is present on
+only one side.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Type</span> <span class="pre">Aliases</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Supplemental C typedefs expressed as C-to-C mappings. Arbitrary Rust source is not accepted.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Type Aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nvshmem_team_t</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span>
+</pre></div>
+</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Constants</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Typed literal constants missing from the parsed AST.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Bypass</span> <span class="pre">Parse</span> <span class="pre">Errors</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an exact
+Symbol Inventory to detect parser omissions.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Clang</span> <span class="pre">Binary</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Optional clang++ executable used by AST Canopy.</p>
+</dd>
+</dl>
 </section>
 </section>
 <section id="raw-schema">
@@ -1019,10 +1075,11 @@ precedence if both are set.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</span>
 <span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
 <span class="nt">$schema</span><span class="p">:</span><span class="w"> </span><span class="s">"https://json-schema.org/draft/2020-12/schema"</span>
-<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Numbast Static Binding Generator Config</span>
+<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Numbast Binding Generator Config</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">  </span><span class="no">Canonical schema describing supported YAML keys and value shapes accepted by the Numbast static binding generator</span>
-<span class="w">  </span><span class="no">configuration loader.</span>
+<span class="w">  </span><span class="no">Canonical schema for a shared Numbast binding configuration. Parser and declaration-selection options are shared</span>
+<span class="w">  </span><span class="no">across backends, while backend-specific output settings remain in their own sections. The same document can</span>
+<span class="w">  </span><span class="no">therefore be used in separate Numba and CUDA-Oxide invocations.</span>
 
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -1048,7 +1105,7 @@ precedence if both are set.</p>
 <span class="w">    </span><span class="nt">maxItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">    </span><span class="nt">items</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"^sm_[0-9]+$"</span>
+<span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"^sm_[0-9]+a?$"</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
 <span class="w">      </span><span class="no">Target GPU architecture list. Exactly one architecture is currently supported per run.</span>
 
@@ -1144,7 +1201,10 @@ precedence if both are set.</p>
 <span class="w">  </span><span class="nt">Output Name</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Output binding filename. Defaults to `&lt;entry-point-basename&gt;.py`.</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">      </span><span class="no">Output filename for the Numba binding. Defaults to `&lt;entry-point-basename&gt;.py`. CUDA-Oxide uses its nested</span>
+<span class="w">      </span><span class="no">``Output Name``.</span>
+
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
 <span class="w">  </span><span class="nt">Cooperative Launch Required Functions Regex</span><span class="p">:</span>
@@ -1219,7 +1279,8 @@ precedence if both are set.</p>
 <span class="w">    </span><span class="nt">items</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.</span>
+<span class="w">      </span><span class="no">Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``Backend:</span>
+<span class="w">      </span><span class="no">numba-cuda-mlir``.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"__numbast_module_used"</span>
@@ -1241,8 +1302,9 @@ precedence if both are set.</p>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See</span>
-<span class="w">      </span><span class="no">:doc:`/argument_intents` for intent semantics and generated signature behavior.</span>
+<span class="w">      </span><span class="no">Numba-only per-function argument intent overrides. Function keys map to parameter-name or parameter-index</span>
+<span class="w">      </span><span class="no">entries. CUDA-Oxide ignores this backend-specific option. See :doc:`/argument_intents` for intent semantics and</span>
+<span class="w">      </span><span class="no">generated signature behavior.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">my_function</span><span class="p">:</span>
@@ -1261,27 +1323,96 @@ precedence if both are set.</p>
 <span class="w">                </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"in"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"inout_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_return"</span><span class="p p-Indicator">]</span>
 <span class="w">            </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"intent"</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">Backend</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">array</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Name of the emission backend. ``numba`` generates Numba bindings; ``mlir`` routes generation to the</span>
-<span class="w">      </span><span class="no">experimental ``numbast.experimental.mlir`` backend, which requires a user-provided ``numba_cuda_mlir``</span>
-<span class="w">      </span><span class="no">installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so naming it is an</span>
-<span class="w">      </span><span class="no">error that says so. Defaults to ``numba``. An unrecognised name is an error rather than a fallback. May be</span>
-<span class="w">      </span><span class="no">overridden per invocation with ``--backend``.</span>
+<span class="w">      </span><span class="no">Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir``</span>
+<span class="w">      </span><span class="no">routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided</span>
+<span class="w">      </span><span class="no">``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so</span>
+<span class="w">      </span><span class="no">naming it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a</span>
+<span class="w">      </span><span class="no">fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba"</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"mlir"</span>
-<span class="w">  </span><span class="nt">MLIR Backend</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba-cuda"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba-cuda-mlir"</span>
+<span class="w">  </span><span class="nt">CUDA Oxide</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Deprecated spelling of ``Backend: mlir``, retained so that existing configurations keep working. ``Backend``</span>
-<span class="w">      </span><span class="no">takes precedence if both are set.</span>
+<span class="w">      </span><span class="no">Settings used when the shared document is consumed by the CUDA-Oxide backend. Their presence does not cause a</span>
+<span class="w">      </span><span class="no">Numba invocation to emit Rust.</span>
 
-<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">LTOIR Inputs</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">LTOIR Inputs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">        </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Ordered external CUDA LTOIR artifacts that provide the generated device symbols. Numbast records these</span>
+<span class="w">          </span><span class="no">paths but does not build them.</span>
+
+<span class="w">      </span><span class="nt">Output Name</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"^[^/\\\\]+$"</span>
+<span class="w">        </span><span class="nt">not</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">..</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Rust output filename. Defaults to `&lt;entry-point-basename&gt;.rs`.</span>
+
+<span class="w">      </span><span class="nt">Manifest Name</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"^[^/\\\\]+$"</span>
+<span class="w">        </span><span class="nt">not</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">..</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Optional output filename for the versioned JSON manifest. Defaults to the Rust output stem followed by</span>
+<span class="w">          </span><span class="no">`.manifest.json`.</span>
+
+<span class="w">      </span><span class="nt">Symbol Inventory</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Optional exact newline- or nm-style inventory of the selected public API. Generation fails if a symbol is</span>
+<span class="w">          </span><span class="no">present on only one side.</span>
+
+<span class="w">      </span><span class="nt">Type Aliases</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Supplemental C typedefs expressed as C-to-C mappings. Arbitrary Rust source is not accepted.</span>
+
+<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">nvshmem_team_t</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span>
+<span class="w">      </span><span class="nt">Constants</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typed literal constants missing from the parsed AST.</span>
+<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">          </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Type</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">Value</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">Type</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">              </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C scalar type or configured C type alias.</span>
+<span class="w">            </span><span class="nt">Value</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">integer</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">boolean</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">]</span>
+<span class="w">              </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Integer or Boolean literal; expressions are rejected.</span>
+<span class="w">      </span><span class="nt">Bypass Parse Errors</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an</span>
+<span class="w">          </span><span class="no">exact Symbol Inventory to detect parser omissions.</span>
+
+<span class="w">      </span><span class="nt">Clang Binary</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Optional clang++ executable used by AST Canopy.</span>
 </pre></div>
 </div>
 </section>
