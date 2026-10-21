@@ -1,0 +1,15 @@
+numbast.tools.cuda\_oxide\_binding\_generator
+=============================================
+
+.. automodule:: numbast.tools.cuda_oxide_binding_generator
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      generate_cuda_oxide_bindings
+      make_manifest
+      render_cuda_oxide_bindings
+      verify_symbol_inventory
+   

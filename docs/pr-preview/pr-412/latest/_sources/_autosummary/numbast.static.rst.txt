@@ -1,0 +1,27 @@
+﻿numbast.static
+==============
+
+.. automodule:: numbast.static
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      reset_renderer
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   callconv
+   class_template
+   enum
+   function
+   function_template
+   renderer
+   struct
+   typedef
+   types
