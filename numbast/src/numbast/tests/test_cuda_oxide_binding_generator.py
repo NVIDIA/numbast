@@ -250,11 +250,12 @@ def test_symbol_inventory_rejects_malformed_entries(config, tmp_path):
         verify_symbol_inventory(plan, str(inventory))
 
 
-def test_supplemental_type_alias_cycles_are_rejected(config):
-    config.type_aliases = {"alias_a": "alias_b", "alias_b": "alias_a"}
+def test_supplemental_aliases_can_reference_later_aliases(config):
+    config.type_aliases.update({"alias_a": "alias_b", "alias_b": "int"})
     plan = CudaOxideBindingPlan.from_declarations(declarations(), config)
-    with pytest.raises(CudaOxideBindingError, match="cyclic type aliases"):
-        render_cuda_oxide_bindings(plan, config)
+    rendered, _ = render_cuda_oxide_bindings(plan, config)
+    assert "pub type alias_a = alias_b;" in rendered
+    assert "pub type alias_b = i32;" in rendered
 
 
 def test_constants_cannot_collide_after_rust_name_mapping(config):
