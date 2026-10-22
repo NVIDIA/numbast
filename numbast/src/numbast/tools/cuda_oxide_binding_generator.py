@@ -132,11 +132,13 @@ def _write_text_atomic(path: Path, contents: str):
 def _add_supplemental_type_aliases(
     plan: CudaOxideBindingPlan, config: CudaOxideConfig
 ):
+    aliases = {item.name: item for item in plan.type_aliases}
+    cuda_aliases = dict(plan.cuda_aliases)
     occupied = {
         *(item.name for item in plan.enums if item.name),
         *(item.name for item in plan.structs),
-        *(item.name for item in plan.type_aliases),
-        *plan.cuda_aliases,
+        *aliases,
+        *cuda_aliases,
     }
     diagnostics = []
     for name, spelling in sorted(config.type_aliases.items()):
@@ -150,9 +152,7 @@ def _add_supplemental_type_aliases(
         except ValueError as error:
             diagnostics.append(f"supplemental type alias {name!r}: {error}")
             continue
-        existing = next(
-            (item for item in plan.type_aliases if item.name == name), None
-        )
+        existing = aliases.get(name)
         if existing is not None and existing.underlying == underlying:
             continue
         if name in occupied:
@@ -160,21 +160,16 @@ def _add_supplemental_type_aliases(
                 f"supplemental type alias {name!r} conflicts with a parsed type"
             )
             continue
-        plan.type_aliases.append(CudaOxideTypeAlias(name, underlying))
+        aliases[name] = CudaOxideTypeAlias(name, underlying)
         if underlying.base_name in CUDA_ABI_ALIASES:
-            plan.cuda_aliases[underlying.base_name] = cuda_abi_alias_for_arch(
+            cuda_aliases[underlying.base_name] = cuda_abi_alias_for_arch(
                 underlying.base_name, config.gpu_arch[0]
             )
+            occupied.add(underlying.base_name)
         occupied.add(name)
 
     rendered_names: dict[str, str] = {}
-    type_names = [
-        *(item.name for item in plan.enums if item.name),
-        *(item.name for item in plan.structs),
-        *(item.name for item in plan.type_aliases),
-        *plan.cuda_aliases,
-    ]
-    for name in sorted(type_names):
+    for name in sorted(occupied):
         rendered_name = rust_identifier(name)
         previous = rendered_names.get(rendered_name)
         if previous is not None and previous != name:
@@ -183,9 +178,11 @@ def _add_supplemental_type_aliases(
                 f"map to {rendered_name!r}"
             )
         rendered_names[rendered_name] = name
-    plan.type_aliases.sort(key=lambda item: item.name)
     if diagnostics:
         raise CudaOxideBindingError(diagnostics)
+
+    plan.type_aliases[:] = sorted(aliases.values(), key=lambda item: item.name)
+    plan.cuda_aliases.update(cuda_aliases)
 
 
 def _render_configured_integer(value: Any) -> str:

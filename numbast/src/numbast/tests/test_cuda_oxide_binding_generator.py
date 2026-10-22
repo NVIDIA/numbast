@@ -258,6 +258,24 @@ def test_supplemental_aliases_can_reference_later_aliases(config):
     assert "pub type alias_b = i32;" in rendered
 
 
+@pytest.mark.parametrize(
+    ("aliases", "message"),
+    [
+        ({"a_half": "__half", "z-bad": "int"}, "invalid name"),
+        ({"self": "__half", "self_": "int"}, "Rust type name collision"),
+    ],
+)
+def test_invalid_supplemental_aliases_do_not_mutate_plan(
+    config, aliases, message
+):
+    config.type_aliases = aliases
+    plan = CudaOxideBindingPlan.from_declarations(declarations(), config)
+    original = copy.deepcopy(plan)
+    with pytest.raises(CudaOxideBindingError, match=message):
+        render_cuda_oxide_bindings(plan, config)
+    assert plan == original
+
+
 def test_constants_cannot_collide_after_rust_name_mapping(config):
     enum = SimpleNamespace(
         name="",
