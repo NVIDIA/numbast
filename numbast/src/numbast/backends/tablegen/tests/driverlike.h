@@ -1,11 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 // All rights reserved. SPDX-License-Identifier: Apache-2.0
 //
-// A C-flavoured, driver-shaped header: status-returning entry points, opaque
-// handles behind pointer-to-incomplete-struct typedefs, and out-parameters.
-// This is the shape the TableGen backend targets: a *host* C API, as opposed
-// to the C++ device headers the Numba backends were built for. Nothing here is
-// __device__, which is why this backend defaults skip_non_device to False.
+// Example header meant to express the features of a CUDA driver shaped C library.
+
 
 typedef enum AcmeResult_enum {
   ACME_SUCCESS = 0,
@@ -28,19 +25,17 @@ extern AcmeResult acmeDeviceGetCount(int *count);
 // no status: a plain value-returning entry point
 extern int acmeVersion(void);
 
-// a parameter named after a C++ keyword, which is legal in the shim but not in
-// TableGen -- the two sanitizers must not be shared
+// a parameter name that collides with a generated operation accessor
 extern AcmeResult acmeStreamSetLimit(AcmeStream hStream, unsigned long value);
 
-// by-value aggregate: no header-free spelling, so the shim needs a size-only
-// POD
+// a by-value aggregate that needs a modelled dialect type
 typedef struct AcmeHandle_st {
   char reserved[64];
 } AcmeHandle;
 
 extern AcmeResult acmeStreamOpenHandle(AcmeStream *phStream, AcmeHandle handle);
 
-// returns nothing at all: the shim must not emit `return`
+// a void function has no result
 extern void acmeShutdown(void);
 
 // anonymous enum typedef: ast_canopy does not report it, and there is no tag

@@ -18,10 +18,7 @@ is not registered as a name one can select.
 
 from numbast.backends.tablegen.config import (
     OutParamPolicy,
-    Resolver,
-    ShimOptions,
     TableGenOptions,
-    UnresolvedPolicy,
 )
 from numbast.backends.tablegen.facts import header_facts
 from numbast.backends.tablegen.function import (
@@ -29,7 +26,7 @@ from numbast.backends.tablegen.function import (
     classify_params,
     mnemonic_for,
 )
-from numbast.backends.tablegen.types import TypeMapper, llvm_token
+from numbast.backends.tablegen.types import TypeMapper
 from numbast.backends.tablegen.types_td import (
     TableGenTypesRenderer,
     render_dialect_td,
@@ -38,17 +35,13 @@ from numbast.backends.tablegen.typedefs import recover_typedefs
 
 __all__ = [
     "OutParamPolicy",
-    "Resolver",
-    "ShimOptions",
     "TableGenConfig",
     "TableGenFunctionsRenderer",
     "TableGenOptions",
     "TableGenTypesRenderer",
     "TypeMapper",
-    "UnresolvedPolicy",
     "classify_params",
     "header_facts",
-    "llvm_token",
     "mnemonic_for",
     "recover_typedefs",
     "render_dialect_td",
