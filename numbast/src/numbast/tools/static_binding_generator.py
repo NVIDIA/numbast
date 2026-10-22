@@ -18,7 +18,7 @@ from ast_canopy.decl import (
     FunctionTemplate,
     Struct,
 )
-from ast_canopy.pylibastcanopy import Enum, Typedef
+from ast_canopy.pylibastcanopy import Enum, Typedef, type_kind
 
 from numbast.backends.registry import (
     NUMBA_CUDA_MLIR,
@@ -187,7 +187,7 @@ def _run_mlir_static_binding_generator(
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
-    Group C++ typedef declarations by their underlying type name.
+    Group C++ record typedef declarations by their underlying type name.
 
     Parameters:
         typedef_decls (list[Typedef]): Typedef declarations to process.
@@ -197,7 +197,12 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
     aliases = defaultdict(list)
     for typedef in typedef_decls:
-        aliases[typedef.underlying_name].append(typedef.name)
+        # AST Canopy collects all typedefs; this renderer emits record aliases.
+        underlying = typedef.underlying_type
+        while underlying.kind in (type_kind.typedef_, type_kind.sugar):
+            underlying = underlying.inner_type
+        if underlying.kind == type_kind.record:
+            aliases[typedef.underlying_name].append(typedef.name)
 
     return aliases
 
