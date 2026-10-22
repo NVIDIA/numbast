@@ -27,20 +27,15 @@ void TypedefMatcher::run(const MatchFinder::MatchResult &Result) {
                   }))
 
   {
-    std::string name = TD->getNameAsString();
-    TypeSourceInfo *TSI = TD->getTypeSourceInfo();
-    QualType underlying = TD->getUnderlyingType();
-
-    if (underlying->isStructureOrClassType()) {
+    // Collect every retained typedef. Backend-specific type support belongs
+    // in consumers, not in the declaration collector.
 #ifndef NDEBUG
-      std::string source_range =
-          TD->getSourceRange().printToString(*Result.SourceManager);
-      std::cout << source_range << std::endl;
-      std::cout << std::endl;
+    std::string source_range =
+        TD->getSourceRange().printToString(*Result.SourceManager);
+    std::cout << source_range << std::endl;
+    std::cout << std::endl;
 #endif
-      payload->decls->typedefs.push_back(
-          Typedef(TD, payload->record_id_to_name));
-    }
+    payload->decls->typedefs.push_back(Typedef(TD, payload->record_id_to_name));
   }
 }
 
