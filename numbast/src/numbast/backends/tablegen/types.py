@@ -16,7 +16,7 @@ the mapper is stateful and also accumulates the handle types it mints.
 
 import re
 
-__all__ = ["TypeMapper", "UnknownAbiTypeError", "abi_c_type", "llvm_token"]
+__all__ = ["TypeMapper"]
 
 
 class AmbiguousAnonymousRecordError(Exception):
@@ -24,14 +24,6 @@ class AmbiguousAnonymousRecordError(Exception):
 
     Raised rather than guessed at: the alternative is two distinct layouts
     sharing one dialect type, which miscompiles silently.
-    """
-
-
-class UnknownAbiTypeError(Exception):
-    """A spelling could not be reduced to a header-free C type.
-
-    Almost always means an enum or typedef the type vocabulary did not
-    recover, so the emitter does not know how wide the value is.
     """
 
 
@@ -109,93 +101,6 @@ def _pointee(spelling: str) -> str:
     if s.endswith("*") or s.endswith("&"):
         s = s[:-1]
     return _norm(s)
-
-
-def llvm_token(abi_type: str) -> str:
-    """ABI C type -> the LLVM-dialect type token the lowering emits.
-
-    Derived from the ABI type rather than the source spelling, so the lowering
-    and the shim agree by construction -- an ``llvm.call`` whose operand types
-    disagreed with the shim's C signature would be a miscompile, not a warning.
-    """
-    t = abi_type.strip()
-    if t.endswith("*"):
-        return "ptr"
-    return {
-        "void": "void",
-        "float": "f32",
-        "double": "f64",
-        "signed char": "i8",
-        "unsigned char": "i8",
-        "short": "i16",
-        "unsigned short": "i16",
-        "int": "i32",
-        "unsigned int": "i32",
-        "long long": "i64",
-        "unsigned long long": "i64",
-    }.get(t, "ptr")  # by-value aggregates are passed indirectly
-
-
-def _abi_int(width: int, unsigned: bool) -> str:
-    if width <= 1:
-        return "unsigned char" if unsigned else "signed char"
-    if width == 2:
-        return "unsigned short" if unsigned else "short"
-    if width == 4:
-        return "unsigned int" if unsigned else "int"
-    return "unsigned long long" if unsigned else "long long"
-
-
-def abi_c_type(
-    spelling: str,
-    *,
-    enums=(),
-    records=None,
-    by_value_aggregates: dict | None = None,
-) -> str:
-    """C type for the header-free shim.
-
-    The shim must compile without the library's headers, so every type is
-    reduced to a primitive: pointers and handles to ``void *``, enums to
-    ``int``, integers to a fixed-width equivalent.
-
-    A by-value aggregate parameter has no header-free spelling, so it is
-    recorded in ``by_value_aggregates`` (name -> size) for the caller to emit
-    as a ``char[N]`` POD. The CUDA driver passes aggregates by pointer, so this
-    path is **untested**; a library that passes structs by value is where real
-    target-specific ABI classification would be needed.
-    """
-    if _is_pointer(spelling) or "(" in spelling:
-        return "void *"  # includes function pointers
-
-    norm = _norm(spelling)
-    if norm == "void":
-        return "void"
-    if norm in ("float",):
-        return "float"
-    if norm in ("double",):
-        return "double"
-    if norm in enums:
-        return "int"
-    if norm in _SCALARS:
-        width, unsigned = _SCALARS[norm]
-        return _abi_int(width, unsigned)
-
-    rec = (records or {}).get(norm)
-    if rec is not None and by_value_aggregates is not None:
-        name = "_abi_" + re.sub(r"[^A-Za-z0-9_]", "_", norm)
-        by_value_aggregates[name] = getattr(rec, "sizeof_", 0)
-        return name
-
-    # Deliberately not a guess. Defaulting to `int` here would pass a 64-bit
-    # value in 32 bits, or an unrecognised enum as a pointer, and the program
-    # would misbehave at runtime rather than fail to generate. This never
-    # fires on cuda.h; if it fires, the type vocabulary is incomplete.
-    raise UnknownAbiTypeError(
-        f"no ABI type for {spelling!r}: not a pointer, scalar, known enum, or "
-        f"known record. It is probably an enum or typedef the type vocabulary "
-        f"did not recover -- see numbast.backends.tablegen.typedefs."
-    )
 
 
 class TypeMapper:
