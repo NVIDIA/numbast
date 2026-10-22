@@ -139,7 +139,6 @@ def _add_supplemental_type_aliases(
         *plan.cuda_aliases,
     }
     diagnostics = []
-    supplemental_aliases = []
     for name, spelling in sorted(config.type_aliases.items()):
         if not is_identifier(name):
             diagnostics.append(
@@ -161,21 +160,12 @@ def _add_supplemental_type_aliases(
                 f"supplemental type alias {name!r} conflicts with a parsed type"
             )
             continue
-        alias = CudaOxideTypeAlias(name, underlying)
-        plan.type_aliases.append(alias)
-        supplemental_aliases.append(alias)
+        plan.type_aliases.append(CudaOxideTypeAlias(name, underlying))
         if underlying.base_name in CUDA_ABI_ALIASES:
             plan.cuda_aliases[underlying.base_name] = cuda_abi_alias_for_arch(
                 underlying.base_name, config.gpu_arch[0]
             )
         occupied.add(name)
-
-    # Validate new aliases after installation so forward references work.
-    for alias in supplemental_aliases:
-        try:
-            plan.render_rust_type(alias.underlying)
-        except ValueError as error:
-            diagnostics.append(f"type alias {alias.name!r}: {error}")
 
     rendered_names: dict[str, str] = {}
     type_names = [
