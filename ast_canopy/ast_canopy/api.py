@@ -7,7 +7,7 @@ import tempfile
 import logging
 import shutil
 from typing import Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import warnings
 import functools
 
@@ -62,6 +62,7 @@ class Declarations:
     class_template_specializations: list[ClassTemplateSpecialization]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
+    constants: list[ConstExprVar] = field(default_factory=list)
 
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
@@ -550,6 +551,7 @@ def parse_declarations_from_source(
         class_template_specializations,
         decls.typedefs,
         decls.enums,
+        [ConstExprVar.from_c_obj(item) for item in decls.constants],
     )
 
 
@@ -560,7 +562,7 @@ def value_from_constexpr_vardecl(
     cxx_standard: str = "gnu++17",
     verbose: bool = False,
     clang_binary: str | None = None,
-) -> bindings.ConstExprVar | None:
+) -> ConstExprVar | None:
     """Extract the value from a constexpr ``VarDecl`` with the given name.
 
     Parameters

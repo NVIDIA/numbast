@@ -43,4 +43,7 @@ def test_value_from_constexpr_vardecl(source, var_name, expected):
     # Small code piece, cost ~400ms on threadripper PRO 7975WX
     # If without parsing cstdint, can save another 150ms
     result = value_from_constexpr_vardecl(source, var_name, "sm_70")
-    assert result.value == expected
+    if isinstance(expected, float):
+        assert result.value == pytest.approx(expected)
+    else:
+        assert result.value == expected

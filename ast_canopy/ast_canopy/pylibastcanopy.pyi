@@ -25,6 +25,7 @@ class ConstExprVar:
     def __init__(self) -> None: ...
 
 class Declarations:
+    constants: list[ConstExprVar]
     class_template_specializations: list[ClassTemplateSpecialization]
     class_templates: list[ClassTemplate]
     enums: list[Enum]

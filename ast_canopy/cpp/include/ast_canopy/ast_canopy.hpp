@@ -324,6 +324,7 @@ struct Declarations {
   std::vector<ClassTemplateSpecialization> class_template_specializations;
   std::vector<Typedef> typedefs;
   std::vector<Enum> enums;
+  std::vector<ConstExprVar> constants;
 };
 
 Declarations
