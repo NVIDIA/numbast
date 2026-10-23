@@ -92,6 +92,15 @@ private:
   traverse_ast_payload *payload;
 };
 
+class GlobalConstantCallback : public MatchFinder::MatchCallback {
+public:
+  GlobalConstantCallback(traverse_ast_payload *);
+  void run(const MatchFinder::MatchResult &) override;
+
+private:
+  traverse_ast_payload *payload;
+};
+
 class ConstexprVarDeclCallback : public MatchFinder::MatchCallback {
 public:
   ConstexprVarDeclCallback(vardecl_matcher_payload *);

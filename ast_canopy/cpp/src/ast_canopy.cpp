@@ -192,6 +192,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   detail::FunctionTemplateCallback func_template_callback(&payload);
   detail::ClassTemplateCallback class_template_callback(&payload);
   detail::EnumCallback enum_callback(&payload);
+  detail::GlobalConstantCallback constant_callback(&payload);
   detail::ClassTemplatePartialSpecializationCallback ctpsd_callback(&payload);
   detail::ClassTemplateSpecializationCallback ctsd_callback(&payload);
 
@@ -228,6 +229,12 @@ parse_declarations_from_command_line(std::vector<std::string> options,
                     &class_template_callback);
 
   finder.addMatcher(enumDecl().bind("enum"), &enum_callback);
+
+  finder.addMatcher(varDecl(hasGlobalStorage(),
+                            unless(hasAncestor(functionDecl())),
+                            unless(hasAncestor(recordDecl())))
+                        .bind("global_constant"),
+                    &constant_callback);
 
   finder.addMatcher(classTemplateSpecializationDecl(
                         hasSpecializedTemplate(classTemplateDecl()))
