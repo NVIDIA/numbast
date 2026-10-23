@@ -71,3 +71,9 @@ The configured LTOIR and symbol inventory must come from the same NVSHMEM,
 CUDA, macro, and architecture profile used for generation.
 The complete profile requires an `sm_100+` CUDA-Oxide target and compatible
 hardware for this execution test.
+
+The configuration retains the headers defining the public enum constants, so
+team IDs, comparisons, and signal operations are emitted from the parsed source.
+Their values are not duplicated in YAML. Implementation helpers and the
+C++-linkage shared-memory convenience functions are excluded from this Round 1
+C-linkage profile.

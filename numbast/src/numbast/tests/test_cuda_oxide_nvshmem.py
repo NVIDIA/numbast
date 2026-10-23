@@ -56,11 +56,27 @@ def test_nvshmem_public_c_device_surface(tmp_path):
                 str(include / "device" / "nvshmemx_coll_defines.cuh"),
                 str(include / "device" / "nvshmemx_defines.h"),
                 str(include / "device_host" / "nvshmem_types.h"),
+                str(include / "device_host" / "nvshmem_common.cuh"),
+                str(include / "device_host_transport" / "nvshmem_constants.h"),
+                str(
+                    include
+                    / "device_host_transport"
+                    / "nvshmem_common_transport.h"
+                ),
             ],
             "GPU Arch": [os.environ.get("NUMBAST_NVSHMEM_GPU_ARCH", "sm_100")],
             "Clang Include Paths": [str(include)],
             "Predefined Macros": ["NVSHMEM_BUILD_LTOIR_LIBRARY"],
-            "Exclude": {"Function": ["atomicAdd_system"]},
+            "Exclude": {
+                "Function": [
+                    "atomicAdd_system",
+                    "__nvvm_reflect",
+                    "get_pe_sync_addr",
+                    "nvshmemx_ask_smem",
+                    "nvshmemx_give_smem",
+                    "nvshmemx_release_smem",
+                ]
+            },
             "Skip Prefix": "nvshmemi_",
             "CUDA Oxide": cuda_oxide,
         }
@@ -100,6 +116,11 @@ def test_nvshmem_public_c_device_surface(tmp_path):
     assert manifest["compatibility"]["cuda_oxide_nvvm_dialect"] == (
         "modern-opaque-pointer"
     )
+    constants = {item["name"]: item for item in manifest["constants"]}
+    assert constants["NVSHMEM_TEAM_WORLD"]["value"] == "0"
+    assert constants["NVSHMEM_TEAM_INVALID"]["value"] == "-1"
+    assert constants["NVSHMEM_SIGNAL_SET"]["value"] == "9"
+    assert constants["NVSHMEM_TEAM_WORLD"]["source"] == "enum"
     assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
     if symbol_inventory:
         assert manifest["symbol_verification"]["status"] == "verified"
