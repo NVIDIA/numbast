@@ -67,6 +67,7 @@ def declarations(**overrides):
         "typedefs": [],
         "enums": [],
         "structs": [],
+        "constants": [],
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -465,6 +466,53 @@ def test_dedicated_command_rejects_incompatible_backend_before_generation(
     assert not (tmp_path / "bindings.rs").exists()
 
 
+@pytest.mark.parametrize(
+    ("name", "c_type", "value", "expected"),
+    [
+        ("COUNT", "const int", "42", "pub const COUNT: i32 = 42;"),
+        ("ENABLED", "const bool", "1", "pub const ENABLED: bool = true;"),
+        ("SCALE", "const float", "2", "pub const SCALE: f32 = 2.0;"),
+        ("RATIO", "const double", "1.25", "pub const RATIO: f64 = 1.25;"),
+        (
+            "LIMIT",
+            "const double",
+            "+Inf",
+            "pub const LIMIT: f64 = f64::INFINITY;",
+        ),
+    ],
+)
+def test_parsed_globals_are_emitted_without_constant_configuration(
+    config, tmp_path, name, c_type, value, expected
+):
+    config.constants = {}
+    declaration = SimpleNamespace(
+        name=name,
+        qual_name=name,
+        type_=FakeType(c_type),
+        value_serialized=value,
+    )
+    rust_path, manifest_path = generate_cuda_oxide_bindings(
+        config, tmp_path, declarations=declarations(constants=[declaration])
+    )
+    assert expected in Path(rust_path).read_text()
+    constants = json.loads(Path(manifest_path).read_text())["constants"]
+    assert constants[0]["name"] == name
+    assert constants[0]["source"] == "declaration"
+
+
+def test_configured_constants_cannot_override_parsed_globals(config):
+    config.constants = {"TEAM_WORLD": {"Type": "int", "Value": 99}}
+    constant = SimpleNamespace(
+        name="TEAM_WORLD",
+        qual_name="TEAM_WORLD",
+        type_=FakeType("const int"),
+        value_serialized="0",
+    )
+    plan = CudaOxideBindingPlan.from_declarations(declarations(), config)
+    with pytest.raises(CudaOxideBindingError, match="conflicts"):
+        render_cuda_oxide_bindings(plan, config, constant_decls=[constant])
+
+
 def test_rust_output_and_manifest_names_must_differ(config):
     raw = copy.deepcopy(config.raw_config)
     raw["CUDA Oxide"]["Manifest Name"] = raw["CUDA Oxide"]["Output Name"]
@@ -497,6 +545,43 @@ def test_real_ast_canopy_c_device_parse(tmp_path):
         "round1_apply",
     ]
     assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
+
+
+def test_real_ast_canopy_globals_are_emitted_automatically(tmp_path):
+    from ast_canopy.api import Declarations
+
+    if "constants" not in Declarations.__dataclass_fields__:
+        pytest.skip("requires AST Canopy global constant collection")
+    header = tmp_path / "constants.h"
+    header.write_text(
+        "constexpr int BASE = 6;\n"
+        "const int COUNT = BASE * 7;\n"
+        "static const unsigned long long LIMIT = 18446744073709551615ULL;\n"
+        "constexpr bool ENABLED = true;\n"
+        "constexpr double RATIO = 1.2345678901234567;\n"
+        "enum Status { ready = 2 };\n"
+        "const Status DEFAULT_STATUS = ready;\n"
+    )
+    config = CudaOxideConfig(
+        {
+            "Entry Point": str(header),
+            "File List": [str(header)],
+            "GPU Arch": ["sm_80"],
+            "CUDA Oxide": {"LTOIR Inputs": ["api.ltoir"]},
+        }
+    )
+    rust_path, manifest_path = generate_cuda_oxide_bindings(config, tmp_path)
+    rendered = Path(rust_path).read_text()
+    assert "pub const COUNT: i32 = 42;" in rendered
+    assert "pub const LIMIT: u64 = 18446744073709551615;" in rendered
+    assert "pub const ENABLED: bool = true;" in rendered
+    assert "pub const RATIO: f64 = 1.2345678901234567;" in rendered
+    assert "pub const DEFAULT_STATUS: Status = 2;" in rendered
+    constants = json.loads(Path(manifest_path).read_text())["constants"]
+    assert (
+        next(item for item in constants if item["name"] == "COUNT")["source"]
+        == "declaration"
+    )
 
 
 def test_lightweight_generator_import_does_not_import_numba():

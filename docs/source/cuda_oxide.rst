@@ -60,6 +60,11 @@ selected public API, as one symbol per line or an ``nm``-style listing. Missing,
 unexpected, or malformed symbols fail generation before either output is
 written. Each output is replaced atomically.
 
+Global scalar ``const`` and ``constexpr`` declarations from retained headers
+are emitted automatically when using AST Canopy's global constant collection.
+Initializer expressions are evaluated by Clang. Parsed enum members are also
+emitted automatically. Their values do not need to be repeated in YAML.
+
 ``Type Aliases`` maps C names to C type spellings. ``Constants`` supplies typed
 integer or Boolean literals absent from the AST; expressions are rejected.
 Generated declarations are raw unsafe device calls. The binding plan enforces

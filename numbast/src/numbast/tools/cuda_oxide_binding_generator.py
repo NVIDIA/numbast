@@ -10,6 +10,7 @@ import json
 import os
 import re
 import tempfile
+from collections.abc import Iterable
 from dataclasses import asdict
 from importlib import metadata
 from pathlib import Path
@@ -36,6 +37,7 @@ from numbast.rust_types import (
     CUDA_ABI_ALIASES,
     cuda_abi_alias_for_arch,
     is_identifier,
+    parse_cuda_oxide_type,
     parse_cuda_oxide_type_spelling,
     rust_identifier,
 )
@@ -244,18 +246,60 @@ def _configured_constants(
     return constants, manifest_items
 
 
+def _parsed_constants(
+    plan: CudaOxideBindingPlan, declarations: Iterable[Any]
+) -> tuple[list[CudaOxideConstant], list[dict[str, str]]]:
+    constants = []
+    manifest_items = []
+    for declaration in sorted(declarations, key=lambda item: item.qual_name):
+        try:
+            type_ = parse_cuda_oxide_type(declaration.type_)
+            rust_type = plan.render_rust_type(type_)
+            value = declaration.value_serialized
+            if rust_type == "bool":
+                value = "true" if value != "0" else "false"
+            elif rust_type in {"f32", "f64"}:
+                special = value.lower()
+                if special in {"nan", "+nan", "-nan"}:
+                    value = f"{rust_type}::NAN"
+                elif special in {"+inf", "inf", "-inf"}:
+                    sign = "-" if special.startswith("-") else ""
+                    value = f"{sign}{rust_type}::INFINITY"
+                elif not any(char in value.lower() for char in ".e"):
+                    value += ".0"
+        except ValueError as error:
+            raise CudaOxideBindingError(
+                [f"global constant {declaration.qual_name!r}: {error}"]
+            ) from error
+        constants.append(CudaOxideConstant(declaration.name, rust_type, value))
+        manifest_items.append(
+            {
+                "name": declaration.name,
+                "qualified_name": declaration.qual_name,
+                "rust_type": rust_type,
+                "value": value,
+                "source": "declaration",
+            }
+        )
+    return constants, manifest_items
+
+
 def render_cuda_oxide_bindings(
     plan: CudaOxideBindingPlan,
     config: CudaOxideConfig,
     config_path: str | None = None,
+    constant_decls: Iterable[Any] = (),
 ) -> tuple[str, list[dict[str, str]]]:
     """Add configured declarations and render an includable Rust module."""
 
     _add_supplemental_type_aliases(plan, config)
+    source_constants, source_manifest = _parsed_constants(plan, constant_decls)
     configured_constants, manifest_constants = _configured_constants(
         plan, config
     )
-    rendered = render_cuda_oxide_plan(plan, configured_constants)
+    rendered = render_cuda_oxide_plan(
+        plan, [*source_constants, *configured_constants]
+    )
     lines = rendered.splitlines()
     lines.insert(2, f"// Source config: {config_path or '<programmatic>'}")
 
@@ -275,6 +319,7 @@ def render_cuda_oxide_bindings(
     ]
     return "\n".join(lines) + "\n", [
         *parsed_constants,
+        *source_manifest,
         *manifest_constants,
     ]
 
@@ -496,7 +541,12 @@ def generate_cuda_oxide_bindings(
         )
 
     plan = CudaOxideBindingPlan.from_declarations(declarations, config)
-    rendered, constants = render_cuda_oxide_bindings(plan, config, config_path)
+    rendered, constants = render_cuda_oxide_bindings(
+        plan,
+        config,
+        config_path,
+        constant_decls=getattr(declarations, "constants", ()),
+    )
 
     output_directory = Path(output_dir)
     output_directory.mkdir(parents=True, exist_ok=True)
