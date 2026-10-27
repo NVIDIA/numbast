@@ -26,7 +26,7 @@ class EvaluatedConstDecl:
     def __init__(self) -> None: ...
 
 class Declarations:
-    constants: list[EvaluatedConstDecl]
+    global_constants: list[EvaluatedConstDecl]
     class_template_specializations: list[ClassTemplateSpecialization]
     class_templates: list[ClassTemplate]
     enums: list[Enum]

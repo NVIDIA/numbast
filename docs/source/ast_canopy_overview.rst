@@ -57,7 +57,7 @@ Global constants
 ----------------
 
 ``parse_declarations_from_source`` automatically returns compile-time scalar
-constants from retained files in ``Declarations.constants``. This includes
+constants from retained files in ``Declarations.global_constants``. This includes
 namespace-scope ``const`` and ``constexpr`` declarations, including ``static``
 and ``inline`` constants. Clang evaluates initializer expressions, so consumers
 receive the source type and evaluated value without copying values into a

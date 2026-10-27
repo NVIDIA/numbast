@@ -39,7 +39,7 @@ void GlobalConstantCallback::run(const MatchFinder::MatchResult &Result) {
   // not be turned into literal constants in a consuming language.
   const auto *value = VD->evaluateValue();
   if (value != nullptr && (value->isInt() || value->isFloat())) {
-    payload->decls->constants.emplace_back(VD);
+    payload->decls->global_constants.emplace_back(VD);
   }
 }
 

@@ -371,7 +371,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                      &Declarations::class_template_specializations)
       .def_readwrite("typedefs", &Declarations::typedefs)
       .def_readwrite("enums", &Declarations::enums)
-      .def_readwrite("constants", &Declarations::constants);
+      .def_readwrite("global_constants", &Declarations::global_constants);
 
   m.def("parse_declarations_from_command_line",
         &parse_declarations_from_command_line,

@@ -23,7 +23,7 @@ def test_parse_declarations_falls_back_to_clangpp(monkeypatch, tmp_path):
         class_template_specializations=[],
         typedefs=[],
         enums=[],
-        constants=[],
+        global_constants=[],
     )
 
     monkeypatch.setattr(
@@ -67,7 +67,7 @@ def test_parse_declarations_uses_explicit_clang_binary(monkeypatch, tmp_path):
         class_template_specializations=[],
         typedefs=[],
         enums=[],
-        constants=[],
+        global_constants=[],
     )
 
     monkeypatch.setattr(

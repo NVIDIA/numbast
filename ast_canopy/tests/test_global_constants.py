@@ -14,8 +14,8 @@ def test_global_scalar_constants_are_evaluated():
     )
     declarations = parse_declarations_from_source(source, [source], "sm_80")
     for constants in (
-        declarations.constants,
-        pickle.loads(pickle.dumps(declarations.constants)),
+        declarations.global_constants,
+        pickle.loads(pickle.dumps(declarations.global_constants)),
     ):
         by_name = {item.name: item for item in constants}
         assert set(by_name) == {
@@ -62,6 +62,6 @@ def test_constants_respect_retained_headers(tmp_path):
     declarations = parse_declarations_from_source(
         str(source), [str(source)], "sm_80"
     )
-    assert [(item.name, item.value) for item in declarations.constants] == [
-        ("LOCAL", 10)
-    ]
+    assert [
+        (item.name, item.value) for item in declarations.global_constants
+    ] == [("LOCAL", 10)]

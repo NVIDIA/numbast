@@ -62,7 +62,7 @@ class Declarations:
     class_template_specializations: list[ClassTemplateSpecialization]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
-    constants: list[EvaluatedConstDecl] = field(default_factory=list)
+    global_constants: list[EvaluatedConstDecl] = field(default_factory=list)
 
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
@@ -551,7 +551,10 @@ def parse_declarations_from_source(
         class_template_specializations,
         decls.typedefs,
         decls.enums,
-        [EvaluatedConstDecl.from_c_obj(item) for item in decls.constants],
+        [
+            EvaluatedConstDecl.from_c_obj(item)
+            for item in decls.global_constants
+        ],
     )
 
 
