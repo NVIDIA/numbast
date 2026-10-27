@@ -42,6 +42,16 @@ void GlobalConstantCallback::run(const MatchFinder::MatchResult &Result) {
   // Mutable globals, runtime initializers, pointers and aggregate objects must
   // not be turned into literal constants in a consuming language.
   const auto *value = VD->evaluateValue();
+  // Clang also evaluates extension types such as _Float16. Only collect
+  // floating-point types in the supported NVIDIA CUDA C++ language surface.
+  if (value != nullptr && value->isFloat()) {
+    const auto type = VD->getType();
+    if (!type->isSpecificBuiltinType(clang::BuiltinType::Float) &&
+        !type->isSpecificBuiltinType(clang::BuiltinType::Double) &&
+        !type->isSpecificBuiltinType(clang::BuiltinType::LongDouble)) {
+      return;
+    }
+  }
   if (value != nullptr && (value->isInt() || value->isFloat())) {
     payload->decls->global_constants.emplace_back(VD);
   }

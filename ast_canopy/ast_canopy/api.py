@@ -87,6 +87,8 @@ class Declarations:
         members, variable-template specializations, runtime-initialized
         variables, pointers, and aggregate objects are excluded. Enum members
         are collected separately in ``enums``.
+        Floating-point constants are limited to ``float``, ``double``, and
+        ``long double``; Clang extensions such as ``_Float16`` are excluded.
         Each constant's ``is_constexpr`` flag records whether it was declared
         ``constexpr``.
     """

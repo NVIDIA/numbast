@@ -54,7 +54,6 @@ CXX_TYPE_TO_PYTHON_TYPE = {
     "uint16_t": int,
     "uint32_t": int,
     "uint64_t": int,
-    "_Float16": float,
     "float": float,
     "double": float,
     "short": int,
