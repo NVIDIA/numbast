@@ -545,7 +545,7 @@ def generate_cuda_oxide_bindings(
         plan,
         config,
         config_path,
-        constant_decls=getattr(declarations, "constants", ()),
+        constant_decls=getattr(declarations, "global_constants", ()),
     )
 
     output_directory = Path(output_dir)

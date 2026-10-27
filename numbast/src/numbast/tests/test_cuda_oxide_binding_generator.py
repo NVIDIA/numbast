@@ -67,7 +67,7 @@ def declarations(**overrides):
         "typedefs": [],
         "enums": [],
         "structs": [],
-        "constants": [],
+        "global_constants": [],
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -492,7 +492,9 @@ def test_parsed_globals_are_emitted_without_constant_configuration(
         value_serialized=value,
     )
     rust_path, manifest_path = generate_cuda_oxide_bindings(
-        config, tmp_path, declarations=declarations(constants=[declaration])
+        config,
+        tmp_path,
+        declarations=declarations(global_constants=[declaration]),
     )
     assert expected in Path(rust_path).read_text()
     constants = json.loads(Path(manifest_path).read_text())["constants"]
@@ -550,7 +552,7 @@ def test_real_ast_canopy_c_device_parse(tmp_path):
 def test_real_ast_canopy_globals_are_emitted_automatically(tmp_path):
     from ast_canopy.api import Declarations
 
-    if "constants" not in Declarations.__dataclass_fields__:
+    if "global_constants" not in Declarations.__dataclass_fields__:
         pytest.skip("requires AST Canopy global constant collection")
     header = tmp_path / "constants.h"
     header.write_text(
