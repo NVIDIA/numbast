@@ -65,3 +65,23 @@ def test_constants_respect_retained_headers(tmp_path):
     assert [
         (item.name, item.value) for item in declarations.global_constants
     ] == [("LOCAL", 10)]
+
+
+def test_float16_constants_are_convertible(tmp_path):
+    source = tmp_path / "half_constants.cu"
+    source.write_text(
+        "constexpr _Float16 HALF = 1.5;\n"
+        "const _Float16 NEGATIVE_HALF = -1.5;\n"
+        "typedef _Float16 half_t;\n"
+        "const half_t ALIASED_HALF = 0.5;\n"
+    )
+    declarations = parse_declarations_from_source(
+        str(source), [str(source)], "sm_80"
+    )
+    assert {
+        item.name: item.value for item in declarations.global_constants
+    } == {
+        "HALF": 1.5,
+        "NEGATIVE_HALF": -1.5,
+        "ALIASED_HALF": 0.5,
+    }
