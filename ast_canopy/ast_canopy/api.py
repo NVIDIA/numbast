@@ -55,6 +55,41 @@ def _get_shim_include_dir() -> str:
 
 @dataclass
 class Declarations:
+    """Declarations collected from retained files in one translation unit.
+
+    Returned by :func:`parse_declarations_from_source` after converting the
+    native parser's result into Python declaration objects.
+
+    Attributes
+    ----------
+    structs : list[Struct]
+        Parsed records, including structs, classes, and unions.
+    functions : list[Function]
+        Parsed function declarations.
+    function_templates : list[FunctionTemplate]
+        Function templates with their template parameters.
+    class_templates : list[ClassTemplate]
+        Class templates with their template parameters and record definitions.
+    class_template_specializations : list[ClassTemplateSpecialization]
+        Class template specializations with their actual template arguments.
+    typedefs : list[ast_canopy.pylibastcanopy.Typedef]
+        Typedef declarations and their underlying types.
+    enums : list[ast_canopy.pylibastcanopy.Enum]
+        Enum declarations, including their enumerator names and values.
+    global_constants : list[EvaluatedConstDecl]
+        Non-volatile ``const`` and ``constexpr`` variables declared at file or
+        namespace scope whose initializers Clang can evaluate to integer or
+        floating-point values, including booleans and enum-valued variables.
+        "Global" describes declaration scope, not linkage: internal-linkage
+        variables, including ``static`` constants, are included.
+
+        Function-local variables (including static locals), class static
+        members, runtime-initialized variables, pointers, and aggregate objects
+        are excluded. Enum members are collected separately in ``enums``.
+        Each constant's ``is_constexpr`` flag records whether it was declared
+        ``constexpr``.
+    """
+
     structs: list[Struct]
     functions: list[Function]
     function_templates: list[FunctionTemplate]
@@ -409,7 +444,7 @@ def parse_declarations_from_source(
     Returns
     -------
     Declarations
-        See ``Declarations`` struct definition for details.
+        Parsed declarations grouped by kind; see :class:`Declarations`.
     """
 
     if cudatoolkit_include_dirs is None:
