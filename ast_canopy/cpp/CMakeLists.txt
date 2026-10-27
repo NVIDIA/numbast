@@ -30,7 +30,7 @@ add_library(astcanopy SHARED
             src/template_param.cpp
             src/type.cpp
             src/typedef.cpp
-            src/constexpr_vardecl.cpp
+            src/evaluated_const_decl.cpp
             src/class_template_specialization.cpp
             src/detail/matchers/function_matcher.cpp
             src/detail/matchers/record_matcher.cpp

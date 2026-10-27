@@ -21,7 +21,7 @@ from ast_canopy.decl import (
     Struct,
     FunctionTemplate,
     ClassTemplate,
-    ConstExprVar,
+    EvaluatedConstDecl,
     ClassTemplateSpecialization,
 )
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
@@ -62,7 +62,7 @@ class Declarations:
     class_template_specializations: list[ClassTemplateSpecialization]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
-    constants: list[ConstExprVar] = field(default_factory=list)
+    constants: list[EvaluatedConstDecl] = field(default_factory=list)
 
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
@@ -551,7 +551,7 @@ def parse_declarations_from_source(
         class_template_specializations,
         decls.typedefs,
         decls.enums,
-        [ConstExprVar.from_c_obj(item) for item in decls.constants],
+        [EvaluatedConstDecl.from_c_obj(item) for item in decls.constants],
     )
 
 
@@ -562,7 +562,7 @@ def value_from_constexpr_vardecl(
     cxx_standard: str = "gnu++17",
     verbose: bool = False,
     clang_binary: str | None = None,
-) -> ConstExprVar | None:
+) -> EvaluatedConstDecl | None:
     """Extract the value from a constexpr ``VarDecl`` with the given name.
 
     Parameters
@@ -592,8 +592,8 @@ def value_from_constexpr_vardecl(
 
     Returns
     -------
-    ConstExprVar | None
-        See ``ConstExprVar`` struct definition for details.
+    EvaluatedConstDecl | None
+        See ``EvaluatedConstDecl`` struct definition for details.
     """
 
     with tempfile.NamedTemporaryFile(mode="w") as f:
@@ -657,7 +657,9 @@ def value_from_constexpr_vardecl(
             print(werr)
 
         result = (
-            ConstExprVar.from_c_obj(c_result) if c_result is not None else None
+            EvaluatedConstDecl.from_c_obj(c_result)
+            if c_result is not None
+            else None
         )
         return result
 

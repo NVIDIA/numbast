@@ -259,7 +259,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   return decls;
 }
 
-std::optional<ConstExprVar>
+std::optional<EvaluatedConstDecl>
 value_from_constexpr_vardecl(std::vector<std::string> options,
                              std::string vardecl_name) {
 

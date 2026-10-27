@@ -56,7 +56,7 @@ void ConstexprVarDeclCallback::run(const MatchFinder::MatchResult &Result) {
 #ifndef NDEBUG
     std::cout << "Matched constexpr vardecl: " << name << std::endl;
 #endif
-    payload->var = std::move(ConstExprVar(VD));
+    payload->var = std::move(EvaluatedConstDecl(VD));
   }
 }
 

@@ -135,12 +135,13 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[4].cast<Type>()};
           }));
 
-  py::class_<ConstExprVar>(m, "ConstExprVar")
+  py::class_<EvaluatedConstDecl>(m, "EvaluatedConstDecl")
       .def(py::init<>())
-      .def_readwrite("type_", &ConstExprVar::type_)
-      .def_readwrite("name", &ConstExprVar::name)
-      .def_readwrite("qual_name", &ConstExprVar::qual_name)
-      .def_readwrite("value", &ConstExprVar::value);
+      .def_readwrite("is_constexpr", &EvaluatedConstDecl::is_constexpr)
+      .def_readwrite("type_", &EvaluatedConstDecl::type_)
+      .def_readwrite("name", &EvaluatedConstDecl::name)
+      .def_readwrite("qual_name", &EvaluatedConstDecl::qual_name)
+      .def_readwrite("value", &EvaluatedConstDecl::value);
 
   py::class_<Field>(m, "Field")
       .def_readwrite("name", &Field::name)

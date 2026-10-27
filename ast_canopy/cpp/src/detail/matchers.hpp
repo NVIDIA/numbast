@@ -33,7 +33,7 @@ struct traverse_ast_payload {
 
 struct vardecl_matcher_payload {
   std::string_view name_to_match;
-  std::optional<ConstExprVar> var;
+  std::optional<EvaluatedConstDecl> var;
 };
 
 std::string source_filename_from_decl(const Decl *);

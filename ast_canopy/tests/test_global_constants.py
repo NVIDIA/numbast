@@ -5,6 +5,7 @@ import pickle
 from pathlib import Path
 
 from ast_canopy import parse_declarations_from_source
+from ast_canopy.decl import EvaluatedConstDecl
 
 
 def test_global_scalar_constants_are_evaluated():
@@ -29,6 +30,15 @@ def test_global_scalar_constants_are_evaluated():
             "DEFAULT_STATUS",
             "NAMESPACE_VALUE",
         }
+        assert all(isinstance(item, EvaluatedConstDecl) for item in constants)
+        assert {item.name for item in constants if item.is_constexpr} == {
+            "BASE",
+            "ENABLED",
+            "RATIO",
+            "DEFAULT_HANDLE",
+            "NAMESPACE_VALUE",
+        }
+        assert by_name["GLOBAL_COUNT"].is_constexpr is False
         assert by_name["GLOBAL_COUNT"].value == 42
         assert by_name["MAX_U64"].value == 2**64 - 1
         assert by_name["ENABLED"].value is True

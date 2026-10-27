@@ -8,8 +8,9 @@
 #include <llvm/ADT/SmallString.h>
 namespace ast_canopy {
 
-ConstExprVar::ConstExprVar(const clang::VarDecl *VD)
-    : type_(VD->getType(), VD->getASTContext()), name(VD->getNameAsString()),
+EvaluatedConstDecl::EvaluatedConstDecl(const clang::VarDecl *VD)
+    : is_constexpr(VD->isConstexpr()),
+      type_(VD->getType(), VD->getASTContext()), name(VD->getNameAsString()),
       qual_name(VD->getQualifiedNameAsString()) {
   if (qual_name.empty()) {
     qual_name = name;
@@ -30,7 +31,7 @@ ConstExprVar::ConstExprVar(const clang::VarDecl *VD)
   } else if (ap_value->isFloat()) {
     ap_value->getFloat().toString(serialized);
   } else {
-    throw std::runtime_error("Unsupported constexpr vardecl value type.");
+    throw std::runtime_error("Unsupported evaluated constant value type.");
   }
   value = std::string(serialized);
 }

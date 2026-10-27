@@ -125,9 +125,11 @@ struct Enum {
   Type underlying_type;
 };
 
-struct ConstExprVar {
-  ConstExprVar() = default;
-  ConstExprVar(const clang::VarDecl *VD);
+struct EvaluatedConstDecl {
+  EvaluatedConstDecl() = default;
+  EvaluatedConstDecl(const clang::VarDecl *VD);
+
+  bool is_constexpr = false;
 
   Type type_;
   std::string name;
@@ -324,7 +326,7 @@ struct Declarations {
   std::vector<ClassTemplateSpecialization> class_template_specializations;
   std::vector<Typedef> typedefs;
   std::vector<Enum> enums;
-  std::vector<ConstExprVar> constants;
+  std::vector<EvaluatedConstDecl> constants;
 };
 
 Declarations
@@ -332,7 +334,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
                                      std::vector<std::string> files_to_retain,
                                      bool bypass_parse_error);
 
-std::optional<ConstExprVar>
+std::optional<EvaluatedConstDecl>
 value_from_constexpr_vardecl(std::vector<std::string> clang_options,
                              std::string vardecl_name);
 

@@ -520,11 +520,12 @@ class ClassTemplate(Template):
         return tstruct.instantiate(**kwargs)
 
 
-class ConstExprVar:
+class EvaluatedConstDecl:
     """Represents an evaluated scalar constant extracted from C++.
 
     Stores the C++ type and serialized value; ``value`` converts it to the
-    corresponding Python value based on the type mapping.
+    corresponding Python value based on the type mapping. ``is_constexpr``
+    records whether the variable was explicitly declared ``constexpr``.
     """
 
     def __init__(
@@ -533,15 +534,24 @@ class ConstExprVar:
         type_: bindings.Type,
         value_serialized: str,
         qual_name: str | None = None,
+        *,
+        is_constexpr: bool,
     ):
+        self.is_constexpr = is_constexpr
         self.name = name
         self.qual_name = qual_name or name
         self.type_ = type_
         self.value_serialized = value_serialized
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.ConstExprVar):
-        return cls(c_obj.name, c_obj.type_, c_obj.value, c_obj.qual_name)
+    def from_c_obj(cls, c_obj: bindings.EvaluatedConstDecl):
+        return cls(
+            c_obj.name,
+            c_obj.type_,
+            c_obj.value,
+            c_obj.qual_name,
+            is_constexpr=c_obj.is_constexpr,
+        )
 
     @property
     def value(self):
