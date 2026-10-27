@@ -1,0 +1,12 @@
+numbast.static.typedef
+======================
+
+.. automodule:: numbast.static.typedef
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      render_aliases
+   
