@@ -28,6 +28,10 @@ void GlobalConstantCallback::run(const MatchFinder::MatchResult &Result) {
                 file_name) == payload->files_to_retain->end()) {
     return;
   }
+  // Specialization names omit template arguments in EvaluatedConstDecl.
+  if (llvm::isa<clang::VarTemplateSpecializationDecl>(VD)) {
+    return;
+  }
   if (!VD->hasInit() || VD->isStaticDataMember() ||
       !VD->getType().isConstQualified() ||
       VD->getType().isVolatileQualified() || VD->getType()->isDependentType() ||

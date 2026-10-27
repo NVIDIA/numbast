@@ -85,3 +85,20 @@ def test_float16_constants_are_convertible(tmp_path):
         "NEGATIVE_HALF": -1.5,
         "ALIASED_HALF": 0.5,
     }
+
+
+def test_variable_template_specializations_are_excluded(tmp_path):
+    source = tmp_path / "variable_templates.cu"
+    source.write_text(
+        "template<int N> constexpr int VALUE = N;\n"
+        "template<> constexpr int VALUE<3> = 30;\n"
+        "const int FIRST = VALUE<1>;\n"
+        "const int SECOND = VALUE<2>;\n"
+        "const int EXPLICIT = VALUE<3>;\n"
+    )
+    declarations = parse_declarations_from_source(
+        str(source), [str(source)], "sm_80"
+    )
+    assert sorted(
+        (item.name, item.value) for item in declarations.global_constants
+    ) == [("EXPLICIT", 30), ("FIRST", 1), ("SECOND", 2)]

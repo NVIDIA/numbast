@@ -69,6 +69,7 @@ Each constant is an ``EvaluatedConstDecl`` exposing ``name``, ``qual_name``,
 ``constexpr``. The existing ``value_from_constexpr_vardecl`` API also returns
 this type, but continues to look up only ``constexpr`` declarations.
 
-Mutable or volatile variables, local and class-scope declarations, runtime
-initializers, and non-scalar objects are not included in the global collection.
+Mutable or volatile variables, local and class-scope declarations,
+variable-template specializations, runtime initializers, and non-scalar objects
+are not included in the global collection.
 Enum members remain available through ``Declarations.enums``.

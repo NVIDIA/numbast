@@ -84,8 +84,9 @@ class Declarations:
         variables, including ``static`` constants, are included.
 
         Function-local variables (including static locals), class static
-        members, runtime-initialized variables, pointers, and aggregate objects
-        are excluded. Enum members are collected separately in ``enums``.
+        members, variable-template specializations, runtime-initialized
+        variables, pointers, and aggregate objects are excluded. Enum members
+        are collected separately in ``enums``.
         Each constant's ``is_constexpr`` flag records whether it was declared
         ``constexpr``.
     """
