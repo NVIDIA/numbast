@@ -55,20 +55,6 @@ def _get_shim_include_dir() -> str:
 
 @dataclass
 class Declarations:
-    """Declarations collected from retained files in one translation unit.
-
-    ``global_constants`` contains non-volatile ``const`` and ``constexpr``
-    variables declared at file or namespace scope whose initializers Clang
-    can evaluate to integer or floating-point values (including booleans and
-    enum-valued variables). "Global" describes declaration scope, not linkage:
-    internal-linkage variables, including ``static`` constants, are included.
-
-    Function-local variables (including static locals), class static members,
-    runtime-initialized variables, pointers, and aggregate objects are excluded.
-    Enum members are collected separately in ``enums``. Each global constant's
-    ``is_constexpr`` flag records whether it was declared ``constexpr``.
-    """
-
     structs: list[Struct]
     functions: list[Function]
     function_templates: list[FunctionTemplate]
