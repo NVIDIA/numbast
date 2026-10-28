@@ -18,6 +18,7 @@ is not registered as a name one can select.
 
 from numbast.backends.tablegen.config import (
     OutParamPolicy,
+    TableGenConfig,
     TableGenOptions,
 )
 from numbast.backends.tablegen.facts import header_facts
@@ -46,13 +47,3 @@ __all__ = [
     "recover_typedefs",
     "render_dialect_td",
 ]
-
-
-def __getattr__(name):
-    # TableGenConfig subclasses the core Config, which pulls in the Numba
-    # stack; keep that out of the import path unless it is asked for.
-    if name == "TableGenConfig":
-        from numbast.backends.tablegen.config import TableGenConfig
-
-        return TableGenConfig
-    raise AttributeError(name)
