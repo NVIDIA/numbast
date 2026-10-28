@@ -1,12 +1,21 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Emit TableGen op definitions from backend-neutral function plans."""
+"""Emit ``<Prefix>Ops.td``: one op definition per curated entry point.
+
+Consumes exactly what :mod:`numbast.curate` produces -- the declaration
+plus the exposed name -- and adds only emission concerns: type mapping,
+out-parameter lifting, and the status result.
+"""
 
 import re
 
 from numbast.backends.tablegen.config import OutParamPolicy, TableGenOptions
-from numbast.backends.tablegen.types import TypeMapper, _is_pointer, _pointee
+from numbast.backends.tablegen.type_mapper import (
+    TypeMapper,
+    _is_pointer,
+    _pointee,
+)
 
 __all__ = [
     "TableGenFunctionsRenderer",

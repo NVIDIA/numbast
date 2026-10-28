@@ -3,6 +3,10 @@
 
 """C/C++ type spellings -> MLIR type references.
 
+Not an emitter: the shared mapper both ``.td`` renderers consume. The ops
+renderer *references* types while rendering, which is what populates the
+registries the types renderer then declares.
+
 This is the piece with no counterpart in the existing backends. Numba emission
 maps a spelling to a *Numba* type via a flat lookup (``to_numba_type_str``);
 TableGen emission has to decide between a builtin (``I32``), a named opaque

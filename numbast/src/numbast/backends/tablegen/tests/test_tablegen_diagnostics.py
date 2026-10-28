@@ -10,7 +10,7 @@ cover what it declines to emit, which is what these tests are for.
 import pytest
 
 from numbast.backends.tablegen import TableGenOptions, TableGenTypesRenderer
-from numbast.backends.tablegen.types import TypeMapper
+from numbast.backends.tablegen.type_mapper import TypeMapper
 from numbast.backends.tablegen.types_td import DuplicateTypeMnemonicError
 
 OPTIONS = TableGenOptions(dialect_name="acme", cpp_class_prefix="Acme")
