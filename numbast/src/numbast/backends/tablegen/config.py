@@ -40,22 +40,27 @@ __all__ = [
 class OutParamPolicy:
     """How to decide which parameters are lifted to results.
 
-    ``none``
-        Only parameters with an explicit ``out_return`` entry in
-        ``Function Argument Intents`` are lifted. numbast's existing behaviour;
-        requires a per-function declaration.
+    One policy today, and the option exists so a second can be added without
+    changing a call signature: ``classify_params`` already takes the policy and
+    is the single place either the op renderer or the eventual lowering asks
+    the question.
 
-    ``c_out_params``
-        Apply the C out-pointer heuristic: a non-const pointer whose pointee
-        maps to a concrete type is an out-parameter. Necessary at scale --
-        hand-declaring intents for a few hundred entry points is not practical
-        -- and it is what the cuda-python dialect recipe uses.
+    ``explicit``
+        Lift exactly the parameters carrying an ``out_return`` entry in
+        ``Function Argument Intents``, which is numbast's existing mechanism
+        for the same question. Nothing is inferred.
+
+    A heuristic policy -- a non-const pointer to a concrete type is an
+    out-parameter -- is what a few hundred entry points will eventually want,
+    since hand-declaring intents at that scale is not practical. It is
+    deliberately not here: inferring the direction of a parameter decides
+    whether the lowering allocas a slot for it, so it needs its own change with
+    its own expected output to argue against.
     """
 
-    NONE = "none"
-    C_OUT_PARAMS = "c_out_params"
+    EXPLICIT = "explicit"
 
-    ALL = (NONE, C_OUT_PARAMS)
+    ALL = (EXPLICIT,)
 
 
 @dataclass
@@ -88,7 +93,7 @@ class TableGenOptions:
     point returns it, the op carries a trailing result of the dialect's result
     type."""
 
-    out_param_policy: str = OutParamPolicy.NONE
+    out_param_policy: str = OutParamPolicy.EXPLICIT
     """See :class:`OutParamPolicy`."""
 
     shim_prefix: str = "_"
@@ -135,7 +140,7 @@ def _tablegen_options_from_dict(config_dict: dict) -> TableGenOptions:
         ),
         status_type=status.get("Type"),
         out_param_policy=config_dict.get(
-            "Out Param Policy", OutParamPolicy.NONE
+            "Out Param Policy", OutParamPolicy.EXPLICIT
         ),
         shim_prefix=config_dict.get("Shim Prefix", "_"),
         mnemonic_overrides=config_dict.get("Mnemonic Overrides", {}) or {},
