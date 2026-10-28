@@ -56,6 +56,19 @@ CXX_TYPE_TO_PYTHON_TYPE = {
     "uint64_t": int,
     "float": float,
     "double": float,
+    "short": int,
+    "unsigned short": int,
+    "signed char": int,
+    "unsigned char": int,
+    "char": int,
+    "bool": bool,
+    "long double": float,
+    "__int128": int,
+    "unsigned __int128": int,
+    "wchar_t": int,
+    "char8_t": int,
+    "char16_t": int,
+    "char32_t": int,
 }
 
 
@@ -507,25 +520,52 @@ class ClassTemplate(Template):
         return tstruct.instantiate(**kwargs)
 
 
-class ConstExprVar:
-    """Represents a constexpr variable extracted from C++.
+class EvaluatedConstDecl:
+    """Represents an evaluated scalar constant extracted from C++.
 
     Stores the C++ type and serialized value; ``value`` converts it to the
-    corresponding Python value based on the type mapping.
+    corresponding Python value based on the type mapping. ``is_constexpr``
+    records whether the variable was explicitly declared ``constexpr``.
     """
 
-    def __init__(self, name: str, type_: bindings.Type, value_serialized: str):
+    def __init__(
+        self,
+        name: str,
+        type_: bindings.Type,
+        value_serialized: str,
+        qual_name: str | None = None,
+        *,
+        is_constexpr: bool,
+    ):
+        self.is_constexpr = is_constexpr
         self.name = name
+        self.qual_name = qual_name or name
         self.type_ = type_
         self.value_serialized = value_serialized
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.ConstExprVar):
-        return cls(c_obj.name, c_obj.type_, c_obj.value)
+    def from_c_obj(cls, c_obj: bindings.EvaluatedConstDecl):
+        return cls(
+            c_obj.name,
+            c_obj.type_,
+            c_obj.value,
+            c_obj.qual_name,
+            is_constexpr=c_obj.is_constexpr,
+        )
 
     @property
     def value(self):
-        cxx_type_name = self.type_.unqualified_non_ref_type_name
+        type_ = self.type_
+        while type_.kind in (
+            bindings.type_kind.typedef_,
+            bindings.type_kind.sugar,
+        ):
+            type_ = type_.inner_type
+        if type_.kind == bindings.type_kind.enum_:
+            return int(self.value_serialized)
+        cxx_type_name = type_.unqualified_non_ref_type_name
+        if cxx_type_name == "bool":
+            return self.value_serialized != "0"
         return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)
 
 

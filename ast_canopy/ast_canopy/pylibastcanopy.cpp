@@ -135,12 +135,13 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[4].cast<Type>()};
           }));
 
-  py::class_<ConstExprVar>(m, "ConstExprVar")
+  py::class_<EvaluatedConstDecl>(m, "EvaluatedConstDecl")
       .def(py::init<>())
-      .def_readwrite("type_", &ConstExprVar::type_)
-      .def_readwrite("name", &ConstExprVar::name)
-      .def_readwrite("qual_name", &ConstExprVar::qual_name)
-      .def_readwrite("value", &ConstExprVar::value);
+      .def_readwrite("is_constexpr", &EvaluatedConstDecl::is_constexpr)
+      .def_readwrite("type_", &EvaluatedConstDecl::type_)
+      .def_readwrite("name", &EvaluatedConstDecl::name)
+      .def_readwrite("qual_name", &EvaluatedConstDecl::qual_name)
+      .def_readwrite("value", &EvaluatedConstDecl::value);
 
   py::class_<Field>(m, "Field")
       .def_readwrite("name", &Field::name)
@@ -369,7 +370,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("class_template_specializations",
                      &Declarations::class_template_specializations)
       .def_readwrite("typedefs", &Declarations::typedefs)
-      .def_readwrite("enums", &Declarations::enums);
+      .def_readwrite("enums", &Declarations::enums)
+      .def_readwrite("global_constants", &Declarations::global_constants);
 
   m.def("parse_declarations_from_command_line",
         &parse_declarations_from_command_line,

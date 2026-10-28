@@ -52,3 +52,24 @@ Notes
 
 - ``libastcanopy`` builds independently with CMake and is used via dynamic linking from Python
 - The Python package uses ``scikit-build-core`` and ``pybind11``
+
+Global constants
+----------------
+
+``parse_declarations_from_source`` automatically returns compile-time scalar
+constants from retained files in ``Declarations.global_constants``. This includes
+namespace-scope ``const`` and ``constexpr`` declarations, including ``static``
+and ``inline`` constants. Clang evaluates initializer expressions, so consumers
+receive the source type and evaluated value without copying values into a
+configuration file.
+
+Each constant is an ``EvaluatedConstDecl`` exposing ``name``, ``qual_name``,
+``type_``, ``value_serialized``, and the converted Python ``value``. Its
+``is_constexpr`` flag records whether the source declaration was explicitly
+``constexpr``. The existing ``value_from_constexpr_vardecl`` API also returns
+this type, but continues to look up only ``constexpr`` declarations.
+
+Mutable or volatile variables, local and class-scope declarations,
+variable-template specializations, runtime initializers, and non-scalar objects
+are not included in the global collection.
+Enum members remain available through ``Declarations.enums``.
