@@ -87,6 +87,37 @@ properties:
         description: Struct names to exclude.
         examples:
           - ["__InternalState"]
+  Include:
+    type: object
+    default: {}
+    additionalProperties: false
+    description: >
+      Declaration names to bind, to the exclusion of all others. Empty or
+      absent means no allowlist is applied, not that nothing is bound, so a
+      configuration may allowlist one declaration kind and leave the other
+      unconstrained. A name appearing in both Include and Exclude is excluded.
+    examples:
+      - Function: ["cuInit", "cuStreamCreate", "cuStreamDestroy_v2"]
+    properties:
+      Function:
+        type: array
+        default: []
+        items:
+          type: string
+        description: >
+          Function names to bind. Intended for large C APIs, where naming the
+          few hundred entry points in scope is practical and enumerating the
+          rest under Exclude is not.
+        examples:
+          - ["cuInit", "cuDeviceGetCount"]
+      Struct:
+        type: array
+        default: []
+        items:
+          type: string
+        description: Struct names to bind.
+        examples:
+          - ["CUDA_RESOURCE_DESC"]
   Clang Include Paths:
     type: array
     default: []

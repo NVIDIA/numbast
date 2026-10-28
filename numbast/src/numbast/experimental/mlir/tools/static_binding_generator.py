@@ -194,6 +194,12 @@ class Config:
         self.exclude_functions = self.excludes.get("Function", [])
         self.exclude_structs = self.excludes.get("Struct", [])
 
+        # Allowlist counterpart. Empty means "no allowlist", not "nothing
+        # passes"; see numbast.curate.function_skip_reason.
+        self.includes = config_dict.get("Include", {}) or {}
+        self.include_functions = self.includes.get("Function", []) or []
+        self.include_structs = self.includes.get("Struct", []) or []
+
         self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
 
         self.additional_imports = config_dict.get("Additional Import", [])
@@ -515,6 +521,7 @@ def _generate_functions(
     function_prefix_removal: list[str],
     skip_prefix: str | None,
     function_argument_intents: dict | None = None,
+    includes: list[str] = [],
 ) -> str:
     """
     Render the function-binding source for the given function declarations.
@@ -536,6 +543,7 @@ def _generate_functions(
         func_decls,
         header_path,
         excludes=excludes,
+        includes=includes,
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
         skip_prefix=skip_prefix,
@@ -675,6 +683,7 @@ def _static_binding_generator(
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
         config.function_argument_intents,
+        includes=config.include_functions,
     )
 
     registry_setup(config.separate_registry)

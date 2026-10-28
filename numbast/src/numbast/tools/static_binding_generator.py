@@ -252,6 +252,7 @@ def _generate_functions(
     function_prefix_removal: list[str],
     skip_prefix: str | None,
     function_argument_intents: dict | None = None,
+    includes: list[str] = [],
 ) -> str:
     """
     Render the function-binding source for the given function declarations.
@@ -273,6 +274,7 @@ def _generate_functions(
         func_decls,
         header_path,
         excludes=excludes,
+        includes=includes,
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
         skip_prefix=skip_prefix,
@@ -505,6 +507,7 @@ def _static_binding_generator(
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
         config.function_argument_intents,
+        includes=config.include_functions,
     )
     class_template_bindings = _generate_class_templates(
         class_templates,

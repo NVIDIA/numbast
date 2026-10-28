@@ -580,6 +580,7 @@ class {op_typing_name}(ConcreteTemplate):
         decls: list[Function],
         header_path: str,
         excludes: list[str] = [],
+        includes: list[str] = [],
         skip_non_device: bool = True,
         skip_prefix: str | None = None,
         cooperative_launch_required: list[str] = [],
@@ -593,6 +594,7 @@ class {op_typing_name}(ConcreteTemplate):
             decls (list[Function]): Function declarations to render.
             header_path (str): Path to the C++ header used for generating C shims.
             excludes (list[str]): Function names to exclude from rendering.
+            includes (list[str]): Function names to render, to the exclusion of all others. Empty means no allowlist.
             skip_non_device (bool): If True, skip functions that are not device-callable.
             skip_prefix (str | None): If set, skip functions whose names start with this prefix.
             cooperative_launch_required (list[str]): Regex patterns; functions whose names match any pattern will be rendered to require cooperative launch.
@@ -606,6 +608,7 @@ class {op_typing_name}(ConcreteTemplate):
         self._decls = decls
         self._header_path = header_path
         self._excludes = excludes
+        self._includes = includes
         self._skip_non_device = skip_non_device
         self._skip_prefix = skip_prefix
         self._cooperative_launch_required = cooperative_launch_required
@@ -628,6 +631,7 @@ class {op_typing_name}(ConcreteTemplate):
             self._decls,
             header_path=self._header_path,
             excludes=self._excludes,
+            includes=self._includes,
             skip_prefix=self._skip_prefix,
             skip_non_device=self._skip_non_device,
             cooperative_launch_required=self._cooperative_launch_required,
