@@ -11,20 +11,22 @@ dialect's type *names* are its interface, so a generator that only sees
 canonical spellings would mint ``!cudadrv.streamst``.
 
 ``ast_canopy`` reports both halves: ``Typedef.name`` is the public name and
-``Typedef.underlying_name`` the canonical one. All this module does is index
+``Typedef.underlying_type`` the canonical one. All this module does is index
 them the way the renderers ask the question -- given a tag, what does the
 library call it -- and note which public names denote enums, because an enum
 lowers to an integer and anything unrecognised lowers to an opaque pointer.
 """
 
-import re
 from dataclasses import dataclass, field
+
+from ast_canopy.pylibastcanopy import type_kind
 
 __all__ = ["TypedefFacts", "typedef_facts"]
 
-#: ``struct AcmeStream_st *`` -> ``AcmeStream_st``. The elaborated keyword and
-#: any pointer depth are spelling, not identity.
-_TAG = re.compile(r"^(?:struct|union|enum|class)\s+(\w+)\s*\**$")
+#: Underlying kinds that carry a tag worth indexing. A pointer is included
+#: because an opaque handle is a typedef of a *pointer* to an incomplete
+#: record, which is the form the tag has to be recovered through.
+_TAGGED = frozenset({type_kind.record, type_kind.enum_, type_kind.pointer})
 
 
 @dataclass
@@ -48,19 +50,27 @@ class TypedefFacts:
 
 
 def typedef_facts(decls) -> TypedefFacts:
-    """Index ``decls.typedefs`` by the question the renderers ask."""
+    """Index ``decls.typedefs`` by the question the renderers ask.
+
+    Keyed off ``Type.kind`` rather than the printed spelling: whether the
+    elaborated keyword appears in a type's name is a choice clang makes about
+    formatting, while the kind is what the type *is*.
+    """
     facts = TypedefFacts()
 
     for typedef in decls.typedefs:
-        underlying = typedef.underlying_name.strip()
+        underlying = typedef.underlying_type
 
-        match = _TAG.match(underlying)
-        if match:
-            # setdefault: several typedefs may name one tag, and the first is
-            # the one the header leads with.
-            facts.tag_to_public.setdefault(match.group(1), typedef.name)
+        if underlying.kind in _TAGGED:
+            # The name still carries pointer depth -- an opaque handle's
+            # underlying type prints as ``AcmeStream_st *``.
+            tag = underlying.name.rstrip("* ").strip()
+            if tag:
+                # setdefault: several typedefs may name one tag, and the first
+                # is the one the header leads with.
+                facts.tag_to_public.setdefault(tag, typedef.name)
 
-        if underlying.startswith("enum "):
+        if underlying.kind == type_kind.enum_:
             facts.enum_public_names.add(typedef.name)
 
     return facts
