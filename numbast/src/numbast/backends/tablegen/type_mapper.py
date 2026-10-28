@@ -3,6 +3,10 @@
 
 """C/C++ type spellings -> MLIR type references.
 
+Not an emitter: the shared mapper both ``.td`` renderers consume. The ops
+renderer *references* types while rendering, which is what populates the
+registries the types renderer then declares.
+
 This is the piece with no counterpart in the existing backends. Numba emission
 maps a spelling to a *Numba* type via a flat lookup (``to_numba_type_str``);
 TableGen emission has to decide between a builtin (``I32``), a named opaque
@@ -239,11 +243,10 @@ class TypeMapper:
         nothing to name it after, so its 0-based field index is used instead:
         ``<Parent>F<index>``, as the reference dialect spells it.
 
-        The index is not decoration. Without it the name collapses to
-        ``<Parent>_``, which camel-cases to a case-variant of the parent
-        (``DevResource`` and ``Devresource``). TableGen keys on the C++ name
-        and accepts the pair; the mnemonics then collide and the dialect
-        aborts the process when it is registered.
+        The index is not decoration. Without it an anonymous field's record
+        name collapses to the parent's own, and TableGen accepts the duplicate;
+        the mnemonics then collide and the dialect aborts the process when it
+        is registered. :class:`DuplicateTypeMnemonicError` is the backstop.
         """
         if rec.name:
             c_name = rec.name
@@ -254,7 +257,12 @@ class TypeMapper:
         else:
             suffix = field if field else f"F{field_index}"
             c_name = f"{parent}_{suffix}"
-            record = self._camel(f"{parent}_{suffix}")
+            # Composed onto the parent rather than camel-cased from
+            # ``f"{parent}_{suffix}"``: the parent is already a record name, and
+            # re-casing it lowercases everything after its first letter, so a
+            # multi-word parent comes back as a case-variant of itself
+            # (``DevResource`` -> ``DevresourceF2``).
+            record = parent + self._camel(suffix)
 
         if not record:
             return self.ptr_type()
@@ -265,7 +273,7 @@ class TypeMapper:
         self._modeled.add(record)
         self.structs.setdefault(c_name, record)
 
-        fields = list(getattr(rec, "fields", ()) or ())
+        fields = list(rec.fields)
         # Which fields name an unnamed record, in order; a field's position in
         # this list is what picks its record out of the parent's unnamed ones.
         anon_fields = [
@@ -331,7 +339,7 @@ class TypeMapper:
         there is. It is a sound one: clang reports unnamed nested records in
         declaration order, which is the order the fields naming them appear.
         """
-        nested = getattr(parent_rec, "nested_records", ()) or ()
+        nested = parent_rec.nested_records
 
         # A qualified spelling can also name a *tagged* nested type, which is
         # unambiguous and takes precedence over any positional guess.
