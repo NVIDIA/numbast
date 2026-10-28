@@ -49,8 +49,18 @@ OPTIONS = TableGenOptions(
     handle_prefix="Acme",
     struct_prefixes=["Acme"],
     status_type="AcmeResult",
-    out_param_policy=OutParamPolicy.C_OUT_PARAMS,
+    out_param_policy=OutParamPolicy.EXPLICIT,
 )
+
+#: Which parameters are results rather than operands. Declared per entry
+#: point, keyed by C symbol, in the same shape the Numba backends read
+#: ``Function Argument Intents`` in. Nothing is inferred: the direction of a
+#: parameter decides whether the lowering allocas a slot for it.
+ARGUMENT_INTENTS = {
+    "acmeStreamCreate": {"phStream": "out_return"},
+    "acmeDeviceGetCount": {"count": "out_return"},
+    "acmeStreamOpenHandle": {"phStream": "out_return"},
+}
 
 
 @pytest.fixture(scope="module")
@@ -66,6 +76,7 @@ def generated(decls):
         decls.functions,
         header_path=HEADER,
         prefix_removal=["acme"],
+        argument_intents=ARGUMENT_INTENTS,
         # A host C API has no __device__ functions; see TableGenOptions.
         skip_non_device=False,
     )

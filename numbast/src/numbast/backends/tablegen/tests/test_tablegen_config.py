@@ -39,7 +39,7 @@ def test_one_mapping_populates_both_halves():
                 "Include": {"Function": ["acmeStreamCreate"]},
                 "Handle Prefix": "Acme",
                 "Status": {"Type": "AcmeResult"},
-                "Out Param Policy": "c_out_params",
+                "Out Param Policy": "explicit",
             }
         )
     )
@@ -52,14 +52,14 @@ def test_one_mapping_populates_both_halves():
     assert cfg.tablegen.dialect_name == "acme"
     assert cfg.tablegen.handle_prefix == "Acme"
     assert cfg.tablegen.status_type == "AcmeResult"
-    assert cfg.tablegen.out_param_policy == "c_out_params"
+    assert cfg.tablegen.out_param_policy == "explicit"
 
 
 def test_the_backend_half_is_absent_until_asked_for():
     """Omitted backend keys fall back to defaults, not to Numba's."""
     options = TableGenConfig(_cfg()).tablegen
     assert options.status_type is None
-    assert options.out_param_policy == "none"
+    assert options.out_param_policy == "explicit"
     assert options.skip_non_device is False
     assert options.struct_prefixes == []
 
