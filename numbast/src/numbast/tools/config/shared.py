@@ -97,6 +97,20 @@ class SharedConfig:
             self.excludes.get("Struct", []), "Exclude.Struct"
         )
 
+        # The allowlist counterpart. Empty means "no allowlist", not "nothing
+        # passes", so a config that names structs and leaves functions blank
+        # does not silently curate every function away.
+        includes = config_dict.get("Include", {}) or {}
+        if not isinstance(includes, dict):
+            raise TypeError('Configuration option "Include" must be a mapping.')
+        self.includes = copy.deepcopy(includes)
+        self.include_functions = _as_list(
+            self.includes.get("Function", []), "Include.Function"
+        )
+        self.include_structs = _as_list(
+            self.includes.get("Struct", []), "Include.Struct"
+        )
+
         self.clang_includes_paths = _as_list(
             config_dict.get("Clang Include Paths", []), "Clang Include Paths"
         )
