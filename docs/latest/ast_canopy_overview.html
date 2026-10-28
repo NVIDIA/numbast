@@ -550,7 +550,7 @@
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
@@ -682,6 +682,24 @@ pytest<span class="w"> </span>ast_canopy/
 <li><p>The Python package uses <code class="docutils literal notranslate"><span class="pre">scikit-build-core</span></code> and <code class="docutils literal notranslate"><span class="pre">pybind11</span></code></p></li>
 </ul>
 </section>
+<section id="global-constants">
+<h2>Global constants<a class="headerlink" href="#global-constants" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">parse_declarations_from_source</span></code> automatically returns compile-time scalar
+constants from retained files in <code class="docutils literal notranslate"><span class="pre">Declarations.global_constants</span></code>. This includes
+namespace-scope <code class="docutils literal notranslate"><span class="pre">const</span></code> and <code class="docutils literal notranslate"><span class="pre">constexpr</span></code> declarations, including <code class="docutils literal notranslate"><span class="pre">static</span></code>
+and <code class="docutils literal notranslate"><span class="pre">inline</span></code> constants. Clang evaluates initializer expressions, so consumers
+receive the source type and evaluated value without copying values into a
+configuration file.</p>
+<p>Each constant is an <code class="docutils literal notranslate"><span class="pre">EvaluatedConstDecl</span></code> exposing <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">qual_name</span></code>,
+<code class="docutils literal notranslate"><span class="pre">type_</span></code>, <code class="docutils literal notranslate"><span class="pre">value_serialized</span></code>, and the converted Python <code class="docutils literal notranslate"><span class="pre">value</span></code>. Its
+<code class="docutils literal notranslate"><span class="pre">is_constexpr</span></code> flag records whether the source declaration was explicitly
+<code class="docutils literal notranslate"><span class="pre">constexpr</span></code>. The existing <code class="docutils literal notranslate"><span class="pre">value_from_constexpr_vardecl</span></code> API also returns
+this type, but continues to look up only <code class="docutils literal notranslate"><span class="pre">constexpr</span></code> declarations.</p>
+<p>Mutable or volatile variables, local and class-scope declarations,
+variable-template specializations, runtime initializers, and non-scalar objects
+are not included in the global collection.
+Enum members remain available through <code class="docutils literal notranslate"><span class="pre">Declarations.enums</span></code>.</p>
+</section>
 </section>
 
 
@@ -738,6 +756,7 @@ pytest<span class="w"> </span>ast_canopy/
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-and-tests">Build and tests</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#folder-structure">Folder structure</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-constants">Global constants</a></li>
 </ul>
   </nav></div>
 
