@@ -33,6 +33,12 @@ def sample_typedef_source():
 
 
 @pytest.fixture(scope="module")
+def sample_c_api_typedef_source():
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_directory, "data/", "sample_c_api_typedef.cu")
+
+
+@pytest.fixture(scope="module")
 def sample_function_template_source():
     current_directory = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(
@@ -290,6 +296,60 @@ def test_load_ast_typedefs(sample_typedef_source, test_pickle):
     assert typedefs[1].underlying_name == second_struct_name
     assert typedefs[2].name == "C1"
     assert typedefs[2].underlying_name == "C"
+
+
+def test_typedefs_that_do_not_alias_a_record_are_reported(
+    sample_c_api_typedef_source,
+):
+    """A C library's typedefs are its public type vocabulary.
+
+    ``CUstream`` is the API and ``CUstream_st`` is an implementation detail
+    that exists only so the pointer has something to point at, so a consumer
+    generating a public interface needs the typedef name. None of these forms
+    aliases a record directly -- a pointer, two tags, and a scalar -- and all
+    of them were previously discarded.
+    """
+    decls = parse_declarations_from_source(
+        sample_c_api_typedef_source, [sample_c_api_typedef_source], "sm_80"
+    )
+
+    by_name = {t.name: t for t in decls.typedefs}
+    assert set(by_name) == {
+        "AcmeStream",
+        "AcmeResult",
+        "AcmeResourceType",
+        "AcmeDeviceptr",
+    }
+
+    # The underlying type stays canonical: nothing here becomes less precise,
+    # the public name is simply reported alongside it.
+    assert "AcmeStream_st" in by_name["AcmeStream"].underlying_name
+    assert "AcmeResult_enum" in by_name["AcmeResult"].underlying_name
+    assert "unsigned long long" in by_name["AcmeDeviceptr"].underlying_name
+
+
+def test_an_anonymous_enum_is_named_by_its_typedef(
+    sample_c_api_typedef_source,
+):
+    """``typedef enum { ... } Foo;`` has no tag, so the typedef is the name.
+
+    The declaration was reported with an empty name, which is unusable for
+    lookup: a consumer cannot tell such a type from any other unnamed one, and
+    an enum that cannot be identified is indistinguishable from an unknown type.
+    """
+    decls = parse_declarations_from_source(
+        sample_c_api_typedef_source, [sample_c_api_typedef_source], "sm_80"
+    )
+
+    names = {e.name for e in decls.enums}
+    assert "AcmeResourceType" in names
+    assert "" not in names
+
+    (anon,) = [e for e in decls.enums if e.name == "AcmeResourceType"]
+    assert anon.enumerators == [
+        "ACME_RESOURCE_TYPE_INVALID",
+        "ACME_RESOURCE_TYPE_SM",
+    ]
 
 
 def test_load_ast_function_templates(

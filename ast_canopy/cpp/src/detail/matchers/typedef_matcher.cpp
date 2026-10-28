@@ -27,20 +27,27 @@ void TypedefMatcher::run(const MatchFinder::MatchResult &Result) {
                   }))
 
   {
-    std::string name = TD->getNameAsString();
-    TypeSourceInfo *TSI = TD->getTypeSourceInfo();
-    QualType underlying = TD->getUnderlyingType();
-
-    if (underlying->isStructureOrClassType()) {
 #ifndef NDEBUG
-      std::string source_range =
-          TD->getSourceRange().printToString(*Result.SourceManager);
-      std::cout << source_range << std::endl;
-      std::cout << std::endl;
+    std::string source_range =
+        TD->getSourceRange().printToString(*Result.SourceManager);
+    std::cout << source_range << std::endl;
+    std::cout << std::endl;
 #endif
-      payload->decls->typedefs.push_back(
-          Typedef(TD, payload->record_id_to_name));
-    }
+    // Every typedef in a retained file is reported, whatever it aliases.
+    //
+    // Which typedefs matter is the consumer's policy, not this matcher's: a
+    // binding generator usually wants the canonical type a name resolves to,
+    // while a dialect generator needs the public name itself, because a C
+    // library's typedefs *are* its type vocabulary -- `CUstream` is the API
+    // and `CUstream_st` is an implementation detail that exists only so the
+    // pointer has something to point at.
+    //
+    // Restricting this to `isStructureOrClassType()` dropped exactly the two
+    // forms a C API is built from: `typedef struct Foo_st *Foo;`, whose
+    // underlying type is a pointer rather than a record, and
+    // `typedef enum Foo_enum { ... } Foo;`, whose underlying type is a tag
+    // but not a record. Both were discarded with no record that they existed.
+    payload->decls->typedefs.push_back(Typedef(TD, payload->record_id_to_name));
   }
 }
 
