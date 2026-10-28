@@ -11,11 +11,8 @@ out-parameter lifting, and the status result.
 import re
 
 from numbast.backends.tablegen.config import OutParamPolicy, TableGenOptions
-from numbast.backends.tablegen.type_mapper import (
-    TypeMapper,
-    _is_pointer,
-    _pointee,
-)
+from numbast.backends.tablegen.type_mapper import TypeMapper
+from numbast.intent_defs import ArgIntent
 
 __all__ = [
     "TableGenFunctionsRenderer",
@@ -116,69 +113,41 @@ def _record_for(exposed_name: str) -> str:
     )
 
 
-def _looks_like_out_param(spelling: str, mapper: TypeMapper) -> bool:
-    """C out-pointer heuristic. Conservative: an **allowlist**, not a denylist.
-
-    ``spelling`` must be the qualifier-preserving spelling (``Type.name``), not
-    ``unqualified_non_ref_type_name`` -- the latter strips ``const``, which
-    would make every ``const Foo *`` input look like an out-parameter.
-
-    Out-parameters are:
-
-    * a non-const pointer to a **numeric scalar or enum** -- ``CUdevice *``,
-      ``size_t *``, ``int *``;
-    * a non-const pointer **to a handle** -- ``CUstream_st **``.
-
-    Everything else stays an input: by-value types, ``void *`` / ``char *``
-    buffers, ``void **`` argument arrays, and pointers to complete structs
-    (``const CUDA_RESOURCE_DESC *`` is a descriptor you pass *in*).
-    """
-    if not _is_pointer(spelling) or "const" in spelling:
-        return False
-
-    pointee = _pointee(spelling)
-
-    if pointee.rstrip().endswith("*"):
-        # pointer-to-pointer: an out-handle only if the inner type is an opaque
-        # record, not a data-pointer array like ``void **kernelParams``.
-        inner = _pointee(pointee)
-        if inner in ("void", "char") or inner in mapper.records:
-            return False
-        return mapper.handle_type(inner) != mapper.ptr_type()
-
-    if pointee in ("void", "char"):
-        return False
-    if pointee in mapper.records:
-        return False  # pointer to a complete struct: an in-descriptor
-
-    mapped = mapper.map(pointee)
-    # Only scalars and enums qualify; anything landing on the catch-all
-    # pointer type is an input buffer.
-    return bool(mapped) and mapped != mapper.ptr_type()
-
-
-def classify_params(decl, mapper: TypeMapper, policy: str):
+def classify_params(decl, intents, policy: str):
     """Tag each parameter ``"in"`` or ``"out"``, in declaration order.
 
     Shared by the op renderer, which *splits* on the tag, and the lowering
     table, which *keeps* the order and carries the tag. They must agree: the
     lowering is what allocas a slot for each out-parameter and loads it back,
     so a parameter the op exposes as a result and the lowering treats as an
-    input (or the reverse) is a miscompile.
+    input (or the reverse) is a miscompile. That is why this is one function
+    rather than a rule each renderer applies for itself.
+
+    ``intents`` is this function's entry from ``Function Argument Intents``,
+    keyed by parameter name or 0-based index, as the Numba backends key it.
     """
-    out = []
-    for param, ptype in zip(decl.params, decl.param_types):
-        is_out = (
-            policy == OutParamPolicy.C_OUT_PARAMS
-            and _looks_like_out_param(
-                # Type.name keeps qualifiers; unqualified_non_ref_type_name drops
-                # const, which the heuristic needs.
-                ptype.name,
-                mapper,
-            )
+    return [
+        (param, ptype, _direction(param, index, intents, policy))
+        for index, (param, ptype) in enumerate(
+            zip(decl.params, decl.param_types)
         )
-        out.append((param, ptype, "out" if is_out else "in"))
-    return out
+    ]
+
+
+def _direction(param, index: int, intents, policy: str) -> str:
+    """``"out"`` if this parameter was declared an out-return, else ``"in"``."""
+    if policy != OutParamPolicy.EXPLICIT or not intents:
+        return "in"
+
+    # Name wins over index, matching compute_intent_plan's precedence.
+    declared = intents.get(getattr(param, "name", None), intents.get(index))
+    if declared is None:
+        return "in"
+
+    # ArgIntent is a str-valued enum, so a configured string converts directly,
+    # and an unrecognised spelling raises rather than defaulting to "in" -- a
+    # typo in a parameter's direction is otherwise a silent miscompile.
+    return "out" if ArgIntent(declared) is ArgIntent.out_return else "in"
 
 
 class TableGenFunctionsRenderer:
@@ -218,9 +187,13 @@ class TableGenFunctionsRenderer:
         """Type mapper, including any handle/struct types minted while rendering."""
         return self._mapper
 
-    def _split_params(self, decl):
+    def _split_params(self, plan):
         """Partition parameters into (inputs, out-params) by policy."""
-        tagged = classify_params(decl, self._mapper, self._cfg.out_param_policy)
+        tagged = classify_params(
+            plan.decl,
+            plan.argument_intents.get(plan.c_symbol),
+            self._cfg.out_param_policy,
+        )
         inputs = [(p, t) for p, t, d in tagged if d == "in"]
         outs = [(p, t) for p, t, d in tagged if d == "out"]
         return inputs, outs
@@ -228,7 +201,7 @@ class TableGenFunctionsRenderer:
     def _render_one(self, plan) -> str:
         decl = plan.decl
         cfg = self._cfg
-        inputs, outs = self._split_params(decl)
+        inputs, outs = self._split_params(plan)
 
         taken: set[str] = set()
 
