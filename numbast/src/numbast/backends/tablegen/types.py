@@ -143,8 +143,8 @@ class TypeMapper:
         self.record_objs = record_objs or {}
         self.opaque_structs = set(opaque_structs)
         self._modeled: set[str] = set()
-        # TypedefFacts recovering the public names ast_canopy drops; without it
-        # handle types get named after internal tags (Stream_st, not Stream).
+        # TypedefFacts indexing the library's public names; without it handle
+        # types get named after internal tags (Stream_st, not Stream).
         self.typedefs = typedefs
         # Minted handle types: C++ record name -> mnemonic.
         self.handles: dict[str, str] = {}

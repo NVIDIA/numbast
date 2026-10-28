@@ -21,7 +21,7 @@ from numbast.backends.tablegen import (
     TableGenFunctionsRenderer,
     mnemonic_for,
 )
-from numbast.backends.tablegen.typedefs import recover_typedefs
+from numbast.backends.tablegen.typedefs import typedef_facts
 from numbast.backends.tablegen.facts import header_facts
 from numbast.curate import plan_functions
 
@@ -53,8 +53,8 @@ def rendered(decls):
     renderer = TableGenFunctionsRenderer(
         plans,
         cfg,
-        enums=header_facts(decls, HEADER)["enums"],
-        typedefs=recover_typedefs(HEADER),
+        enums=header_facts(decls)["enums"],
+        typedefs=typedef_facts(decls),
     )
     return renderer.render_as_str(), renderer
 
@@ -62,8 +62,9 @@ def rendered(decls):
 def test_anonymous_enum_is_an_integer_operand(rendered):
     """An untagged ``typedef enum {...} Name;`` must not become a pointer.
 
-    ast_canopy reports no enum for it and there is no tag to recover it from,
-    so it has to be found by its public name.
+    There is no tag, so the typedef name is the only name this type has. A
+    name the mapper does not recognise as an enum falls through to the opaque
+    pointer type, which is wrong by ABI and not merely by spelling.
     """
     text, _ = rendered
     block = re.search(
