@@ -32,7 +32,7 @@ from numbast.backends.tablegen.types_td import (
     TableGenTypesRenderer,
     render_dialect_td,
 )
-from numbast.backends.tablegen.typedefs import recover_typedefs
+from numbast.backends.tablegen.typedefs import typedef_facts
 
 __all__ = [
     "OutParamPolicy",
@@ -44,6 +44,6 @@ __all__ = [
     "classify_params",
     "header_facts",
     "mnemonic_for",
-    "recover_typedefs",
+    "typedef_facts",
     "render_dialect_td",
 ]
