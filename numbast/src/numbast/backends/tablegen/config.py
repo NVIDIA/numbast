@@ -11,21 +11,28 @@ Two layers, deliberately:
     isolation.
 
 ``TableGenConfig``
-    The YAML-facing class. **Inherits the core**
-    :class:`numbast.tools.static_binding_generator.Config` so every core key
-    (``Entry Point``, ``File List``, ``Exclude``, ``API Prefix Removal``,
-    ``Clang Include Paths``, …) keeps working unchanged, and adds this
-    backend's keys on top. This is the shape a per-backend schema fragment
-    should take: core validates core keys, the backend validates its own.
+    The YAML-facing class. Inherits
+    :class:`numbast.tools.config.shared.SharedConfig` so every backend-neutral
+    key (``Entry Point``, ``GPU Arch``, ``File List``, ``Exclude``,
+    ``API Prefix Removal``, ``Clang Include Paths``, …) keeps working
+    unchanged, and adds this backend's keys on top. Same arrangement
+    ``CudaOxideConfig`` uses: core validates core keys, the backend validates
+    its own.
+
+    Deliberately *not* the ``Config`` alias in
+    ``numbast.tools.static_binding_generator``, which resolves to
+    ``NumbaConfig`` -- that carries Numba type maps, datamodels, shim include
+    overrides and the Numba dispatch validation, none of which a dialect
+    emitter can act on.
 """
 
 from dataclasses import dataclass, field
 
+from numbast.tools.config.shared import SharedConfig
+
 __all__ = [
     "OutParamPolicy",
-    # Supplied by ``__getattr__`` below rather than defined here, which ruff
-    # cannot see.
-    "TableGenConfig",  # noqa: F822
+    "TableGenConfig",
     "TableGenOptions",
 ]
 
@@ -137,27 +144,9 @@ def _tablegen_options_from_dict(config_dict: dict) -> TableGenOptions:
     )
 
 
-def _make_config_class():
-    """Build ``TableGenConfig`` lazily.
+class TableGenConfig(SharedConfig):
+    """Backend-neutral numbast config plus the TableGen backend's keys."""
 
-    The core ``Config`` lives in ``numbast.tools.static_binding_generator``,
-    which imports numba and the Numba renderers at module scope. Importing it
-    eagerly would make this backend depend on the Numba stack, so subclassing
-    is deferred until the YAML-facing class is actually requested.
-    """
-    from numbast.tools.static_binding_generator import Config as _CoreConfig
-
-    class TableGenConfig(_CoreConfig):
-        """Core numbast config plus the TableGen backend's keys."""
-
-        def __init__(self, config_dict: dict):
-            super().__init__(config_dict)
-            self.tablegen = _tablegen_options_from_dict(config_dict)
-
-    return TableGenConfig
-
-
-def __getattr__(name):
-    if name == "TableGenConfig":
-        return _make_config_class()
-    raise AttributeError(name)
+    def __init__(self, config_dict: dict):
+        super().__init__(config_dict)
+        self.tablegen = _tablegen_options_from_dict(config_dict)
