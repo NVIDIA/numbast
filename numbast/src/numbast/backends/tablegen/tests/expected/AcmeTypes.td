@@ -51,7 +51,7 @@ def Acme_DevResourceType : Acme_Type<"DevResource", "devresource"> {
   }];
 }
 
-def Acme_DevresourceF2Type : Acme_Type<"DevresourceF2", "devresourcef2"> {
+def Acme_DevResourceF2Type : Acme_Type<"DevResourceF2", "devresourcef2"> {
   let summary = "DevResource_F2 (struct)";
   let description = [{
     DevResource_F2 (struct)

@@ -10,7 +10,7 @@ cover what it declines to emit, which is what these tests are for.
 import pytest
 
 from numbast.backends.tablegen import TableGenOptions, TableGenTypesRenderer
-from numbast.backends.tablegen.types import TypeMapper
+from numbast.backends.tablegen.type_mapper import TypeMapper
 from numbast.backends.tablegen.types_td import DuplicateTypeMnemonicError
 
 OPTIONS = TableGenOptions(dialect_name="acme", cpp_class_prefix="Acme")
@@ -27,9 +27,10 @@ def test_records_differing_only_in_case_are_refused():
     """Two record names differing only in case claim one mnemonic.
 
     A struct's mnemonic is its record name lowered, so ``DevResource`` and
-    ``Devresource`` -- a real record and the anonymous one nested inside it --
-    both ask for ``devresource``. TableGen keys types on the C++ name and
-    accepts the pair, the library links, and the process then dies when the
+    ``Devresource`` both ask for ``devresource``. Two spellings of one word is
+    the form this takes in practice, whether the header declares both or
+    prefix-stripping brings them together. TableGen keys types on the C++ name
+    and accepts the pair, the library links, and the process then dies when the
     dialect is registered with ``Dialect Type with name ... is already
     registered``. Generation is the last point at which this can be reported
     against the declarations that caused it.
