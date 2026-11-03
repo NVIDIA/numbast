@@ -450,7 +450,7 @@ numba_datamodel_dict = NumbaDataModelDictType()
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
-    Group C++ record typedef declarations by their underlying type name.
+    Group C++ struct/class typedefs by their underlying type name.
 
     Parameters:
         typedef_decls (list[Typedef]): Typedef declarations to process.
@@ -460,11 +460,11 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
     aliases = defaultdict(list)
     for typedef in typedef_decls:
-        # AST Canopy collects all typedefs; this renderer emits record aliases.
+        # Union fields overlap; the default struct model cannot represent them.
         underlying = typedef.underlying_type
         while underlying.kind in (type_kind.typedef_, type_kind.sugar):
             underlying = underlying.inner_type
-        if underlying.kind == type_kind.record:
+        if underlying.kind == type_kind.record and not underlying.is_union():
             aliases[typedef.underlying_name].append(typedef.name)
 
     return aliases

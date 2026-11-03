@@ -82,6 +82,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def("is_const_qualified", &Type::is_const_qualified)
       .def("is_volatile_qualified", &Type::is_volatile_qualified)
       .def("is_restrict_qualified", &Type::is_restrict_qualified)
+      .def("is_union", &Type::is_union)
       .def("__repr__", [](const Type &t) { return "<Type: " + t.name + ">"; })
       .def(py::pickle(
           [](const Type &f) {
@@ -92,14 +93,14 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                 f.name, f.unqualified_non_ref_type_name, f.is_right_reference(),
                 f.is_left_reference(), f.kind, f.is_const_qualified(),
                 f.is_volatile_qualified(), f.is_restrict_qualified(),
-                inner_types, f.array_size, f.type_name);
+                inner_types, f.array_size, f.type_name, f.is_union());
           },
           [](py::tuple t) {
             if (t.size() == 4) {
               return Type{t[0].cast<std::string>(), t[1].cast<std::string>(),
                           t[2].cast<bool>(), t[3].cast<bool>()};
             }
-            if (t.size() != 11)
+            if (t.size() != 11 && t.size() != 12)
               throw std::runtime_error("Invalid type state during unpickle!");
             return Type{t[0].cast<std::string>(),
                         t[1].cast<std::string>(),
@@ -111,7 +112,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[7].cast<bool>(),
                         t[8].cast<std::vector<Type>>(),
                         t[9].cast<std::optional<std::uint64_t>>(),
-                        t[10].cast<std::string>()};
+                        t[10].cast<std::string>(),
+                        t.size() == 12 ? t[11].cast<bool>() : false};
           }));
 
   py::class_<Enum>(m, "Enum")

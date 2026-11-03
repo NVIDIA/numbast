@@ -30,6 +30,9 @@ def test_python_generation_keeps_record_aliases_only(tmp_path, generator):
         "typedef word_t handle_t;\n"
         "struct Record { int value; };\n"
         "typedef Record record_t;\n"
+        "union Storage { int value; float other; };\n"
+        "typedef Storage storage_t;\n"
+        "typedef storage_t storage_alias_t;\n"
     )
     config = driver.Config(
         {
@@ -46,6 +49,8 @@ def test_python_generation_keeps_record_aliases_only(tmp_path, generator):
     assert "record_t = Record" in rendered
     assert "word_t =" not in rendered
     assert "handle_t =" not in rendered
+    assert "storage_t =" not in rendered
+    assert "storage_alias_t =" not in rendered
 
 
 def test_record_alias_filter_preserves_chains_and_templates(
@@ -61,10 +66,22 @@ def test_record_alias_filter_preserves_chains_and_templates(
         "typedef record_t record_alias_t;\n"
         "template<class T> struct Box { T value; };\n"
         "typedef Box<int> box_t;\n"
+        "union Storage { int value; float other; };\n"
+        "typedef Storage storage_t;\n"
+        "typedef storage_t storage_alias_t;\n"
+        "typedef const storage_alias_t const_storage_t;\n"
+        "union Incomplete;\n"
+        "typedef Incomplete incomplete_t;\n"
     )
     declarations = parse_declarations_from_source(
         str(source), [str(source)], "sm_80"
     )
+    assert {
+        "storage_t",
+        "storage_alias_t",
+        "const_storage_t",
+        "incomplete_t",
+    } <= {td.name for td in declarations.typedefs}
     assert driver._typedef_to_aliases(declarations.typedefs) == {
         "Record": ["record_t", "record_alias_t"],
         "Box<int>": ["box_t"],

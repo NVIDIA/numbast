@@ -59,7 +59,35 @@ def test_non_record_typedefs_are_retained(declarations, roundtrip):
     assert enum_type.kind == bindings.type_kind.enum_
     assert by_name["record_t"].underlying_name == "Record"
     assert by_name["record_alias_t"].underlying_name == "Record"
+    record_type = by_name["record_alias_t"].underlying_type
+    while record_type.kind in (
+        bindings.type_kind.typedef_,
+        bindings.type_kind.sugar,
+    ):
+        record_type = record_type.inner_type
+    assert not record_type.is_union()
+    union_type = by_name["storage_t"].underlying_type
+    while union_type.kind in (
+        bindings.type_kind.typedef_,
+        bindings.type_kind.sugar,
+    ):
+        union_type = union_type.inner_type
+    assert union_type.kind == bindings.type_kind.record
+    assert union_type.is_union()
 
 
 def test_typedefs_from_unretained_headers_are_not_collected(declarations):
     assert not any(item.name == "int32_t" for item in declarations.typedefs)
+
+
+@pytest.mark.parametrize("state_size", [4, 11])
+def test_legacy_type_pickle_states_are_readable(declarations, state_size):
+    original = next(
+        td.underlying_type
+        for td in declarations.typedefs
+        if td.name == "record_t"
+    )
+    restored = bindings.Type.__new__(bindings.Type)
+    restored.__setstate__(original.__getstate__()[:state_size])
+    assert restored.name == original.name
+    assert not restored.is_union()

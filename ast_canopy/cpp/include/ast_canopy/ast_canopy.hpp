@@ -79,7 +79,8 @@ struct Type {
        bool is_right_reference, bool is_left_reference, type_kind kind,
        bool is_const_qualified, bool is_volatile_qualified,
        bool is_restrict_qualified, std::vector<Type> inner_types,
-       std::optional<std::uint64_t> array_size, std::string type_name);
+       std::optional<std::uint64_t> array_size, std::string type_name,
+       bool is_union = false);
   Type(const clang::QualType &, const clang::ASTContext &context);
 
   std::string name;
@@ -93,6 +94,7 @@ struct Type {
   bool is_const_qualified() const { return _is_const_qualified; }
   bool is_volatile_qualified() const { return _is_volatile_qualified; }
   bool is_restrict_qualified() const { return _is_restrict_qualified; }
+  bool is_union() const { return _is_union; }
   const Type *inner_type() const {
     return _inner_types.empty() ? nullptr : &_inner_types.front();
   }
@@ -106,6 +108,7 @@ private:
   bool _is_const_qualified = false;
   bool _is_volatile_qualified = false;
   bool _is_restrict_qualified = false;
+  bool _is_union = false;
 };
 
 struct Enum {
