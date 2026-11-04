@@ -65,7 +65,7 @@ def test_non_record_typedefs_are_retained(declarations, roundtrip):
         bindings.type_kind.sugar,
     ):
         record_type = record_type.inner_type
-    assert not record_type.is_union()
+    assert record_type.is_union is False
     union_type = by_name["storage_t"].underlying_type
     while union_type.kind in (
         bindings.type_kind.typedef_,
@@ -73,7 +73,7 @@ def test_non_record_typedefs_are_retained(declarations, roundtrip):
     ):
         union_type = union_type.inner_type
     assert union_type.kind == bindings.type_kind.record
-    assert union_type.is_union()
+    assert union_type.is_union is True
 
 
 def test_typedefs_from_unretained_headers_are_not_collected(declarations):
@@ -90,4 +90,4 @@ def test_legacy_type_pickle_states_are_readable(declarations, state_size):
     restored = bindings.Type.__new__(bindings.Type)
     restored.__setstate__(original.__getstate__()[:state_size])
     assert restored.name == original.name
-    assert not restored.is_union()
+    assert restored.is_union is False

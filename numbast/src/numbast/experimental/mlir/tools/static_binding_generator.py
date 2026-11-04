@@ -464,7 +464,7 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
         underlying = typedef.underlying_type
         while underlying.kind in (type_kind.typedef_, type_kind.sugar):
             underlying = underlying.inner_type
-        if underlying.kind == type_kind.record and not underlying.is_union():
+        if underlying.kind == type_kind.record and not underlying.is_union:
             aliases[typedef.underlying_name].append(typedef.name)
 
     return aliases

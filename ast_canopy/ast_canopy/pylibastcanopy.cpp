@@ -82,7 +82,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def("is_const_qualified", &Type::is_const_qualified)
       .def("is_volatile_qualified", &Type::is_volatile_qualified)
       .def("is_restrict_qualified", &Type::is_restrict_qualified)
-      .def("is_union", &Type::is_union)
+      .def_property_readonly("is_union", &Type::is_union)
       .def("__repr__", [](const Type &t) { return "<Type: " + t.name + ">"; })
       .def(py::pickle(
           [](const Type &f) {
