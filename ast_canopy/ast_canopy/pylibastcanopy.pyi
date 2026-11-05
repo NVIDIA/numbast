@@ -32,9 +32,16 @@ class Declarations:
     enums: list[Enum]
     function_templates: list[FunctionTemplate]
     functions: list[Function]
+    macro_defines: dict[str, MacroDefinition]
     records: list[Record]
     typedefs: list[Typedef]
     def __init__(self, *args, **kwargs) -> None: ...
+
+class MacroDefinition:
+    name: str
+    replacement_text: str
+    evaluated_constant: EvaluatedConstDecl | None
+    def __init__(self) -> None: ...
 
 class Enum:
     enumerator_values: list[str]
