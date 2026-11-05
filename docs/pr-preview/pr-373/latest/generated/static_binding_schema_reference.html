@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 
 
@@ -28,31 +27,31 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
 
 
-    <script src="../_static/documentation_options.js?v=261ea15a"></script>
+    <script src="../_static/documentation_options.js?v=11e62b30"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=35a8b989"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/static_binding_schema_reference';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.18.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.10.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.10.2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -66,6 +65,7 @@
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
   
@@ -120,7 +120,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -288,7 +288,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -299,15 +299,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -318,7 +318,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -327,7 +327,7 @@
   
 
   
-    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
       <span class="fa-solid fa-outdent"></span>
     </button>
   
@@ -341,7 +341,7 @@
       
       
       
-      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
       <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
 
@@ -504,15 +504,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -548,7 +548,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
@@ -563,6 +563,12 @@
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="../_autosummary/numbast.types.html">numbast.types</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../_autosummary/numbast.tools.config.html">numbast.tools.config</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../_autosummary/numbast.tools.config.cuda_oxide.html">numbast.tools.config.cuda_oxide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../_autosummary/numbast.tools.config.numba.html">numbast.tools.config.numba</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../_autosummary/numbast.tools.config.shared.html">numbast.tools.config.shared</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3"><a class="reference internal" href="../_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
 </ul>
@@ -600,7 +606,7 @@
     
     <li class="breadcrumb-item breadcrumb-home">
       <a href="../index.html" class="nav-link" aria-label="Home">
-        <i class="fa-solid fa-home"></i>
+        <i class="fa-solid fa-house"></i>
       </a>
     </li>
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Required keys</span></li>
@@ -743,7 +749,8 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Output binding filename. Defaults to <cite>&lt;entry-point-basename&gt;.py</cite>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Output filename for the Numba binding. Defaults to <cite>&lt;entry-point-basename&gt;.py</cite>. CUDA-Oxide uses its nested <code class="docutils literal notranslate"><span class="pre">Output</span>
+<span class="pre">Name</span></code>.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Output Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
@@ -787,12 +794,12 @@ output.</p>
 </ul>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Module Callbacks</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">loaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
-<span class="w">  </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">unloaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
+<span class="w">  </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">'lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">''</span><span class="s">loaded</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)'</span>
+<span class="w">  </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">'lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">''</span><span class="s">unloaded</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)'</span>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Link</span> <span class="pre">Variables</span> <span class="pre">Used</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Experimental MLIR-backend-only linker metadata variables to mark as used. Requires <code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend:</span> <span class="pre">true</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Module</span> <span class="pre">Link</span> <span class="pre">Variables</span> <span class="pre">Used</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Experimental MLIR-backend-only linker metadata variables to mark as used. Requires <code class="docutils literal notranslate"><span class="pre">Backend:</span> <span class="pre">numba-cuda-mlir</span></code>.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
 <p>Constraints:</p>
 <ul class="simple">
@@ -818,8 +825,9 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See
-<a class="reference internal" href="../argument_intents.html"><span class="doc">Argument intents</span></a> for intent semantics and generated signature behavior.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Function</span> <span class="pre">Argument</span> <span class="pre">Intents</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Numba-only per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries.
+CUDA-Oxide ignores this backend-specific option. See <a class="reference internal" href="../argument_intents.html"><span class="doc">Argument intents</span></a> for intent semantics and generated
+signature behavior.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Function Argument Intents</span><span class="p">:</span>
@@ -829,13 +837,28 @@ output.</p>
 </pre></div>
 </div>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">MLIR</span> <span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Route static binding generation to the experimental <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend. This requires a
-user-provided <code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation.</p>
-<p>Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">Backend</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">|</span> <span class="pre">array</span> <span class="pre">|</span> <span class="pre">null</span></code></span></dt><dd><p>Name of the emission backend, or a list of names. <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code> generates Numba bindings; <code class="docutils literal notranslate"><span class="pre">numba-cuda-mlir</span></code> routes
+generation to the experimental <code class="docutils literal notranslate"><span class="pre">numbast.experimental.mlir</span></code> backend, which requires a user-provided
+<code class="docutils literal notranslate"><span class="pre">numba_cuda_mlir</span></code> installation; <code class="docutils literal notranslate"><span class="pre">cuda-oxide</span></code> is registered for the Rust renderer but has no driver yet, so naming
+it is an error that says so. Defaults to <code class="docutils literal notranslate"><span class="pre">numba-cuda</span></code>. An unrecognised name is an error rather than a fallback.
+Naming more than one backend is an error for now, since a single run drives a single renderer.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
+</ul>
 <p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">MLIR Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-cuda</span>
+<span class="nt">Backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numba-cuda-mlir</span>
 </pre></div>
 </div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CUDA</span> <span class="pre">Oxide</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Settings used when the shared document is consumed by the CUDA-Oxide backend. Their presence does not cause a Numba
+invocation to emit Rust.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>No unspecified sub-keys</p></li>
+</ul>
 </dd>
 </dl>
 <section id="optional-nested-keys">
@@ -897,15 +920,59 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <dl>
 <dt><code class="docutils literal notranslate"><span class="pre">setup</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Python expression for setup callback.</p>
 <p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">loaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">'lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">''</span><span class="s">loaded</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)'</span>
 </pre></div>
 </div>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">teardown</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Python expression for teardown callback.</p>
 <p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">&#39;&#39;</span><span class="s">unloaded</span><span class="se">&#39;&#39;</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)&#39;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">'lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(</span><span class="se">''</span><span class="s">unloaded</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="s">mod)'</span>
 </pre></div>
 </div>
+</dd>
+</dl>
+<p class="rubric"><code class="docutils literal notranslate"><span class="pre">CUDA</span> <span class="pre">Oxide</span></code></p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">LTOIR</span> <span class="pre">Inputs</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Ordered external CUDA LTOIR artifacts that provide the generated device symbols. Numbast records these paths but does
+not build them.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Min items: 1</p></li>
+<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Output</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Rust output filename. Defaults to <cite>&lt;entry-point-basename&gt;.rs</cite>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Pattern: <code class="docutils literal notranslate"><span class="pre">^[^/\\]+$</span></code></p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Manifest</span> <span class="pre">Name</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Optional output filename for the versioned JSON manifest. Defaults to the Rust output stem followed by
+<cite>.manifest.json</cite>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Pattern: <code class="docutils literal notranslate"><span class="pre">^[^/\\]+$</span></code></p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Symbol</span> <span class="pre">Inventory</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Optional exact newline- or nm-style inventory of the selected public API. Generation fails if a symbol is present on
+only one side.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Type</span> <span class="pre">Aliases</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Supplemental C typedefs expressed as C-to-C mappings. Arbitrary Rust source is not accepted.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Type Aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nvshmem_team_t</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span>
+</pre></div>
+</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Constants</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Typed literal constants missing from the parsed AST.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Bypass</span> <span class="pre">Parse</span> <span class="pre">Errors</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">boolean</span></code></span></dt><dd><p>Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an exact
+Symbol Inventory to detect parser omissions.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Clang</span> <span class="pre">Binary</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">string</span></code></span></dt><dd><p>Optional clang++ executable used by AST Canopy.</p>
 </dd>
 </dl>
 </section>
@@ -914,11 +981,12 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <h1>Raw schema<a class="headerlink" href="#raw-schema" title="Link to this heading">#</a></h1>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</span>
 <span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
-<span class="nt">$schema</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://json-schema.org/draft/2020-12/schema&quot;</span>
-<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Numbast Static Binding Generator Config</span>
+<span class="nt">$schema</span><span class="p">:</span><span class="w"> </span><span class="s">"https://json-schema.org/draft/2020-12/schema"</span>
+<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Numbast Binding Generator Config</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">  </span><span class="no">Canonical schema describing supported YAML keys and value shapes accepted by the Numbast static binding generator</span>
-<span class="w">  </span><span class="no">configuration loader.</span>
+<span class="w">  </span><span class="no">Canonical schema for a shared Numbast binding configuration. Parser and declaration-selection options are shared</span>
+<span class="w">  </span><span class="no">across backends, while backend-specific output settings remain in their own sections. The same document can</span>
+<span class="w">  </span><span class="no">therefore be used in separate Numba and CUDA-Oxide invocations.</span>
 
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -944,12 +1012,12 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">    </span><span class="nt">maxItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">    </span><span class="nt">items</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;^sm_[0-9]+$&quot;</span>
+<span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"^sm_[0-9]+a?$"</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
 <span class="w">      </span><span class="no">Target GPU architecture list. Exactly one architecture is currently supported per run.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sm_80&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"sm_80"</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">File List</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
 <span class="w">    </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
@@ -969,7 +1037,7 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mapping of struct names to Numba type class names.</span>
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;__nv_fp8_e4m3&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;FP8e4m3Type&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">"__nv_fp8_e4m3"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"FP8e4m3Type"</span><span class="p p-Indicator">}</span>
 <span class="w">  </span><span class="nt">Data Models</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
@@ -977,15 +1045,15 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mapping of struct names to Numba datamodel class names.</span>
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;__nv_fp8_e4m3&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;FP8e4m3Model&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">"__nv_fp8_e4m3"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"FP8e4m3Model"</span><span class="p p-Indicator">}</span>
 <span class="w">  </span><span class="nt">Exclude</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 <span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Declaration names to skip during binding generation.</span>
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;internal_helper&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">Struct</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;__InternalState&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"internal_helper"</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">Struct</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"__InternalState"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">Function</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
@@ -994,7 +1062,7 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Function names to exclude.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;internal_helper&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;deprecated_api&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"internal_helper"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"deprecated_api"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">Struct</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
 <span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
@@ -1002,7 +1070,7 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Struct names to exclude.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;__InternalState&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"__InternalState"</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">Clang Include Paths</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
@@ -1019,15 +1087,15 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Extra Python import statements injected into the generated file.</span>
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;from</span><span class="nv"> </span><span class="s">nvshmem.bindings</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">module_init&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"from</span><span class="nv"> </span><span class="s">nvshmem.bindings</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">module_init"</span>
 <span class="w">  </span><span class="nt">Shim Include Override</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;null&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
 <span class="w">      </span><span class="no">Override value used to compose the generated shim include line. If unset, the entry-point path is used.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;cufp8.hpp&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"cufp8.hpp"</span>
 <span class="w">  </span><span class="nt">Predefined Macros</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
@@ -1038,9 +1106,12 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SOME_MACRO=1</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ENABLE_FEATURE</span>
 <span class="w">  </span><span class="nt">Output Name</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;null&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Output binding filename. Defaults to `&lt;entry-point-basename&gt;.py`.</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">      </span><span class="no">Output filename for the Numba binding. Defaults to `&lt;entry-point-basename&gt;.py`. CUDA-Oxide uses its nested</span>
+<span class="w">      </span><span class="no">``Output Name``.</span>
+
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bindings_my_lib.py</span>
 <span class="w">  </span><span class="nt">Cooperative Launch Required Functions Regex</span><span class="p">:</span>
@@ -1052,16 +1123,16 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">      </span><span class="no">Regex patterns. Matching function names are generated with cooperative launch handling.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;^cg_.*&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"^cg_.*"</span>
 <span class="w">  </span><span class="nt">API Prefix Removal</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 <span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefixes removed from rendered declaration names.</span>
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">Struct</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">Enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;LIB_&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"lib_"</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">Struct</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"lib_"</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">Enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"LIB_"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">Function</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
@@ -1071,7 +1142,7 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix(es) removed from generated function names.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;mylib_&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"lib_"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"mylib_"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">Struct</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
@@ -1080,7 +1151,7 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix(es) removed from generated struct names.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;lib_&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"lib_"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">Enum</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
@@ -1089,47 +1160,48 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix(es) removed from generated enum names and values.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;LIB_&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"LIB_"</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">Module Callbacks</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 <span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Optional module-level shim callback assignments.</span>
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;loaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
-<span class="w">        </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;unloaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">setup</span><span class="p">:</span><span class="w"> </span><span class="s">"lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print('loaded',</span><span class="nv"> </span><span class="s">mod)"</span>
+<span class="w">        </span><span class="nt">teardown</span><span class="p">:</span><span class="w"> </span><span class="s">"lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print('unloaded',</span><span class="nv"> </span><span class="s">mod)"</span>
 <span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">setup</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Python expression for setup callback.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;loaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print('loaded',</span><span class="nv"> </span><span class="s">mod)"</span>
 <span class="w">      </span><span class="nt">teardown</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Python expression for teardown callback.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print(&#39;unloaded&#39;,</span><span class="nv"> </span><span class="s">mod)&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"lambda</span><span class="nv"> </span><span class="s">mod:</span><span class="nv"> </span><span class="s">print('unloaded',</span><span class="nv"> </span><span class="s">mod)"</span>
 <span class="w">  </span><span class="nt">Module Link Variables Used</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
 <span class="w">    </span><span class="nt">items</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.</span>
+<span class="w">      </span><span class="no">Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``Backend:</span>
+<span class="w">      </span><span class="no">numba-cuda-mlir``.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;__numbast_module_used&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"__numbast_module_used"</span>
 <span class="w">  </span><span class="nt">Skip Prefix</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;null&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Skip generating bindings for functions whose names start with this prefix.</span>
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;__internal_&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"__internal_"</span>
 <span class="w">  </span><span class="nt">Use Separate Registry</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Generate separate typing/target registries instead of reusing Numba CUDA&#39;s global registries.</span>
+<span class="w">      </span><span class="no">Generate separate typing/target registries instead of reusing Numba CUDA's global registries.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -1137,8 +1209,9 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Per-function argument intent overrides. Function keys map to parameter-name or parameter-index entries. See</span>
-<span class="w">      </span><span class="no">:doc:`/argument_intents` for intent semantics and generated signature behavior.</span>
+<span class="w">      </span><span class="no">Numba-only per-function argument intent overrides. Function keys map to parameter-name or parameter-index</span>
+<span class="w">      </span><span class="no">entries. CUDA-Oxide ignores this backend-specific option. See :doc:`/argument_intents` for intent semantics and</span>
+<span class="w">      </span><span class="no">generated signature behavior.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">my_function</span><span class="p">:</span>
@@ -1149,22 +1222,104 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 <span class="w">      </span><span class="nt">additionalProperties</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">oneOf</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">            </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;in&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;inout_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_return&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">            </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"in"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"inout_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_return"</span><span class="p p-Indicator">]</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
 <span class="w">            </span><span class="nt">properties</span><span class="p">:</span>
 <span class="w">              </span><span class="nt">intent</span><span class="p">:</span>
 <span class="w">                </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
-<span class="w">                </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;in&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;inout_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_ptr&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;out_return&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">            </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;intent&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">MLIR Backend</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
-<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">                </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"in"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"inout_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_ptr"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"out_return"</span><span class="p p-Indicator">]</span>
+<span class="w">            </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"intent"</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">Backend</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">array</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"null"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
 <span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
-<span class="w">      </span><span class="no">Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a</span>
-<span class="w">      </span><span class="no">user-provided ``numba_cuda_mlir`` installation.</span>
+<span class="w">      </span><span class="no">Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir``</span>
+<span class="w">      </span><span class="no">routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided</span>
+<span class="w">      </span><span class="no">``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so</span>
+<span class="w">      </span><span class="no">naming it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a</span>
+<span class="w">      </span><span class="no">fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.</span>
 
 <span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba-cuda"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"numba-cuda-mlir"</span>
+<span class="w">  </span><span class="nt">CUDA Oxide</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">      </span><span class="no">Settings used when the shared document is consumed by the CUDA-Oxide backend. Their presence does not cause a</span>
+<span class="w">      </span><span class="no">Numba invocation to emit Rust.</span>
+
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">LTOIR Inputs</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">LTOIR Inputs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">        </span><span class="nt">minItems</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Ordered external CUDA LTOIR artifacts that provide the generated device symbols. Numbast records these</span>
+<span class="w">          </span><span class="no">paths but does not build them.</span>
+
+<span class="w">      </span><span class="nt">Output Name</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"^[^/\\\\]+$"</span>
+<span class="w">        </span><span class="nt">not</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">..</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Rust output filename. Defaults to `&lt;entry-point-basename&gt;.rs`.</span>
+
+<span class="w">      </span><span class="nt">Manifest Name</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"^[^/\\\\]+$"</span>
+<span class="w">        </span><span class="nt">not</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">..</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Optional output filename for the versioned JSON manifest. Defaults to the Rust output stem followed by</span>
+<span class="w">          </span><span class="no">`.manifest.json`.</span>
+
+<span class="w">      </span><span class="nt">Symbol Inventory</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Optional exact newline- or nm-style inventory of the selected public API. Generation fails if a symbol is</span>
+<span class="w">          </span><span class="no">present on only one side.</span>
+
+<span class="w">      </span><span class="nt">Type Aliases</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Supplemental C typedefs expressed as C-to-C mappings. Arbitrary Rust source is not accepted.</span>
+
+<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">nvshmem_team_t</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span>
+<span class="w">      </span><span class="nt">Constants</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typed literal constants missing from the parsed AST.</span>
+<span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">          </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Type</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">Value</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">Type</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">              </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C scalar type or configured C type alias.</span>
+<span class="w">            </span><span class="nt">Value</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">integer</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">boolean</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">]</span>
+<span class="w">              </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Integer or Boolean literal; expressions are rejected.</span>
+<span class="w">      </span><span class="nt">Bypass Parse Errors</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">boolean</span>
+<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an</span>
+<span class="w">          </span><span class="no">exact Symbol Inventory to detect parser omissions.</span>
+
+<span class="w">      </span><span class="nt">Clang Binary</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Optional clang++ executable used by AST Canopy.</span>
 </pre></div>
 </div>
 </section>
@@ -1188,7 +1343,7 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
 
 
               
-                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
@@ -1225,8 +1380,8 @@ user-provided <code class="docutils literal notranslate"><span class="pre">numba
   
 
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
 
 
   <footer class="bd-footer">

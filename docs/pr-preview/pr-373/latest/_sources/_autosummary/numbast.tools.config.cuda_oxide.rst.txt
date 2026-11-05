@@ -1,0 +1,12 @@
+numbast.tools.config.cuda\_oxide
+================================
+
+.. automodule:: numbast.tools.config.cuda_oxide
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CudaOxideConfig
+   

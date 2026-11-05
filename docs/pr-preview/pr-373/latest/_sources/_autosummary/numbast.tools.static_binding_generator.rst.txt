@@ -15,7 +15,6 @@ numbast.tools.static\_binding\_generator
 
    .. autosummary::
    
-      Config
       NumbaDataModelDictType
       NumbaTypeDictType
    

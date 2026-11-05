@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 
 
@@ -27,31 +26,31 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
 
 
-    <script src="_static/documentation_options.js?v=261ea15a"></script>
+    <script src="_static/documentation_options.js?v=11e62b30"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=35a8b989"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.18.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://nvidia.github.io/numbast/nv-versions.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.10.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.10.2';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -65,6 +64,7 @@
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
   
@@ -119,7 +119,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -287,7 +287,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -298,15 +298,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -317,7 +317,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -336,7 +336,7 @@
       
       
       
-      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
       <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
 
@@ -499,15 +499,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -543,7 +543,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ast_canopy_overview.html">AST Canopy overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api_reference.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="_autosummary/ast_canopy.decl.html">ast_canopy.decl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ast_canopy.decl.html">ast_canopy.decl</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.static.html">numbast.static</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.callconv.html">numbast.static.callconv</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.static.class_template.html">numbast.static.class_template</a></li>
@@ -558,6 +558,12 @@
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/numbast.types.html">numbast.types</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_autosummary/numbast.tools.html">numbast.tools</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="_autosummary/numbast.tools.config.html">numbast.tools.config</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.cuda_oxide.html">numbast.tools.config.cuda_oxide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.numba.html">numbast.tools.config.numba</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_autosummary/numbast.tools.config.shared.html">numbast.tools.config.shared</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.static_binding_generator.html">numbast.tools.static_binding_generator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/numbast.tools.yaml_tags.html">numbast.tools.yaml_tags</a></li>
 </ul>
@@ -599,7 +605,9 @@
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
@@ -619,7 +627,7 @@
     ast_canopy.decl
 
       <ul>
-        <li><a href="_autosummary/ast_canopy.decl.html#module-ast_canopy.decl">module</a>, <a href="api_reference.html#module-ast_canopy.decl">[1]</a>
+        <li><a href="ast_canopy.decl.html#module-ast_canopy.decl">module</a>
 </li>
       </ul></li>
   </ul></td>
@@ -628,7 +636,7 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplateSpecialization.base_name">base_name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplateSpecialization.base_name">base_name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -636,21 +644,23 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplate">ClassTemplate (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.class_template_specializations">class_template_specializations (ast_canopy.api.Declarations attribute)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplateSpecialization">ClassTemplateSpecialization (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.class_templates">class_templates (ast_canopy.api.Declarations attribute)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.ConstExprVar">ConstExprVar (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplate">ClassTemplate (class in ast_canopy.decl)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplateSpecialization.constructors">constructors() (ast_canopy.decl.ClassTemplateSpecialization method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplateSpecialization">ClassTemplateSpecialization (class in ast_canopy.decl)</a>
+</li>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplateSpecialization.constructors">constructors() (ast_canopy.decl.ClassTemplateSpecialization method)</a>
 
       <ul>
-        <li><a href="api_reference.html#ast_canopy.decl.Struct.constructors">(ast_canopy.decl.Struct method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.constructors">(ast_canopy.decl.Struct method)</a>
 </li>
       </ul></li>
-      <li><a href="api_reference.html#ast_canopy.decl.Struct.conversion_operators">conversion_operators() (ast_canopy.decl.Struct method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.conversion_operators">conversion_operators() (ast_canopy.decl.Struct method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -658,7 +668,23 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.TemplatedStructMethod.decl_name">decl_name (ast_canopy.decl.TemplatedStructMethod property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.TemplatedStructMethod.decl_name">decl_name (ast_canopy.decl.TemplatedStructMethod property)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations">Declarations (class in ast_canopy.api)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.enums">enums (ast_canopy.api.Declarations attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.EvaluatedConstDecl">EvaluatedConstDecl (class in ast_canopy.decl)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -666,29 +692,41 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplate.from_c_obj">from_c_obj() (ast_canopy.decl.ClassTemplate class method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplate.from_c_obj">from_c_obj() (ast_canopy.decl.ClassTemplate class method)</a>
 
       <ul>
-        <li><a href="api_reference.html#ast_canopy.decl.ClassTemplateSpecialization.from_c_obj">(ast_canopy.decl.ClassTemplateSpecialization class method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplateSpecialization.from_c_obj">(ast_canopy.decl.ClassTemplateSpecialization class method)</a>
 </li>
-        <li><a href="api_reference.html#ast_canopy.decl.ConstExprVar.from_c_obj">(ast_canopy.decl.ConstExprVar class method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.EvaluatedConstDecl.from_c_obj">(ast_canopy.decl.EvaluatedConstDecl class method)</a>
 </li>
-        <li><a href="api_reference.html#ast_canopy.decl.Function.from_c_obj">(ast_canopy.decl.Function class method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.from_c_obj">(ast_canopy.decl.Function class method)</a>
 </li>
-        <li><a href="api_reference.html#ast_canopy.decl.FunctionTemplate.from_c_obj">(ast_canopy.decl.FunctionTemplate class method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.FunctionTemplate.from_c_obj">(ast_canopy.decl.FunctionTemplate class method)</a>
 </li>
-        <li><a href="api_reference.html#ast_canopy.decl.Struct.from_c_obj">(ast_canopy.decl.Struct class method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.from_c_obj">(ast_canopy.decl.Struct class method)</a>
 </li>
-        <li><a href="api_reference.html#ast_canopy.decl.StructMethod.from_c_obj">(ast_canopy.decl.StructMethod class method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.StructMethod.from_c_obj">(ast_canopy.decl.StructMethod class method)</a>
 </li>
-        <li><a href="api_reference.html#ast_canopy.decl.TemplatedStruct.from_c_obj">(ast_canopy.decl.TemplatedStruct class method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.TemplatedStruct.from_c_obj">(ast_canopy.decl.TemplatedStruct class method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Function">Function (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function">Function (class in ast_canopy.decl)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.FunctionTemplate">FunctionTemplate (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.function_templates">function_templates (ast_canopy.api.Declarations attribute)</a>
+</li>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.functions">functions (ast_canopy.api.Declarations attribute)</a>
+</li>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.FunctionTemplate">FunctionTemplate (class in ast_canopy.decl)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.global_constants">global_constants (ast_canopy.api.Declarations attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -696,27 +734,27 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplate.instantiate">instantiate() (ast_canopy.decl.ClassTemplate method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplate.instantiate">instantiate() (ast_canopy.decl.ClassTemplate method)</a>
 
       <ul>
-        <li><a href="api_reference.html#ast_canopy.decl.FunctionTemplate.instantiate">(ast_canopy.decl.FunctionTemplate method)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.FunctionTemplate.instantiate">(ast_canopy.decl.FunctionTemplate method)</a>
 </li>
       </ul></li>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.is_allocation_operator">is_allocation_operator() (ast_canopy.decl.Function method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.is_allocation_operator">is_allocation_operator() (ast_canopy.decl.Function method)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.is_conversion_operator">is_conversion_operator() (ast_canopy.decl.Function method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.is_conversion_operator">is_conversion_operator() (ast_canopy.decl.Function method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.is_copy_assignment_operator">is_copy_assignment_operator() (ast_canopy.decl.Function method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.is_copy_assignment_operator">is_copy_assignment_operator() (ast_canopy.decl.Function method)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.is_cowait_operator">is_cowait_operator() (ast_canopy.decl.Function method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.is_cowait_operator">is_cowait_operator() (ast_canopy.decl.Function method)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.is_deallocation_operator">is_deallocation_operator() (ast_canopy.decl.Function method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.is_deallocation_operator">is_deallocation_operator() (ast_canopy.decl.Function method)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.is_overloaded_operator">is_overloaded_operator() (ast_canopy.decl.Function method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.is_overloaded_operator">is_overloaded_operator() (ast_canopy.decl.Function method)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.is_user_defined_literal">is_user_defined_literal() (ast_canopy.decl.Function method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.is_user_defined_literal">is_user_defined_literal() (ast_canopy.decl.Function method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -724,11 +762,15 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.macro_constants">macro_constants (ast_canopy.api.Declarations attribute)</a>
+</li>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.macro_defines">macro_defines (ast_canopy.api.Declarations attribute)</a>
+</li>
       <li>
     module
 
       <ul>
-        <li><a href="_autosummary/ast_canopy.decl.html#module-ast_canopy.decl">ast_canopy.decl</a>, <a href="api_reference.html#module-ast_canopy.decl">[1]</a>
+        <li><a href="ast_canopy.decl.html#module-ast_canopy.decl">ast_canopy.decl</a>
 </li>
         <li><a href="_autosummary/numbast.static.html#module-numbast.static">numbast.static</a>, <a href="api_reference.html#module-numbast.static">[1]</a>
 </li>
@@ -752,6 +794,14 @@
 </li>
         <li><a href="_autosummary/numbast.tools.html#module-numbast.tools">numbast.tools</a>
 </li>
+        <li><a href="_autosummary/numbast.tools.config.html#module-numbast.tools.config">numbast.tools.config</a>
+</li>
+        <li><a href="_autosummary/numbast.tools.config.cuda_oxide.html#module-numbast.tools.config.cuda_oxide">numbast.tools.config.cuda_oxide</a>
+</li>
+        <li><a href="_autosummary/numbast.tools.config.numba.html#module-numbast.tools.config.numba">numbast.tools.config.numba</a>
+</li>
+        <li><a href="_autosummary/numbast.tools.config.shared.html#module-numbast.tools.config.shared">numbast.tools.config.shared</a>
+</li>
         <li><a href="_autosummary/numbast.tools.static_binding_generator.html#module-numbast.tools.static_binding_generator">numbast.tools.static_binding_generator</a>
 </li>
         <li><a href="_autosummary/numbast.tools.yaml_tags.html#module-numbast.tools.yaml_tags">numbast.tools.yaml_tags</a>
@@ -765,10 +815,10 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplateSpecialization.name">name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplateSpecialization.name">name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
 
       <ul>
-        <li><a href="api_reference.html#ast_canopy.decl.Struct.name">(ast_canopy.decl.Struct property)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.name">(ast_canopy.decl.Struct property)</a>
 </li>
       </ul></li>
       <li>
@@ -820,8 +870,6 @@
         <li><a href="_autosummary/numbast.static.renderer.html#module-numbast.static.renderer">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     numbast.static.struct
 
@@ -836,6 +884,8 @@
         <li><a href="_autosummary/numbast.static.typedef.html#module-numbast.static.typedef">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     numbast.static.types
 
@@ -848,6 +898,34 @@
 
       <ul>
         <li><a href="_autosummary/numbast.tools.html#module-numbast.tools">module</a>
+</li>
+      </ul></li>
+      <li>
+    numbast.tools.config
+
+      <ul>
+        <li><a href="_autosummary/numbast.tools.config.html#module-numbast.tools.config">module</a>
+</li>
+      </ul></li>
+      <li>
+    numbast.tools.config.cuda_oxide
+
+      <ul>
+        <li><a href="_autosummary/numbast.tools.config.cuda_oxide.html#module-numbast.tools.config.cuda_oxide">module</a>
+</li>
+      </ul></li>
+      <li>
+    numbast.tools.config.numba
+
+      <ul>
+        <li><a href="_autosummary/numbast.tools.config.numba.html#module-numbast.tools.config.numba">module</a>
+</li>
+      </ul></li>
+      <li>
+    numbast.tools.config.shared
+
+      <ul>
+        <li><a href="_autosummary/numbast.tools.config.shared.html#module-numbast.tools.config.shared">module</a>
 </li>
       </ul></li>
       <li>
@@ -877,15 +955,15 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.overloaded_operator_to_python_operator">overloaded_operator_to_python_operator (ast_canopy.decl.Function property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.overloaded_operator_to_python_operator">overloaded_operator_to_python_operator (ast_canopy.decl.Function property)</a>
 
       <ul>
-        <li><a href="api_reference.html#ast_canopy.decl.StructMethod.overloaded_operator_to_python_operator">(ast_canopy.decl.StructMethod property)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.StructMethod.overloaded_operator_to_python_operator">(ast_canopy.decl.StructMethod property)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Struct.overloaded_operators">overloaded_operators() (ast_canopy.decl.Struct method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.overloaded_operators">overloaded_operators() (ast_canopy.decl.Struct method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -893,11 +971,13 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Function.param_types">param_types (ast_canopy.decl.Function property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Function.param_types">param_types (ast_canopy.decl.Function property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Struct.public_fields">public_fields() (ast_canopy.decl.Struct method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.parse_declarations_from_source">parse_declarations_from_source() (in module ast_canopy.api)</a>
+</li>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.public_fields">public_fields() (ast_canopy.decl.Struct method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -905,10 +985,10 @@
 <h2 id="Q">Q</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplateSpecialization.qual_name">qual_name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplateSpecialization.qual_name">qual_name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
 
       <ul>
-        <li><a href="api_reference.html#ast_canopy.decl.Struct.qual_name">(ast_canopy.decl.Struct property)</a>
+        <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.qual_name">(ast_canopy.decl.Struct property)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -917,7 +997,7 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Struct.regular_member_functions">regular_member_functions() (ast_canopy.decl.Struct method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.regular_member_functions">regular_member_functions() (ast_canopy.decl.Struct method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -929,13 +1009,15 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ClassTemplateSpecialization.specialized_name">specialized_name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.ClassTemplateSpecialization.specialized_name">specialized_name (ast_canopy.decl.ClassTemplateSpecialization property)</a>
+</li>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct">Struct (class in ast_canopy.decl)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Struct">Struct (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.StructMethod">StructMethod (class in ast_canopy.decl)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.StructMethod">StructMethod (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.structs">structs (ast_canopy.api.Declarations attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -943,19 +1025,21 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.Template">Template (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Template">Template (class in ast_canopy.decl)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.Struct.templated_member_functions">templated_member_functions() (ast_canopy.decl.Struct method)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Struct.templated_member_functions">templated_member_functions() (ast_canopy.decl.Struct method)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.TemplatedStruct.templated_methods">templated_methods (ast_canopy.decl.TemplatedStruct attribute)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.TemplatedStruct.templated_methods">templated_methods (ast_canopy.decl.TemplatedStruct attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.TemplatedStruct">TemplatedStruct (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.TemplatedStruct">TemplatedStruct (class in ast_canopy.decl)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.TemplatedStructMethod">TemplatedStructMethod (class in ast_canopy.decl)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.TemplatedStructMethod">TemplatedStructMethod (class in ast_canopy.decl)</a>
 </li>
-      <li><a href="api_reference.html#ast_canopy.decl.Template.tparam_dict">tparam_dict (ast_canopy.decl.Template property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.Template.tparam_dict">tparam_dict (ast_canopy.decl.Template property)</a>
+</li>
+      <li><a href="ast_canopy.decl.html#ast_canopy.api.Declarations.typedefs">typedefs (ast_canopy.api.Declarations attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -963,7 +1047,7 @@
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_reference.html#ast_canopy.decl.ConstExprVar.value">value (ast_canopy.decl.ConstExprVar property)</a>
+      <li><a href="ast_canopy.decl.html#ast_canopy.decl.EvaluatedConstDecl.value">value (ast_canopy.decl.EvaluatedConstDecl property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1003,8 +1087,8 @@
   
 
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
 
 
   <footer class="bd-footer">
