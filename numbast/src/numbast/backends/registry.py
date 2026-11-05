@@ -54,16 +54,10 @@ CUDA_OXIDE = "cuda-oxide"
 #: Each registered backend, mapped to the module whose
 #: ``static_binding_generator`` command drives it, or ``None`` for a backend
 #: whose renderer exists but which cannot yet be run end to end.
-#:
-#: CUDA-Oxide is registered without a driver on purpose. Its binding plan and
-#: renderer are both in the tree, so a configuration naming it is asking for
-#: something that half exists, and "not wired up yet" is a more useful answer
-#: than "no such backend". It also leaves the remaining work as one edit here
-#: rather than a design.
 _BACKENDS: dict[str, str | None] = {
     NUMBA_CUDA: "numbast.tools.static_binding_generator",
     NUMBA_CUDA_MLIR: "numbast.experimental.mlir.tools.static_binding_generator",
-    CUDA_OXIDE: None,
+    CUDA_OXIDE: "numbast.tools.cuda_oxide_binding_generator",
 }
 
 DEFAULT_BACKEND = NUMBA_CUDA

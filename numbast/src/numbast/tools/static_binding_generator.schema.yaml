@@ -247,7 +247,7 @@ properties:
       type: string
     default: null
     description: >
-      Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir`` routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided ``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so naming it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.
+      Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir`` routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided ``numba_cuda_mlir`` installation; ``cuda-oxide`` generates a Rust device module and a versioned symbol/link manifest. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.
 
     examples:
       - "numba-cuda"

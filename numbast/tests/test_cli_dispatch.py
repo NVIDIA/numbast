@@ -166,18 +166,13 @@ def test_dispatch_forwards_options(tmp_path, monkeypatch, config, backend):
     ("config", "hint"),
     [
         ("Backend: nonesuch", "--cfg-path"),
-        ("Backend: cuda-oxide", "--cfg-path"),
         ("Backend: [numba-cuda, cuda-oxide]", "--cfg-path"),
     ],
 )
 def test_an_unusable_backend_fails_before_importing_one(
     tmp_path, monkeypatch, config, hint
 ):
-    """Including ``cuda-oxide``, which is registered but has no driver.
-
-    Importing first would make a missing driver indistinguishable from a
-    backend whose dependencies are not installed.
-    """
+    """Invalid selections fail before importing a backend."""
     config_path = tmp_path / "config.yml"
     config_path.write_text(config)
 

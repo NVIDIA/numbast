@@ -7,6 +7,7 @@ import pytest
 
 from numbast.backends.registry import (
     CUDA_OXIDE,
+    _BACKENDS,
     NUMBA_CUDA,
     NUMBA_CUDA_MLIR,
     BackendNotFoundError,
@@ -106,27 +107,35 @@ def test_a_third_backend_is_nameable_at_all():
     assert resolve_backend_name({"Backend": CUDA_OXIDE}) == CUDA_OXIDE
 
 
-@pytest.mark.parametrize("name", [NUMBA_CUDA, NUMBA_CUDA_MLIR])
-def test_a_runnable_backend_names_its_driver(name):
-    assert generator_module(name).endswith("static_binding_generator")
+@pytest.mark.parametrize(
+    ("name", "module"),
+    [
+        (NUMBA_CUDA, "numbast.tools.static_binding_generator"),
+        (
+            NUMBA_CUDA_MLIR,
+            "numbast.experimental.mlir.tools.static_binding_generator",
+        ),
+        (CUDA_OXIDE, "numbast.tools.cuda_oxide_binding_generator"),
+    ],
+)
+def test_a_runnable_backend_names_its_driver(name, module):
+    assert generator_module(name) == module
 
 
-def test_runnable_backends_excludes_the_driverless_one():
-    assert runnable_backends() == sorted([NUMBA_CUDA, NUMBA_CUDA_MLIR])
+def test_runnable_backends_includes_cuda_oxide():
+    assert runnable_backends() == sorted(
+        [NUMBA_CUDA, NUMBA_CUDA_MLIR, CUDA_OXIDE]
+    )
     assert CUDA_OXIDE in available_backends()
 
 
-def test_a_registered_backend_without_a_driver_says_so():
-    """Distinct from a typo, because the remedy is different.
-
-    ``cuda-oxide`` has a renderer in the tree, so "no such backend" would be
-    misleading: the backend exists and simply cannot be run end to end yet.
-    """
+def test_a_registered_backend_without_a_driver_says_so(monkeypatch):
+    monkeypatch.setitem(_BACKENDS, "unwired", None)
     with pytest.raises(BackendNotRunnableError) as excinfo:
-        generator_module(CUDA_OXIDE)
+        generator_module("unwired")
 
     message = str(excinfo.value)
-    assert CUDA_OXIDE in message
+    assert "unwired" in message
     for name in runnable_backends():
         assert name in message
 
