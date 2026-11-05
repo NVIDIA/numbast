@@ -140,6 +140,12 @@ struct EvaluatedConstDecl {
   std::string value;
 };
 
+struct MacroDefinition {
+  std::string name;
+  std::string replacement_text;
+  std::optional<EvaluatedConstDecl> evaluated_constant;
+};
+
 struct Field {
   Field(const clang::FieldDecl *FD, const clang::AccessSpecifier &AS);
   Field(const std::string &name, const Type &type, const access_kind &access)
@@ -330,8 +336,7 @@ struct Declarations {
   std::vector<Typedef> typedefs;
   std::vector<Enum> enums;
   std::vector<EvaluatedConstDecl> global_constants;
-  std::unordered_map<std::string, std::string> macro_defines;
-  std::unordered_map<std::string, EvaluatedConstDecl> macro_constants;
+  std::unordered_map<std::string, MacroDefinition> macro_defines;
 };
 
 Declarations

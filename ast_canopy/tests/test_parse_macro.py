@@ -45,8 +45,11 @@ def test_macro_defines(data_folder):
         "sm_80",
     )
 
-    assert decls.macro_defines["foo"] == "123"
-    assert decls.macro_defines["FLAG"] == ""
+    assert decls.macro_defines["foo"].replacement_text == "123"
+    assert decls.macro_defines["FLAG"].replacement_text == ""
+    assert decls.macro_defines["FLAG"].evaluated_constant is None
+    assert decls.macro_defines["foo"].name == "foo"
+    assert decls.macro_defines["foo"].evaluated_constant.value == 123
     assert "MAKE_VALUE" not in decls.macro_defines
     assert "INCLUDED_VALUE" not in decls.macro_defines
 
@@ -61,18 +64,22 @@ def test_macro_defines_retained_include(data_folder):
         "sm_80",
     )
 
-    assert decls.macro_defines["foo"] == "123"
-    assert decls.macro_defines["INCLUDED_VALUE"] == "456"
+    assert decls.macro_defines["foo"].replacement_text == "123"
+    assert decls.macro_defines["INCLUDED_VALUE"].replacement_text == "456"
 
 
 @pytest.fixture(scope="module")
-def macro_constants(data_folder):
+def macro_declarations(data_folder):
     source = str(data_folder / "sample_macro_constants.cu")
     return parse_declarations_from_source(source, [source], "sm_80")
 
 
-def test_macro_constant_values_and_types(macro_constants):
-    constants = macro_constants.macro_constants
+def test_macro_constant_values_and_types(macro_declarations):
+    constants = {
+        name: definition.evaluated_constant
+        for name, definition in macro_declarations.macro_defines.items()
+        if definition.evaluated_constant is not None
+    }
     expected = {
         "MACRO_INTEGER": 42,
         "MACRO_UNSIGNED": 2**64 - 1,
@@ -103,22 +110,22 @@ def test_macro_constant_values_and_types(macro_constants):
         assert not item.is_constexpr  # A macro is not a constexpr variable.
 
 
-def test_macro_replacement_text_is_preserved(macro_constants):
-    definitions = macro_constants.macro_defines
-    assert definitions["MACRO_INTEGER"] == "42"
-    assert definitions["MACRO_ALIAS"] == "MACRO_MASK"
+def test_macro_replacement_text_is_preserved(macro_declarations):
+    definitions = macro_declarations.macro_defines
+    assert definitions["MACRO_INTEGER"].replacement_text == "42"
+    assert definitions["MACRO_ALIAS"].replacement_text == "MACRO_MASK"
     assert (
-        definitions["MACRO_VERSION"]
+        definitions["MACRO_VERSION"].replacement_text
         == "( ( 2 << 16 ) + sizeof ( MacroLayout ) )"
     )
-    assert definitions["MACRO_STRING"] == '"text"'
-    assert definitions["MACRO_EMPTY"] == ""
+    assert definitions["MACRO_STRING"].replacement_text == '"text"'
+    assert definitions["MACRO_EMPTY"].replacement_text == ""
     assert "MACRO_TWICE" not in definitions
     assert "MACRO_REMOVED" not in definitions
     assert "INCLUDED_VALUE" not in definitions
 
 
-def test_unevaluable_macros_keep_text_without_values(macro_constants):
+def test_unevaluable_macros_keep_text_without_values(macro_declarations):
     for name in (
         "MACRO_EMPTY",
         "MACRO_STRING",
@@ -134,10 +141,10 @@ def test_unevaluable_macros_keep_text_without_values(macro_constants):
         "MACRO_AGGREGATE",
         "MACRO_RECURSIVE",
     ):
-        assert name in macro_constants.macro_defines
-        assert name not in macro_constants.macro_constants
+        assert name in macro_declarations.macro_defines
+        assert macro_declarations.macro_defines[name].evaluated_constant is None
     # Probes must not leak synthetic declarations into the public AST output.
-    assert [item.name for item in macro_constants.global_constants] == [
+    assert [item.name for item in macro_declarations.global_constants] == [
         "macro_constant"
     ]
 
@@ -150,19 +157,26 @@ def test_macro_constant_target_and_defines(data_folder):
         "sm_80",
         defines=["MACRO_BUILD_SETTING=37", "__CUDA_ARCH__=800"],
     )
-    assert decls.macro_constants["INCLUDED_VALUE"].value == 456
-    assert decls.macro_constants["MACRO_INCLUDED"].value == 457
-    assert decls.macro_constants["MACRO_PROFILE"].value == 837
+    assert decls.macro_defines["INCLUDED_VALUE"].evaluated_constant.value == 456
+    assert decls.macro_defines["MACRO_INCLUDED"].evaluated_constant.value == 457
+    assert decls.macro_defines["MACRO_PROFILE"].evaluated_constant.value == 837
     assert "MACRO_BUILD_SETTING" not in decls.macro_defines
     assert "__CUDA_ARCH__" not in decls.macro_defines
 
 
-def test_macro_values_pickle(macro_constants):
-    restored = pickle.loads(pickle.dumps(macro_constants.macro_constants))
-    assert {
-        name: (item.value, item.type_.name, item.value_serialized)
-        for name, item in restored.items()
-    } == {
-        name: (item.value, item.type_.name, item.value_serialized)
-        for name, item in macro_constants.macro_constants.items()
-    }
+def test_macro_values_pickle(macro_declarations):
+    definitions = macro_declarations.macro_defines
+    restored = pickle.loads(pickle.dumps(definitions))
+    assert restored.keys() == definitions.keys()
+    for name, original in definitions.items():
+        item = restored[name]
+        assert item.name == original.name == name
+        assert item.replacement_text == original.replacement_text
+        constant = item.evaluated_constant
+        expected = original.evaluated_constant
+        if expected is None:
+            assert constant is None
+        else:
+            assert constant.value == expected.value
+            assert constant.type_.name == expected.type_.name
+            assert constant.value_serialized == expected.value_serialized

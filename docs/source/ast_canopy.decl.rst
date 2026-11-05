@@ -18,10 +18,10 @@ Declaration collections
 Macro definitions and values
 ----------------------------
 
-``Declarations.macro_defines`` preserves the replacement text of active
-object-like macros defined in retained files. ``macro_constants`` additionally
-provides evaluated scalar values and their C++ types through
-:class:`~ast_canopy.decl.EvaluatedConstDecl` objects.
+``Declarations.macro_defines`` maps each active object-like macro in retained
+files to a :class:`~ast_canopy.decl.MacroDefinition`. Each object stores its
+``name``, ``replacement_text``, and an optional ``evaluated_constant`` containing
+an :class:`~ast_canopy.decl.EvaluatedConstDecl`.
 
 For example, given a retained header containing:
 
@@ -32,16 +32,19 @@ For example, given a retained header containing:
    #define API_VERSION ((2 << 16) + sizeof(Config))
    #define API_FLAG
 
-the parse result exposes both forms:
+the parse result exposes both forms on the same object:
 
 .. code-block:: python
 
-   decls.macro_defines["API_MASK"]           # "( 1ULL << 3 )"
-   decls.macro_constants["API_MASK"].value   # 8
-   decls.macro_constants["API_MASK"].type_.name  # "unsigned long long"
-   decls.macro_constants["API_VERSION"].value   # 131076
-   decls.macro_defines["API_FLAG"]           # ""
-   "API_FLAG" in decls.macro_constants      # False
+   mask = decls.macro_defines["API_MASK"]
+   mask.name                           # "API_MASK"
+   mask.replacement_text               # "( 1ULL << 3 )"
+   mask.evaluated_constant.value       # 8
+   mask.evaluated_constant.type_.name  # "unsigned long long"
+   decls.macro_defines["API_VERSION"].evaluated_constant.value  # 131076
+   flag = decls.macro_defines["API_FLAG"]
+   flag.replacement_text               # ""
+   flag.evaluated_constant is None      # True
 
 Clang expands references to other macros and evaluates arithmetic, casts,
 enum values, constexpr calls, and ``sizeof`` against the parsed declarations
@@ -51,8 +54,9 @@ expand each macro at its original definition location. Replacement text is
 token spelling normalized with spaces, rather than an exact source slice.
 
 Only integers, booleans, enums, ``float``, ``double``, and ``long double`` have
-evaluated entries. Strings, pointers, aggregates, type aliases, empty flags,
-runtime expressions, and invalid expressions remain available as text only.
+evaluated values. Strings, pointers, aggregates, type aliases, empty flags,
+runtime expressions, and invalid expressions have ``evaluated_constant=None``
+while retaining their replacement text.
 They do not cause strict declaration parsing to fail. Function-like macros
 are omitted, but an object-like macro may invoke a function-like macro as
 part of an evaluable expression. Definitions from unretained headers can

@@ -105,8 +105,8 @@ bool filename_is_retained(const std::string &file_name,
  *
  * Clang stores macro replacement lists as tokens. This helper asks the
  * preprocessor for each token's spelling and joins the spellings with a single
- * space to produce a stable, human-readable mapping value for
- * Declarations::macro_defines. Tokens that cannot be spelled are skipped.
+ * space to produce MacroDefinition::replacement_text. Tokens that cannot be
+ * spelled are skipped.
  *
  * @param macro_info Clang metadata for an object-like macro definition.
  * @param preprocessor The preprocessor that owns the source manager and
@@ -139,7 +139,8 @@ std::string replacement_text_from_macro_info(const MacroInfo &macro_info,
  * declaration matcher pass; it does not invoke Clang or parse the source a
  * second time. It walks the identifier table, keeps only active object-like
  * macros, filters them by their definition spelling location, and writes the
- * resulting name-to-replacement-text map to Declarations::macro_defines.
+ * resulting name-to-definition map to Declarations::macro_defines. Each
+ * definition pairs its replacement text with an optional evaluated constant.
  *
  * Function-like macros are intentionally ignored for now because the public API
  * only models simple name-to-value definitions.
@@ -165,7 +166,7 @@ void collect_macro_defines_from_ast(
       continue;
     }
 
-    MacroDefinition macro_definition =
+    clang::MacroDefinition macro_definition =
         preprocessor.getMacroDefinition(identifier_info);
     const MacroInfo *macro_info = macro_definition.getMacroInfo();
     if (!macro_info || macro_info->isFunctionLike()) {
@@ -183,8 +184,12 @@ void collect_macro_defines_from_ast(
       continue;
     }
 
-    decls->macro_defines[identifier_info->getName().str()] =
-        replacement_text_from_macro_info(*macro_info, preprocessor);
+    const std::string name = identifier_info->getName().str();
+    decls->macro_defines.emplace(
+        name,
+        MacroDefinition{
+            name, replacement_text_from_macro_info(*macro_info, preprocessor),
+            std::nullopt});
     if (!macro_info->tokens_empty()) {
       macros.emplace_back(identifier_info->getName().str(), macro_info);
     }
@@ -245,7 +250,7 @@ void collect_macro_defines_from_ast(
     constant.name = constant.qual_name = name;
     constant.type_ = Type(type, ast->getASTContext());
     constant.value = std::string(serialized);
-    decls->macro_constants.emplace(name, std::move(constant));
+    decls->macro_defines.at(name).evaluated_constant = std::move(constant);
   }
 }
 
