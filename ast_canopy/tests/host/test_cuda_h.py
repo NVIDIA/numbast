@@ -67,3 +67,10 @@ def test_parse_vendored_cuda_h_enums(cuda_h_decls):
 
     assert enum_names
     assert expected_enum_names.issubset(enum_names)
+
+
+def test_parse_vendored_cuda_h_macro_values(cuda_h_decls):
+    _, decls = cuda_h_decls
+    assert decls.macro_defines["CU_MEMHOSTALLOC_PORTABLE"] == "0x01"
+    assert decls.macro_constants["CU_MEMHOSTALLOC_PORTABLE"].value == 1
+    assert decls.macro_constants["CU_DEVICE_INVALID"].value == -2

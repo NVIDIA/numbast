@@ -331,6 +331,7 @@ struct Declarations {
   std::vector<Enum> enums;
   std::vector<EvaluatedConstDecl> global_constants;
   std::unordered_map<std::string, std::string> macro_defines;
+  std::unordered_map<std::string, EvaluatedConstDecl> macro_constants;
 };
 
 Declarations

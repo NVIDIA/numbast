@@ -33,6 +33,7 @@ class Declarations:
     function_templates: list[FunctionTemplate]
     functions: list[Function]
     macro_defines: dict[str, str]
+    macro_constants: dict[str, EvaluatedConstDecl]
     records: list[Record]
     typedefs: list[Typedef]
     def __init__(self, *args, **kwargs) -> None: ...

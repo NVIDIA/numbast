@@ -7,15 +7,21 @@
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/Basic/FileManager.h>
 #include <clang/Basic/FileSystemOptions.h>
+#include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/Version.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/FrontendAction.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #if CLANG_VERSION_MAJOR >= 22
 #include <clang/Driver/CreateInvocationFromArgs.h>
+#else
+#include <clang/Frontend/Utils.h>
 #endif
 #include <clang/Lex/MacroInfo.h>
 #include <clang/Lex/Preprocessor.h>
+#include <clang/Parse/Parser.h>
+#include <llvm/ADT/SmallString.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -152,6 +158,7 @@ void collect_macro_defines_from_ast(
   Preprocessor &preprocessor = ast->getPreprocessor();
   const SourceManager &source_manager = ast->getSourceManager();
 
+  std::vector<std::pair<std::string, const MacroInfo *>> macros;
   for (const auto &entry : preprocessor.getIdentifierTable()) {
     const IdentifierInfo *identifier_info = entry.second;
     if (!identifier_info) {
@@ -178,6 +185,67 @@ void collect_macro_defines_from_ast(
 
     decls->macro_defines[identifier_info->getName().str()] =
         replacement_text_from_macro_info(*macro_info, preprocessor);
+    if (!macro_info->tokens_empty()) {
+      macros.emplace_back(identifier_info->getName().str(), macro_info);
+    }
+  }
+
+  // Evaluation can intern identifiers. Finish enumerating the preprocessor's
+  // table first, and use a stable order for reproducible evaluation.
+  std::sort(macros.begin(), macros.end(),
+            [](const auto &a, const auto &b) { return a.first < b.first; });
+  auto &diagnostics = ast->getDiagnostics();
+  diagnostics.setClient(new IgnoringDiagConsumer(), true);
+  preprocessor.enableIncrementalProcessing();
+  for (const auto &[name, macro] : macros) {
+    diagnostics.Reset(true);
+    std::vector<Token> tokens(macro->tokens_begin(), macro->tokens_end());
+    Token end;
+    end.startToken();
+    end.setKind(tok::eof);
+    end.setLocation(macro->getDefinitionLoc());
+    tokens.push_back(end);
+    preprocessor.EnterTokenStream(tokens, false, false);
+    Parser parser(preprocessor, ast->getSema(), false);
+    parser.Initialize();
+    ExprResult expression = parser.ParseExpression();
+    if (expression.isInvalid() || diagnostics.hasErrorOccurred() ||
+        !parser.getCurToken().is(tok::eof)) {
+      // Discard the remainder so a malformed definition cannot contaminate
+      // the next probe. Macro definitions need not be C++ expressions.
+      while (!parser.getCurToken().is(tok::eof)) {
+        parser.ConsumeAnyToken();
+      }
+      continue;
+    }
+    expression = ast->getSema().DefaultLvalueConversion(expression.get());
+    if (expression.isInvalid()) {
+      continue;
+    }
+    const Expr *expr = expression.get();
+    const auto type = expr->getType();
+    if (!type->isIntegralOrEnumerationType() &&
+        !type->isSpecificBuiltinType(BuiltinType::Float) &&
+        !type->isSpecificBuiltinType(BuiltinType::Double) &&
+        !type->isSpecificBuiltinType(BuiltinType::LongDouble)) {
+      continue;
+    }
+    APValue value;
+    if (!expr->isCXX11ConstantExpr(ast->getASTContext(), &value) ||
+        (!value.isInt() && !value.isFloat())) {
+      continue;
+    }
+    llvm::SmallString<32> serialized;
+    if (value.isInt()) {
+      value.getInt().toString(serialized, 10);
+    } else {
+      value.getFloat().toString(serialized);
+    }
+    EvaluatedConstDecl constant;
+    constant.name = constant.qual_name = name;
+    constant.type_ = Type(type, ast->getASTContext());
+    constant.value = std::string(serialized);
+    decls->macro_constants.emplace(name, std::move(constant));
   }
 }
 
@@ -193,7 +261,30 @@ std::string source_filename_from_decl(const Decl *D) {
   return file_name;
 }
 
-std::unique_ptr<ASTUnit>
+// ASTUnit retains the main target, but not the auxiliary CUDA target that
+// ASTContext/Sema also reference. Keep both alive for post-parse evaluation.
+struct ParsedAST {
+  IntrusiveRefCntPtr<TargetInfo> auxiliary_target;
+  std::unique_ptr<ASTUnit> ast;
+  ASTUnit *operator->() const { return ast.get(); }
+  ASTUnit *get() const { return ast.get(); }
+};
+
+class RetainAuxiliaryTargetAction : public ASTFrontendAction {
+  IntrusiveRefCntPtr<TargetInfo> &target;
+
+public:
+  explicit RetainAuxiliaryTargetAction(IntrusiveRefCntPtr<TargetInfo> &target)
+      : target(target) {}
+
+  std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &compiler,
+                                                 StringRef) override {
+    target = compiler.getAuxTarget();
+    return std::make_unique<ASTConsumer>();
+  }
+};
+
+ParsedAST
 default_ast_unit_from_command_line(const std::vector<std::string> &options,
                                    bool bypass_parse_error) {
 
@@ -201,8 +292,8 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
   for (auto &opt : options) {
     option_ptrs.push_back(opt.c_str());
   }
-  const char **argstart = &(*option_ptrs.begin());
-  const char **argend = &(*option_ptrs.end());
+  const char **argstart = option_ptrs.data();
+  const char **argend = argstart + option_ptrs.size();
 
   auto PCHContainerOps = std::make_shared<PCHContainerOperations>();
 
@@ -216,27 +307,23 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
 #else
 #error Clang version not supported.
 #endif
-  detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
+  auto *diagnostics_consumer = new AstCanopyDiagnosticsConsumer();
+  IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
 
 #if CLANG_VERSION_MAJOR >= 21
-  IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
-  auto Diags = CompilerInstance::createDiagnostics(
-      *FS, *DiagOpts, &diagnostics_consumer, false);
+  auto Diags = CompilerInstance::createDiagnostics(*FS, *DiagOpts,
+                                                   diagnostics_consumer, true);
 #elif CLANG_VERSION_MAJOR == 20
-  IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
   auto Diags = CompilerInstance::createDiagnostics(*FS, &*DiagOpts,
-                                                   &diagnostics_consumer, false,
+                                                   diagnostics_consumer, true,
                                                    /*CodeGenOptions*/ nullptr);
 #elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 20
-  auto Diags = CompilerInstance::createDiagnostics(
-      DiagOpts.get(), &diagnostics_consumer, false);
+  auto Diags = CompilerInstance::createDiagnostics(DiagOpts.get(),
+                                                   diagnostics_consumer, true);
 #else
 #error Clang version not supported.
 #endif
 
-#if CLANG_VERSION_MAJOR >= 22
-  // Clang 22 removed ASTUnit::LoadFromCommandLine. Build a CompilerInvocation
-  // from the args and load the AST from it.
   CreateInvocationOptions CIOpts;
   CIOpts.Diags = Diags;
   CIOpts.VFS = FS;
@@ -245,18 +332,14 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
   if (!Invocation) {
     throw std::runtime_error("Failed to create a CompilerInvocation.");
   }
-  IntrusiveRefCntPtr<FileManager> FileMgr =
-      new FileManager(Invocation->getFileSystemOpts(), FS);
-  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCompilerInvocation(
-      Invocation, PCHContainerOps, DiagOpts, Diags, FileMgr));
-#elif CLANG_VERSION_MAJOR == 21
-  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
-      argstart, argend, PCHContainerOps, DiagOpts, Diags, ""));
-#elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
-  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
-      argstart, argend, PCHContainerOps, Diags, ""));
+  IntrusiveRefCntPtr<TargetInfo> auxiliary_target;
+  RetainAuxiliaryTargetAction action(auxiliary_target);
+#if CLANG_VERSION_MAJOR >= 21
+  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCompilerInvocationAction(
+      Invocation, PCHContainerOps, DiagOpts, Diags, &action));
 #else
-#error Clang version not supported.
+  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCompilerInvocationAction(
+      Invocation, PCHContainerOps, Diags, &action));
 #endif
 
   if (!ast) {
@@ -267,7 +350,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
 
     if (has_error) {
       std::string error_message;
-      for (const auto &msg : diagnostics_consumer.error_messages) {
+      for (const auto &msg : diagnostics_consumer->error_messages) {
         error_message += "\n" + msg;
       }
       if (!bypass_parse_error) {
@@ -276,7 +359,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
     }
   }
 
-  return ast;
+  return {std::move(auxiliary_target), std::move(ast)};
 }
 
 } // namespace detail

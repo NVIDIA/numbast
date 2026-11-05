@@ -91,6 +91,19 @@ class Declarations:
         ``long double``; Clang extensions such as ``_Float16`` are excluded.
         Each constant's ``is_constexpr`` flag records whether it was declared
         ``constexpr``.
+    macro_defines : dict[str, str]
+        Active object-like macros defined in retained files, mapped to their
+        unexpanded replacement tokens joined with single spaces. Empty flags
+        have an empty string. Function-like and undefined macros are omitted.
+    macro_constants : dict[str, EvaluatedConstDecl]
+        The subset of ``macro_defines`` that Clang can evaluate as scalar C++
+        constant expressions: integers, booleans, enums, and ``float``,
+        ``double``, or ``long double``. Each item carries its expression type,
+        serialized value, and converted Python ``value``. ``is_constexpr`` is
+        false because a macro is not a variable declaration. Evaluation uses
+        the target and final preprocessor state of the translation unit.
+        Unsupported or unevaluable definitions retain their replacement text
+        without an entry here; they do not fail strict declaration parsing.
     """
 
     structs: list[Struct]
@@ -102,6 +115,7 @@ class Declarations:
     enums: list[bindings.Enum]
     global_constants: list[EvaluatedConstDecl] = field(default_factory=list)
     macro_defines: dict[str, str] = field(default_factory=dict)
+    macro_constants: dict[str, EvaluatedConstDecl] = field(default_factory=dict)
 
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
@@ -595,6 +609,10 @@ def parse_declarations_from_source(
             for item in decls.global_constants
         ],
         decls.macro_defines,
+        {
+            name: EvaluatedConstDecl.from_c_obj(item)
+            for name, item in decls.macro_constants.items()
+        },
     )
 
 
