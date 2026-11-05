@@ -4,9 +4,11 @@
 
 set -euo pipefail
 
-# Install pre-commit requirements
-apt-get update
-apt-get install -y g++
+# rstcheck compiles C++ documentation snippets with g++.
+if ! command -v g++ >/dev/null 2>&1; then
+    apt-get update
+    apt-get install --yes --no-install-recommends g++
+fi
 
 pip install pre-commit
 

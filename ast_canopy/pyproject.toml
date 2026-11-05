@@ -16,7 +16,7 @@ cu13 = ["cuda-toolkit[cudart, crt, curand, cccl]>=13.1,<14"]
 
 
 [tool.scikit-build]
-cmake.targets = ["pylibastcanopy"]
+build.targets = ["pylibastcanopy"]
 wheel.license-files = ["../LICENSE"]
 # Be explicit about shipping header shims in sdists so wheels built from sdist
 # (e.g., on PyPI) always contain these files.

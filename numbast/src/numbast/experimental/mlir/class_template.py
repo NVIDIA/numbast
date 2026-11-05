@@ -59,6 +59,7 @@ from numbast.experimental.mlir.utils import (
     deduplicate_overloads,
     make_struct_ctor_shim,
     make_struct_regular_method_shim,
+    refresh_numba_cuda_mlir_registries,
 )
 from numbast.experimental.mlir.callconv import FunctionCallConv
 from numbast.experimental.mlir.shim_writer import ShimWriterBase
@@ -76,7 +77,6 @@ from numba_cuda_mlir.models import (
     OpaqueModel,
     register_model as mlir_register_model,
 )
-from numba_cuda_mlir.descriptor import mlir_target
 
 
 logger = logging.getLogger(__name__)
@@ -448,7 +448,7 @@ def bind_cxx_struct_regular_method(
     def _method_impl(builder, target, args, kws):
         return method_cc(builder, target, args, kws)
 
-    mlir_target.target_context.refresh()
+    refresh_numba_cuda_mlir_registries(typing=False)
 
     return nb_signature(return_type, *param_types, recvr=s_type)
 
@@ -693,7 +693,7 @@ def bind_cxx_struct_templated_method(
                 ):
                     return method_cc(builder, target, args, kws)
 
-                mlir_target.target_context.refresh()
+                refresh_numba_cuda_mlir_registries(typing=False)
 
             # Return a method signature (receiver is implicit).
             return nb_signature(return_type, *param_types, recvr=recvr)
@@ -965,6 +965,8 @@ def bind_cxx_class_template_specialization(
     # ----------------------------------------------------------------------------------
     # Constructors:
     bind_cxx_ctsd_ctors(struct_decl, instance_type_ref, shim_writer)
+
+    refresh_numba_cuda_mlir_registries()
 
     # Return the handle to the type in Numba
     return s_type
@@ -1878,6 +1880,8 @@ def bind_cxx_class_template(
         ctor_lowering_cache_pysig,
         arg_intent=arg_intent,
     )
+
+    refresh_numba_cuda_mlir_registries()
 
     return TC
 

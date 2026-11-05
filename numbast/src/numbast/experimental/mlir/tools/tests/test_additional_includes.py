@@ -53,7 +53,7 @@ def test_cli_yml_inputs_additional_includes(
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 File List:
     - {data}

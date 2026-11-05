@@ -21,6 +21,7 @@ Typedef::Typedef(const clang::TypedefDecl *TD,
     qual_name = name;
   }
   clang::QualType qd = TD->getUnderlyingType();
+  underlying_type = Type(qd, TD->getASTContext());
   clang::RecordDecl *underlying_record_decl = qd->getAsCXXRecordDecl();
 
   if (underlying_record_decl) {

@@ -22,12 +22,12 @@ jobs:
       - test-wheels-mlir
       - docs-preview
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@release/26.10
     with:
       needs: ${{ toJSON(needs) }}
   checks:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.10
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@release/26.10
     with:
       enable_check_generated_files: false
   detect-changes:
@@ -58,8 +58,7 @@ jobs:
       build_type: pull-request
   test-conda-numba-cuda:
     name: Test Conda Python (Numba-CUDA)
-    # Temporarily disabled while the MLIR CI path is being stabilized.
-    if: false
+    if: needs.detect-changes.outputs.run_numba_cuda_tests == 'true'
     needs:
       - build-conda
       - detect-changes
@@ -89,8 +88,7 @@ jobs:
       build_type: pull-request
   test-wheels-numba-cuda:
     name: Test Wheels (Numba-CUDA)
-    # Temporarily disabled while the MLIR CI path is being stabilized.
-    if: false
+    if: needs.detect-changes.outputs.run_numba_cuda_tests == 'true'
     needs:
       - build-wheels
       - detect-changes

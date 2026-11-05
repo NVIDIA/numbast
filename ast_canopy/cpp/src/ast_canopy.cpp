@@ -5,10 +5,15 @@
 
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
+#include <clang/Basic/FileManager.h>
+#include <clang/Basic/FileSystemOptions.h>
 #include <clang/Basic/Version.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
+#if CLANG_VERSION_MAJOR >= 22
+#include <clang/Driver/CreateInvocationFromArgs.h>
+#endif
 #include <clang/Lex/MacroInfo.h>
 #include <clang/Lex/Preprocessor.h>
 
@@ -26,8 +31,8 @@
 using namespace clang;
 using namespace clang::ast_matchers;
 
-static_assert(CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR <= 21 &&
-              "ASTCanopy Only Supports Building with CLANG 18 to 21");
+static_assert(CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR <= 22 &&
+              "ASTCanopy Only Supports Building with CLANG 18 to 22");
 namespace ast_canopy {
 
 namespace detail {
@@ -204,7 +209,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
   // Create a diagnostics engine that captures errors. Writes error and fatal
   // errors to the diagnostics_consumer. diagnostics_consumer stores the result
   // to a vector of strings.
-#if CLANG_VERSION_MAJOR == 21
+#if CLANG_VERSION_MAJOR >= 21
   auto DiagOpts = std::make_shared<DiagnosticOptions>();
 #elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
@@ -213,7 +218,7 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
 #endif
   detail::AstCanopyDiagnosticsConsumer diagnostics_consumer;
 
-#if CLANG_VERSION_MAJOR == 21
+#if CLANG_VERSION_MAJOR >= 21
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = llvm::vfs::getRealFileSystem();
   auto Diags = CompilerInstance::createDiagnostics(
       *FS, *DiagOpts, &diagnostics_consumer, false);
@@ -229,7 +234,22 @@ default_ast_unit_from_command_line(const std::vector<std::string> &options,
 #error Clang version not supported.
 #endif
 
-#if CLANG_VERSION_MAJOR == 21
+#if CLANG_VERSION_MAJOR >= 22
+  // Clang 22 removed ASTUnit::LoadFromCommandLine. Build a CompilerInvocation
+  // from the args and load the AST from it.
+  CreateInvocationOptions CIOpts;
+  CIOpts.Diags = Diags;
+  CIOpts.VFS = FS;
+  std::shared_ptr<CompilerInvocation> Invocation =
+      createInvocation(llvm::ArrayRef<const char *>(argstart, argend), CIOpts);
+  if (!Invocation) {
+    throw std::runtime_error("Failed to create a CompilerInvocation.");
+  }
+  IntrusiveRefCntPtr<FileManager> FileMgr =
+      new FileManager(Invocation->getFileSystemOpts(), FS);
+  std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCompilerInvocation(
+      Invocation, PCHContainerOps, DiagOpts, Diags, FileMgr));
+#elif CLANG_VERSION_MAJOR == 21
   std::unique_ptr<ASTUnit> ast(ASTUnit::LoadFromCommandLine(
       argstart, argend, PCHContainerOps, DiagOpts, Diags, ""));
 #elif CLANG_VERSION_MAJOR >= 18 && CLANG_VERSION_MAJOR < 21
@@ -282,6 +302,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   detail::FunctionTemplateCallback func_template_callback(&payload);
   detail::ClassTemplateCallback class_template_callback(&payload);
   detail::EnumCallback enum_callback(&payload);
+  detail::GlobalConstantCallback constant_callback(&payload);
   detail::ClassTemplatePartialSpecializationCallback ctpsd_callback(&payload);
   detail::ClassTemplateSpecializationCallback ctsd_callback(&payload);
 
@@ -319,6 +340,12 @@ parse_declarations_from_command_line(std::vector<std::string> options,
 
   finder.addMatcher(enumDecl().bind("enum"), &enum_callback);
 
+  finder.addMatcher(varDecl(hasGlobalStorage(),
+                            unless(hasAncestor(functionDecl())),
+                            unless(hasAncestor(recordDecl())))
+                        .bind("global_constant"),
+                    &constant_callback);
+
   finder.addMatcher(classTemplateSpecializationDecl(
                         hasSpecializedTemplate(classTemplateDecl()))
                         .bind("ctsd"),
@@ -343,7 +370,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
   return decls;
 }
 
-std::optional<ConstExprVar>
+std::optional<EvaluatedConstDecl>
 value_from_constexpr_vardecl(std::vector<std::string> options,
                              std::string vardecl_name) {
 

@@ -8,13 +8,8 @@ from collections import defaultdict
 import subprocess
 import importlib
 import warnings
-import re
-
-import yaml
 
 from numba import config
-import numba.types
-import numba.core.datamodel.models
 
 from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import (
@@ -23,8 +18,14 @@ from ast_canopy.decl import (
     FunctionTemplate,
     Struct,
 )
-from ast_canopy.pylibastcanopy import Enum, Typedef
+from ast_canopy.pylibastcanopy import Enum, Typedef, type_kind
 
+from numbast.backends.registry import (
+    NUMBA_CUDA_MLIR,
+    NUMBA_CUDA,
+    resolve_backend_name,
+)
+from numbast.provenance import params_the_user_set
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
     get_shim,
@@ -42,7 +43,12 @@ from numbast.static.function_template import StaticFunctionTemplatesRenderer
 from numbast.static.class_template import StaticClassTemplatesRenderer
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
-from numbast.tools.yaml_tags import string_constructor
+from numbast.tools.config.shared import load_binding_config
+from numbast.tools.config.numba import (
+    NumbaConfig,
+    _str_value_to_numba_datamodel,
+    _str_value_to_numba_type,
+)
 
 config.CUDA_USE_NVIDIA_BINDING = True
 
@@ -51,286 +57,17 @@ STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
     os.path.dirname(__file__), "static_binding_generator.schema.yaml"
 )
 
-# Register custom YAML constructor for !join tag
-yaml.add_constructor("!numbast_join", string_constructor)
 
+def _backend_name_from_cfg_path(cfg_path: str):
+    """Name the backend selected by the config file at ``cfg_path``.
 
-def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
-    return bool(
-        config_dict.get(
-            "MLIR Backend",
-            config_dict.get("mlir_backend", False),
-        )
-    )
-
-
-_MLIR_BACKEND_ONLY_CONFIG_KEYS = ("Module Link Variables Used",)
-
-
-def _config_value_is_set(value) -> bool:
-    if value is None:
-        return False
-    if isinstance(value, str):
-        return bool(value)
-    if isinstance(value, (dict, list, tuple, set)):
-        return bool(value)
-    return True
-
-
-def _validate_mlir_backend_only_config(config_dict: dict):
-    if _config_dict_uses_mlir_backend(config_dict):
-        return
-
-    keys = [
-        key
-        for key in _MLIR_BACKEND_ONLY_CONFIG_KEYS
-        if _config_value_is_set(config_dict.get(key))
-    ]
-    if not keys:
-        return
-
-    if len(keys) == 1:
-        message = f'Configuration option "{keys[0]}" requires'
-    else:
-        options = ", ".join(f'"{key}"' for key in keys)
-        message = f"Configuration options {options} require"
-
-    raise ValueError(f'{message} "MLIR Backend: true".')
-
-
-def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
-    with open(cfg_path) as f:
-        config_dict = yaml.load(f, yaml.Loader)
-    return _config_dict_uses_mlir_backend(config_dict)
-
-
-class Config:
-    """Configuration object for static binding generation.
-
-    The canonical list of YAML keys, value types, defaults, and constraints is
-    defined in :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH`.
+    Read straight from the YAML rather than from a :class:`Config`, because
+    which backend is selected determines which ``Config`` class to build.
     """
-
-    entry_point: str
-    gpu_arch: list[str]
-    retain_list: list[str]
-    types: dict[str, type]
-    datamodels: dict[str, type]
-    exclude_functions: list[str]
-    exclude_structs: list[str]
-    clang_includes_paths: list[str]
-    additional_imports: list[str]
-    shim_include_override: str | None
-    predefined_macros: list[str]
-    output_name: str | None
-    cooperative_launch_required_functions_regex: list[str]
-    api_prefix_removal: dict[str, list[str]]
-    module_callbacks: dict[str, str]
-    module_link_variables_used: list[str]
-    skip_prefix: str | None
-    separate_registry: bool
-    function_argument_intents: dict
-    mlir_backend: bool
-
-    def __init__(self, config_dict: dict):
-        """
-        Initialize a Config object from a configuration dictionary.
-
-        Parameters:
-            config_dict (dict): Mapping of configuration keys to values.
-                See :data:`STATIC_BINDING_CONFIG_SCHEMA_PATH` for the
-                authoritative schema documentation.
-
-        Raises:
-            NotImplementedError: if more than one GPU architecture is provided.
-            ValueError: if required files or include paths referenced by the configuration do not exist, or if any provided regex is invalid.
-        """
-        self.mlir_backend = _config_dict_uses_mlir_backend(config_dict)
-        _validate_mlir_backend_only_config(config_dict)
-
-        self.entry_point = config_dict["Entry Point"]
-        self.gpu_arch = config_dict["GPU Arch"]
-        self.retain_list = config_dict["File List"]
-        self.types = _str_value_to_numba_type(config_dict.get("Types", {}))
-        self.datamodels = _str_value_to_numba_datamodel(
-            config_dict.get("Data Models", {})
-        )
-
-        self.excludes = config_dict.get("Exclude", {})
-        self.exclude_functions = self.excludes.get("Function", [])
-        self.exclude_structs = self.excludes.get("Struct", [])
-
-        self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
-
-        self.additional_imports = config_dict.get("Additional Import", [])
-
-        self.shim_include_override = config_dict.get(
-            "Shim Include Override", None
-        )
-
-        self.predefined_macros = config_dict.get("Predefined Macros", [])
-
-        if self.exclude_functions is None:
-            self.exclude_functions = []
-        if self.exclude_structs is None:
-            self.exclude_structs = []
-        if self.clang_includes_paths is None:
-            self.clang_includes_paths = []
-
-        self.output_name = config_dict.get("Output Name", None)
-
-        self.cooperative_launch_required_functions_regex = config_dict.get(
-            "Cooperative Launch Required Functions Regex", []
-        )
-
-        self.api_prefix_removal = config_dict.get("API Prefix Removal", {})
-
-        # Ensure prefix removal values are lists
-        if self.api_prefix_removal:
-            for key, value in self.api_prefix_removal.items():
-                if not isinstance(value, list):
-                    self.api_prefix_removal[key] = [value]
-
-        self.module_callbacks = config_dict.get("Module Callbacks", {})
-        self.module_link_variables_used = (
-            config_dict.get("Module Link Variables Used", []) or []
-        )
-        self.skip_prefix = config_dict.get("Skip Prefix", None)
-
-        self.separate_registry = config_dict.get("Use Separate Registry", False)
-
-        self.function_argument_intents = (
-            config_dict.get("Function Argument Intents", {}) or {}
-        )
-
-        # TODO: support multiple GPU architectures
-        if len(self.gpu_arch) > 1:
-            raise NotImplementedError(
-                "Multiple GPU architectures are not supported yet."
-            )
-
-        self._verify_exists()
-        self._verify_regex_patterns()
-
-    @classmethod
-    def from_yaml_path(cls, cfg_path: str) -> "Config":
-        """Create a Config instance from a YAML file path.
-
-        Parameters
-        ----------
-        cfg_path : str
-            Path to the YAML configuration file.
-
-        Returns
-        -------
-        Config
-            A new Config instance.
-        """
-        with open(cfg_path) as f:
-            config_dict = yaml.load(f, yaml.Loader)
-        return cls(config_dict)
-
-    @classmethod
-    def from_params(
-        cls,
-        entry_point: str,
-        gpu_arch: list[str],
-        retain_list: list[str],
-        types: dict[str, type],
-        datamodels: dict[str, type],
-        exclude_functions: list[str] | None = None,
-        exclude_structs: list[str] | None = None,
-        clang_includes_paths: list[str] | None = None,
-        additional_imports: list[str] | None = None,
-        shim_include_override: str | None = None,
-        predefined_macros: list[str] | None = None,
-        output_name: str | None = None,
-        cooperative_launch_required_functions_regex: list[str] | None = None,
-        api_prefix_removal: dict[str, list[str]] | None = None,
-        module_callbacks: dict[str, str] | None = None,
-        module_link_variables_used: list[str] | None = None,
-        skip_prefix: str | None = None,
-        separate_registry: bool = False,
-        function_argument_intents: dict | None = None,
-        mlir_backend: bool = False,
-    ) -> "Config":
-        """
-        Construct a Config from explicit parameters instead of a YAML file.
-
-        Parameters:
-            function_argument_intents (dict | None): Mapping from function names to argument-intent specifications used by renderers; defaults to an empty dict if omitted.
-            cooperative_launch_required_functions_regex (list[str] | None): Regular expression patterns that identify functions requiring cooperative launch handling; defaults to an empty list if omitted.
-            api_prefix_removal (dict[str, list[str]] | None): Mapping of API names to lists of symbol-name prefixes to remove when generating bindings; defaults to an empty dict if omitted.
-            module_callbacks (dict[str, str] | None): Mapping of callback identifiers to their fully qualified callable names to be invoked from the generated module; defaults to an empty dict if omitted.
-
-        Returns:
-            Config: A Config instance populated with the provided parameters (types and datamodels are converted to their type names in the underlying config dictionary).
-        """
-        if types is None:
-            raise ValueError("Types must be provided")
-        if datamodels is None:
-            raise ValueError("Data models must be provided")
-
-        config_dict = {
-            "Entry Point": entry_point,
-            "GPU Arch": gpu_arch,
-            "File List": retain_list,
-            "Types": {},
-            "Data Models": {},
-            "Exclude": {
-                "Function": exclude_functions or [],
-                "Struct": exclude_structs or [],
-            },
-            "Clang Include Paths": clang_includes_paths or [],
-            "Additional Import": additional_imports or [],
-            "Shim Include Override": shim_include_override,
-            "Predefined Macros": predefined_macros or [],
-            "Output Name": output_name,
-            "Cooperative Launch Required Functions Regex": cooperative_launch_required_functions_regex
-            or [],
-            "API Prefix Removal": api_prefix_removal or {},
-            "Module Callbacks": module_callbacks or {},
-            "Module Link Variables Used": module_link_variables_used or [],
-            "Skip Prefix": skip_prefix,
-            "Use Separate Registry": separate_registry,
-            "Function Argument Intents": function_argument_intents or {},
-            "MLIR Backend": mlir_backend,
-        }
-
-        # Convert types and datamodels back to string format for the dict
-        if types:
-            config_dict["Types"] = {k: v.__name__ for k, v in types.items()}
-        if datamodels:
-            config_dict["Data Models"] = {
-                k: v.__name__ for k, v in datamodels.items()
-            }
-
-        instance = cls(config_dict)
-        return instance
-
-    def _verify_exists(self):
-        if not os.path.exists(self.entry_point):
-            raise ValueError(
-                f"Input header file does not exist: {self.entry_point}"
-            )
-        for f in self.retain_list:
-            if not os.path.exists(f):
-                raise ValueError(f"File in retain list does not exist: {f}")
-        for f in self.clang_includes_paths:
-            if not os.path.exists(f):
-                raise ValueError(f"File in include list does not exist: {f}")
-
-    def _verify_regex_patterns(self):
-        for pattern in self.cooperative_launch_required_functions_regex:
-            try:
-                re.compile(pattern)
-            except re.error:
-                raise ValueError(f"Invalid regex pattern: {pattern}")
+    return resolve_backend_name(load_binding_config(cfg_path))
 
 
-def _str_value_to_numba_type(d: dict[str, str]) -> dict[str, type]:
-    """Converts string typed value to numba `types` objects"""
-    return {k: getattr(numba.types, v) for k, v in d.items()}
+Config = NumbaConfig
 
 
 class NumbaTypeDictType(click.ParamType):
@@ -357,13 +94,6 @@ class NumbaTypeDictType(click.ParamType):
 
 
 numba_type_dict = NumbaTypeDictType()
-
-
-def _str_value_to_numba_datamodel(
-    d: dict[str, str],
-) -> dict[str, type]:
-    """Converts string typed value to numba `datamodel` objects"""
-    return {k: getattr(numba.core.datamodel.models, v) for k, v in d.items()}
 
 
 class NumbaDataModelDictType(click.ParamType):
@@ -457,7 +187,7 @@ def _run_mlir_static_binding_generator(
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
-    Group C++ typedef declarations by their underlying type name.
+    Group C++ struct/class typedefs by their underlying type name.
 
     Parameters:
         typedef_decls (list[Typedef]): Typedef declarations to process.
@@ -467,7 +197,12 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
     aliases = defaultdict(list)
     for typedef in typedef_decls:
-        aliases[typedef.underlying_name].append(typedef.name)
+        # Union fields overlap; the default struct model cannot represent them.
+        underlying = typedef.underlying_type
+        while underlying.kind in (type_kind.typedef_, type_kind.sugar):
+            underlying = underlying.inner_type
+        if underlying.kind == type_kind.record and not underlying.is_union:
+            aliases[typedef.underlying_name].append(typedef.name)
 
     return aliases
 
@@ -932,7 +667,22 @@ def static_binding_generator(
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
-    if _cfg_path_uses_mlir_backend(cfg_path):
+    sbg_params = params_the_user_set(ctx)
+
+    name = _backend_name_from_cfg_path(cfg_path)
+
+    if name not in (NUMBA_CUDA, NUMBA_CUDA_MLIR):
+        # Reached only when this driver is invoked directly, since the
+        # dispatcher refuses an unservable name first. Without this, a
+        # registered backend nobody has wired up here would fall through and
+        # generate Numba bindings -- a wrong answer that looks like a right one.
+        raise click.BadParameter(
+            f"This driver generates {NUMBA_CUDA!r} and {NUMBA_CUDA_MLIR!r} bindings and "
+            f"cannot generate {name!r}.",
+            param_hint="--cfg-path",
+        )
+
+    if name == NUMBA_CUDA_MLIR:
         from numbast.experimental.mlir.tools.static_binding_generator import (
             Config as MlirConfig,
         )
@@ -943,7 +693,7 @@ def static_binding_generator(
             output_dir,
             log_generates=True,
             cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
+            sbg_params=sbg_params,
             bypass_parse_error=bypass_parse_error,
         )
     else:
@@ -954,7 +704,7 @@ def static_binding_generator(
             output_dir,
             log_generates=True,
             cfg_file_path=cfg_path,
-            sbg_params=ctx.params,
+            sbg_params=sbg_params,
             bypass_parse_error=bypass_parse_error,
         )
 

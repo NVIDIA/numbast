@@ -26,6 +26,7 @@ from numbast.experimental.mlir.intent import compute_intent_plan
 from numbast.experimental.mlir.utils import (
     deduplicate_overloads,
     make_function_shim,
+    refresh_numba_cuda_mlir_registries,
 )
 from numbast.experimental.mlir.shim_writer import MemoryShimWriter as ShimWriter
 from numbast.experimental.mlir.callconv import FunctionCallConv
@@ -298,12 +299,13 @@ def bind_cxx_function(
         warn(f"Skipped non device function {func_decl.name}.")
         return None
 
+    F = None
     if func_decl.is_overloaded_operator():
-        return bind_cxx_operator_overload_function(
+        F = bind_cxx_operator_overload_function(
             shim_writer, func_decl, arg_intent=arg_intent
         )
     elif not func_decl.is_operator:
-        return bind_cxx_non_operator_function(
+        F = bind_cxx_non_operator_function(
             shim_writer,
             func_decl,
             skip_prefix=skip_prefix,
@@ -311,7 +313,10 @@ def bind_cxx_function(
             arg_intent=arg_intent,
         )
 
-    return None
+    if F is not None:
+        refresh_numba_cuda_mlir_registries()
+
+    return F
 
 
 def bind_cxx_functions(

@@ -5,17 +5,18 @@
 
 #include <ast_canopy/ast_canopy.hpp>
 
-#include <iostream>
+#include <llvm/ADT/SmallString.h>
 namespace ast_canopy {
 
-ConstExprVar::ConstExprVar(const clang::VarDecl *VD)
-    : type_(VD->getType(), VD->getASTContext()), name(VD->getNameAsString()),
+EvaluatedConstDecl::EvaluatedConstDecl(const clang::VarDecl *VD)
+    : is_constexpr(VD->isConstexpr()),
+      type_(VD->getType(), VD->getASTContext()), name(VD->getNameAsString()),
       qual_name(VD->getQualifiedNameAsString()) {
   if (qual_name.empty()) {
     qual_name = name;
   }
-  if (!VD->isConstexpr()) {
-    throw std::runtime_error("Not a constexpr variable");
+  if (!VD->getType().isConstQualified()) {
+    throw std::runtime_error("Not a constant variable");
   }
 
   clang::APValue *ap_value = VD->evaluateValue();
@@ -24,16 +25,15 @@ ConstExprVar::ConstExprVar(const clang::VarDecl *VD)
     throw std::runtime_error("Evaluation is not successful.");
   }
 
-  std::cout << ap_value->getKind() << std::endl;
-
+  llvm::SmallString<32> serialized;
   if (ap_value->isInt()) {
-    value = std::to_string(ap_value->getInt().getExtValue());
-
+    ap_value->getInt().toString(serialized, 10);
   } else if (ap_value->isFloat()) {
-    value = std::to_string(ap_value->getFloat().convertToDouble());
+    ap_value->getFloat().toString(serialized);
   } else {
-    throw std::runtime_error("Unsupported constexpr vardecl value type.");
+    throw std::runtime_error("Unsupported evaluated constant value type.");
   }
+  value = std::string(serialized);
 }
 
 } // namespace ast_canopy

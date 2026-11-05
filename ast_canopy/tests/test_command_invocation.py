@@ -6,6 +6,10 @@ from types import SimpleNamespace
 import ast_canopy.api as api
 
 
+def test_compute_capability_accepts_architecture_specific_suffix():
+    api._validate_compute_capability("sm_90a")
+
+
 def test_parse_declarations_falls_back_to_clangpp(monkeypatch, tmp_path):
     source = tmp_path / "sample.cu"
     source.write_text('extern "C" __global__ void kernel() {}\n')
@@ -19,6 +23,7 @@ def test_parse_declarations_falls_back_to_clangpp(monkeypatch, tmp_path):
         class_template_specializations=[],
         typedefs=[],
         enums=[],
+        global_constants=[],
     )
 
     monkeypatch.setattr(
@@ -62,6 +67,7 @@ def test_parse_declarations_uses_explicit_clang_binary(monkeypatch, tmp_path):
         class_template_specializations=[],
         typedefs=[],
         enums=[],
+        global_constants=[],
     )
 
     monkeypatch.setattr(

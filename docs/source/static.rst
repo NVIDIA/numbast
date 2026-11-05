@@ -29,7 +29,8 @@ For details on ``Function Argument Intents`` semantics and generated signatures,
 see :doc:`/argument_intents`.
 
 The experimental ``numba-cuda-mlir`` backend is selected with
-``MLIR Backend: true`` and is imported from ``numbast.experimental.mlir``. See
+``Backend: numba-cuda-mlir`` and is imported from ``numbast.experimental.mlir``.
+See
 :doc:`numba_cuda_mlir` for the backend differences and migration guidance.
 
 Config example:

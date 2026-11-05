@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <set>
@@ -47,21 +48,67 @@ enum class template_param_kind { type, non_type, template_ };
 
 enum class access_kind { public_, protected_, private_ };
 
+// A stable, serializable view of the Clang type classes needed by AST Canopy
+// consumers. Qualifiers are stored on every Type node, while inner_type()
+// links pointer, reference, array, typedef, and transparent sugar nodes.
+enum class type_kind {
+  unknown,
+  builtin,
+  pointer,
+  lvalue_reference,
+  rvalue_reference,
+  constant_array,
+  incomplete_array,
+  variable_array,
+  dependent_sized_array,
+  record,
+  enum_,
+  typedef_,
+  function,
+  member_pointer,
+  adjusted,
+  sugar,
+  other
+};
+
 struct Type {
   Type() = default;
   Type(std::string name, std::string unqualified_non_ref_type_name,
        bool is_right_reference, bool is_left_reference);
+  Type(std::string name, std::string unqualified_non_ref_type_name,
+       bool is_right_reference, bool is_left_reference, type_kind kind,
+       bool is_const_qualified, bool is_volatile_qualified,
+       bool is_restrict_qualified, std::vector<Type> inner_types,
+       std::optional<std::uint64_t> array_size, std::string type_name,
+       bool is_union = false);
   Type(const clang::QualType &, const clang::ASTContext &context);
 
   std::string name;
   std::string unqualified_non_ref_type_name;
+  type_kind kind = type_kind::unknown;
+  std::optional<std::uint64_t> array_size;
+  std::string type_name;
 
   bool is_right_reference() const { return _is_right_reference; }
   bool is_left_reference() const { return _is_left_reference; }
+  bool is_const_qualified() const { return _is_const_qualified; }
+  bool is_volatile_qualified() const { return _is_volatile_qualified; }
+  bool is_restrict_qualified() const { return _is_restrict_qualified; }
+  bool is_union() const { return _is_union; }
+  const Type *inner_type() const {
+    return _inner_types.empty() ? nullptr : &_inner_types.front();
+  }
 
 private:
-  bool _is_right_reference;
-  bool _is_left_reference;
+  // A vector provides recursive value storage while maintaining the invariant
+  // that the currently supported structural nodes have at most one child.
+  std::vector<Type> _inner_types;
+  bool _is_right_reference = false;
+  bool _is_left_reference = false;
+  bool _is_const_qualified = false;
+  bool _is_volatile_qualified = false;
+  bool _is_restrict_qualified = false;
+  bool _is_union = false;
 };
 
 struct Enum {
@@ -81,9 +128,11 @@ struct Enum {
   Type underlying_type;
 };
 
-struct ConstExprVar {
-  ConstExprVar() = default;
-  ConstExprVar(const clang::VarDecl *VD);
+struct EvaluatedConstDecl {
+  EvaluatedConstDecl() = default;
+  EvaluatedConstDecl(const clang::VarDecl *VD);
+
+  bool is_constexpr = false;
 
   Type type_;
   std::string name;
@@ -154,6 +203,8 @@ struct Function {
   std::vector<ParamVar> params;
   execution_space exec_space;
   bool is_constexpr;
+  bool is_c_linkage = false;
+  bool is_variadic = false;
   std::string mangled_name;
   std::set<std::string> attributes;
 };
@@ -230,6 +281,7 @@ struct Record {
   std::vector<ClassTemplate> nested_class_templates;
   std::size_t sizeof_;
   std::size_t alignof_;
+  bool is_union = false; // true for a C/C++ union, false for a struct/class
 
   std::string source_range;
   void print(int) const;
@@ -243,16 +295,23 @@ struct ClassTemplate : public Template {
 
 struct Typedef {
   Typedef(const std::string &name, const std::string &underlying_name)
-      : name(name), qual_name(name), underlying_name(underlying_name) {}
+      : name(name), qual_name(name), underlying_name(underlying_name),
+        underlying_type(underlying_name, underlying_name, false, false) {}
   Typedef(const std::string &name, const std::string &underlying_name,
           const std::string &qual_name)
-      : name(name), qual_name(qual_name), underlying_name(underlying_name) {}
+      : name(name), qual_name(qual_name), underlying_name(underlying_name),
+        underlying_type(underlying_name, underlying_name, false, false) {}
+  Typedef(const std::string &name, const std::string &underlying_name,
+          const std::string &qual_name, const Type &underlying_type)
+      : name(name), qual_name(qual_name), underlying_name(underlying_name),
+        underlying_type(underlying_type) {}
   Typedef(const clang::TypedefDecl *,
           std::unordered_map<int64_t, std::string> *);
 
   std::string name;
   std::string qual_name;
   std::string underlying_name;
+  Type underlying_type;
 };
 
 struct ClassTemplateSpecialization : public Record {
@@ -270,6 +329,7 @@ struct Declarations {
   std::vector<ClassTemplateSpecialization> class_template_specializations;
   std::vector<Typedef> typedefs;
   std::vector<Enum> enums;
+  std::vector<EvaluatedConstDecl> global_constants;
   std::unordered_map<std::string, std::string> macro_defines;
 };
 
@@ -278,7 +338,7 @@ parse_declarations_from_command_line(std::vector<std::string> options,
                                      std::vector<std::string> files_to_retain,
                                      bool bypass_parse_error);
 
-std::optional<ConstExprVar>
+std::optional<EvaluatedConstDecl>
 value_from_constexpr_vardecl(std::vector<std::string> clang_options,
                              std::string vardecl_name);
 

@@ -10,7 +10,7 @@ from numba import cuda
 from numba.core.errors import TypingError
 import pytest
 
-from numbast.tools.static_binding_generator import static_binding_generator
+from numbast.cli import static_binding_generator
 
 
 @pytest.fixture

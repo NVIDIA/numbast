@@ -41,7 +41,7 @@ def test_cli_yml_inputs_macro_expansion(tmpdir, kernel, arch_str):
 
     cfg = f"""Name: Test Data
 Version: 0.0.1
-MLIR Backend: true
+Backend: numba-cuda-mlir
 Entry Point: {data}
 GPU Arch:
     - {arch_str}

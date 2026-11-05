@@ -24,7 +24,7 @@ runs:
     - name: Install build dependencies
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        conda install -n docs-build -c conda-forge clangdev=20 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make cuda-cudart -y
+        conda install -n docs-build -c conda-forge clangdev=22 cmake>=3.29 ninja flex bison git c-compiler cxx-compiler make cuda-cudart -y
     - name: Download previously-built wheel artifacts
       if: ${{ inputs.download_artifacts == 'true' }}
       continue-on-error: true

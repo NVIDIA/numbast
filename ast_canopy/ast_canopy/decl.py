@@ -56,6 +56,19 @@ CXX_TYPE_TO_PYTHON_TYPE = {
     "uint64_t": int,
     "float": float,
     "double": float,
+    "short": int,
+    "unsigned short": int,
+    "signed char": int,
+    "unsigned char": int,
+    "char": int,
+    "bool": bool,
+    "long double": float,
+    "__int128": int,
+    "unsigned __int128": int,
+    "wchar_t": int,
+    "char8_t": int,
+    "char16_t": int,
+    "char32_t": int,
 }
 
 
@@ -77,6 +90,8 @@ class Function:
         mangled_name: str,
         attributes: str,
         parse_entry_point: str,
+        is_c_linkage: bool | None = None,
+        is_variadic: bool = False,
     ):
         self.name = name
         self.qual_name = qual_name
@@ -88,6 +103,8 @@ class Function:
         self.is_constexpr = is_constexpr
         self.mangled_name = mangled_name
         self.attributes = attributes
+        self.is_c_linkage = is_c_linkage
+        self.is_variadic = is_variadic
 
         self.parse_entry_point = parse_entry_point
 
@@ -169,6 +186,8 @@ class Function:
             c_obj.mangled_name,
             c_obj.attributes,
             parse_entry_point,
+            getattr(c_obj, "is_c_linkage", None),
+            getattr(c_obj, "is_variadic", False),
         )
 
 
@@ -253,6 +272,8 @@ class StructMethod(Function):
         mangled_name: str,
         attributes: str,
         parse_entry_point: str,
+        is_variadic: bool = False,
+        is_c_linkage: bool | None = None,
     ):
         super().__init__(
             name,
@@ -264,6 +285,8 @@ class StructMethod(Function):
             mangled_name,
             attributes,
             parse_entry_point,
+            is_c_linkage=is_c_linkage,
+            is_variadic=is_variadic,
         )
         self.kind = kind
         self.is_move_constructor = is_move_constructor
@@ -296,6 +319,8 @@ class StructMethod(Function):
             c_obj.mangled_name,
             c_obj.attributes,
             parse_entry_point,
+            is_variadic=getattr(c_obj, "is_variadic", False),
+            is_c_linkage=getattr(c_obj, "is_c_linkage", None),
         )
 
 
@@ -348,6 +373,7 @@ class Struct:
         sizeof_: int,
         alignof_: int,
         parse_entry_point: str,
+        is_union: bool = False,
     ):
         self._name = name
         self._qual_name = qual_name
@@ -358,6 +384,7 @@ class Struct:
         self.nested_class_templates = nested_class_templates
         self.sizeof_ = sizeof_
         self.alignof_ = alignof_
+        self.is_union = is_union
 
         self.parse_entry_point = parse_entry_point
 
@@ -414,6 +441,7 @@ class Struct:
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            is_union=getattr(c_obj, "is_union", False),
         )
 
     @property
@@ -452,6 +480,7 @@ class TemplatedStruct(Struct):
             c_obj.sizeof_,
             c_obj.alignof_,
             parse_entry_point,
+            is_union=getattr(c_obj, "is_union", False),
         )
 
 
@@ -491,25 +520,52 @@ class ClassTemplate(Template):
         return tstruct.instantiate(**kwargs)
 
 
-class ConstExprVar:
-    """Represents a constexpr variable extracted from C++.
+class EvaluatedConstDecl:
+    """Represents an evaluated scalar constant extracted from C++.
 
     Stores the C++ type and serialized value; ``value`` converts it to the
-    corresponding Python value based on the type mapping.
+    corresponding Python value based on the type mapping. ``is_constexpr``
+    records whether the variable was explicitly declared ``constexpr``.
     """
 
-    def __init__(self, name: str, type_: bindings.Type, value_serialized: str):
+    def __init__(
+        self,
+        name: str,
+        type_: bindings.Type,
+        value_serialized: str,
+        qual_name: str | None = None,
+        *,
+        is_constexpr: bool,
+    ):
+        self.is_constexpr = is_constexpr
         self.name = name
+        self.qual_name = qual_name or name
         self.type_ = type_
         self.value_serialized = value_serialized
 
     @classmethod
-    def from_c_obj(cls, c_obj: bindings.ConstExprVar):
-        return cls(c_obj.name, c_obj.type_, c_obj.value)
+    def from_c_obj(cls, c_obj: bindings.EvaluatedConstDecl):
+        return cls(
+            c_obj.name,
+            c_obj.type_,
+            c_obj.value,
+            c_obj.qual_name,
+            is_constexpr=c_obj.is_constexpr,
+        )
 
     @property
     def value(self):
-        cxx_type_name = self.type_.unqualified_non_ref_type_name
+        type_ = self.type_
+        while type_.kind in (
+            bindings.type_kind.typedef_,
+            bindings.type_kind.sugar,
+        ):
+            type_ = type_.inner_type
+        if type_.kind == bindings.type_kind.enum_:
+            return int(self.value_serialized)
+        cxx_type_name = type_.unqualified_non_ref_type_name
+        if cxx_type_name == "bool":
+            return self.value_serialized != "0"
         return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)
 
 
@@ -538,6 +594,7 @@ class ClassTemplateSpecialization(Struct):
             record.sizeof_,
             record.alignof_,
             record.parse_entry_point,
+            is_union=record.is_union,
         )
 
         self._instantiation = ClassInstantiation(class_template)
