@@ -704,7 +704,7 @@ If a non-None value is provided but cannot be resolved, a
 <h2>Declaration collections<a class="headerlink" href="#declaration-collections" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="ast_canopy.api.Declarations">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ast_canopy.api.</span></span><span class="sig-name descname"><span class="pre">Declarations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">structs:</span> <span class="pre">list[~ast_canopy.decl.Struct],</span> <span class="pre">functions:</span> <span class="pre">list[~ast_canopy.decl.Function],</span> <span class="pre">function_templates:</span> <span class="pre">list[~ast_canopy.decl.FunctionTemplate],</span> <span class="pre">class_templates:</span> <span class="pre">list[~ast_canopy.decl.ClassTemplate],</span> <span class="pre">class_template_specializations:</span> <span class="pre">list[~ast_canopy.decl.ClassTemplateSpecialization],</span> <span class="pre">typedefs:</span> <span class="pre">list[~ast_canopy.pylibastcanopy.Typedef],</span> <span class="pre">enums:</span> <span class="pre">list[~ast_canopy.pylibastcanopy.Enum],</span> <span class="pre">global_constants:</span> <span class="pre">list[~ast_canopy.decl.EvaluatedConstDecl]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">macro_defines:</span> <span class="pre">dict[str,</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">macro_constants:</span> <span class="pre">dict[str,</span> <span class="pre">~ast_canopy.decl.EvaluatedConstDecl]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.api.Declarations" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ast_canopy.api.</span></span><span class="sig-name descname"><span class="pre">Declarations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">structs:</span> <span class="pre">list[~ast_canopy.decl.Struct],</span> <span class="pre">functions:</span> <span class="pre">list[~ast_canopy.decl.Function],</span> <span class="pre">function_templates:</span> <span class="pre">list[~ast_canopy.decl.FunctionTemplate],</span> <span class="pre">class_templates:</span> <span class="pre">list[~ast_canopy.decl.ClassTemplate],</span> <span class="pre">class_template_specializations:</span> <span class="pre">list[~ast_canopy.decl.ClassTemplateSpecialization],</span> <span class="pre">typedefs:</span> <span class="pre">list[~ast_canopy.pylibastcanopy.Typedef],</span> <span class="pre">enums:</span> <span class="pre">list[~ast_canopy.pylibastcanopy.Enum],</span> <span class="pre">global_constants:</span> <span class="pre">list[~ast_canopy.decl.EvaluatedConstDecl]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">macro_defines:</span> <span class="pre">dict[str,</span> <span class="pre">~ast_canopy.decl.MacroDefinition]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.api.Declarations" title="Link to this definition">#</a></dt>
 <dd><p>Declarations collected from retained files in one translation unit.</p>
 <p>Returned by <a class="reference internal" href="#ast_canopy.api.parse_declarations_from_source" title="ast_canopy.api.parse_declarations_from_source"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_declarations_from_source()</span></code></a> after converting the
 native parser’s result into Python declaration objects.</p>
@@ -811,30 +811,21 @@ Each constant’s <code class="docutils literal notranslate"><span class="pre">i
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ast_canopy.api.Declarations.macro_defines">
 <span class="sig-name descname"><span class="pre">macro_defines</span></span><a class="headerlink" href="#ast_canopy.api.Declarations.macro_defines" title="Link to this definition">#</a></dt>
-<dd><p>Active object-like macros defined in retained files, mapped to their
-unexpanded replacement tokens joined with single spaces. Empty flags
-have an empty string. Function-like and undefined macros are omitted.</p>
+<dd><p>Active object-like macros defined in retained files. Each definition
+contains its name, unexpanded replacement tokens joined with single
+spaces in <code class="docutils literal notranslate"><span class="pre">replacement_text</span></code>, and an optional <code class="docutils literal notranslate"><span class="pre">evaluated_constant</span></code>.
+Empty flags have empty text. Function-like and undefined macros are
+omitted. Clang evaluates scalar C++ constant expressions using the
+target and final preprocessor state of the translation unit. Supported
+values are integers, booleans, enums, and <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code>. The evaluated object carries its expression type,
+serialized value, and converted Python <code class="docutils literal notranslate"><span class="pre">value</span></code>; <code class="docutils literal notranslate"><span class="pre">is_constexpr</span></code> is
+false because a macro is not a variable declaration. Unsupported or
+unevaluable definitions have <code class="docutils literal notranslate"><span class="pre">evaluated_constant=None</span></code> and do not
+fail strict declaration parsing.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="ast_canopy.api.Declarations.macro_constants">
-<span class="sig-name descname"><span class="pre">macro_constants</span></span><a class="headerlink" href="#ast_canopy.api.Declarations.macro_constants" title="Link to this definition">#</a></dt>
-<dd><p>The subset of <code class="docutils literal notranslate"><span class="pre">macro_defines</span></code> that Clang can evaluate as scalar C++
-constant expressions: integers, booleans, enums, and <code class="docutils literal notranslate"><span class="pre">float</span></code>,
-<code class="docutils literal notranslate"><span class="pre">double</span></code>, or <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code>. Each item carries its expression type,
-serialized value, and converted Python <code class="docutils literal notranslate"><span class="pre">value</span></code>. <code class="docutils literal notranslate"><span class="pre">is_constexpr</span></code> is
-false because a macro is not a variable declaration. Evaluation uses
-the target and final preprocessor state of the translation unit.
-Unsupported or unevaluable definitions retain their replacement text
-without an entry here; they do not fail strict declaration parsing.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference internal" href="#ast_canopy.decl.EvaluatedConstDecl" title="ast_canopy.decl.EvaluatedConstDecl">EvaluatedConstDecl</a>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference internal" href="#ast_canopy.decl.MacroDefinition" title="ast_canopy.decl.MacroDefinition">MacroDefinition</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -844,10 +835,10 @@ without an entry here; they do not fail strict declaration parsing.</p>
 </section>
 <section id="macro-definitions-and-values">
 <h2>Macro definitions and values<a class="headerlink" href="#macro-definitions-and-values" title="Link to this heading">#</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">Declarations.macro_defines</span></code> preserves the replacement text of active
-object-like macros defined in retained files. <code class="docutils literal notranslate"><span class="pre">macro_constants</span></code> additionally
-provides evaluated scalar values and their C++ types through
-<a class="reference internal" href="#ast_canopy.decl.EvaluatedConstDecl" title="ast_canopy.decl.EvaluatedConstDecl"><code class="xref py py-class docutils literal notranslate"><span class="pre">EvaluatedConstDecl</span></code></a> objects.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Declarations.macro_defines</span></code> maps each active object-like macro in retained
+files to a <a class="reference internal" href="#ast_canopy.decl.MacroDefinition" title="ast_canopy.decl.MacroDefinition"><code class="xref py py-class docutils literal notranslate"><span class="pre">MacroDefinition</span></code></a>. Each object stores its
+<code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">replacement_text</span></code>, and an optional <code class="docutils literal notranslate"><span class="pre">evaluated_constant</span></code> containing
+an <a class="reference internal" href="#ast_canopy.decl.EvaluatedConstDecl" title="ast_canopy.decl.EvaluatedConstDecl"><code class="xref py py-class docutils literal notranslate"><span class="pre">EvaluatedConstDecl</span></code></a>.</p>
 <p>For example, given a retained header containing:</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">Config</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">value</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
 <span class="cp">#define API_MASK (1ULL &lt;&lt; 3)</span>
@@ -855,13 +846,16 @@ provides evaluated scalar values and their C++ types through
 <span class="cp">#define API_FLAG</span>
 </pre></div>
 </div>
-<p>the parse result exposes both forms:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decls</span><span class="o">.</span><span class="n">macro_defines</span><span class="p">[</span><span class="s2">"API_MASK"</span><span class="p">]</span>           <span class="c1"># "( 1ULL &lt;&lt; 3 )"</span>
-<span class="n">decls</span><span class="o">.</span><span class="n">macro_constants</span><span class="p">[</span><span class="s2">"API_MASK"</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>   <span class="c1"># 8</span>
-<span class="n">decls</span><span class="o">.</span><span class="n">macro_constants</span><span class="p">[</span><span class="s2">"API_MASK"</span><span class="p">]</span><span class="o">.</span><span class="n">type_</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># "unsigned long long"</span>
-<span class="n">decls</span><span class="o">.</span><span class="n">macro_constants</span><span class="p">[</span><span class="s2">"API_VERSION"</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>   <span class="c1"># 131076</span>
-<span class="n">decls</span><span class="o">.</span><span class="n">macro_defines</span><span class="p">[</span><span class="s2">"API_FLAG"</span><span class="p">]</span>           <span class="c1"># ""</span>
-<span class="s2">"API_FLAG"</span> <span class="ow">in</span> <span class="n">decls</span><span class="o">.</span><span class="n">macro_constants</span>      <span class="c1"># False</span>
+<p>the parse result exposes both forms on the same object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mask</span> <span class="o">=</span> <span class="n">decls</span><span class="o">.</span><span class="n">macro_defines</span><span class="p">[</span><span class="s2">"API_MASK"</span><span class="p">]</span>
+<span class="n">mask</span><span class="o">.</span><span class="n">name</span>                           <span class="c1"># "API_MASK"</span>
+<span class="n">mask</span><span class="o">.</span><span class="n">replacement_text</span>               <span class="c1"># "( 1ULL &lt;&lt; 3 )"</span>
+<span class="n">mask</span><span class="o">.</span><span class="n">evaluated_constant</span><span class="o">.</span><span class="n">value</span>       <span class="c1"># 8</span>
+<span class="n">mask</span><span class="o">.</span><span class="n">evaluated_constant</span><span class="o">.</span><span class="n">type_</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># "unsigned long long"</span>
+<span class="n">decls</span><span class="o">.</span><span class="n">macro_defines</span><span class="p">[</span><span class="s2">"API_VERSION"</span><span class="p">]</span><span class="o">.</span><span class="n">evaluated_constant</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># 131076</span>
+<span class="n">flag</span> <span class="o">=</span> <span class="n">decls</span><span class="o">.</span><span class="n">macro_defines</span><span class="p">[</span><span class="s2">"API_FLAG"</span><span class="p">]</span>
+<span class="n">flag</span><span class="o">.</span><span class="n">replacement_text</span>               <span class="c1"># ""</span>
+<span class="n">flag</span><span class="o">.</span><span class="n">evaluated_constant</span> <span class="ow">is</span> <span class="kc">None</span>      <span class="c1"># True</span>
 </pre></div>
 </div>
 <p>Clang expands references to other macros and evaluates arithmetic, casts,
@@ -871,8 +865,9 @@ translation unit; it does not record historical values before redefinition or
 expand each macro at its original definition location. Replacement text is
 token spelling normalized with spaces, rather than an exact source slice.</p>
 <p>Only integers, booleans, enums, <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, and <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> have
-evaluated entries. Strings, pointers, aggregates, type aliases, empty flags,
-runtime expressions, and invalid expressions remain available as text only.
+evaluated values. Strings, pointers, aggregates, type aliases, empty flags,
+runtime expressions, and invalid expressions have <code class="docutils literal notranslate"><span class="pre">evaluated_constant=None</span></code>
+while retaining their replacement text.
 They do not cause strict declaration parsing to fail. Function-like macros
 are omitted, but an object-like macro may invoke a function-like macro as
 part of an evaluable expression. Definitions from unretained headers can
@@ -1128,6 +1123,35 @@ building a concrete instantiation.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="ast_canopy.decl.FunctionTemplate.instantiate">
 <span class="sig-name descname"><span class="pre">instantiate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.FunctionTemplate.instantiate" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ast_canopy.decl.MacroDefinition">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ast_canopy.decl.</span></span><span class="sig-name descname"><span class="pre">MacroDefinition</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">replacement_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">evaluated_constant</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ast_canopy.decl.EvaluatedConstDecl" title="ast_canopy.decl.EvaluatedConstDecl"><span class="pre">EvaluatedConstDecl</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.MacroDefinition" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>An object-like macro’s replacement text and optional scalar value.</p>
+<p><code class="docutils literal notranslate"><span class="pre">evaluated_constant</span></code> is an <a class="reference internal" href="#ast_canopy.decl.EvaluatedConstDecl" title="ast_canopy.decl.EvaluatedConstDecl"><code class="xref py py-class docutils literal notranslate"><span class="pre">EvaluatedConstDecl</span></code></a> when Clang can
+evaluate the definition as a supported scalar constant expression, or
+<code class="docutils literal notranslate"><span class="pre">None</span></code> otherwise. <code class="docutils literal notranslate"><span class="pre">replacement_text</span></code> is available in either case.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ast_canopy.decl.MacroDefinition.from_c_obj">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_c_obj</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">c_obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MacroDefinition</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#ast_canopy.decl.MacroDefinition.from_c_obj" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1425,7 +1449,6 @@ the declaration name is the base name without parameters.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.api.Declarations.enums"><code class="docutils literal notranslate"><span class="pre">enums</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.api.Declarations.global_constants"><code class="docutils literal notranslate"><span class="pre">global_constants</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.api.Declarations.macro_defines"><code class="docutils literal notranslate"><span class="pre">macro_defines</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.api.Declarations.macro_constants"><code class="docutils literal notranslate"><span class="pre">macro_constants</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1467,6 +1490,10 @@ the declaration name is the base name without parameters.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.FunctionTemplate"><code class="docutils literal notranslate"><span class="pre">FunctionTemplate</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.FunctionTemplate.from_c_obj"><code class="docutils literal notranslate"><span class="pre">from_c_obj()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.FunctionTemplate.instantiate"><code class="docutils literal notranslate"><span class="pre">instantiate()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.MacroDefinition"><code class="docutils literal notranslate"><span class="pre">MacroDefinition</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.MacroDefinition.from_c_obj"><code class="docutils literal notranslate"><span class="pre">from_c_obj()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ast_canopy.decl.Struct"><code class="docutils literal notranslate"><span class="pre">Struct</span></code></a><ul class="nav section-nav flex-column">
