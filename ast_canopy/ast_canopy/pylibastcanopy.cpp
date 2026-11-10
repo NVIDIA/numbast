@@ -82,6 +82,7 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def("is_const_qualified", &Type::is_const_qualified)
       .def("is_volatile_qualified", &Type::is_volatile_qualified)
       .def("is_restrict_qualified", &Type::is_restrict_qualified)
+      .def_property_readonly("is_union", &Type::is_union)
       .def("__repr__", [](const Type &t) { return "<Type: " + t.name + ">"; })
       .def(py::pickle(
           [](const Type &f) {
@@ -92,14 +93,14 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                 f.name, f.unqualified_non_ref_type_name, f.is_right_reference(),
                 f.is_left_reference(), f.kind, f.is_const_qualified(),
                 f.is_volatile_qualified(), f.is_restrict_qualified(),
-                inner_types, f.array_size, f.type_name);
+                inner_types, f.array_size, f.type_name, f.is_union());
           },
           [](py::tuple t) {
             if (t.size() == 4) {
               return Type{t[0].cast<std::string>(), t[1].cast<std::string>(),
                           t[2].cast<bool>(), t[3].cast<bool>()};
             }
-            if (t.size() != 11)
+            if (t.size() != 11 && t.size() != 12)
               throw std::runtime_error("Invalid type state during unpickle!");
             return Type{t[0].cast<std::string>(),
                         t[1].cast<std::string>(),
@@ -111,7 +112,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[7].cast<bool>(),
                         t[8].cast<std::vector<Type>>(),
                         t[9].cast<std::optional<std::uint64_t>>(),
-                        t[10].cast<std::string>()};
+                        t[10].cast<std::string>(),
+                        t.size() == 12 ? t[11].cast<bool>() : false};
           }));
 
   py::class_<Enum>(m, "Enum")
@@ -135,12 +137,13 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                         t[4].cast<Type>()};
           }));
 
-  py::class_<ConstExprVar>(m, "ConstExprVar")
+  py::class_<EvaluatedConstDecl>(m, "EvaluatedConstDecl")
       .def(py::init<>())
-      .def_readwrite("type_", &ConstExprVar::type_)
-      .def_readwrite("name", &ConstExprVar::name)
-      .def_readwrite("qual_name", &ConstExprVar::qual_name)
-      .def_readwrite("value", &ConstExprVar::value);
+      .def_readwrite("is_constexpr", &EvaluatedConstDecl::is_constexpr)
+      .def_readwrite("type_", &EvaluatedConstDecl::type_)
+      .def_readwrite("name", &EvaluatedConstDecl::name)
+      .def_readwrite("qual_name", &EvaluatedConstDecl::qual_name)
+      .def_readwrite("value", &EvaluatedConstDecl::value);
 
   py::class_<Field>(m, "Field")
       .def_readwrite("name", &Field::name)
@@ -369,7 +372,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("class_template_specializations",
                      &Declarations::class_template_specializations)
       .def_readwrite("typedefs", &Declarations::typedefs)
-      .def_readwrite("enums", &Declarations::enums);
+      .def_readwrite("enums", &Declarations::enums)
+      .def_readwrite("global_constants", &Declarations::global_constants);
 
   m.def("parse_declarations_from_command_line",
         &parse_declarations_from_command_line,
