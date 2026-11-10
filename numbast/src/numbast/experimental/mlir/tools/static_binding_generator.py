@@ -198,7 +198,6 @@ class Config:
         # passes"; see numbast.curate.function_skip_reason.
         self.includes = config_dict.get("Include", {}) or {}
         self.include_functions = self.includes.get("Function", []) or []
-        self.include_structs = self.includes.get("Struct", []) or []
 
         self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
 

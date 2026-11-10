@@ -594,7 +594,7 @@ class {op_typing_name}(ConcreteTemplate):
             decls (list[Function]): Function declarations to render.
             header_path (str): Path to the C++ header used for generating C shims.
             excludes (list[str]): Function names to exclude from rendering.
-            includes (list[str]): Function names to render, to the exclusion of all others. Empty means no allowlist.
+            includes (list[str]): Function names to render, to the exclusion of all others. Empty or absence means allow all.
             skip_non_device (bool): If True, skip functions that are not device-callable.
             skip_prefix (str | None): If set, skip functions whose names start with this prefix.
             cooperative_launch_required (list[str]): Regex patterns; functions whose names match any pattern will be rendered to require cooperative launch.
