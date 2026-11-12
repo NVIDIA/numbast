@@ -1,0 +1,28 @@
+numbast.static.function
+=======================
+
+.. automodule:: numbast.static.function
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      function_mangled_name_registry
+      function_apis_registry
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      clear_function_apis_registry
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      StaticFunctionRenderer
+      StaticFunctionsRenderer
+      StaticNonOperatorFunctionRenderer
+      StaticOverloadedOperatorRenderer
+   
