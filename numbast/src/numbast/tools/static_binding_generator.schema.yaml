@@ -92,9 +92,8 @@ properties:
     default: {}
     additionalProperties: false
     description: >
-      Function names to bind, to the exclusion of all others. Empty or absent
-      means no allowlist is applied, not that nothing is bound. A name
-      appearing in both Include and Exclude is excluded.
+      Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that nothing is bound. A name appearing in both Include and Exclude is excluded.
+
     examples:
       - Function: ["cuInit", "cuStreamCreate", "cuStreamDestroy_v2"]
     properties:
@@ -104,9 +103,8 @@ properties:
         items:
           type: string
         description: >
-          Function names to bind. Intended for large C APIs, where naming the
-          few hundred entry points in scope is practical and enumerating the
-          rest under Exclude is not.
+          Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is practical and enumerating the rest under Exclude is not.
+
         examples:
           - ["cuInit", "cuDeviceGetCount"]
   Clang Include Paths:
