@@ -64,10 +64,25 @@ def function_skip_reason(
     excludes: list[str],
     skip_prefix: str | None,
     skip_non_device: bool,
+    includes: list[str] = [],
 ) -> str | None:
-    """Why ``decl`` is out of scope, or ``None`` if it is in scope."""
+    """Why ``decl`` is out of scope, or ``None`` if it is in scope.
+
+    ``includes`` is an allowlist and is checked *after* ``excludes``, so a name
+    appearing in both is excluded: deny beats allow. An empty allowlist means
+    "no allowlist" rather than "nothing passes" -- a config that fills in one
+    declaration kind and leaves another empty must not silently curate the
+    second one away.
+
+    The allowlist is otherwise just another filter in sequence, not an
+    override: an allowlisted host function is still dropped by
+    ``skip_non_device``, with the warning that always accompanies that.
+    """
     if decl.name in excludes:
         return "excluded"
+
+    if includes and decl.name not in includes:
+        return "not_included"
 
     if skip_prefix and decl.name.startswith(skip_prefix):
         return "skip_prefix"
@@ -83,6 +98,7 @@ def plan_functions(
     *,
     header_path: str,
     excludes: list[str] = [],
+    includes: list[str] = [],
     skip_prefix: str | None = None,
     skip_non_device: bool = True,
     cooperative_launch_required: list[str] = [],
@@ -93,6 +109,11 @@ def plan_functions(
 
     ``header_path`` is used only to phrase the non-device warning, which is
     emitted here so it fires exactly once per declaration regardless of backend.
+
+    ``includes`` is the allowlist counterpart to ``excludes``; see
+    :func:`function_skip_reason` for how the two interact. It exists because a
+    large C API is curated by naming the few hundred entry points you want, not
+    by enumerating the thousand you do not.
     """
     intents = argument_intents or {}
     plans: list[FunctionPlan] = []
@@ -101,6 +122,7 @@ def plan_functions(
         reason = function_skip_reason(
             decl,
             excludes=excludes,
+            includes=includes,
             skip_prefix=skip_prefix,
             skip_non_device=skip_non_device,
         )

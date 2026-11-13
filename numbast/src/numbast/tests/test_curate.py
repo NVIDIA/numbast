@@ -210,6 +210,53 @@ def test_planning_drops_every_out_of_scope_declaration(decls):
     assert _plan_names(plans) == {"acmeCompute", "acmeCooperativeReduce"}
 
 
+def test_an_allowlist_keeps_only_what_it_names(decls):
+    """Large C APIs are curated by naming what is in scope, not what is out."""
+    plans = plan_functions(
+        decls.values(),
+        header_path=HEADER,
+        includes=["acmeCompute"],
+    )
+    assert _plan_names(plans) == {"acmeCompute"}
+
+
+def test_an_empty_allowlist_is_no_allowlist(decls):
+    """Empty must not mean "nothing passes".
+
+    A config that allowlists structs and leaves functions blank would
+    otherwise silently curate every function away.
+    """
+    plans = plan_functions(decls.values(), header_path=HEADER, includes=[])
+    assert "acmeCompute" in _plan_names(plans)
+
+
+def test_exclude_beats_include(decls):
+    """A name in both lists is excluded: deny beats allow."""
+    plans = plan_functions(
+        decls.values(),
+        header_path=HEADER,
+        includes=["acmeCompute", "acmeExcluded"],
+        excludes=["acmeExcluded"],
+    )
+    assert _plan_names(plans) == {"acmeCompute"}
+
+
+def test_the_allowlist_does_not_override_the_other_filters(decls):
+    """Allowlisting is subtractive, not an override.
+
+    An allowlisted host function is still dropped by ``skip_non_device``, and
+    still warns -- otherwise naming a symbol would silently change what the
+    device-space rule means.
+    """
+    with pytest.warns(UserWarning, match="acmeHostOnly"):
+        plans = plan_functions(
+            decls.values(),
+            header_path=HEADER,
+            includes=["acmeHostOnly"],
+        )
+    assert _plan_names(plans) == set()
+
+
 def test_planning_keeps_host_functions_when_asked(decls):
     plans = plan_functions(
         decls.values(), header_path=HEADER, skip_non_device=False
