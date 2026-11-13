@@ -797,6 +797,22 @@ output.</p>
 </pre></div>
 </div>
 </dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Include</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">object</span></code></span></dt><dd><p>Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that
+nothing is bound. A name appearing in both Include and Exclude is excluded.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>No unspecified sub-keys</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Include</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Function</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cuInit</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cuStreamCreate</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cuStreamDestroy_v2</span>
+</pre></div>
+</div>
+</dd>
 <dt><code class="docutils literal notranslate"><span class="pre">Clang</span> <span class="pre">Include</span> <span class="pre">Paths</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Additional include search paths for Clang parsing.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
 <p>Constraints:</p>
@@ -984,6 +1000,23 @@ invocation to emit Rust.</p>
 </div>
 </dd>
 </dl>
+<p class="rubric"><code class="docutils literal notranslate"><span class="pre">Include</span></code></p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">Function</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">array</span></code></span></dt><dd><p>Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is practical
+and enumerating the rest under Exclude is not.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
+<p>Constraints:</p>
+<ul class="simple">
+<li><p>Item type: <code class="docutils literal notranslate"><span class="pre">string</span></code></p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Function</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cuInit</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cuDeviceGetCount</span>
+</pre></div>
+</div>
+</dd>
+</dl>
 <p class="rubric"><code class="docutils literal notranslate"><span class="pre">API</span> <span class="pre">Prefix</span> <span class="pre">Removal</span></code></p>
 <dl>
 <dt><code class="docutils literal notranslate"><span class="pre">Function</span></code><span class="classifier"><code class="docutils literal notranslate"><span class="pre">oneOf(string,</span> <span class="pre">array)</span></code></span></dt><dd><p>Prefix(es) removed from generated function names.</p>
@@ -1164,6 +1197,28 @@ Symbol Inventory to detect parser omissions.</p>
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Struct names to exclude.</span>
 <span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"__InternalState"</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">Include</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">      </span><span class="no">Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that</span>
+<span class="w">      </span><span class="no">nothing is bound. A name appearing in both Include and Exclude is excluded.</span>
+
+<span class="w">    </span><span class="nt">examples</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"cuInit"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"cuStreamCreate"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"cuStreamDestroy_v2"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Function</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">        </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">        </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">          </span><span class="no">Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is</span>
+<span class="w">          </span><span class="no">practical and enumerating the rest under Exclude is not.</span>
+
+<span class="w">        </span><span class="nt">examples</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"cuInit"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"cuDeviceGetCount"</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">Clang Include Paths</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
 <span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
