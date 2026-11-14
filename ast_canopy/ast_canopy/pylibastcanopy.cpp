@@ -145,6 +145,13 @@ PYBIND11_MODULE(pylibastcanopy, m) {
       .def_readwrite("qual_name", &EvaluatedConstDecl::qual_name)
       .def_readwrite("value", &EvaluatedConstDecl::value);
 
+  py::class_<MacroDefinition>(m, "MacroDefinition")
+      .def(py::init<>())
+      .def_readwrite("name", &MacroDefinition::name)
+      .def_readwrite("replacement_text", &MacroDefinition::replacement_text)
+      .def_readwrite("evaluated_constant",
+                     &MacroDefinition::evaluated_constant);
+
   py::class_<Field>(m, "Field")
       .def_readwrite("name", &Field::name)
       .def_readwrite("type_", &Field::type)
@@ -373,7 +380,8 @@ PYBIND11_MODULE(pylibastcanopy, m) {
                      &Declarations::class_template_specializations)
       .def_readwrite("typedefs", &Declarations::typedefs)
       .def_readwrite("enums", &Declarations::enums)
-      .def_readwrite("global_constants", &Declarations::global_constants);
+      .def_readwrite("global_constants", &Declarations::global_constants)
+      .def_readwrite("macro_defines", &Declarations::macro_defines);
 
   m.def("parse_declarations_from_command_line",
         &parse_declarations_from_command_line,
