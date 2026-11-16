@@ -18,9 +18,41 @@ tags are complete, which names are enums, and what the dialect is called -- so
 the mapper is stateful and also accumulates the handle types it mints.
 """
 
+import enum
 import re
+from dataclasses import dataclass
 
-__all__ = ["TypeMapper"]
+__all__ = ["Classification", "TypeKind", "TypeMapper"]
+
+
+class TypeKind(enum.Enum):
+    """What a C spelling turns out to be, before anything is named.
+
+    Five outcomes, because that is how many distinct things the dialect can
+    do with a spelling -- ignore it, use a builtin, mint a handle, model a
+    record, or give up and use the opaque floor.
+    """
+
+    VOID = "void"
+    BUILTIN = "builtin"
+    HANDLE = "handle"
+    RECORD = "record"
+    OPAQUE = "opaque"
+
+
+@dataclass(frozen=True)
+class Classification:
+    """What a spelling is, and what it is a kind *of*.
+
+    ``subject`` is the normalised spelling the kind applies to -- the pointee
+    for a handle or a pointer to a record, the spelling itself otherwise. It
+    is what naming consumes. ``builtin`` carries the MLIR type for
+    :attr:`TypeKind.BUILTIN` and is empty for every other kind.
+    """
+
+    kind: TypeKind
+    subject: str
+    builtin: str = ""
 
 
 class AmbiguousAnonymousRecordError(Exception):
@@ -371,22 +403,28 @@ class TypeMapper:
 
     # -- mapping ----------------------------------------------------------
 
-    def map(self, spelling: str) -> str:
-        """MLIR type ref for a parameter or result spelling."""
+    def classify(self, spelling: str) -> Classification:
+        """What ``spelling`` is, without naming or minting anything.
+
+        Reads the header facts and nothing else: calling this twice on one
+        mapper gives the same answer whatever happened in between. Separating
+        it from :meth:`map` is what makes a misclassification visible as
+        itself rather than only as a type that came out oddly named.
+        """
         # Call syntax means a function pointer *or* a bare function type. The
         # latter has no ``(*`` so it slips past the pointer test, and would then
         # be modelled as a record named after the whole signature.
         if _is_function_pointer(spelling) or "(" in spelling:
-            return self.ptr_type()
+            return Classification(TypeKind.OPAQUE, spelling)
 
         if _is_pointer(spelling):
             pointee = _pointee(spelling)
             if pointee.endswith("*"):
                 # pointer-to-pointer; out-handle cases are routed through the
                 # intent plan instead, so this is a plain opaque pointer.
-                return self.ptr_type()
+                return Classification(TypeKind.OPAQUE, pointee)
             if pointee in self.records:
-                return self.struct_type(pointee)
+                return Classification(TypeKind.RECORD, pointee)
             if (
                 pointee in _SCALARS
                 or pointee in _FLOATS
@@ -397,23 +435,41 @@ class TypeMapper:
                     "char",
                 )
             ):
-                return self.ptr_type()
+                return Classification(TypeKind.OPAQUE, pointee)
             # A record tag we have no complete definition for: an opaque handle.
-            return self.handle_type(pointee)
+            return Classification(TypeKind.HANDLE, pointee)
 
         norm = _norm(spelling)
         if norm == "void":
-            return ""
+            return Classification(TypeKind.VOID, norm)
         if norm in _FLOATS:
-            return _FLOATS[norm]
+            return Classification(TypeKind.BUILTIN, norm, _FLOATS[norm])
         if norm in _SCALARS:
             width, _ = _SCALARS[norm]
-            return f"I{width * 8}"
+            return Classification(TypeKind.BUILTIN, norm, f"I{width * 8}")
         if norm in self.enums:
-            return "I32"
+            return Classification(TypeKind.BUILTIN, norm, "I32")
         if norm in self.records:
-            return self.struct_type(norm)
-        return self.ptr_type()
+            return Classification(TypeKind.RECORD, norm)
+        return Classification(TypeKind.OPAQUE, norm)
+
+    def map(self, spelling: str) -> str:
+        """MLIR type ref for a parameter or result spelling.
+
+        Decide, then act on the decision. Only the two named kinds reach a
+        minting call, so this is also the complete list of ways a lookup can
+        add to the dialect's vocabulary.
+        """
+        what = self.classify(spelling)
+        if what.kind is TypeKind.VOID:
+            return ""
+        if what.kind is TypeKind.BUILTIN:
+            return what.builtin
+        if what.kind is TypeKind.OPAQUE:
+            return self.ptr_type()
+        if what.kind is TypeKind.HANDLE:
+            return self.handle_type(what.subject)
+        return self.struct_type(what.subject)
 
     def map_pointee(self, spelling: str) -> str:
         """MLIR type of what a pointer parameter points *at*.
