@@ -522,11 +522,56 @@ class TypeMapper:
         return Classification(TypeKind.OPAQUE, norm)
 
     def map(self, spelling: str) -> str:
-        """MLIR type ref for a parameter or result spelling.
+        """The MLIR type a C type spelling becomes.
 
-        Decide, then act on the decision. Only the two named kinds reach a
-        minting call, so this is also the complete list of ways a lookup can
-        add to the dialect's vocabulary.
+        Parameters
+        ----------
+        spelling:
+            One C type as clang printed it, which is what ast_canopy hands
+            over: ``"unsigned int"``, ``"CUstream_st *"``,
+            ``"void (*)(void *)"``. Qualifiers, whitespace and fixed-width
+            aliases are normalised here, so callers pass it through
+            untouched.
+
+        Returns
+        -------
+        str
+            A TableGen type reference: an MLIR builtin (``"I32"``,
+            ``"F64"``), a type this dialect declares
+            (``"CUDA_StreamType"``), or the opaque floor
+            (``"CUDA_PtrType"``) for anything that cannot be named. Empty
+            string for ``void`` -- that is how a caller spells "no
+            result", not a failure.
+
+        Side effects
+        ------------
+        The return value is only half the output. Naming a handle or a
+        record also records it in ``handles`` or ``structs``, which is how
+        the dialect learns the type has to be declared; a record further
+        pulls in every record reachable through its fields, so one call
+        can add many. Builtins and the floor add nothing. Entries are only
+        ever added, and the *return value* never depends on what was asked
+        before -- only on how much the registries have already grown.
+
+        Examples
+        --------
+        With ``cpp_class_prefix="CUDA"`` and ``handle_prefix="CU"``, each
+        from a fresh mapper over ``cuda.h``::
+
+            map("unsigned int")              ->  "I32"
+            map("void *")                    ->  "CUDA_PtrType"
+            map("CUstream_st * *")           ->  "CUDA_PtrType"
+            map("CUstream_st *")             ->  "CUDA_StreamType"
+            map("CUmemAllocationProp_st *")  ->  "CUDA_MemallocationpropV1Type"
+
+        The first three declare nothing. The fourth adds one handle. The
+        fifth adds five records -- itself plus the four its fields reach,
+        three of which have no name anywhere in the header.
+
+        The last two are the same syntax and differ only in what the
+        header said: ``CUstream_st`` is never defined, so it can only be
+        an opaque handle, while ``CUmemAllocationProp_st`` has a body and
+        is modelled.
         """
         what = self.classify(spelling)
         if what.kind is TypeKind.VOID:
