@@ -121,8 +121,30 @@ def _norm(spelling: str) -> str:
     return _ALIASES.get(s, s)
 
 
-def _is_function_pointer(spelling: str) -> bool:
-    return "(*" in spelling.replace(" ", "")
+def _has_call_syntax(spelling: str) -> bool:
+    """Is this a function type or a pointer to one, rather than a record?
+
+    Modelling one would mint a type named after the whole signature
+    (``VoidVoidType``, ``VoidCuasyncnotificationinfostVoidType``). A bare
+    function type carries no ``(*``, so testing for a function *pointer* is
+    not enough on its own.
+    """
+    return "(" in spelling or ")" in spelling
+
+
+def _is_array_field(spelling: str) -> bool:
+    """``char reserved[64]`` / ``int tail[]`` -- fixed or flexible array."""
+    return re.search(r"\[\d*\]$", spelling) is not None
+
+
+def _is_nested_type_reference(spelling: str) -> bool:
+    """Is this field's type declared inside another record?
+
+    Broader than :func:`_names_unnamed_record`: a qualified spelling also
+    covers *tagged* nested types, which are unambiguous and resolved by name
+    rather than by position.
+    """
+    return "::" in spelling
 
 
 def _names_unnamed_record(spelling: str) -> bool:
@@ -139,6 +161,43 @@ def _names_unnamed_record(spelling: str) -> bool:
 
 def _is_pointer(spelling: str) -> bool:
     return spelling.rstrip().endswith("*") or spelling.rstrip().endswith("&")
+
+
+def _spells_words_with_separators(name: str) -> bool:
+    """Are this name's word boundaries marked by something besides capitals?
+
+    ``RESOURCE_DESC`` and ``GREEN_CTX`` are; ``accessPolicyWindow`` is not.
+    Decides whether the parts need case-normalising or whether the name
+    already carries its own capitalisation.
+    """
+    return "_" in name or name.isupper()
+
+
+def _recase_words(name: str) -> str:
+    """``RESOURCE_DESC`` -> ``ResourceDesc``: recase each underscored part."""
+    return "".join(p[:1].upper() + p[1:].lower() for p in name.split("_") if p)
+
+
+def _capitalise_initial(name: str) -> str:
+    """``stream`` -> ``Stream``, leaving any interior capitals alone."""
+    return name[:1].upper() + name[1:]
+
+
+def _without_suffix(name: str, suffix: str) -> str:
+    return name[: -len(suffix)] if name.endswith(suffix) else name
+
+
+def _without_any_prefix(name: str, prefixes) -> str:
+    """Strip the first matching prefix.
+
+    Order matters and is the caller's: ``struct_prefixes`` is given longest
+    first so ``CUDA_`` is tried before ``CU``, since stripping ``CU`` from
+    ``CUDA_RESOURCE_DESC`` would leave ``DA_RESOURCE_DESC``.
+    """
+    for prefix in prefixes:
+        if name.startswith(prefix):
+            return name[len(prefix) :]
+    return name
 
 
 def _pointee(spelling: str) -> str:
@@ -213,32 +272,26 @@ class TypeMapper:
         name = re.sub(r"[^A-Za-z0-9_]", "", name)
         if not name:
             return ""
-        if "_" in name or name.isupper():
-            parts = [p for p in name.split("_") if p]
-            return "".join(p[:1].upper() + p[1:].lower() for p in parts)
-        return name[:1].upper() + name[1:]
+        if _spells_words_with_separators(name):
+            return _recase_words(name)
+        return _capitalise_initial(name)
 
     def _handle_record_name(self, c_name: str) -> str:
         """``CUstream_st`` -> ``Stream`` (with ``handle_prefix='CU'``)."""
         name = self._public(c_name)
-        if self.handle_prefix and name.startswith(self.handle_prefix):
-            name = name[len(self.handle_prefix) :]
+        if self.handle_prefix:
+            name = _without_any_prefix(name, [self.handle_prefix])
         return self._camel(name)
 
     def _struct_record_name(self, c_name: str) -> str:
         """``CUDA_RESOURCE_DESC_st`` -> ``ResourceDesc``.
 
-        Uses ``struct_prefixes`` rather than ``handle_prefix``: stripping only
-        ``CU`` from ``CUDA_RESOURCE_DESC`` would leave ``DA_RESOURCE_DESC``.
+        Uses ``struct_prefixes`` rather than ``handle_prefix``: a record's
+        prefix vocabulary differs from a handle's, and stripping only ``CU``
+        from ``CUDA_RESOURCE_DESC`` would leave ``DA_RESOURCE_DESC``.
         """
-        name = self._public(c_name)
-        if name.endswith("_st"):
-            name = name[: -len("_st")]
-        for prefix in self.struct_prefixes:
-            if name.startswith(prefix):
-                name = name[len(prefix) :]
-                break
-        return self._camel(name)
+        name = _without_suffix(self._public(c_name), "_st")
+        return self._camel(_without_any_prefix(name, self.struct_prefixes))
 
     def ptr_type(self) -> str:
         return f"{self.prefix}_PtrType"
@@ -257,10 +310,7 @@ class TypeMapper:
         if rec is not None:
             return self.model_record(rec)
 
-        # Anything carrying call syntax is a function type or function pointer,
-        # not a record. Modelling it would mint a type named after the whole
-        # signature (VoidVoidType, VoidCuasyncnotificationinfostVoidType, ...).
-        if "(" in c_name or ")" in c_name:
+        if _has_call_syntax(c_name):
             return self.ptr_type()
 
         record = self._struct_record_name(c_name)
@@ -278,34 +328,11 @@ class TypeMapper:
 
         A dialect must declare not only the structs that appear in op
         signatures but everything reachable from them by field access.
-
-        An anonymous nested record is named after the field that holds it,
-        ``<Parent><Field>``. C also allows the *field* to be anonymous -- an
-        inline ``union { ... };`` with no member name -- and then there is
-        nothing to name it after, so its 0-based field index is used instead:
-        ``<Parent>F<index>``, as the reference dialect spells it.
-
-        The index is not decoration. Without it an anonymous field's record
-        name collapses to the parent's own, and TableGen accepts the duplicate;
-        the mnemonics then collide and the dialect aborts the process when it
-        is registered. :class:`DuplicateTypeMnemonicError` is the backstop.
         """
-        if rec.name:
-            c_name = rec.name
-            record = self._struct_record_name(rec.name)
-            bare = rec.name[:-3] if rec.name.endswith("_st") else rec.name
-            if bare in self.opaque_structs or rec.name in self.opaque_structs:
-                return self.ptr_type()
-        else:
-            suffix = field if field else f"F{field_index}"
-            c_name = f"{parent}_{suffix}"
-            # Composed onto the parent rather than camel-cased from
-            # ``f"{parent}_{suffix}"``: the parent is already a record name, and
-            # re-casing it lowercases everything after its first letter, so a
-            # multi-word parent comes back as a case-variant of itself
-            # (``DevResource`` -> ``DevresourceF2``).
-            record = parent + self._camel(suffix)
+        if self._is_declared_opaque(rec):
+            return self.ptr_type()
 
+        c_name, record = self._record_name_for(rec, parent, field, field_index)
         if not record:
             return self.ptr_type()
 
@@ -315,18 +342,62 @@ class TypeMapper:
         self._modeled.add(record)
         self.structs.setdefault(c_name, record)
 
+        self._walk_fields(rec, record)
+        return ref
+
+    def _is_declared_opaque(self, rec) -> bool:
+        """Did the recipe ask for this record to stay an opaque pointer?
+
+        Matched against both the tag and the tag without its ``_st`` suffix,
+        so a recipe can name either spelling.
+        """
+        if not rec.name:
+            return False
+        return (
+            rec.name in self.opaque_structs
+            or _without_suffix(rec.name, "_st") in self.opaque_structs
+        )
+
+    def _record_name_for(self, rec, parent, field, field_index):
+        """The C name and the dialect record name for a record being modelled.
+
+        A tagged record is named from its tag. An anonymous one is named
+        after the field that holds it, ``<Parent><Field>``. C also allows the
+        *field* to be anonymous -- an inline ``union { ... };`` with no member
+        name -- and then there is nothing to name it after, so its 0-based
+        field index is used instead: ``<Parent>F<index>``, as the reference
+        dialect spells it.
+
+        The index is not decoration. Without it an anonymous field's record
+        name collapses to the parent's own, and TableGen accepts the
+        duplicate; the mnemonics then collide and the dialect aborts the
+        process when it is registered. :class:`DuplicateTypeMnemonicError` is
+        the backstop.
+        """
+        if rec.name:
+            return rec.name, self._struct_record_name(rec.name)
+
+        suffix = field if field else f"F{field_index}"
+        # Composed onto the parent rather than camel-cased from
+        # ``f"{parent}_{suffix}"``: the parent is already a record name, and
+        # re-casing it lowercases everything after its first letter, so a
+        # multi-word parent comes back as a case-variant of itself
+        # (``DevResource`` -> ``DevresourceF2``).
+        return f"{parent}_{suffix}", parent + self._camel(suffix)
+
+    def _walk_fields(self, rec, record: str) -> None:
+        """Follow every field of ``rec`` that reaches another record."""
         fields = list(rec.fields)
         # Which fields name an unnamed record, in order; a field's position in
         # this list is what picks its record out of the parent's unnamed ones.
-        anon_fields = [
+        anonymous = [
             i
             for i, f in enumerate(fields)
             if _names_unnamed_record(f.type_.name)
         ]
-        for i, f in enumerate(fields):
-            ordinal = anon_fields.index(i) if i in anon_fields else 0
-            self._model_field(f, rec, record, i, ordinal)
-        return ref
+        for index, f in enumerate(fields):
+            ordinal = anonymous.index(index) if index in anonymous else 0
+            self._model_field(f, rec, record, index, ordinal)
 
     def _model_field(
         self,
@@ -339,13 +410,13 @@ class TypeMapper:
         """Pull a field's type into the closure if it names a record."""
         spelling = f.type_.name.strip()
 
-        if re.search(r"\[\d*\]$", spelling):
-            return  # fixed/flexible array field: opaque floor
+        if _is_array_field(spelling):
+            return  # opaque floor
 
-        if "::" in spelling:
-            # Qualified name: an anonymous nested struct/union declared inline.
-            # Clang spells these ``Parent::(anonymous union at file:line)``, so
-            # this must be tested *before* any paren-based check.
+        if _is_nested_type_reference(spelling):
+            # Clang spells an inline anonymous record
+            # ``Parent::(anonymous union at file:line)``, so this must be
+            # tested *before* any paren-based check.
             nested = self._resolve_nested(spelling, parent_rec, anon_ordinal)
             if nested is not None:
                 self.model_record(
@@ -356,7 +427,7 @@ class TypeMapper:
                 )
             return
 
-        if _is_function_pointer(spelling) or "(" in spelling:
+        if _has_call_syntax(spelling):
             return  # callback field: opaque pointer, nothing to declare
 
         norm = _norm(spelling)
@@ -411,10 +482,7 @@ class TypeMapper:
         it from :meth:`map` is what makes a misclassification visible as
         itself rather than only as a type that came out oddly named.
         """
-        # Call syntax means a function pointer *or* a bare function type. The
-        # latter has no ``(*`` so it slips past the pointer test, and would then
-        # be modelled as a record named after the whole signature.
-        if _is_function_pointer(spelling) or "(" in spelling:
+        if _has_call_syntax(spelling):
             return Classification(TypeKind.OPAQUE, spelling)
 
         if _is_pointer(spelling):
