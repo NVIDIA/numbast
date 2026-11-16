@@ -55,6 +55,16 @@ _SCALARS: dict[str, tuple[int, bool]] = {
     "unsigned short int": (2, True),
 }
 
+# normalised spelling -> MLIR builtin float type. Separate from _SCALARS,
+# which carries integer widths, but consulted everywhere _SCALARS is: a
+# spelling known to be a scalar in one place and not the other falls past the
+# scalar guard onto the handle rule, which mints an opaque type named after
+# the scalar.
+_FLOATS: dict[str, str] = {
+    "float": "F32",
+    "double": "F64",
+}
+
 # Fixed-width typedefs clang does not always canonicalise to a primitive.
 _ALIASES: dict[str, str] = {
     "int8_t": "signed char",
@@ -379,6 +389,7 @@ class TypeMapper:
                 return self.struct_type(pointee)
             if (
                 pointee in _SCALARS
+                or pointee in _FLOATS
                 or pointee in self.enums
                 or pointee
                 in (
@@ -393,10 +404,8 @@ class TypeMapper:
         norm = _norm(spelling)
         if norm == "void":
             return ""
-        if norm == "float":
-            return "F32"
-        if norm == "double":
-            return "F64"
+        if norm in _FLOATS:
+            return _FLOATS[norm]
         if norm in _SCALARS:
             width, _ = _SCALARS[norm]
             return f"I{width * 8}"

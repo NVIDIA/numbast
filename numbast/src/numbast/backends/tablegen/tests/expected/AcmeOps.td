@@ -59,6 +59,16 @@ def Acme_StreamSetLimitOp
   }];
 }
 
+def Acme_EventElapsedTimeOp
+    : Acme_Op<"event.elapsed.time", []> {
+
+  let arguments = (ins Acme_PtrType:$pMilliseconds, Acme_EventType:$hStart, Acme_EventType:$hEnd);
+  let results = (outs Acme_ResultType:$result);
+  let extraClassDeclaration = [{
+    std::string getAPI() { return std::string("_acmeEventElapsedTime"); }
+  }];
+}
+
 def Acme_StreamOpenHandleOp
     : Acme_Op<"stream.open.handle", []> {
 

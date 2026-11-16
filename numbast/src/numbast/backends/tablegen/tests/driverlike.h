@@ -35,6 +35,15 @@ extern int acmeVersion(void);
 // a parameter name that collides with a generated operation accessor
 extern AcmeResult acmeStreamSetLimit(AcmeStream hStream, unsigned long value);
 
+// A pointer to a float. `float` and `double` are the only scalars the mapper
+// knows by spelling rather than through its integer-width table, so a pointer
+// to one has to be recognised against both. Recognised against only the
+// table, `float *` falls past the scalar guard onto the handle rule and mints
+// an opaque handle named after the scalar: a dialect type `!acme.float` whose
+// actual meaning is "pointer to float".
+extern AcmeResult acmeEventElapsedTime(float *pMilliseconds, AcmeEvent hStart,
+                                       AcmeEvent hEnd);
+
 // a by-value aggregate that needs a modelled dialect type
 typedef struct AcmeHandle_st {
   char reserved[64];
