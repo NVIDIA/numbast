@@ -1,17 +1,24 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Generation refusing to emit a dialect that would fail at registration.
+"""Analysis refusing to plan a dialect that would fail at registration.
 
 The expected output in ``expected/`` covers what this backend emits. It cannot
 cover what it declines to emit, which is what these tests are for.
+
+The refusal happens while collecting the type vocabulary rather than while
+rendering it, so there is no point at which a caller holds a model it cannot
+legally emit.
 """
 
 import pytest
 
-from numbast.backends.tablegen import TableGenOptions, TableGenTypesRenderer
+from numbast.backends.tablegen import TableGenOptions
+from numbast.backends.tablegen.plan import (
+    DuplicateTypeMnemonicError,
+    collect_types,
+)
 from numbast.backends.tablegen.type_mapper import TypeMapper
-from numbast.backends.tablegen.types_td import DuplicateTypeMnemonicError
 
 OPTIONS = TableGenOptions(dialect_name="acme", cpp_class_prefix="Acme")
 
@@ -41,7 +48,7 @@ def test_records_differing_only_in_case_are_refused():
     )
 
     with pytest.raises(DuplicateTypeMnemonicError) as excinfo:
-        TableGenTypesRenderer(mapper, OPTIONS).render_as_str()
+        collect_types(OPTIONS, mapper)
 
     # The message has to name both culprits. The mnemonic alone sends the
     # reader hunting through a hundred-odd TypeDefs for which two collided.
@@ -57,6 +64,6 @@ def test_distinct_record_names_are_accepted():
         AcmeDevResource_anon="DevResourceAnon",
     )
 
-    td = TableGenTypesRenderer(mapper, OPTIONS).render_as_str()
-    assert '"devresource"' in td
-    assert '"devresourceanon"' in td
+    mnemonics = [t.mnemonic for t in collect_types(OPTIONS, mapper)]
+    assert "devresource" in mnemonics
+    assert "devresourceanon" in mnemonics

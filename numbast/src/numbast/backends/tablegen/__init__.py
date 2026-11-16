@@ -9,11 +9,13 @@ that emits Numba typing and lowering registries against an MLIR runtime, and
 this one emits the MLIR dialect itself. Naming either of them ``mlir`` would
 describe both.
 
-One module per artifact: ``dialect_td`` emits the dialect definition,
-``types_td`` the type vocabulary, and ``ops_td`` one op per curated entry
-point. ``type_mapper`` is the mapper both renderers consume rather than a
-fourth artifact -- the ops renderer *references* types while rendering, which
-is what populates the registries the types renderer then declares.
+Two phases. :mod:`plan` resolves the curated entry points into a
+:class:`~numbast.backends.tablegen.model.DialectModel` -- every decision, no
+syntax. Then one renderer per artifact turns that model into text:
+``dialect_td`` the dialect definition, ``types_td`` the type vocabulary,
+``ops_td`` the ops. The renderers are pure functions of the model and of each
+other's nothing, so the order they run in does not matter and neither does
+how many times.
 
 Those three files are the vocabulary, not a buildable dialect. The C access
 shim the ops lower to, the lowering descriptor, and the C++ and CMake
@@ -29,25 +31,57 @@ from numbast.backends.tablegen.config import (
 )
 from numbast.backends.tablegen.dialect_td import render_dialect_td
 from numbast.backends.tablegen.facts import header_facts
-from numbast.backends.tablegen.ops_td import (
-    TableGenFunctionsRenderer,
+from numbast.backends.tablegen.model import (
+    DialectModel,
+    DialectSpec,
+    OpSpec,
+    Operand,
+    TypeSpec,
+)
+from numbast.backends.tablegen.ops_td import render_ops_td
+from numbast.backends.tablegen.plan import (
+    DuplicateTypeMnemonicError,
     classify_params,
     mnemonic_for,
+    plan_dialect,
 )
 from numbast.backends.tablegen.type_mapper import TypeMapper
-from numbast.backends.tablegen.types_td import TableGenTypesRenderer
 from numbast.backends.tablegen.typedefs import typedef_facts
+from numbast.backends.tablegen.types_td import render_types_td
 
 __all__ = [
+    "DialectModel",
+    "DialectSpec",
+    "DuplicateTypeMnemonicError",
+    "OpSpec",
+    "Operand",
     "OutParamPolicy",
     "TableGenConfig",
-    "TableGenFunctionsRenderer",
     "TableGenOptions",
-    "TableGenTypesRenderer",
     "TypeMapper",
+    "TypeSpec",
     "classify_params",
     "header_facts",
     "mnemonic_for",
-    "typedef_facts",
+    "plan_dialect",
+    "render_dialect_files",
     "render_dialect_td",
+    "render_ops_td",
+    "render_types_td",
+    "typedef_facts",
 ]
+
+
+def render_dialect_files(model: DialectModel) -> dict:
+    """The three ``.td`` files a dialect is made of, by file name.
+
+    The names are the dialect's C++ class prefix plus the artifact, which is
+    what the include paths the generated files use already assume.
+    """
+    dialect = model.dialect
+    prefix = dialect.cpp_class_prefix
+    return {
+        f"{prefix}Dialect.td": render_dialect_td(dialect),
+        f"{prefix}Types.td": render_types_td(model.types, dialect),
+        f"{prefix}Ops.td": render_ops_td(model.ops, dialect),
+    }

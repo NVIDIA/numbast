@@ -27,11 +27,10 @@ from ast_canopy import parse_declarations_from_source
 
 from numbast.backends.tablegen import (
     OutParamPolicy,
-    TableGenFunctionsRenderer,
     TableGenOptions,
-    TableGenTypesRenderer,
     header_facts,
-    render_dialect_td,
+    plan_dialect,
+    render_dialect_files,
 )
 from numbast.curate import plan_functions
 
@@ -81,26 +80,7 @@ def generated(decls):
         skip_non_device=False,
     )
 
-    # Ops first: rendering is what populates the mapper's type registry, which
-    # the types renderer then declares.
-    ops = TableGenFunctionsRenderer(
-        plans,
-        OPTIONS,
-        records=facts["records"],
-        enums=facts["enums"],
-        typedefs=facts["typedefs"],
-        record_objs=facts["record_objs"],
-    )
-    ops_td = ops.render_as_str()
-    types_td = TableGenTypesRenderer(
-        ops.mapper, OPTIONS, unions=facts["unions"]
-    ).render_as_str()
-
-    return {
-        "AcmeDialect.td": render_dialect_td(OPTIONS),
-        "AcmeTypes.td": types_td,
-        "AcmeOps.td": ops_td,
-    }
+    return render_dialect_files(plan_dialect(plans, OPTIONS, **facts))
 
 
 @pytest.mark.parametrize(

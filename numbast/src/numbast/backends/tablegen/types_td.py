@@ -1,32 +1,15 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Emit the dialect's TableGen *type* and *dialect* definitions.
+"""Emit ``<Prefix>Types.td``: the dialect's type vocabulary.
 
-The ops renderer *references* types (``CudaDrv_StreamType``) and records which
-ones it minted. This module turns that record into the ``TypeDef``s the dialect
-must declare, plus the dialect definition itself, so the emitted TableGen is
-self-contained and will actually build.
-
-Three kinds of type are emitted:
-
-* the **status** type, when the recipe names one -- every status-returning op
-  carries it as a trailing result;
-* a single **opaque pointer** type, the FFI floor for everything that is not a
-  scalar, a handle, or a modelled record;
-* one **named type per record** -- handles (pointer-to-incomplete-struct) and
-  modelled structs/unions.
-
-Records are nominal here: fields live in the descriptor the lowering consumes,
-not in TableGen, matching the reference dialect.
+Formatting only. Which types the dialect declares is decided in
+:mod:`numbast.backends.tablegen.plan`, where resolving the ops discovers them.
 """
 
-from collections import Counter
+from numbast.backends.tablegen.model import DialectSpec
 
-__all__ = [
-    "DuplicateTypeMnemonicError",
-    "TableGenTypesRenderer",
-]
+__all__ = ["render_types_td"]
 
 _TYPES_HEADER = """\
 #ifndef {guard}_TYPES_TD
@@ -55,139 +38,25 @@ _TYPES_FOOTER = """
 """
 
 
-class DuplicateTypeMnemonicError(Exception):
-    """Two ``TypeDef``s claim one mnemonic.
-
-    TableGen keys types on the C++ name, so this passes tblgen and compiles;
-    the dialect then aborts the host process at registration with ``Dialect
-    Type with name ... is already registered``. Record names that differ only
-    in case collapse here, because a struct's mnemonic is its name lowered.
-
-    Raised rather than resolved by renaming: the two names stand for two
-    different layouts, and silently merging or renumbering them would put a
-    guess in the type vocabulary.
-    """
-
-
-class TableGenTypesRenderer:
-    """Render ``TypeDef``s for the types an ops renderer referenced.
-
-    Parameters
-    ----------
-    mapper:
-        The :class:`~numbast.backends.tablegen.type_mapper.TypeMapper` the ops
-        renderer used. Its ``handles`` and ``structs`` registries are the set of
-        types that must now be declared.
-    options:
-        :class:`~numbast.backends.tablegen.config.TableGenOptions`.
-    unions:
-        Record names that are unions rather than structs, so the emitted summary
-        says so. Comes from ``ast_canopy``'s ``Record.is_union``.
-    """
-
-    def __init__(self, mapper, options, *, unions: set[str] | None = None):
-        self._mapper = mapper
-        self._cfg = options
-        self._unions = unions or set()
-
-    def _def(self, record: str, mnemonic: str, summary: str) -> str:
-        return _TYPE_DEF.format(
-            prefix=self._cfg.cpp_class_prefix,
-            record=record,
-            mnemonic=mnemonic,
-            summary=summary,
+def render_types_td(types, dialect: DialectSpec) -> str:
+    """One ``TypeDef`` per entry, in the order analysis put them in."""
+    out = [
+        _TYPES_HEADER.format(
+            guard=dialect.guard,
+            prefix=dialect.cpp_class_prefix,
+            dialect=dialect.name,
         )
+    ]
 
-    def render_as_str(self) -> str:
-        cfg = self._cfg
-        self._reject_duplicate_mnemonics()
-        out = [
-            _TYPES_HEADER.format(
-                guard=cfg.dialect_name.upper(),
-                prefix=cfg.cpp_class_prefix,
-                dialect=cfg.dialect_name,
-            )
-        ]
-
-        if cfg.status_type is not None:
-            out.append(
-                self._def("Result", "result", f"{cfg.status_type} status code")
-            )
-
-        out.append(
-            self._def("Ptr", "ptr", "opaque caller-owned pointer/handle (FFI)")
+    out += [
+        _TYPE_DEF.format(
+            prefix=dialect.cpp_class_prefix,
+            record=t.record,
+            mnemonic=t.mnemonic,
+            summary=t.summary,
         )
+        for t in types
+    ]
 
-        for record, mnemonic in sorted(self._mapper.handles.items()):
-            out.append(
-                self._def(
-                    record,
-                    mnemonic,
-                    f"opaque {cfg.dialect_name} {mnemonic} handle",
-                )
-            )
-
-        for c_name, record in sorted(
-            self._mapper.structs.items(), key=lambda kv: kv[1]
-        ):
-            kind = "union" if c_name in self._unions else "struct"
-            out.append(
-                self._def(
-                    record,
-                    record.lower(),
-                    f"{c_name} ({kind})",
-                )
-            )
-
-        out.append(_TYPES_FOOTER.format(guard=cfg.dialect_name.upper()))
-        return "".join(out)
-
-    def _reject_duplicate_mnemonics(self) -> None:
-        """Fail at generation rather than at dialect registration."""
-        counts = Counter(self.mnemonics())
-        clashing = sorted(m for m, n in counts.items() if n > 1)
-        if not clashing:
-            return
-
-        # Name the records behind each clash; the mnemonic alone does not say
-        # which two declarations need disambiguating.
-        detail = []
-        for mnemonic in clashing:
-            culprits = sorted(
-                record
-                for record in self._mapper.structs.values()
-                if record.lower() == mnemonic
-            )
-            detail.append(f"{mnemonic!r} <- {culprits}")
-        raise DuplicateTypeMnemonicError(
-            "type mnemonics must be unique within a dialect: "
-            + "; ".join(detail)
-        )
-
-    def mnemonics(self) -> list:
-        """The mnemonic of every ``TypeDef`` this emits, in emission order.
-
-        The lowering descriptor needs exactly this list to build its
-        TypeConverter table, and it must not recompute it -- a type the ops
-        reference but the converter does not know would abort the conversion.
-        """
-        out = []
-        if self._cfg.status_type is not None:
-            out.append("result")
-        out.append("ptr")
-        out += [m for _, m in sorted(self._mapper.handles.items())]
-        out += [
-            record.lower()
-            for _, record in sorted(
-                self._mapper.structs.items(), key=lambda kv: kv[1]
-            )
-        ]
-        return out
-
-    @property
-    def type_count(self) -> int:
-        """How many ``TypeDef``s this will emit."""
-        n = 1  # Ptr
-        if self._cfg.status_type is not None:
-            n += 1
-        return n + len(self._mapper.handles) + len(self._mapper.structs)
+    out.append(_TYPES_FOOTER.format(guard=dialect.guard))
+    return "".join(out)
