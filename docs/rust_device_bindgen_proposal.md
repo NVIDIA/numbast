@@ -69,33 +69,6 @@ declarations and LTOIR linking. Its
 [device FFI example](https://github.com/NVlabs/cuda-oxide/tree/main/crates/rustc-codegen-cuda/examples/device_ffi_test)
 demonstrates Rust kernels calling functions supplied by external CUDA LTOIR.
 
-### Current NVSHMEM4Rust device exception inventory
-
-In the referenced NVSHMEM4Rust generator, the device function renderer itself
-is generic: each AST Canopy function is passed through the same Rust declaration
-emitter. No device function is handled by a function-name-specific workaround
-in that path. The project-specific handling is concentrated around the
-function declarations:
-
-- a manually curated `_TYPE_MAP`;
-- manual recovery of pointer depth and per-level `const` qualifiers;
-- handwritten Rust representations for `__half`, `__nv_bfloat16`, and
-  `double2`;
-- handwritten team aliases and team, comparison, signal, and shared-memory
-  constants; and
-- `bypass_parse_error=True`, which permits generation to continue without a
-  complete policy for surfacing skipped declarations.
-
-The generator's named special cases for `nvshmemx_cumodule_init`,
-`nvshmemx_cumodule_finalize`, and a small set of safe wrappers are in its host
-API path, not its device declaration path. They belong to the host/cybind
-follow-up rather than this implementation.
-
-This inventory suggests that the first generalizable device gaps are type and
-constant representation, qualifier preservation, diagnostics, and semantic
-configuration—not per-function code generation. Round 1 makes those gaps part
-of NVSHMEM acceptance instead of hiding them in a library-local prelude.
-
 ## Why implement this in Numbast?
 
 ### The reusable boundary is larger than parsing
