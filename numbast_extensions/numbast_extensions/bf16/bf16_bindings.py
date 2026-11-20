@@ -7,6 +7,8 @@ from ast_canopy import (
     parse_declarations_from_source,
 )
 
+from ast_canopy.pylibastcanopy import type_kind
+
 from numbast import (
     MemoryShimWriter,
     bind_cxx_structs,
@@ -73,7 +75,12 @@ numba_functions = []
 
 aliases = defaultdict(list)
 for typedef in typedefs:
-    aliases[typedef.underlying_name].append(typedef.name)
+    # Union fields overlap; the default struct model cannot represent them.
+    underlying = typedef.underlying_type
+    while underlying.kind in (type_kind.typedef_, type_kind.sugar):
+        underlying = underlying.inner_type
+    if underlying.kind == type_kind.record and not underlying.is_union:
+        aliases[typedef.underlying_name].append(typedef.name)
 
 # WAR for NVBug 4549708: ABI mismatching between the calling convention of the
 # bf16 definition against the linked library, causing a unspecified launch failure.
@@ -108,5 +115,5 @@ globals().update({"get_shims": shim_writer.links})
 __all__ = list(  # noqa: F822
     set(s.__name__ for s in numba_struct_types)
     | set(f.__name__ for f in numba_functions)
-    | set(typedef.name for typedef in typedefs)
+    | {name for names in aliases.values() for name in names}
 ) + ["get_shims"]

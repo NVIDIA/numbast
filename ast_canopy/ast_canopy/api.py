@@ -7,7 +7,7 @@ import tempfile
 import logging
 import shutil
 from typing import Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import warnings
 import functools
 
@@ -21,7 +21,8 @@ from ast_canopy.decl import (
     Struct,
     FunctionTemplate,
     ClassTemplate,
-    ConstExprVar,
+    EvaluatedConstDecl,
+    MacroDefinition,
     ClassTemplateSpecialization,
 )
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
@@ -55,6 +56,57 @@ def _get_shim_include_dir() -> str:
 
 @dataclass
 class Declarations:
+    """Declarations collected from retained files in one translation unit.
+
+    Returned by :func:`parse_declarations_from_source` after converting the
+    native parser's result into Python declaration objects.
+
+    Attributes
+    ----------
+    structs : list[Struct]
+        Parsed records, including structs, classes, and unions.
+    functions : list[Function]
+        Parsed function declarations.
+    function_templates : list[FunctionTemplate]
+        Function templates with their template parameters.
+    class_templates : list[ClassTemplate]
+        Class templates with their template parameters and record definitions.
+    class_template_specializations : list[ClassTemplateSpecialization]
+        Class template specializations with their actual template arguments.
+    typedefs : list[ast_canopy.pylibastcanopy.Typedef]
+        Typedef declarations and their underlying types.
+    enums : list[ast_canopy.pylibastcanopy.Enum]
+        Enum declarations, including their enumerator names and values.
+    global_constants : list[EvaluatedConstDecl]
+        Non-volatile ``const`` and ``constexpr`` variables declared at file or
+        namespace scope whose initializers Clang can evaluate to integer or
+        floating-point values, including booleans and enum-valued variables.
+        "Global" describes declaration scope, not linkage: internal-linkage
+        variables, including ``static`` constants, are included.
+
+        Function-local variables (including static locals), class static
+        members, variable-template specializations, runtime-initialized
+        variables, pointers, and aggregate objects are excluded. Enum members
+        are collected separately in ``enums``.
+        Floating-point constants are limited to ``float``, ``double``, and
+        ``long double``; Clang extensions such as ``_Float16`` are excluded.
+        Each constant's ``is_constexpr`` flag records whether it was declared
+        ``constexpr``.
+    macro_defines : dict[str, MacroDefinition]
+        Active object-like macros defined in retained files. Each definition
+        contains its name, unexpanded replacement tokens joined with single
+        spaces in ``replacement_text``, and an optional ``evaluated_constant``.
+        Empty flags have empty text. Function-like and undefined macros are
+        omitted. Clang evaluates scalar C++ constant expressions using the
+        target and final preprocessor state of the translation unit. Supported
+        values are integers, booleans, enums, and ``float``, ``double``, or
+        ``long double``. The evaluated object carries its expression type,
+        serialized value, and converted Python ``value``; ``is_constexpr`` is
+        false because a macro is not a variable declaration. Unsupported or
+        unevaluable definitions have ``evaluated_constant=None`` and do not
+        fail strict declaration parsing.
+    """
+
     structs: list[Struct]
     functions: list[Function]
     function_templates: list[FunctionTemplate]
@@ -62,6 +114,8 @@ class Declarations:
     class_template_specializations: list[ClassTemplateSpecialization]
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
+    global_constants: list[EvaluatedConstDecl] = field(default_factory=list)
+    macro_defines: dict[str, MacroDefinition] = field(default_factory=dict)
 
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
@@ -408,7 +462,7 @@ def parse_declarations_from_source(
     Returns
     -------
     Declarations
-        See ``Declarations`` struct definition for details.
+        Parsed declarations grouped by kind; see :class:`Declarations`.
     """
 
     if cudatoolkit_include_dirs is None:
@@ -550,6 +604,14 @@ def parse_declarations_from_source(
         class_template_specializations,
         decls.typedefs,
         decls.enums,
+        [
+            EvaluatedConstDecl.from_c_obj(item)
+            for item in decls.global_constants
+        ],
+        {
+            name: MacroDefinition.from_c_obj(item)
+            for name, item in decls.macro_defines.items()
+        },
     )
 
 
@@ -560,7 +622,7 @@ def value_from_constexpr_vardecl(
     cxx_standard: str = "gnu++17",
     verbose: bool = False,
     clang_binary: str | None = None,
-) -> bindings.ConstExprVar | None:
+) -> EvaluatedConstDecl | None:
     """Extract the value from a constexpr ``VarDecl`` with the given name.
 
     Parameters
@@ -590,8 +652,8 @@ def value_from_constexpr_vardecl(
 
     Returns
     -------
-    ConstExprVar | None
-        See ``ConstExprVar`` struct definition for details.
+    EvaluatedConstDecl | None
+        See ``EvaluatedConstDecl`` struct definition for details.
     """
 
     with tempfile.NamedTemporaryFile(mode="w") as f:
@@ -655,7 +717,9 @@ def value_from_constexpr_vardecl(
             print(werr)
 
         result = (
-            ConstExprVar.from_c_obj(c_result) if c_result is not None else None
+            EvaluatedConstDecl.from_c_obj(c_result)
+            if c_result is not None
+            else None
         )
         return result
 

@@ -31,17 +31,6 @@ def load_binding_config(path: str | os.PathLike[str]) -> dict[str, Any]:
     return config
 
 
-def config_uses_mlir_backend(config_dict: dict) -> bool:
-    """Return whether the Python bindings use the MLIR implementation."""
-
-    return bool(
-        config_dict.get(
-            "MLIR Backend",
-            config_dict.get("mlir_backend", False),
-        )
-    )
-
-
 def _as_list(value: Any, key: str) -> list:
     if value is None:
         return []
@@ -106,6 +95,17 @@ class SharedConfig:
         )
         self.exclude_structs = _as_list(
             self.excludes.get("Struct", []), "Exclude.Struct"
+        )
+
+        # The allowlist counterpart. Empty means "no allowlist", not "nothing
+        # passes", so a config that omits it does not silently curate every
+        # function away.
+        includes = config_dict.get("Include", {}) or {}
+        if not isinstance(includes, dict):
+            raise TypeError('Configuration option "Include" must be a mapping.')
+        self.includes = copy.deepcopy(includes)
+        self.include_functions = _as_list(
+            self.includes.get("Function", []), "Include.Function"
         )
 
         self.clang_includes_paths = _as_list(

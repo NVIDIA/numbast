@@ -21,8 +21,14 @@ import numba_cuda_mlir.models as mlir_models
 
 from ast_canopy import parse_declarations_from_source
 from ast_canopy.decl import Function, Struct
-from ast_canopy.pylibastcanopy import Enum, Typedef
+from ast_canopy.pylibastcanopy import Enum, Typedef, type_kind
 
+from numbast.backends.registry import (
+    BACKEND_CONFIG_KEY,
+    NUMBA_CUDA_MLIR,
+    resolve_backend_name,
+)
+from numbast.tools.config.shared import load_binding_config
 from numbast.provenance import params_the_user_set
 from numbast.experimental.mlir.static import reset_renderer
 from numbast.experimental.mlir.static.renderer import (
@@ -51,12 +57,7 @@ yaml.SafeLoader.add_constructor("!numbast_join", string_constructor)
 
 
 def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
-    return bool(
-        config_dict.get(
-            "MLIR Backend",
-            config_dict.get("mlir_backend", False),
-        )
-    )
+    return resolve_backend_name(config_dict) == NUMBA_CUDA_MLIR
 
 
 def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
@@ -175,7 +176,7 @@ class Config:
                 - "Use Separate Registry": boolean flag.
                 - "Separate Registry": deprecated alias for "Use Separate Registry".
                 - "Function Argument Intents": mapping of function argument intent specifications.
-                - "MLIR Backend": boolean flag selecting the experimental MLIR generator.
+                - "Backend": name of the emission backend.
 
         Raises:
             NotImplementedError: if more than one GPU architecture is provided.
@@ -192,6 +193,11 @@ class Config:
         self.excludes = config_dict.get("Exclude", {})
         self.exclude_functions = self.excludes.get("Function", [])
         self.exclude_structs = self.excludes.get("Struct", [])
+
+        # Allowlist counterpart. Empty means "no allowlist", not "nothing
+        # passes"; see numbast.curate.function_skip_reason.
+        self.includes = config_dict.get("Include", {}) or {}
+        self.include_functions = self.includes.get("Function", []) or []
 
         self.clang_includes_paths = config_dict.get("Clang Include Paths", [])
 
@@ -289,7 +295,7 @@ class Config:
         skip_prefix: str | None = None,
         separate_registry: bool = False,
         function_argument_intents: dict | None = None,
-        mlir_backend: bool = True,
+        backend: str = NUMBA_CUDA_MLIR,
     ) -> "Config":
         """
         Construct a Config from explicit parameters instead of a YAML file.
@@ -331,7 +337,7 @@ class Config:
             "Skip Prefix": skip_prefix,
             "Use Separate Registry": separate_registry,
             "Function Argument Intents": function_argument_intents or {},
-            "MLIR Backend": mlir_backend,
+            BACKEND_CONFIG_KEY: backend,
         }
 
         # Convert types and datamodels back to string format for the dict
@@ -449,7 +455,7 @@ numba_datamodel_dict = NumbaDataModelDictType()
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
-    Group C++ typedef declarations by their underlying type name.
+    Group C++ struct/class typedefs by their underlying type name.
 
     Parameters:
         typedef_decls (list[Typedef]): Typedef declarations to process.
@@ -459,7 +465,12 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
     aliases = defaultdict(list)
     for typedef in typedef_decls:
-        aliases[typedef.underlying_name].append(typedef.name)
+        # Union fields overlap; the default struct model cannot represent them.
+        underlying = typedef.underlying_type
+        while underlying.kind in (type_kind.typedef_, type_kind.sugar):
+            underlying = underlying.inner_type
+        if underlying.kind == type_kind.record and not underlying.is_union:
+            aliases[typedef.underlying_name].append(typedef.name)
 
     return aliases
 
@@ -514,6 +525,7 @@ def _generate_functions(
     function_prefix_removal: list[str],
     skip_prefix: str | None,
     function_argument_intents: dict | None = None,
+    includes: list[str] = [],
 ) -> str:
     """
     Render the function-binding source for the given function declarations.
@@ -535,6 +547,7 @@ def _generate_functions(
         func_decls,
         header_path,
         excludes=excludes,
+        includes=includes,
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
         skip_prefix=skip_prefix,
@@ -674,6 +687,7 @@ def _static_binding_generator(
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
         config.function_argument_intents,
+        includes=config.include_functions,
     )
 
     registry_setup(config.separate_registry)
@@ -810,6 +824,18 @@ def static_binding_generator(
     RUN_RUFF_FORMAT: Run ruff format on the generated binding file.
     BYPASS_PARSE_ERROR: Bypass parse error and continue generating bindings.
     """
+    # Reached only when this driver is invoked directly, since the dispatcher
+    # routes by the same name. Without this, a configuration selecting another
+    # backend would still get MLIR bindings here -- a wrong answer that looks
+    # like a right one, because both backends write the same file name.
+    name = resolve_backend_name(load_binding_config(cfg_path))
+    if name != NUMBA_CUDA_MLIR:
+        raise click.BadParameter(
+            f"This driver generates {NUMBA_CUDA_MLIR!r} bindings and cannot "
+            f"generate {name!r}.",
+            param_hint="--cfg-path",
+        )
+
     reset_renderer()
 
     cfg = Config.from_yaml_path(cfg_path)

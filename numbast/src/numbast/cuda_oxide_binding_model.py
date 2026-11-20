@@ -40,6 +40,7 @@ _EXECUTION_SPACE_NAMES = {
 #: about.
 _EXCLUSION_REPORT_NAMES = {
     "excluded": "configured",
+    "not_included": "not-included",
     "skip_prefix": "skip-prefix",
 }
 _CUDA_OXIDE_RESERVED_PREFIX = "cuda_oxide_"
@@ -167,6 +168,7 @@ class CudaOxideBindingPlan:
             reason = function_skip_reason(
                 function,
                 excludes=config.exclude_functions,
+                includes=config.include_functions,
                 skip_prefix=config.skip_prefix,
                 skip_non_device=True,
             )

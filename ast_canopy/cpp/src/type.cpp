@@ -84,7 +84,8 @@ Type::Type(std::string name, std::string unqualified_non_ref_type_name,
            bool is_right_reference, bool is_left_reference, type_kind kind,
            bool is_const_qualified, bool is_volatile_qualified,
            bool is_restrict_qualified, std::vector<Type> inner_types,
-           std::optional<std::uint64_t> array_size, std::string type_name)
+           std::optional<std::uint64_t> array_size, std::string type_name,
+           bool is_union)
     : name(std::move(name)),
       unqualified_non_ref_type_name(std::move(unqualified_non_ref_type_name)),
       kind(kind), array_size(array_size), type_name(std::move(type_name)),
@@ -93,7 +94,7 @@ Type::Type(std::string name, std::string unqualified_non_ref_type_name,
       _is_left_reference(is_left_reference),
       _is_const_qualified(is_const_qualified),
       _is_volatile_qualified(is_volatile_qualified),
-      _is_restrict_qualified(is_restrict_qualified) {}
+      _is_restrict_qualified(is_restrict_qualified), _is_union(is_union) {}
 
 Type::Type(const clang::QualType &qualtype, const clang::ASTContext &context) {
   // If the type is a stdint type (uint64_t, e.g.), we maintain the name of the
@@ -168,6 +169,7 @@ Type::Type(const clang::QualType &qualtype, const clang::ASTContext &context) {
   } else if (const auto *record = llvm::dyn_cast<clang::RecordType>(type)) {
     kind = type_kind::record;
     type_name = record->getDecl()->getNameAsString();
+    _is_union = record->getDecl()->isUnion();
   } else if (const auto *enum_type = llvm::dyn_cast<clang::EnumType>(type)) {
     kind = type_kind::enum_;
     type_name = enum_type->getDecl()->getNameAsString();

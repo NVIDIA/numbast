@@ -17,7 +17,8 @@ class ClassTemplateSpecialization(Record):
     class_template: ClassTemplate
     def __init__(self, *args, **kwargs) -> None: ...
 
-class ConstExprVar:
+class EvaluatedConstDecl:
+    is_constexpr: bool
     name: str
     qual_name: str
     type_: Type
@@ -25,14 +26,22 @@ class ConstExprVar:
     def __init__(self) -> None: ...
 
 class Declarations:
+    global_constants: list[EvaluatedConstDecl]
     class_template_specializations: list[ClassTemplateSpecialization]
     class_templates: list[ClassTemplate]
     enums: list[Enum]
     function_templates: list[FunctionTemplate]
     functions: list[Function]
+    macro_defines: dict[str, MacroDefinition]
     records: list[Record]
     typedefs: list[Typedef]
     def __init__(self, *args, **kwargs) -> None: ...
+
+class MacroDefinition:
+    name: str
+    replacement_text: str
+    evaluated_constant: EvaluatedConstDecl | None
+    def __init__(self) -> None: ...
 
 class Enum:
     enumerator_values: list[str]
@@ -126,6 +135,8 @@ class Type:
     def is_const_qualified(self) -> bool: ...
     def is_restrict_qualified(self) -> bool: ...
     def is_volatile_qualified(self) -> bool: ...
+    @property
+    def is_union(self) -> bool: ...
 
 class Typedef:
     name: str
@@ -247,4 +258,4 @@ def parse_declarations_from_command_line(
 ) -> Declarations: ...
 def value_from_constexpr_vardecl(
     arg0: collections.abc.Sequence[str], arg1: str
-) -> ConstExprVar | None: ...
+) -> EvaluatedConstDecl | None: ...

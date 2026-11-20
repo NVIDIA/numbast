@@ -121,6 +121,9 @@ def test_nvshmem_public_c_device_surface(tmp_path):
     assert constants["NVSHMEM_TEAM_INVALID"]["value"] == "-1"
     assert constants["NVSHMEM_SIGNAL_SET"]["value"] == "9"
     assert constants["NVSHMEM_TEAM_WORLD"]["source"] == "enum"
+    mask = constants["NVSHMEM_TEAM_CONFIG_MASK_NUM_CONTEXTS"]
+    assert mask["value"] == "1"
+    assert mask["source"] == "macro"
     assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
     if symbol_inventory:
         assert manifest["symbol_verification"]["status"] == "verified"

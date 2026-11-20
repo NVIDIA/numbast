@@ -423,10 +423,24 @@ def test_rust_output_and_manifest_names_must_differ(config):
 def test_real_ast_canopy_c_device_parse(tmp_path):
     repo_root = Path(__file__).resolve().parents[4]
     header = repo_root / "examples" / "cuda_oxide_c_device" / "device_api.h"
+    header_with_macros = tmp_path / header.name
+    header_with_macros.write_text(
+        header.read_text(encoding="utf-8")
+        + """
+#define ROUND1_LIMIT (1ULL << 63)
+#define ROUND1_LIMIT_PLUS_ONE (ROUND1_LIMIT + 1)
+#define ROUND1_ENABLED true
+#define ROUND1_SCALE 1.25f
+#define ROUND1_MODE_DEFAULT ROUND1_MODE_SUBTRACT
+#define ROUND1_LABEL "test"
+#define ROUND1_DOUBLE(x) ((x) * 2)
+""",
+        encoding="utf-8",
+    )
     parsed_config = CudaOxideConfig(
         {
-            "Entry Point": str(header),
-            "File List": [str(header)],
+            "Entry Point": str(header_with_macros),
+            "File List": [str(header_with_macros)],
             "GPU Arch": ["sm_80"],
             "Backend": "cuda-oxide",
             "CUDA Oxide": {
@@ -445,7 +459,22 @@ def test_real_ast_canopy_c_device_parse(tmp_path):
         "round1_add",
         "round1_apply",
     ]
-    assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
+    macros = {
+        item["name"]: (item["rust_type"], item["value"])
+        for item in manifest["constants"]
+        if item["source"] == "macro"
+    }
+    assert macros == {
+        "ROUND1_LIMIT": ("u64", "9223372036854775808"),
+        "ROUND1_LIMIT_PLUS_ONE": ("u64", "9223372036854775809"),
+        "ROUND1_ENABLED": ("bool", "true"),
+        "ROUND1_SCALE": ("f32", "1.25f32"),
+        "ROUND1_MODE_DEFAULT": ("round1_mode", "1"),
+    }
+    rust = Path(rust_path).read_text(encoding="utf-8")
+    assert 'unsafe extern "C"' in rust
+    for name, (rust_type, value) in macros.items():
+        assert f"pub const {name}: {rust_type} = {value};" in rust
 
 
 def test_lightweight_generator_import_does_not_import_numba():

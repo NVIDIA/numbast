@@ -18,8 +18,14 @@ from ast_canopy.decl import (
     FunctionTemplate,
     Struct,
 )
-from ast_canopy.pylibastcanopy import Enum, Typedef
+from ast_canopy.pylibastcanopy import Enum, Typedef, type_kind
 
+from numbast.backends.registry import (
+    CUDA_OXIDE,
+    NUMBA_CUDA_MLIR,
+    NUMBA_CUDA,
+    resolve_backend_name,
+)
 from numbast.provenance import params_the_user_set
 from numbast.static import reset_renderer
 from numbast.static.renderer import (
@@ -38,10 +44,7 @@ from numbast.static.function_template import StaticFunctionTemplatesRenderer
 from numbast.static.class_template import StaticClassTemplatesRenderer
 from numbast.static.enum import StaticEnumsRenderer
 from numbast.static.typedef import render_aliases
-from numbast.tools.config.shared import (
-    config_uses_mlir_backend,
-    load_binding_config,
-)
+from numbast.tools.config.shared import load_binding_config
 from numbast.tools.config.numba import (
     NumbaConfig,
     _str_value_to_numba_datamodel,
@@ -56,12 +59,13 @@ STATIC_BINDING_CONFIG_SCHEMA_PATH = os.path.join(
 )
 
 
-def _config_dict_uses_mlir_backend(config_dict: dict) -> bool:
-    return config_uses_mlir_backend(config_dict)
+def _backend_name_from_cfg_path(cfg_path: str):
+    """Name the backend selected by the config file at ``cfg_path``.
 
-
-def _cfg_path_uses_mlir_backend(cfg_path: str) -> bool:
-    return _config_dict_uses_mlir_backend(load_binding_config(cfg_path))
+    Read straight from the YAML rather than from a :class:`Config`, because
+    which backend is selected determines which ``Config`` class to build.
+    """
+    return resolve_backend_name(load_binding_config(cfg_path))
 
 
 Config = NumbaConfig
@@ -184,7 +188,7 @@ def _run_mlir_static_binding_generator(
 
 def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
-    Group C++ typedef declarations by their underlying type name.
+    Group C++ struct/class typedefs by their underlying type name.
 
     Parameters:
         typedef_decls (list[Typedef]): Typedef declarations to process.
@@ -194,7 +198,12 @@ def _typedef_to_aliases(typedef_decls: list[Typedef]) -> dict[str, list[str]]:
     """
     aliases = defaultdict(list)
     for typedef in typedef_decls:
-        aliases[typedef.underlying_name].append(typedef.name)
+        # Union fields overlap; the default struct model cannot represent them.
+        underlying = typedef.underlying_type
+        while underlying.kind in (type_kind.typedef_, type_kind.sugar):
+            underlying = underlying.inner_type
+        if underlying.kind == type_kind.record and not underlying.is_union:
+            aliases[typedef.underlying_name].append(typedef.name)
 
     return aliases
 
@@ -249,6 +258,7 @@ def _generate_functions(
     function_prefix_removal: list[str],
     skip_prefix: str | None,
     function_argument_intents: dict | None = None,
+    includes: list[str] = [],
 ) -> str:
     """
     Render the function-binding source for the given function declarations.
@@ -270,6 +280,7 @@ def _generate_functions(
         func_decls,
         header_path,
         excludes=excludes,
+        includes=includes,
         cooperative_launch_required=cooperative_launch_functions,
         function_prefix_removal=function_prefix_removal,
         skip_prefix=skip_prefix,
@@ -502,6 +513,7 @@ def _static_binding_generator(
         config.api_prefix_removal.get("Function", []),
         config.skip_prefix,
         config.function_argument_intents,
+        includes=config.include_functions,
     )
     class_template_bindings = _generate_class_templates(
         class_templates,
@@ -661,7 +673,9 @@ def static_binding_generator(
     """
     sbg_params = params_the_user_set(ctx)
 
-    if load_binding_config(cfg_path).get("Backend") == "cuda-oxide":
+    name = _backend_name_from_cfg_path(cfg_path)
+
+    if name == CUDA_OXIDE:
         from numbast.tools.cuda_oxide_binding_generator import (
             cuda_oxide_binding_generator,
         )
@@ -672,7 +686,18 @@ def static_binding_generator(
             output_dir=output_dir,
         )
 
-    if _cfg_path_uses_mlir_backend(cfg_path):
+    if name not in (NUMBA_CUDA, NUMBA_CUDA_MLIR):
+        # Reached only when this driver is invoked directly, since the
+        # dispatcher refuses an unservable name first. Without this, a
+        # registered backend nobody has wired up here would fall through and
+        # generate Numba bindings -- a wrong answer that looks like a right one.
+        raise click.BadParameter(
+            f"This driver generates {NUMBA_CUDA!r} and {NUMBA_CUDA_MLIR!r} bindings and "
+            f"cannot generate {name!r}.",
+            param_hint="--cfg-path",
+        )
+
+    if name == NUMBA_CUDA_MLIR:
         from numbast.experimental.mlir.tools.static_binding_generator import (
             Config as MlirConfig,
         )

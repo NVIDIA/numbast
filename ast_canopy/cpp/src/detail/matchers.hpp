@@ -33,7 +33,7 @@ struct traverse_ast_payload {
 
 struct vardecl_matcher_payload {
   std::string_view name_to_match;
-  std::optional<ConstExprVar> var;
+  std::optional<EvaluatedConstDecl> var;
 };
 
 std::string source_filename_from_decl(const Decl *);
@@ -86,6 +86,15 @@ private:
 class EnumCallback : public MatchFinder::MatchCallback {
 public:
   EnumCallback(traverse_ast_payload *);
+  void run(const MatchFinder::MatchResult &) override;
+
+private:
+  traverse_ast_payload *payload;
+};
+
+class GlobalConstantCallback : public MatchFinder::MatchCallback {
+public:
+  GlobalConstantCallback(traverse_ast_payload *);
   void run(const MatchFinder::MatchResult &) override;
 
 private:

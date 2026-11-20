@@ -28,6 +28,7 @@ from numbast.cuda_oxide_renderer import (
 from numbast.errors import CudaOxideBindingError
 from numbast.rust_types import (
     CUDA_ABI_ALIASES,
+    PRIMITIVE_RUST_TYPES,
     cuda_abi_alias_for_arch,
     is_identifier,
     parse_cuda_oxide_type_spelling,
@@ -264,10 +265,63 @@ def _configured_constants(
     return constants, manifest_items
 
 
+def _header_macro_constants(
+    plan: CudaOxideBindingPlan,
+    macro_defines: dict[str, Any],
+    configured_names: set[str],
+) -> list[CudaOxideConstant]:
+    enum_types = {
+        enum.name: rust_identifier(enum.name)
+        for enum in plan.enums
+        if enum.name
+    }
+    occupied_names = configured_names | {
+        name for enum in plan.enums for name, _ in enum.enumerators
+    }
+    occupied_names.update(
+        name
+        for function in plan.functions
+        for name in (function.native_name, function.public_name)
+    )
+
+    constants = []
+    for name, definition in sorted(macro_defines.items()):
+        evaluated = definition.evaluated_constant
+        if evaluated is None or name in occupied_names:
+            continue
+
+        type_ = evaluated.type_
+        while type_.kind.name in {"typedef_", "sugar"}:
+            type_ = type_.inner_type
+        if type_.kind.name == "enum_":
+            rust_type = enum_types.get(type_.type_name)
+        else:
+            rust_type = PRIMITIVE_RUST_TYPES.get(
+                type_.unqualified_non_ref_type_name
+            )
+        if rust_type is None:
+            continue
+
+        value = evaluated.value_serialized
+        if rust_type == "bool":
+            value = "false" if value == "0" else "true"
+        elif rust_type in {"f32", "f64"}:
+            value = {
+                "Inf": f"{rust_type}::INFINITY",
+                "+Inf": f"{rust_type}::INFINITY",
+                "-Inf": f"{rust_type}::NEG_INFINITY",
+                "NaN": f"{rust_type}::NAN",
+            }.get(value, f"{value}{rust_type}")
+        constants.append(CudaOxideConstant(name, rust_type, value))
+    return constants
+
+
 def render_cuda_oxide_bindings(
     plan: CudaOxideBindingPlan,
     config: CudaOxideConfig,
     config_path: str | None = None,
+    *,
+    macro_defines: dict[str, Any] | None = None,
 ) -> tuple[str, list[dict[str, str]]]:
     """Add configured declarations and render an includable Rust module."""
 
@@ -275,7 +329,12 @@ def render_cuda_oxide_bindings(
     configured_constants, manifest_constants = _configured_constants(
         plan, config
     )
-    rendered = render_cuda_oxide_plan(plan, configured_constants)
+    macro_constants = _header_macro_constants(
+        plan, macro_defines or {}, set(config.constants)
+    )
+    rendered = render_cuda_oxide_plan(
+        plan, [*configured_constants, *macro_constants]
+    )
     lines = rendered.splitlines()
     lines.insert(2, f"// Source config: {config_path or '<programmatic>'}")
 
@@ -296,6 +355,10 @@ def render_cuda_oxide_bindings(
     return "\n".join(lines) + "\n", [
         *parsed_constants,
         *manifest_constants,
+        *(
+            dict(asdict(constant), source="macro")
+            for constant in macro_constants
+        ),
     ]
 
 
@@ -516,7 +579,12 @@ def generate_cuda_oxide_bindings(
         )
 
     plan = CudaOxideBindingPlan.from_declarations(declarations, config)
-    rendered, constants = render_cuda_oxide_bindings(plan, config, config_path)
+    rendered, constants = render_cuda_oxide_bindings(
+        plan,
+        config,
+        config_path,
+        macro_defines=getattr(declarations, "macro_defines", None),
+    )
 
     output_directory = Path(output_dir)
     output_directory.mkdir(parents=True, exist_ok=True)

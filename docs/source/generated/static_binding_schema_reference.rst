@@ -58,14 +58,6 @@ Optional keys
 ``Version`` : ``string | number``
    Optional config metadata field.
 
-``Backend`` : ``string``
-   Optional output backend selector. Omit it for the existing Numba static bindings or select ``cuda-oxide`` for direct
-   Rust device externs.
-
-   Constraints:
-
-   - Allowed values: ``cuda-oxide``
-
 ``Types`` : ``object``
    Mapping of struct names to Numba type class names.
 
@@ -110,6 +102,27 @@ Optional keys
         - internal_helper
         Struct:
         - __InternalState
+
+
+``Include`` : ``object``
+   Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that
+   nothing is bound. A name appearing in both Include and Exclude is excluded.
+
+   Default: ``{}``.
+
+   Constraints:
+
+   - No unspecified sub-keys
+
+   Example:
+
+   .. code-block:: yaml
+
+      Include:
+        Function:
+        - cuInit
+        - cuStreamCreate
+        - cuStreamDestroy_v2
 
 
 ``Clang Include Paths`` : ``array``
@@ -248,7 +261,7 @@ Optional keys
 
 
 ``Module Link Variables Used`` : ``array``
-   Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.
+   Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``Backend: numba-cuda-mlir``.
 
    Default: ``[]``.
 
@@ -305,17 +318,25 @@ Optional keys
           0: in
 
 
-``MLIR Backend`` : ``boolean``
-   Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a
-   user-provided ``numba_cuda_mlir`` installation.
+``Backend`` : ``string | array | null``
+   Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir`` routes
+   generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided
+   ``numba_cuda_mlir`` installation; ``cuda-oxide`` generates direct Rust device externs. Defaults to ``numba-cuda``. An
+   unrecognised name is an error rather than a fallback. Naming more than one backend is an error for now, since a
+   single run drives a single renderer.
 
-   Default: ``false``.
+   Default: ``null``.
+
+   Constraints:
+
+   - Item type: ``string``
 
    Example:
 
    .. code-block:: yaml
 
-      MLIR Backend: true
+      Backend: numba-cuda
+      Backend: numba-cuda-mlir
 
 
 ``CUDA Oxide`` : ``object``
@@ -364,6 +385,27 @@ Optional nested keys
 
       Struct:
       - __InternalState
+
+
+.. rubric:: ``Include``
+
+``Function`` : ``array``
+   Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is practical
+   and enumerating the rest under Exclude is not.
+
+   Default: ``[]``.
+
+   Constraints:
+
+   - Item type: ``string``
+
+   Example:
+
+   .. code-block:: yaml
+
+      Function:
+      - cuInit
+      - cuDeviceGetCount
 
 
 .. rubric:: ``API Prefix Removal``
@@ -468,7 +510,7 @@ Optional nested keys
 
 
 ``Constants`` : ``object``
-   Typed literal constants missing from the parsed AST.
+   Supplemental typed literals that take precedence over header macros with the same name.
 
    Default: ``{}``.
 
@@ -508,13 +550,6 @@ Raw schema
      Version:
        type: [string, number]
        description: Optional config metadata field.
-     Backend:
-       type: string
-       enum: [cuda-oxide]
-       description: >
-         Optional output backend selector. Omit it for the existing Numba static bindings or select ``cuda-oxide`` for
-         direct Rust device externs.
-
      Entry Point:
        type: string
        description: Path to the input CUDA C/C++ header file.
@@ -585,6 +620,28 @@ Raw schema
            description: Struct names to exclude.
            examples:
              - ["__InternalState"]
+     Include:
+       type: object
+       default: {}
+       additionalProperties: false
+       description: >
+         Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that
+         nothing is bound. A name appearing in both Include and Exclude is excluded.
+
+       examples:
+         - Function: ["cuInit", "cuStreamCreate", "cuStreamDestroy_v2"]
+       properties:
+         Function:
+           type: array
+           default: []
+           items:
+             type: string
+           description: >
+             Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is
+             practical and enumerating the rest under Exclude is not.
+
+           examples:
+             - ["cuInit", "cuDeviceGetCount"]
      Clang Include Paths:
        type: array
        default: []
@@ -700,7 +757,8 @@ Raw schema
        items:
          type: string
        description: >
-         Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``MLIR Backend: true``.
+         Experimental MLIR-backend-only linker metadata variables to mark as used. Requires ``Backend:
+         numba-cuda-mlir``.
 
        examples:
          - - "__numbast_module_used"
@@ -742,15 +800,21 @@ Raw schema
                    type: string
                    enum: ["in", "inout_ptr", "out_ptr", "out_return"]
                required: ["intent"]
-     MLIR Backend:
-       type: boolean
-       default: false
+     Backend:
+       type: [string, array, "null"]
+       items:
+         type: string
+       default: null
        description: >
-         Route static binding generation to the experimental ``numbast.experimental.mlir`` backend. This requires a
-         user-provided ``numba_cuda_mlir`` installation.
+         Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir``
+         routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided
+         ``numba_cuda_mlir`` installation; ``cuda-oxide`` generates direct Rust device externs. Defaults to
+         ``numba-cuda``. An unrecognised name is an error rather than a fallback. Naming more than one backend is an
+         error for now, since a single run drives a single renderer.
 
        examples:
-         - true
+         - "numba-cuda"
+         - "numba-cuda-mlir"
      CUDA Oxide:
        type: object
        additionalProperties: false
@@ -805,7 +869,7 @@ Raw schema
          Constants:
            type: object
            default: {}
-           description: Typed literal constants missing from the parsed AST.
+           description: Supplemental typed literals that take precedence over header macros with the same name.
            additionalProperties:
              type: object
              additionalProperties: false

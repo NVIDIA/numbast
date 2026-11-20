@@ -3,6 +3,14 @@ from importlib import import_module
 import click
 import yaml
 
+from numbast.backends.registry import (
+    CUDA_OXIDE,
+    BackendNotFoundError,
+    BackendNotRunnableError,
+    MultipleBackendsError,
+    generator_module,
+    resolve_backend_name,
+)
 from numbast.tools.config.shared import load_binding_config
 
 
@@ -33,19 +41,22 @@ def static_binding_generator(
     except (TypeError, yaml.YAMLError) as error:
         raise click.BadParameter(str(error), param_hint="--cfg-path") from error
 
-    if config.get("Backend") == "cuda-oxide":
-        generator = import_module(
-            "numbast.tools.cuda_oxide_binding_generator"
-        ).cuda_oxide_binding_generator
-        return ctx.invoke(generator, cfg_path=cfg_path, output_dir=output_dir)
+    try:
+        backend = resolve_backend_name(config)
+        module_name = generator_module(backend)
+    except (
+        BackendNotFoundError,
+        BackendNotRunnableError,
+        MultipleBackendsError,
+    ) as error:
+        raise click.BadParameter(str(error), param_hint="--cfg-path") from error
 
-    use_mlir = bool(
-        config.get("MLIR Backend", config.get("mlir_backend", False))
-    )
-    module_name = (
-        "numbast.experimental.mlir.tools.static_binding_generator"
-        if use_mlir
-        else "numbast.tools.static_binding_generator"
-    )
-    generator = import_module(module_name).static_binding_generator
+    module = import_module(module_name)
+    if backend == CUDA_OXIDE:
+        return ctx.invoke(
+            module.cuda_oxide_binding_generator,
+            cfg_path=cfg_path,
+            output_dir=output_dir,
+        )
+    generator = module.static_binding_generator
     return ctx.forward(generator)

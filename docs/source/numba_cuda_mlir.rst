@@ -23,7 +23,7 @@ Backend differences
      - Import binding helpers from ``numbast.experimental.mlir``.
    * - Static binding generation
      - Use the default static generator configuration.
-     - Add ``MLIR Backend: true`` to the static binding config.
+     - Add ``Backend: numba-cuda-mlir`` to the static binding config.
    * - Generated module target
      - Generated bindings target the ``numba-cuda`` runtime.
      - Generated bindings target the ``numba-cuda-mlir`` runtime.
@@ -73,8 +73,8 @@ bindings.
 Static binding generation
 -------------------------
 
-For static binding generation, add the ``MLIR Backend`` entry to the same
-config file you use with the default Numbast CLI.
+For static binding generation, add the ``Backend`` entry to the same config
+file you use with the default Numbast CLI.
 
 .. code-block:: yaml
 
@@ -83,7 +83,7 @@ config file you use with the default Numbast CLI.
      - /path/to/library/header.hpp
    GPU Arch: ["sm_80"]
 
-   MLIR Backend: true
+   Backend: numba-cuda-mlir
 
 Then run the standard Numbast static binding generator:
 
@@ -91,7 +91,7 @@ Then run the standard Numbast static binding generator:
 
    python -m numbast --cfg-path config.yml --output-dir ./output
 
-With ``MLIR Backend: true``, the CLI routes generation through
+With ``Backend: numba-cuda-mlir``, the CLI routes generation through
 ``numbast.experimental.mlir`` and writes a module for ``numba-cuda-mlir``.
 Both ``python -m numbast`` and the installed ``numbast`` command select the
 backend before importing its generator, so MLIR generation does not require
@@ -105,4 +105,4 @@ Notes
 - The environment that generates or imports MLIR-backed bindings must provide
   ``numba_cuda_mlir``.
 - Backend-specific static config keys that mention MLIR require
-  ``MLIR Backend: true``.
+  ``Backend: numba-cuda-mlir``.

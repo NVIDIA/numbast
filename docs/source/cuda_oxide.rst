@@ -74,8 +74,6 @@ section to the existing Numbast YAML shape:
     Symbol Inventory: build/library_device_api.symbols
     Type Aliases:
       library_handle_t: unsigned long long
-    Constants:
-      LIBRARY_DEFAULT_HANDLE: {Type: library_handle_t, Value: 0}
 
 The same document can be used in separate Numba and CUDA-Oxide invocations.
 The top-level ``Output Name`` names the Python output; ``CUDA Oxide.Output Name``
@@ -83,8 +81,10 @@ names the Rust output. Adding a ``CUDA Oxide`` section alone does not select
 the Rust backend.
 
 ``Type Aliases`` are C-to-C declarations, not arbitrary Rust snippets.
-``Constants`` accept typed integer or Boolean literals for definitions absent
-from the AST, such as preprocessor macros.
+The generator emits evaluated object-like macros from the retained headers
+when their scalar types can be represented in Rust. The manifest records them
+with ``source: macro``. Optional ``Constants`` entries provide typed integer or
+Boolean literals and take precedence over a header macro with the same name.
 
 Numbast derives the matching ``__CUDA_ARCH__`` value from ``GPU Arch`` while
 parsing. An explicitly configured value must match. This exposes APIs guarded

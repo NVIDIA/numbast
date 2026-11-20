@@ -11,21 +11,10 @@ ast_canopy
    :undoc-members:
    :noindex:
 
-.. autosummary::
-   :toctree: _autosummary
-   :recursive:
+.. toctree::
+   :maxdepth: 2
 
-   decl
-
-ast_canopy.decl
-----------------
-
-All objects in this module represent serialized information extracted from the C++ Clang AST.
-
-.. automodule:: ast_canopy.decl
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   ast_canopy.decl
 
 .. currentmodule:: numbast
 
