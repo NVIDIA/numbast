@@ -131,6 +131,8 @@ struct Enum {
 struct EvaluatedConstDecl {
   EvaluatedConstDecl() = default;
   EvaluatedConstDecl(const clang::VarDecl *VD);
+  EvaluatedConstDecl(const std::string &macro_name, Type type,
+                     std::string serialized_value);
 
   bool is_constexpr = false;
 

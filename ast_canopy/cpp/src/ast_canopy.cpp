@@ -246,11 +246,8 @@ void collect_macro_defines_from_ast(
     } else {
       value.getFloat().toString(serialized);
     }
-    EvaluatedConstDecl constant;
-    constant.name = constant.qual_name = name;
-    constant.type_ = Type(type, ast->getASTContext());
-    constant.value = std::string(serialized);
-    decls->macro_defines.at(name).evaluated_constant = std::move(constant);
+    decls->macro_defines.at(name).evaluated_constant.emplace(
+        name, Type(type, ast->getASTContext()), std::string(serialized));
   }
 }
 
