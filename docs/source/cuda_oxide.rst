@@ -58,6 +58,8 @@ section to the existing Numbast YAML shape:
   GPU Arch: [sm_90]
   Clang Include Paths: [include]
   Predefined Macros: [LIBRARY_BUILD_DEVICE_LTOIR]
+  Include:
+    Function: [library_add, library_internal_helper]
   Exclude:
     Function: [library_internal_helper]
   Skip Prefix: library_detail_
@@ -69,7 +71,6 @@ section to the existing Numbast YAML shape:
     Output Name: library_device.rs
     LTOIR Inputs: [lib/library_device.ltoir]
     Manifest Name: library_device.manifest.json
-    Symbol Inventory: build/library_device_api.symbols
     Type Aliases:
       library_handle_t: unsigned long long
 
@@ -89,13 +90,19 @@ parsing. An explicitly configured value must match. This exposes APIs guarded
 by device-compilation conditionals without letting the parser profile drift
 from the link target.
 
-Symbol parity and manifest
---------------------------
+Function selection and manifest
+-------------------------------
 
-``Symbol Inventory`` is an exact, newline- or ``nm``-style inventory of the
-selected public API. Generation fails if a symbol exists on only one side, so
-recoverable parser diagnostics cannot silently shrink the bindings. Filter
-implementation-only symbols before supplying an inventory.
+``Include.Function`` uses native symbol names before prefix removal. A nonempty
+list selects those functions and requires each one to generate a binding,
+except names removed by ``Exclude.Function`` or ``Skip Prefix``. This catches
+missing required functions even when parsing continues after recoverable
+errors. An empty list leaves function selection open.
+
+Use a symbol list from the LTOIR build as input to ``Include.Function`` when
+the build defines the required surface. The optional ``Symbol Inventory``
+accepts a separate newline- or ``nm``-style file for an exact comparison
+against the generated symbols.
 
 The versioned JSON manifest records:
 

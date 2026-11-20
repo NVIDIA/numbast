@@ -64,7 +64,7 @@
       "examples/cuda_oxide_c_device"
     ],
     "config": "examples/cuda_oxide_c_device/numbast.yaml",
-    "config_sha256": "3ed41ebbe772491335c8720afff9f4bfbb9c97915f542ea92ab8c9c644a4805a",
+    "config_sha256": "4bea4bc94f36baff8c3cfc870a8c730e8efa86cc762e659e6874e9fcf4001d98",
     "entry_point": "examples/cuda_oxide_c_device/device_api.h",
     "headers": [
       {
@@ -84,11 +84,9 @@
     ]
   },
   "symbol_verification": {
-    "available_symbol_count": 3,
     "missing_symbols": [],
-    "path": "examples/cuda_oxide_c_device/device_api.symbols",
     "required_symbol_count": 3,
-    "sha256": "a833b7039aa5d0ec2d6be327e9869a48a9c13696b1f7cb048b7ade14e774fdd8",
+    "source": "Include.Function",
     "status": "verified",
     "unexpected_symbols": []
   },

@@ -549,10 +549,18 @@ def make_manifest(
         manifest["symbol_verification"] = verify_symbol_inventory(
             plan, config.symbol_inventory
         )
+    elif config.include_functions:
+        manifest["symbol_verification"] = {
+            "status": "verified",
+            "source": "Include.Function",
+            "required_symbol_count": len(symbols),
+            "missing_symbols": [],
+            "unexpected_symbols": [],
+        }
     else:
         manifest["symbol_verification"] = {
             "status": "not-requested",
-            "hint": "Set CUDA Oxide.Symbol Inventory to an nm-style LTOIR symbol list.",
+            "hint": "Set Include.Function to the required native symbols.",
         }
     return manifest
 

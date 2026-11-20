@@ -104,6 +104,27 @@ Optional keys
         - __InternalState
 
 
+``Include`` : ``object``
+   Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that
+   nothing is bound. A name appearing in both Include and Exclude is excluded.
+
+   Default: ``{}``.
+
+   Constraints:
+
+   - No unspecified sub-keys
+
+   Example:
+
+   .. code-block:: yaml
+
+      Include:
+        Function:
+        - cuInit
+        - cuStreamCreate
+        - cuStreamDestroy_v2
+
+
 ``Clang Include Paths`` : ``array``
    Additional include search paths for Clang parsing.
 
@@ -366,6 +387,28 @@ Optional nested keys
       - __InternalState
 
 
+.. rubric:: ``Include``
+
+``Function`` : ``array``
+   Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is practical
+   and enumerating the rest under Exclude is not. CUDA-Oxide requires each included name to produce a binding unless it
+   is excluded by Exclude.Function or Skip Prefix.
+
+   Default: ``[]``.
+
+   Constraints:
+
+   - Item type: ``string``
+
+   Example:
+
+   .. code-block:: yaml
+
+      Function:
+      - cuInit
+      - cuDeviceGetCount
+
+
 .. rubric:: ``API Prefix Removal``
 
 ``Function`` : ``oneOf(string, array)``
@@ -473,8 +516,8 @@ Optional nested keys
    Default: ``{}``.
 
 ``Bypass Parse Errors`` : ``boolean``
-   Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an exact
-   Symbol Inventory to detect parser omissions.
+   Continue after recoverable Clang parser errors. Strict parsing is the default. List the required native symbols in
+   Include.Function to detect parser omissions.
 
    Default: ``false``.
 
@@ -578,6 +621,29 @@ Raw schema
            description: Struct names to exclude.
            examples:
              - ["__InternalState"]
+     Include:
+       type: object
+       default: {}
+       additionalProperties: false
+       description: >
+         Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that
+         nothing is bound. A name appearing in both Include and Exclude is excluded.
+
+       examples:
+         - Function: ["cuInit", "cuStreamCreate", "cuStreamDestroy_v2"]
+       properties:
+         Function:
+           type: array
+           default: []
+           items:
+             type: string
+           description: >
+             Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is
+             practical and enumerating the rest under Exclude is not. CUDA-Oxide requires each included name to produce
+             a binding unless it is excluded by Exclude.Function or Skip Prefix.
+
+           examples:
+             - ["cuInit", "cuDeviceGetCount"]
      Clang Include Paths:
        type: array
        default: []
@@ -821,8 +887,8 @@ Raw schema
            type: boolean
            default: false
            description: >
-             Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an
-             exact Symbol Inventory to detect parser omissions.
+             Continue after recoverable Clang parser errors. Strict parsing is the default. List the required native
+             symbols in Include.Function to detect parser omissions.
 
          Clang Binary:
            type: string

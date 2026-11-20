@@ -211,6 +211,39 @@ def test_requires_new_ast_canopy_linkage_metadata(config):
         )
 
 
+def test_cuda_oxide_checks_included_native_symbols(config, tmp_path):
+    config.include_functions = [
+        "library_one",
+        "library_missing",
+        "library_excluded",
+    ]
+    config.exclude_functions = ["library_excluded"]
+    parsed = declarations(
+        functions=[
+            function("library_one", "int"),
+            function("library_excluded", "int"),
+            function("unselected_helper", "int", c_linkage=False),
+        ]
+    )
+
+    with pytest.raises(
+        CudaOxideBindingError, match=r"Include.Function.*library_missing"
+    ):
+        generate_cuda_oxide_bindings(config, tmp_path, declarations=parsed)
+    assert not list(tmp_path.glob("bindings*"))
+
+    config.include_functions.remove("library_missing")
+    _, manifest_path = generate_cuda_oxide_bindings(
+        config, tmp_path, declarations=parsed
+    )
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    assert [item["native_name"] for item in manifest["symbols"]] == [
+        "library_one"
+    ]
+    assert manifest["symbol_verification"]["source"] == "Include.Function"
+    assert manifest["symbol_verification"]["required_symbol_count"] == 1
+
+
 def test_symbol_inventory_reports_missing_symbols(config, tmp_path):
     plan = CudaOxideBindingPlan.from_declarations(
         declarations(

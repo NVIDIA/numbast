@@ -17,7 +17,7 @@ from numbast.backends.registry import (
     MultipleBackendsError,
     resolve_backend_name,
 )
-from numbast.rust_types import cuda_arch_number
+from numbast.rust_types import cuda_arch_number, is_identifier
 from numbast.tools.config.shared import SharedConfig, _as_list
 
 
@@ -45,6 +45,14 @@ class CudaOxideConfig(SharedConfig):
 
     def __init__(self, config_dict: dict[str, Any]):
         super().__init__(config_dict)
+
+        if not all(
+            isinstance(name, str) and is_identifier(name)
+            for name in self.include_functions
+        ):
+            raise ValueError(
+                '"Include.Function" must contain valid native C symbol names.'
+            )
 
         if config_dict.get(BACKEND_CONFIG_KEY) is not None:
             try:

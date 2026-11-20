@@ -11,6 +11,7 @@ import pytest
 
 from numbast.tools.config.cuda_oxide import CudaOxideConfig
 from numbast.tools.cuda_oxide_binding_generator import (
+    _read_symbol_inventory,
     generate_cuda_oxide_bindings,
 )
 
@@ -31,8 +32,11 @@ def test_nvshmem_public_c_device_surface(tmp_path):
         "LTOIR Inputs": [ltoir],
         "Bypass Parse Errors": True,
     }
-    if symbol_inventory:
-        cuda_oxide["Symbol Inventory"] = symbol_inventory
+    included = (
+        sorted(_read_symbol_inventory(symbol_inventory))
+        if symbol_inventory
+        else []
+    )
 
     config = CudaOxideConfig(
         {
@@ -60,6 +64,7 @@ def test_nvshmem_public_c_device_surface(tmp_path):
             ],
             "GPU Arch": [os.environ.get("NUMBAST_NVSHMEM_GPU_ARCH", "sm_100")],
             "Clang Include Paths": [str(include)],
+            "Include": {"Function": included},
             "Exclude": {
                 "Function": [
                     "atomicAdd_system",
@@ -128,5 +133,6 @@ def test_nvshmem_public_c_device_surface(tmp_path):
     assert reserved_bytes["value"] == "60"
     assert reserved_bytes["source"] == "macro"
     assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
-    if symbol_inventory:
+    if included:
         assert manifest["symbol_verification"]["status"] == "verified"
+        assert manifest["symbol_verification"]["source"] == "Include.Function"

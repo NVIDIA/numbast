@@ -18,6 +18,8 @@ GPU Arch:
   - "@GPU_ARCH@"
 Clang Include Paths:
   - "@NVSHMEM_INCLUDE_DIR@"
+Include:
+  Function: @NVSHMEM_INCLUDED_FUNCTIONS@
 Exclude:
   Function:
     # A CUDA implementation detail attributed to the retained public header.
@@ -39,7 +41,5 @@ CUDA Oxide:
   LTOIR Inputs:
     - "@NVSHMEM_DEVICE_LTOIR@"
   Manifest Name: nvshmem_device.manifest.json
-  Symbol Inventory: "@NVSHMEM_DEVICE_API_SYMBOLS@"
-  # Use together with the exact API symbol inventory above. The inventory
-  # makes a parser recovery that omits declarations fail closed.
+  # Include.Function makes recovery fail if a required symbol is omitted.
   Bypass Parse Errors: true

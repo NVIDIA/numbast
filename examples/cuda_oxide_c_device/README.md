@@ -23,8 +23,9 @@ versions. It also records `ROUND1_DEFAULT_HANDLE` as a macro constant from
 `device_api.h`.
 
 `build_ltoir.sh` also refreshes `device_api.symbols` from NVCC's retained PTX
-symbol declarations for the same LTOIR compilation. Generation checks exact
-parity with that device-symbol inventory before writing either output artifact.
+symbol declarations for the same LTOIR compilation. `Include.Function` in
+`numbast.yaml` selects the three required native symbols. Generation fails if
+the headers omit any of them.
 The Rust executable reads the manifest, asks
 CUDA-Oxide's artifact finalizer to link its kernel LTOIR with every ordered
 `LTOIR Inputs` entry, loads the resulting cubin, and verifies the result on the

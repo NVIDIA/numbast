@@ -21,22 +21,22 @@ headers guard the device API with that macro. `nvshmemi_` implementation
 symbols, the internal `nvshmemi_signal` template, and CUDA's
 `atomicAdd_system` helper are intentionally outside the public C API.
 
-The symbol inventory is the exact selected public API surface, not an
-unfiltered object dump. Retain PTX alongside the LTOIR during the NVSHMEM NVCC
-compilation, then extract the public device symbols from that compiler output:
+Populate `@NVSHMEM_INCLUDED_FUNCTIONS@` with a YAML sequence of native
+device symbols from the matching NVSHMEM build. This example extracts public
+symbols from retained PTX and prints a JSON array, which is valid YAML:
 
 ```bash
-awk '$1 == "//" && $2 == ".globl" && $3 ~ /^nvshmemx?_/' \
-  nvshmem_device.ptx \
-  | awk '{print $3}' \
-  | sort -u > nvshmem_device_api.symbols
+awk '$1 == "//" && $2 == ".globl" && $3 ~ /^nvshmemx?_/ {print $3}' \
+  nvshmem_device.ptx | sort -u \
+  | python -c 'import json, sys; print(json.dumps(sys.stdin.read().splitlines()))'
 ```
 
-Generation fails for symbols missing from either side of that comparison. On
+`Include.Function` requires every listed symbol except those removed by
+`Exclude.Function` or `Skip Prefix`. On
 NVSHMEM commit `b0d9d3`, the audited profile selected 2,730 public C device
 functions, 50 `nvshmemi_` exclusions, one configured CUDA-helper exclusion,
 and one template exclusion. The count is a validation snapshot, not a
-hardcoded generator rule; header changes are surfaced by symbol-parity failure.
+hardcoded generator rule; generation fails if a required declaration is missing.
 
 No C or C++ shim is generated. The resulting Rust module calls native
 NVSHMEM C symbols directly, and CUDA-Oxide links the supplied device LTOIR.
@@ -66,7 +66,7 @@ examples/nvshmem_cuda_oxide/run_e2e.sh \
   /tmp/numbast-nvshmem-generated
 ```
 
-The configured LTOIR and symbol inventory must come from the same NVSHMEM,
+The configured LTOIR and included symbols must come from the same NVSHMEM,
 CUDA, macro, and architecture profile used for generation.
 The complete profile requires an `sm_100+` CUDA-Oxide target and compatible
 hardware for this execution test.
