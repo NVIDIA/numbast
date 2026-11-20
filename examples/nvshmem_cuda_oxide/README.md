@@ -1,4 +1,4 @@
-# NVSHMEM Round 1 profile
+# NVSHMEM4Rust device profile
 
 This directory contains the library-specific configuration needed to replace
 NVSHMEM4Rust's handwritten device renderer with Numbast's CUDA-Oxide backend.
@@ -74,5 +74,4 @@ hardware for this execution test.
 Numbast reads typedefs used by the device API, enum values, and supported
 scalar macros from the retained headers. The headers supply team IDs,
 comparisons, signal operations, and team configuration masks. Implementation helpers
-and the C++-linkage shared-memory convenience functions are excluded from this
-Round 1 C-linkage profile.
+and the C++-linkage shared-memory convenience functions are excluded from the selected device API.

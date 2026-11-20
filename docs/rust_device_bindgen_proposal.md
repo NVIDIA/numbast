@@ -1,6 +1,7 @@
 # Proposal: Numbast-backed Rust device binding generation
 
-- Status: draft research recommendation
+- Status: draft research recommendation. Current CUDA-Oxide support covers
+  the NVSHMEM4Rust device profile.
 - Scope: device-binding portion of internal `cuda-python-private/492`
 - Target consumer: CUDA-Oxide device code linked with an existing CUDA LTOIR
   library
@@ -25,9 +26,9 @@ should target a deliberately narrow contract:
 
 Delivery should be organized as complete feature rounds, not as a sequence of
 small infrastructure milestones. Round 1 delivers an end-to-end plain C device
-backend and uses it to cover the complete selected NVSHMEM device API. Round 2
-adds Numbast argument intents. Round 3 adds overloaded and templated free
-functions. Round 4 adds record/class APIs and class templates. Each round owns
+backend for the selected NVSHMEM4Rust device API. The proposed follow-up
+rounds cover Numbast argument intents, overloaded and templated free functions,
+and record/class APIs and class templates. Each round owns
 all refactoring, configuration, documentation, and testing needed to be a
 usable deliverable; those are workstreams within a round, not separate release
 stages.

@@ -1,37 +1,26 @@
 CUDA-Oxide device bindings
 ===========================
 
-The ``cuda-oxide`` backend generates a Rust ``sys`` module for C-linkage CUDA
-device functions. It parses the same header profile and reuses the same
-selection and naming configuration as Numbast's static Numba backend, but the
-renderer has no Numba import or runtime dependency.
+The ``cuda-oxide`` backend currently supports the NVSHMEM4Rust device binding
+profile. It generates a Rust ``sys`` module for the selected NVSHMEM C-linkage
+device API.
 
-Round 1 contract
-----------------
+NVSHMEM4Rust device profile
+---------------------------
 
-The initial backend accepts externally visible, non-variadic ``extern "C"``
-``__device__`` and ``__host__ __device__`` free functions. It supports C
-scalars, nested pointers with per-level ``const`` qualification, arrays behind
-pointers, typedefs, enums, opaque handles, the CUDA half/bfloat16 and
-``double2`` storage ABIs, and POD records used behind pointers.
+The profile generates raw ``unsafe`` externs for selected non-variadic
+``__device__`` and ``__host__ __device__`` functions. The bindings preserve the
+pointer qualifiers and ABI types used by these functions, including the
+half, bfloat16, and ``double2`` storage types. The profile excludes internal
+functions and C++-linkage helpers.
 
-CUDA-Oxide's pre-Blackwell NVVM path cannot call extern functions that pass
-sub-32-bit integers, Boolean values, CUDA half, or bfloat16 by value. Numbast
-rejects those by-value declarations when the configured target is below
-``sm_100``. Pointer-based uses remain valid because their extern ABI passes an
-address. A complete API containing narrow by-value declarations therefore
-requires ``sm_100`` or newer, or explicit exclusion of those declarations. On
-the modern path, CUDA ``__half`` maps to Rust's nightly ``f16`` and the
-consuming crate must enable ``#![feature(f16)]``. No hidden ABI widening or
-shim is generated to bypass the target restriction.
+The complete profile requires ``sm_100`` or newer because it passes narrow
+integers, CUDA half, and bfloat16 by value. Pre-Blackwell CUDA-Oxide can use
+pointer-based forms of those types. CUDA ``__half`` maps to Rust's nightly
+``f16`` on the modern NVVM path, so the consuming crate must enable
+``#![feature(f16)]``.
 
-It intentionally rejects C++ linkage, overloads, references, variadics,
-by-value records, and unknown ABI types. Function templates and class templates
-are recorded as Round 1 exclusions. Argument-intent adapters are a later
-feature. The Numba-only ``Function Argument Intents`` mapping is ignored by
-CUDA-Oxide, and every generated raw call is ``unsafe``.
-
-The output contains direct CUDA-Oxide declarations:
+The generated Rust module contains declarations like this one:
 
 .. code-block:: rust
 
@@ -39,10 +28,12 @@ The output contains direct CUDA-Oxide declarations:
 
   #[device]
   unsafe extern "C" {
-      pub fn library_add(lhs: i32, rhs: i32) -> i32;
+      pub fn nvshmemx_vendor_get_version_info(
+          major: *mut i32, minor: *mut i32, patch: *mut i32,
+      );
   }
 
-  pub use self::library_add as add;
+  pub use self::nvshmemx_vendor_get_version_info as vendor_get_version_info;
 
 There is no generated CUDA C or C++ shim. CUDA-Oxide compiles callers to device
 IR and links the external LTOIR named in the manifest.
@@ -50,41 +41,14 @@ IR and links the external LTOIR named in the manifest.
 Configuration
 -------------
 
-Select the backend with ``Backend: cuda-oxide`` and add a ``CUDA Oxide``
-section to the existing Numbast YAML shape:
+Fill in the placeholders in
+``examples/nvshmem_cuda_oxide/numbast.yaml.in`` using the NVSHMEM source and
+build that produced the device LTOIR. The template selects
+``Backend: cuda-oxide`` and uses the NVSHMEM4Rust entry header.
 
-.. code-block:: yaml
-
-  Entry Point: include/library_device.h
-  File List: [include/library_device.h]
-  GPU Arch: [sm_90]
-  Clang Include Paths: [include]
-  Predefined Macros: [LIBRARY_BUILD_DEVICE_LTOIR]
-  Exclude:
-    Function: [library_internal_helper]
-  Skip Prefix: library_detail_
-  API Prefix Removal:
-    Function: [library_]
-
-  Backend: cuda-oxide
-  CUDA Oxide:
-    Output Name: library_device.rs
-    LTOIR Inputs: [lib/library_device.ltoir]
-    Manifest Name: library_device.manifest.json
-    Symbol Inventory: build/library_device_api.symbols
-    Type Aliases:
-      library_handle_t: unsigned long long
-
-The same document can be used in separate Numba and CUDA-Oxide invocations.
-The top-level ``Output Name`` names the Python output; ``CUDA Oxide.Output Name``
-names the Rust output. Adding a ``CUDA Oxide`` section alone does not select
-the Rust backend.
-
-``Type Aliases`` are C-to-C declarations, not arbitrary Rust snippets.
-The generator emits evaluated object-like macros from the retained headers
-when their scalar types can be represented in Rust. The manifest records them
-with ``source: macro``. Optional ``Constants`` entries provide typed integer or
-Boolean literals and take precedence over a header macro with the same name.
+The generator reads typedefs, enum values, and supported scalar macros from
+the retained headers. It records evaluated macros in the manifest with
+``source: macro``.
 
 Numbast derives the matching ``__CUDA_ARCH__`` value from ``GPU Arch`` while
 parsing. An explicitly configured value must match. This exposes APIs guarded
@@ -125,8 +89,6 @@ Use the dedicated lightweight command (which does not import Numba):
 
   numbast-cuda-oxide --cfg-path config.yaml --output-dir generated
 
-``examples/cuda_oxide_c_device`` builds a small C device library as LTOIR,
-generates and verifies bindings, compiles a Rust kernel, links both LTOIR
-inputs, and executes the result on a GPU. ``examples/nvshmem_cuda_oxide``
-contains the complete selected NVSHMEM configuration profile and migration
-notes.
+``examples/nvshmem_cuda_oxide`` contains the NVSHMEM4Rust configuration and a
+GPU smoke test. ``examples/cuda_oxide_c_device`` demonstrates the same LTOIR
+build, binding generation, and linking flow with a small test library.
