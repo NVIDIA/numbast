@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define ROUND1_DEFAULT_HANDLE 0ULL
+
 #ifdef __cplusplus
 #include <type_traits>
 

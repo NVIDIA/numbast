@@ -19,7 +19,8 @@ edit that value together when using something other than `sm_80`.
 The generated manifest is the handoff to the CUDA-Oxide/link step. It records
 the architecture, expected LTOIR input, native and prefix-stripped Rust symbol
 names, normalized C/Rust types, excluded declarations, source hashes, and tool
-versions.
+versions. It also records `ROUND1_DEFAULT_HANDLE` as a macro constant from
+`device_api.h`.
 
 `build_ltoir.sh` also refreshes `device_api.symbols` from NVCC's retained PTX
 symbol declarations for the same LTOIR compilation. Generation checks exact

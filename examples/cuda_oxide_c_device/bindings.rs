@@ -17,18 +17,17 @@ const _: [(); 4] = [(); core::mem::align_of::<round1_options>()];
 #[allow(non_camel_case_types)]
 pub type round1_mode = u32;
 
-#[allow(non_camel_case_types)]
-pub type round1_handle_t = u64;
-
 #[allow(non_upper_case_globals)]
 pub const ROUND1_MODE_ADD: round1_mode = 0;
+#[allow(non_upper_case_globals)]
 pub const ROUND1_MODE_SUBTRACT: round1_mode = 1;
-pub const ROUND1_DEFAULT_HANDLE: round1_handle_t = 0;
+#[allow(non_upper_case_globals)]
+pub const ROUND1_DEFAULT_HANDLE: u64 = 0;
 
 #[device]
 #[allow(improper_ctypes)]
 unsafe extern "C" {
-    pub fn round1_accumulate(values: *const i32, count: u64) -> i32;
+    pub fn round1_accumulate(values: *const i32, count: usize) -> i32;
     pub fn round1_add(left: i32, right: i32) -> i32;
     pub fn round1_apply(value: i32, mode: round1_mode, options: *const round1_options) -> i32;
 }

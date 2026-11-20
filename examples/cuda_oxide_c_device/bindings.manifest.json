@@ -3,7 +3,7 @@
     "ltoir": [
       {
         "path": "examples/cuda_oxide_c_device/device_api.ltoir",
-        "sha256": "af189f3bee3cf7de76eb198d4041fe574e5ea4f2544be18e15ddc7f88ce7e7c5",
+        "sha256": "bc8e8466b8ba9111a4dd4318ff98b8123840b37a4e1be830aaf51da853848b0f",
         "status": "present"
       }
     ],
@@ -31,8 +31,8 @@
     },
     {
       "name": "ROUND1_DEFAULT_HANDLE",
-      "rust_type": "round1_handle_t",
-      "source": "configuration",
+      "rust_type": "u64",
+      "source": "macro",
       "value": "0"
     }
   ],
@@ -43,7 +43,7 @@
   "excluded_declarations": [],
   "generator": {
     "ast_canopy_version": "0.10.1+source",
-    "cuda_toolkit_version": "13.4.20260601",
+    "cuda_toolkit_version": null,
     "generation_command": [
       "numbast-cuda-oxide",
       "--cfg-path",
@@ -64,12 +64,12 @@
       "examples/cuda_oxide_c_device"
     ],
     "config": "examples/cuda_oxide_c_device/numbast.yaml",
-    "config_sha256": "245e970cf830a6a0b7ae541f5c7a8fbfca168d5a7e203a824fb2145b910366e5",
+    "config_sha256": "3ed41ebbe772491335c8720afff9f4bfbb9c97915f542ea92ab8c9c644a4805a",
     "entry_point": "examples/cuda_oxide_c_device/device_api.h",
     "headers": [
       {
         "path": "examples/cuda_oxide_c_device/device_api.h",
-        "sha256": "4d02439cc4b56a75682839a55cb6c46f6aed3239caad366f11aa4edf509471d2"
+        "sha256": "ee64a5ce354f693feb4457de45899a92f90553db97945f067a1766d1c62f41ad"
       }
     ],
     "parser": {
@@ -100,11 +100,12 @@
         {
           "c_name": "values",
           "c_type": {
-            "array_dimensions": [],
             "base_name": "int32_t",
             "c_spelling": "const int32_t *",
-            "pointer_kinds": [
-              "const"
+            "layers": [
+              {
+                "kind": "const"
+              }
             ]
           },
           "rust_name": "values",
@@ -113,22 +114,20 @@
         {
           "c_name": "count",
           "c_type": {
-            "array_dimensions": [],
-            "base_name": "unsigned long",
+            "base_name": "size_t",
             "c_spelling": "unsigned long",
-            "pointer_kinds": []
+            "layers": []
           },
           "rust_name": "count",
-          "rust_type": "u64"
+          "rust_type": "usize"
         }
       ],
       "public_name": "accumulate",
       "return_type": {
         "c": {
-          "array_dimensions": [],
           "base_name": "int32_t",
           "c_spelling": "int32_t",
-          "pointer_kinds": []
+          "layers": []
         },
         "rust": "i32"
       },
@@ -141,10 +140,9 @@
         {
           "c_name": "left",
           "c_type": {
-            "array_dimensions": [],
             "base_name": "int32_t",
             "c_spelling": "int32_t",
-            "pointer_kinds": []
+            "layers": []
           },
           "rust_name": "left",
           "rust_type": "i32"
@@ -152,10 +150,9 @@
         {
           "c_name": "right",
           "c_type": {
-            "array_dimensions": [],
             "base_name": "int32_t",
             "c_spelling": "int32_t",
-            "pointer_kinds": []
+            "layers": []
           },
           "rust_name": "right",
           "rust_type": "i32"
@@ -164,10 +161,9 @@
       "public_name": "add",
       "return_type": {
         "c": {
-          "array_dimensions": [],
           "base_name": "int32_t",
           "c_spelling": "int32_t",
-          "pointer_kinds": []
+          "layers": []
         },
         "rust": "i32"
       },
@@ -180,10 +176,9 @@
         {
           "c_name": "value",
           "c_type": {
-            "array_dimensions": [],
             "base_name": "int32_t",
             "c_spelling": "int32_t",
-            "pointer_kinds": []
+            "layers": []
           },
           "rust_name": "value",
           "rust_type": "i32"
@@ -191,10 +186,9 @@
         {
           "c_name": "mode",
           "c_type": {
-            "array_dimensions": [],
             "base_name": "round1_mode",
             "c_spelling": "round1_mode",
-            "pointer_kinds": []
+            "layers": []
           },
           "rust_name": "mode",
           "rust_type": "round1_mode"
@@ -202,11 +196,12 @@
         {
           "c_name": "options",
           "c_type": {
-            "array_dimensions": [],
             "base_name": "round1_options",
             "c_spelling": "const round1_options *",
-            "pointer_kinds": [
-              "const"
+            "layers": [
+              {
+                "kind": "const"
+              }
             ]
           },
           "rust_name": "options",
@@ -216,10 +211,9 @@
       "public_name": "apply",
       "return_type": {
         "c": {
-          "array_dimensions": [],
           "base_name": "int32_t",
           "c_spelling": "int32_t",
-          "pointer_kinds": []
+          "layers": []
         },
         "rust": "i32"
       },
@@ -270,16 +264,6 @@
         "storage_type": "[u32; 4]"
       }
     ],
-    "typedefs": [
-      {
-        "name": "round1_handle_t",
-        "underlying": {
-          "array_dimensions": [],
-          "base_name": "unsigned long long",
-          "c_spelling": "unsigned long long",
-          "pointer_kinds": []
-        }
-      }
-    ]
+    "typedefs": []
   }
 }

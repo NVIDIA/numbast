@@ -465,6 +465,7 @@ def test_real_ast_canopy_c_device_parse(tmp_path):
         if item["source"] == "macro"
     }
     assert macros == {
+        "ROUND1_DEFAULT_HANDLE": ("u64", "0"),
         "ROUND1_LIMIT": ("u64", "9223372036854775808"),
         "ROUND1_LIMIT_PLUS_ONE": ("u64", "9223372036854775809"),
         "ROUND1_ENABLED": ("bool", "true"),
