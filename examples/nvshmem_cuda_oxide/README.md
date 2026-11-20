@@ -4,8 +4,7 @@ This directory contains the library-specific configuration needed to replace
 NVSHMEM4Rust's handwritten device renderer with Numbast's CUDA-Oxide backend.
 The Numbast generator owns declaration parsing, C ABI normalization, Rust name
 handling, extern rendering, and the link manifest. NVSHMEM retains ownership
-of its header profile, constants that exist only in the preprocessor, LTOIR,
-and symbol inventory.
+of its header profile, LTOIR, and symbol inventory.
 
 Configure the placeholders in `numbast.yaml.in` from the same NVSHMEM and CUDA
 build used to create the device LTOIR, then run:
@@ -16,7 +15,7 @@ numbast-cuda-oxide \
   --output-dir /path/to/nvshmem4rust/runtime/src
 ```
 
-The five retained headers form the selected declaration profile. Numbast
+The NVSHMEM4Rust entry point defines `NVSHMEM_BUILD_LTOIR_LIBRARY`. Numbast
 derives `__CUDA_ARCH__` from `GPU Arch`, which is required because these
 headers guard the device API with that macro. `nvshmemi_` implementation
 symbols, the internal `nvshmemi_signal` template, and CUDA's
@@ -72,8 +71,8 @@ CUDA, macro, and architecture profile used for generation.
 The complete profile requires an `sm_100+` CUDA-Oxide target and compatible
 hardware for this execution test.
 
-The configuration retains the headers that define team IDs, comparisons, signal
-operations, and scalar macros such as the team configuration masks. The
-generator reads those values directly from the headers. Implementation helpers
+Numbast reads typedefs used by the device API, enum values, and supported
+scalar macros from the retained headers. The headers supply team IDs,
+comparisons, signal operations, and team configuration masks. Implementation helpers
 and the C++-linkage shared-memory convenience functions are excluded from this
 Round 1 C-linkage profile.

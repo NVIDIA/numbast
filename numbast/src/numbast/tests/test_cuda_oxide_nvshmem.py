@@ -30,12 +30,6 @@ def test_nvshmem_public_c_device_surface(tmp_path):
     cuda_oxide = {
         "LTOIR Inputs": [ltoir],
         "Bypass Parse Errors": True,
-        "Type Aliases": {
-            "nvshmem_team_t": "int32_t",
-            "nvshmemx_team_t": "nvshmem_team_t",
-            "nvshmemx_region_handle_t": "uint64_t",
-            "nvshmemx_region_attrs_t": "nvshmemx_region_attrs",
-        },
     }
     if symbol_inventory:
         cuda_oxide["Symbol Inventory"] = symbol_inventory
@@ -66,7 +60,6 @@ def test_nvshmem_public_c_device_surface(tmp_path):
             ],
             "GPU Arch": [os.environ.get("NUMBAST_NVSHMEM_GPU_ARCH", "sm_100")],
             "Clang Include Paths": [str(include)],
-            "Predefined Macros": ["NVSHMEM_BUILD_LTOIR_LIBRARY"],
             "Exclude": {
                 "Function": [
                     "atomicAdd_system",
@@ -107,6 +100,13 @@ def test_nvshmem_public_c_device_surface(tmp_path):
             "fields": [["hints", "uint32_t"], ["reserved", "char[60]"]],
         }
     ]
+    typedefs = {
+        item["name"]: item["underlying"]["base_name"]
+        for item in manifest["types"]["typedefs"]
+    }
+    assert typedefs["nvshmem_team_t"] == "int32_t"
+    assert typedefs["nvshmemx_region_handle_t"] == "uint64_t"
+    assert typedefs["nvshmemx_region_attrs_t"] == "nvshmemx_region_attrs"
     smem_enum = next(
         item
         for item in manifest["types"]["enums"]
@@ -124,6 +124,9 @@ def test_nvshmem_public_c_device_surface(tmp_path):
     mask = constants["NVSHMEM_TEAM_CONFIG_MASK_NUM_CONTEXTS"]
     assert mask["value"] == "1"
     assert mask["source"] == "macro"
+    reserved_bytes = constants["NVSHMEMX_REGION_ATTRS_RESERVED_BYTES"]
+    assert reserved_bytes["value"] == "60"
+    assert reserved_bytes["source"] == "macro"
     assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
     if symbol_inventory:
         assert manifest["symbol_verification"]["status"] == "verified"

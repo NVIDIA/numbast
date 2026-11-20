@@ -18,8 +18,6 @@ GPU Arch:
   - "@GPU_ARCH@"
 Clang Include Paths:
   - "@NVSHMEM_INCLUDE_DIR@"
-Predefined Macros:
-  - NVSHMEM_BUILD_LTOIR_LIBRARY
 Exclude:
   Function:
     # A CUDA implementation detail attributed to the retained public header.
@@ -42,11 +40,6 @@ CUDA Oxide:
     - "@NVSHMEM_DEVICE_LTOIR@"
   Manifest Name: nvshmem_device.manifest.json
   Symbol Inventory: "@NVSHMEM_DEVICE_API_SYMBOLS@"
-  Type Aliases:
-    nvshmem_team_t: int32_t
-    nvshmemx_team_t: nvshmem_team_t
-    nvshmemx_region_handle_t: uint64_t
-    nvshmemx_region_attrs_t: nvshmemx_region_attrs
   # Use together with the exact API symbol inventory above. The inventory
   # makes a parser recovery that omits declarations fail closed.
   Bypass Parse Errors: true
