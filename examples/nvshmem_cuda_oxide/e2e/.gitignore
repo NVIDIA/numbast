@@ -1,0 +1,7 @@
+/target/
+/.oxide-artifacts/
+/*.cubin
+/*.ll
+/*.ltoir
+/*.options
+/*.target

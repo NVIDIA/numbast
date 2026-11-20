@@ -104,6 +104,27 @@ Optional keys
         - __InternalState
 
 
+``Include`` : ``object``
+   Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that
+   nothing is bound. A name appearing in both Include and Exclude is excluded.
+
+   Default: ``{}``.
+
+   Constraints:
+
+   - No unspecified sub-keys
+
+   Example:
+
+   .. code-block:: yaml
+
+      Include:
+        Function:
+        - cuInit
+        - cuStreamCreate
+        - cuStreamDestroy_v2
+
+
 ``Clang Include Paths`` : ``array``
    Additional include search paths for Clang parsing.
 
@@ -300,9 +321,9 @@ Optional keys
 ``Backend`` : ``string | array | null``
    Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir`` routes
    generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided
-   ``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so naming
-   it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a fallback.
-   Naming more than one backend is an error for now, since a single run drives a single renderer.
+   ``numba_cuda_mlir`` installation; ``cuda-oxide`` generates direct Rust device externs. Defaults to ``numba-cuda``. An
+   unrecognised name is an error rather than a fallback. Naming more than one backend is an error for now, since a
+   single run drives a single renderer.
 
    Default: ``null``.
 
@@ -364,6 +385,28 @@ Optional nested keys
 
       Struct:
       - __InternalState
+
+
+.. rubric:: ``Include``
+
+``Function`` : ``array``
+   Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is practical
+   and enumerating the rest under Exclude is not. CUDA-Oxide requires each included name to produce a binding unless it
+   is excluded by Exclude.Function or Skip Prefix.
+
+   Default: ``[]``.
+
+   Constraints:
+
+   - Item type: ``string``
+
+   Example:
+
+   .. code-block:: yaml
+
+      Function:
+      - cuInit
+      - cuDeviceGetCount
 
 
 .. rubric:: ``API Prefix Removal``
@@ -468,13 +511,13 @@ Optional nested keys
 
 
 ``Constants`` : ``object``
-   Typed literal constants missing from the parsed AST.
+   Supplemental typed literals that take precedence over header macros with the same name.
 
    Default: ``{}``.
 
 ``Bypass Parse Errors`` : ``boolean``
-   Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an exact
-   Symbol Inventory to detect parser omissions.
+   Continue after recoverable Clang parser errors. Strict parsing is the default. List the required native symbols in
+   Include.Function to detect parser omissions.
 
    Default: ``false``.
 
@@ -578,6 +621,29 @@ Raw schema
            description: Struct names to exclude.
            examples:
              - ["__InternalState"]
+     Include:
+       type: object
+       default: {}
+       additionalProperties: false
+       description: >
+         Function names to bind, to the exclusion of all others. Empty or absent means no allowlist is applied, not that
+         nothing is bound. A name appearing in both Include and Exclude is excluded.
+
+       examples:
+         - Function: ["cuInit", "cuStreamCreate", "cuStreamDestroy_v2"]
+       properties:
+         Function:
+           type: array
+           default: []
+           items:
+             type: string
+           description: >
+             Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is
+             practical and enumerating the rest under Exclude is not. CUDA-Oxide requires each included name to produce
+             a binding unless it is excluded by Exclude.Function or Skip Prefix.
+
+           examples:
+             - ["cuInit", "cuDeviceGetCount"]
      Clang Include Paths:
        type: array
        default: []
@@ -744,9 +810,9 @@ Raw schema
        description: >
          Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir``
          routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided
-         ``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so
-         naming it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a
-         fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.
+         ``numba_cuda_mlir`` installation; ``cuda-oxide`` generates direct Rust device externs. Defaults to
+         ``numba-cuda``. An unrecognised name is an error rather than a fallback. Naming more than one backend is an
+         error for now, since a single run drives a single renderer.
 
        examples:
          - "numba-cuda"
@@ -805,7 +871,7 @@ Raw schema
          Constants:
            type: object
            default: {}
-           description: Typed literal constants missing from the parsed AST.
+           description: Supplemental typed literals that take precedence over header macros with the same name.
            additionalProperties:
              type: object
              additionalProperties: false
@@ -821,8 +887,8 @@ Raw schema
            type: boolean
            default: false
            description: >
-             Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an
-             exact Symbol Inventory to detect parser omissions.
+             Continue after recoverable Clang parser errors. Strict parsing is the default. List the required native
+             symbols in Include.Function to detect parser omissions.
 
          Clang Binary:
            type: string

@@ -111,17 +111,15 @@ def test_a_runnable_backend_names_its_driver(name):
     assert generator_module(name).endswith("static_binding_generator")
 
 
-def test_runnable_backends_excludes_the_driverless_one():
-    assert runnable_backends() == sorted([NUMBA_CUDA, NUMBA_CUDA_MLIR])
-    assert CUDA_OXIDE in available_backends()
+def test_all_registered_backends_are_runnable():
+    assert runnable_backends() == available_backends()
+    assert generator_module(CUDA_OXIDE).endswith("cuda_oxide_binding_generator")
 
 
-def test_a_registered_backend_without_a_driver_says_so():
-    """Distinct from a typo, because the remedy is different.
+def test_a_registered_backend_without_a_driver_says_so(monkeypatch):
+    from numbast.backends import registry
 
-    ``cuda-oxide`` has a renderer in the tree, so "no such backend" would be
-    misleading: the backend exists and simply cannot be run end to end yet.
-    """
+    monkeypatch.setitem(registry._BACKENDS, CUDA_OXIDE, None)
     with pytest.raises(BackendNotRunnableError) as excinfo:
         generator_module(CUDA_OXIDE)
 

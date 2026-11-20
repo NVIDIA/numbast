@@ -1,0 +1,267 @@
+{
+  "artifacts": {
+    "ltoir": [
+      {
+        "path": "examples/cuda_oxide_c_device/device_api.ltoir",
+        "sha256": "bc8e8466b8ba9111a4dd4318ff98b8123840b37a4e1be830aaf51da853848b0f",
+        "status": "present"
+      }
+    ],
+    "ltoir_inputs": [
+      "examples/cuda_oxide_c_device/device_api.ltoir"
+    ],
+    "rust_module": "examples/cuda_oxide_c_device/bindings.rs"
+  },
+  "backend": "cuda-oxide",
+  "compatibility": {
+    "cuda_oxide_nvvm_dialect": "legacy-llvm-7"
+  },
+  "constants": [
+    {
+      "name": "ROUND1_MODE_ADD",
+      "rust_type": "round1_mode",
+      "source": "enum",
+      "value": "0"
+    },
+    {
+      "name": "ROUND1_MODE_SUBTRACT",
+      "rust_type": "round1_mode",
+      "source": "enum",
+      "value": "1"
+    },
+    {
+      "name": "ROUND1_DEFAULT_HANDLE",
+      "rust_type": "u64",
+      "source": "macro",
+      "value": "0"
+    }
+  ],
+  "counts": {
+    "excluded_declarations": 0,
+    "generated_symbols": 3
+  },
+  "excluded_declarations": [],
+  "generator": {
+    "ast_canopy_version": "0.10.1+source",
+    "cuda_toolkit_version": null,
+    "generation_command": [
+      "numbast-cuda-oxide",
+      "--cfg-path",
+      "examples/cuda_oxide_c_device/numbast.yaml",
+      "--output-dir",
+      "examples/cuda_oxide_c_device"
+    ],
+    "name": "numbast-cuda-oxide",
+    "numbast_version": "0.10.1+source"
+  },
+  "library": {
+    "name": "Numbast Round 1 C Device Example",
+    "version": 1
+  },
+  "schema_version": 1,
+  "source": {
+    "clang_include_paths": [
+      "examples/cuda_oxide_c_device"
+    ],
+    "config": "examples/cuda_oxide_c_device/numbast.yaml",
+    "config_sha256": "4bea4bc94f36baff8c3cfc870a8c730e8efa86cc762e659e6874e9fcf4001d98",
+    "entry_point": "examples/cuda_oxide_c_device/device_api.h",
+    "headers": [
+      {
+        "path": "examples/cuda_oxide_c_device/device_api.h",
+        "sha256": "ee64a5ce354f693feb4457de45899a92f90553db97945f067a1766d1c62f41ad"
+      }
+    ],
+    "parser": {
+      "bypass_parse_errors": true,
+      "clang_binary": null
+    },
+    "predefined_macros": [
+      "__CUDA_ARCH__=800"
+    ],
+    "retained_files": [
+      "examples/cuda_oxide_c_device/device_api.h"
+    ]
+  },
+  "symbol_verification": {
+    "missing_symbols": [],
+    "required_symbol_count": 3,
+    "source": "Include.Function",
+    "status": "verified",
+    "unexpected_symbols": []
+  },
+  "symbols": [
+    {
+      "execution_space": "device",
+      "native_name": "round1_accumulate",
+      "parameters": [
+        {
+          "c_name": "values",
+          "c_type": {
+            "base_name": "int32_t",
+            "c_spelling": "const int32_t *",
+            "layers": [
+              {
+                "kind": "const"
+              }
+            ]
+          },
+          "rust_name": "values",
+          "rust_type": "*const i32"
+        },
+        {
+          "c_name": "count",
+          "c_type": {
+            "base_name": "size_t",
+            "c_spelling": "unsigned long",
+            "layers": []
+          },
+          "rust_name": "count",
+          "rust_type": "usize"
+        }
+      ],
+      "public_name": "accumulate",
+      "return_type": {
+        "c": {
+          "base_name": "int32_t",
+          "c_spelling": "int32_t",
+          "layers": []
+        },
+        "rust": "i32"
+      },
+      "rust_name": "accumulate"
+    },
+    {
+      "execution_space": "device",
+      "native_name": "round1_add",
+      "parameters": [
+        {
+          "c_name": "left",
+          "c_type": {
+            "base_name": "int32_t",
+            "c_spelling": "int32_t",
+            "layers": []
+          },
+          "rust_name": "left",
+          "rust_type": "i32"
+        },
+        {
+          "c_name": "right",
+          "c_type": {
+            "base_name": "int32_t",
+            "c_spelling": "int32_t",
+            "layers": []
+          },
+          "rust_name": "right",
+          "rust_type": "i32"
+        }
+      ],
+      "public_name": "add",
+      "return_type": {
+        "c": {
+          "base_name": "int32_t",
+          "c_spelling": "int32_t",
+          "layers": []
+        },
+        "rust": "i32"
+      },
+      "rust_name": "add"
+    },
+    {
+      "execution_space": "device",
+      "native_name": "round1_apply",
+      "parameters": [
+        {
+          "c_name": "value",
+          "c_type": {
+            "base_name": "int32_t",
+            "c_spelling": "int32_t",
+            "layers": []
+          },
+          "rust_name": "value",
+          "rust_type": "i32"
+        },
+        {
+          "c_name": "mode",
+          "c_type": {
+            "base_name": "round1_mode",
+            "c_spelling": "round1_mode",
+            "layers": []
+          },
+          "rust_name": "mode",
+          "rust_type": "round1_mode"
+        },
+        {
+          "c_name": "options",
+          "c_type": {
+            "base_name": "round1_options",
+            "c_spelling": "const round1_options *",
+            "layers": [
+              {
+                "kind": "const"
+              }
+            ]
+          },
+          "rust_name": "options",
+          "rust_type": "*const round1_options"
+        }
+      ],
+      "public_name": "apply",
+      "return_type": {
+        "c": {
+          "base_name": "int32_t",
+          "c_spelling": "int32_t",
+          "layers": []
+        },
+        "rust": "i32"
+      },
+      "rust_name": "apply"
+    }
+  ],
+  "target": {
+    "abi": "nvptx64-c",
+    "gpu_arch": "sm_80"
+  },
+  "types": {
+    "cuda_abi_aliases": [],
+    "enums": [
+      {
+        "enumerators": [
+          [
+            "ROUND1_MODE_ADD",
+            "0"
+          ],
+          [
+            "ROUND1_MODE_SUBTRACT",
+            "1"
+          ]
+        ],
+        "name": "round1_mode",
+        "rust_underlying_type": "u32"
+      }
+    ],
+    "records": [
+      {
+        "alignment": 4,
+        "fields": [
+          [
+            "scale",
+            "uint32_t"
+          ],
+          [
+            "bias",
+            "int32_t"
+          ],
+          [
+            "reserved",
+            "char[8]"
+          ]
+        ],
+        "name": "round1_options",
+        "size": 16,
+        "storage_type": "[u32; 4]"
+      }
+    ],
+    "typedefs": []
+  }
+}

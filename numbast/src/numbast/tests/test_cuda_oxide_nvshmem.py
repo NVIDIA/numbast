@@ -1,0 +1,138 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+"""Opt-in parity exercise for an NVSHMEM source/build tree."""
+
+import json
+import os
+from pathlib import Path
+
+import pytest
+
+from numbast.tools.config.cuda_oxide import CudaOxideConfig
+from numbast.tools.cuda_oxide_binding_generator import (
+    _read_symbol_inventory,
+    generate_cuda_oxide_bindings,
+)
+
+NVSHMEM_SOURCE_DIR = os.environ.get("NUMBAST_NVSHMEM_SOURCE_DIR")
+pytestmark = pytest.mark.skipif(
+    not NVSHMEM_SOURCE_DIR,
+    reason="set NUMBAST_NVSHMEM_SOURCE_DIR for the NVSHMEM parity exercise",
+)
+
+
+def test_nvshmem_public_c_device_surface(tmp_path):
+    source = Path(NVSHMEM_SOURCE_DIR)
+    include = source / "src" / "include"
+    symbol_inventory = os.environ.get("NUMBAST_NVSHMEM_SYMBOL_INVENTORY")
+    ltoir = os.environ.get("NUMBAST_NVSHMEM_LTOIR", "libnvshmem_device.ltoir")
+
+    cuda_oxide = {
+        "LTOIR Inputs": [ltoir],
+        "Bypass Parse Errors": True,
+    }
+    included = (
+        sorted(_read_symbol_inventory(symbol_inventory))
+        if symbol_inventory
+        else []
+    )
+
+    config = CudaOxideConfig(
+        {
+            "Backend": "cuda-oxide",
+            "Entry Point": str(
+                source
+                / "contrib"
+                / "nvshmem4rust"
+                / "generator"
+                / "entry_point.h"
+            ),
+            "File List": [
+                str(include / "device" / "nvshmem_coll_defines.cuh"),
+                str(include / "device" / "nvshmem_defines.h"),
+                str(include / "device" / "nvshmemx_coll_defines.cuh"),
+                str(include / "device" / "nvshmemx_defines.h"),
+                str(include / "device_host" / "nvshmem_types.h"),
+                str(include / "device_host" / "nvshmem_common.cuh"),
+                str(include / "device_host_transport" / "nvshmem_constants.h"),
+                str(
+                    include
+                    / "device_host_transport"
+                    / "nvshmem_common_transport.h"
+                ),
+            ],
+            "GPU Arch": [os.environ.get("NUMBAST_NVSHMEM_GPU_ARCH", "sm_100")],
+            "Clang Include Paths": [str(include)],
+            "Include": {"Function": included},
+            "Exclude": {
+                "Function": [
+                    "atomicAdd_system",
+                    "__nvvm_reflect",
+                    "get_pe_sync_addr",
+                    "nvshmemx_ask_smem",
+                    "nvshmemx_give_smem",
+                    "nvshmemx_release_smem",
+                ]
+            },
+            "Skip Prefix": "nvshmemi_",
+            "CUDA Oxide": cuda_oxide,
+        }
+    )
+    rust_path, manifest_path = generate_cuda_oxide_bindings(config, tmp_path)
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    symbols = {item["native_name"] for item in manifest["symbols"]}
+
+    assert len(symbols) > 2_000
+    assert all(name.startswith(("nvshmem_", "nvshmemx_")) for name in symbols)
+    assert "nvshmem_int_p" in symbols
+    assert "nvshmemx_int_put_block" in symbols
+    cuda_aliases = {
+        item["name"]: item for item in manifest["types"]["cuda_abi_aliases"]
+    }
+    assert cuda_aliases["double2"] == {
+        "name": "double2",
+        "rust_type": "[u128; 1]",
+        "size": 16,
+        "alignment": 16,
+    }
+    assert manifest["types"]["records"] == [
+        {
+            "name": "nvshmemx_region_attrs",
+            "size": 64,
+            "alignment": 4,
+            "storage_type": "[u32; 16]",
+            "fields": [["hints", "uint32_t"], ["reserved", "char[60]"]],
+        }
+    ]
+    typedefs = {
+        item["name"]: item["underlying"]["base_name"]
+        for item in manifest["types"]["typedefs"]
+    }
+    assert typedefs["nvshmem_team_t"] == "int32_t"
+    assert typedefs["nvshmemx_region_handle_t"] == "uint64_t"
+    assert typedefs["nvshmemx_region_attrs_t"] == "nvshmemx_region_attrs"
+    smem_enum = next(
+        item
+        for item in manifest["types"]["enums"]
+        if item["name"] == "nvshmemx_smem_amount_t"
+    )
+    assert smem_enum["rust_underlying_type"] == "u32"
+    assert manifest["compatibility"]["cuda_oxide_nvvm_dialect"] == (
+        "modern-opaque-pointer"
+    )
+    constants = {item["name"]: item for item in manifest["constants"]}
+    assert constants["NVSHMEM_TEAM_WORLD"]["value"] == "0"
+    assert constants["NVSHMEM_TEAM_INVALID"]["value"] == "-1"
+    assert constants["NVSHMEM_SIGNAL_SET"]["value"] == "9"
+    assert constants["NVSHMEM_TEAM_WORLD"]["source"] == "enum"
+    mask = constants["NVSHMEM_TEAM_CONFIG_MASK_NUM_CONTEXTS"]
+    assert mask["value"] == "1"
+    assert mask["source"] == "macro"
+    reserved_bytes = constants["NVSHMEMX_REGION_ATTRS_RESERVED_BYTES"]
+    assert reserved_bytes["value"] == "60"
+    assert reserved_bytes["source"] == "macro"
+    assert 'unsafe extern "C"' in Path(rust_path).read_text(encoding="utf-8")
+    if included:
+        assert manifest["symbol_verification"]["status"] == "verified"
+        assert manifest["symbol_verification"]["source"] == "Include.Function"

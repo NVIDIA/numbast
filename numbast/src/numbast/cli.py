@@ -4,6 +4,7 @@ import click
 import yaml
 
 from numbast.backends.registry import (
+    CUDA_OXIDE,
     BackendNotFoundError,
     BackendNotRunnableError,
     MultipleBackendsError,
@@ -41,7 +42,8 @@ def static_binding_generator(
         raise click.BadParameter(str(error), param_hint="--cfg-path") from error
 
     try:
-        module_name = generator_module(resolve_backend_name(config))
+        backend = resolve_backend_name(config)
+        module_name = generator_module(backend)
     except (
         BackendNotFoundError,
         BackendNotRunnableError,
@@ -49,5 +51,12 @@ def static_binding_generator(
     ) as error:
         raise click.BadParameter(str(error), param_hint="--cfg-path") from error
 
-    generator = import_module(module_name).static_binding_generator
+    module = import_module(module_name)
+    if backend == CUDA_OXIDE:
+        return ctx.invoke(
+            module.cuda_oxide_binding_generator,
+            cfg_path=cfg_path,
+            output_dir=output_dir,
+        )
+    generator = module.static_binding_generator
     return ctx.forward(generator)

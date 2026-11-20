@@ -40,6 +40,7 @@ _EXECUTION_SPACE_NAMES = {
 #: about.
 _EXCLUSION_REPORT_NAMES = {
     "excluded": "configured",
+    "not_included": "not-included",
     "skip_prefix": "skip-prefix",
 }
 _CUDA_OXIDE_RESERVED_PREFIX = "cuda_oxide_"
@@ -167,6 +168,7 @@ class CudaOxideBindingPlan:
             reason = function_skip_reason(
                 function,
                 excludes=config.exclude_functions,
+                includes=config.include_functions,
                 skip_prefix=config.skip_prefix,
                 skip_non_device=True,
             )
@@ -639,6 +641,24 @@ class CudaOxideBindingPlan:
                     )
 
         plan._add_remaining_enums(declarations, typedef_decls, diagnostics)
+
+        expected = set(config.include_functions).difference(
+            config.exclude_functions
+        )
+        if config.skip_prefix:
+            expected = {
+                name
+                for name in expected
+                if not name.startswith(config.skip_prefix)
+            }
+        missing = sorted(expected.difference(seen_native))
+        if missing and not diagnostics:
+            preview = ", ".join(missing[:20])
+            suffix = " ..." if len(missing) > 20 else ""
+            diagnostics.append(
+                f"Include.Function requests {len(missing)} device symbol(s) "
+                f"that were not generated: {preview}{suffix}"
+            )
 
         plan._sort()
         if diagnostics:

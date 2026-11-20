@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name = "numbast"
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
-description = "Generate Numba CUDA bindings from CUDA C++ declarations."
+description = "Generate Numba CUDA and CUDA-Oxide bindings from CUDA declarations."
 requires-python = ">=3.10"
 classifiers = [
   "Programming Language :: Python :: 3",

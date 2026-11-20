@@ -21,6 +21,7 @@ from ast_canopy.decl import (
 from ast_canopy.pylibastcanopy import Enum, Typedef, type_kind
 
 from numbast.backends.registry import (
+    CUDA_OXIDE,
     NUMBA_CUDA_MLIR,
     NUMBA_CUDA,
     resolve_backend_name,
@@ -673,6 +674,17 @@ def static_binding_generator(
     sbg_params = params_the_user_set(ctx)
 
     name = _backend_name_from_cfg_path(cfg_path)
+
+    if name == CUDA_OXIDE:
+        from numbast.tools.cuda_oxide_binding_generator import (
+            cuda_oxide_binding_generator,
+        )
+
+        return ctx.invoke(
+            cuda_oxide_binding_generator,
+            cfg_path=cfg_path,
+            output_dir=output_dir,
+        )
 
     if name not in (NUMBA_CUDA, NUMBA_CUDA_MLIR):
         # Reached only when this driver is invoked directly, since the

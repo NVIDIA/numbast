@@ -103,7 +103,7 @@ properties:
         items:
           type: string
         description: >
-          Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is practical and enumerating the rest under Exclude is not.
+          Function names to bind. Intended for large C APIs, where naming the few hundred entry points in scope is practical and enumerating the rest under Exclude is not. CUDA-Oxide requires each included name to produce a binding unless it is excluded by Exclude.Function or Skip Prefix.
 
         examples:
           - ["cuInit", "cuDeviceGetCount"]
@@ -267,7 +267,7 @@ properties:
       type: string
     default: null
     description: >
-      Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir`` routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided ``numba_cuda_mlir`` installation; ``cuda-oxide`` is registered for the Rust renderer but has no driver yet, so naming it is an error that says so. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.
+      Name of the emission backend, or a list of names. ``numba-cuda`` generates Numba bindings; ``numba-cuda-mlir`` routes generation to the experimental ``numbast.experimental.mlir`` backend, which requires a user-provided ``numba_cuda_mlir`` installation; ``cuda-oxide`` generates direct Rust device externs. Defaults to ``numba-cuda``. An unrecognised name is an error rather than a fallback. Naming more than one backend is an error for now, since a single run drives a single renderer.
 
     examples:
       - "numba-cuda"
@@ -322,7 +322,7 @@ properties:
       Constants:
         type: object
         default: {}
-        description: Typed literal constants missing from the parsed AST.
+        description: Supplemental typed literals that take precedence over header macros with the same name.
         additionalProperties:
           type: object
           additionalProperties: false
@@ -338,7 +338,7 @@ properties:
         type: boolean
         default: false
         description: >
-          Continue after recoverable Clang parser errors. Strict parsing is the default. Pair recovery mode with an exact Symbol Inventory to detect parser omissions.
+          Continue after recoverable Clang parser errors. Strict parsing is the default. List the required native symbols in Include.Function to detect parser omissions.
 
       Clang Binary:
         type: string

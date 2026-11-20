@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+# Configure @...@ placeholders for the NVSHMEM build being bound.
+
+Name: NVSHMEM CUDA-Oxide Rust Device Bindings
+Version: "@NVSHMEM_VERSION@"
+Backend: cuda-oxide
+Entry Point: "@NVSHMEM_SOURCE_DIR@/contrib/nvshmem4rust/generator/entry_point.h"
+File List:
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmem_coll_defines.cuh"
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmem_defines.h"
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmemx_coll_defines.cuh"
+  - "@NVSHMEM_INCLUDE_DIR@/device/nvshmemx_defines.h"
+  - "@NVSHMEM_INCLUDE_DIR@/device_host/nvshmem_types.h"
+  - "@NVSHMEM_INCLUDE_DIR@/device_host/nvshmem_common.cuh"
+  - "@NVSHMEM_INCLUDE_DIR@/device_host_transport/nvshmem_constants.h"
+  - "@NVSHMEM_INCLUDE_DIR@/device_host_transport/nvshmem_common_transport.h"
+GPU Arch:
+  - "@GPU_ARCH@"
+Clang Include Paths:
+  - "@NVSHMEM_INCLUDE_DIR@"
+Include:
+  Function: @NVSHMEM_INCLUDED_FUNCTIONS@
+Exclude:
+  Function:
+    # A CUDA implementation detail attributed to the retained public header.
+    - atomicAdd_system
+    - __nvvm_reflect
+    - get_pe_sync_addr
+    # C++-linkage helpers are outside the Round 1 C-device ABI.
+    - nvshmemx_ask_smem
+    - nvshmemx_give_smem
+    - nvshmemx_release_smem
+Skip Prefix: nvshmemi_
+API Prefix Removal:
+  Function:
+    - nvshmemx_
+    - nvshmem_
+
+CUDA Oxide:
+  Output Name: nvshmem_device.rs
+  LTOIR Inputs:
+    - "@NVSHMEM_DEVICE_LTOIR@"
+  Manifest Name: nvshmem_device.manifest.json
+  # Include.Function makes recovery fail if a required symbol is omitted.
+  Bypass Parse Errors: true

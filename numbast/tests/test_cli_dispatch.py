@@ -166,18 +166,12 @@ def test_dispatch_forwards_options(tmp_path, monkeypatch, config, backend):
     ("config", "hint"),
     [
         ("Backend: nonesuch", "--cfg-path"),
-        ("Backend: cuda-oxide", "--cfg-path"),
         ("Backend: [numba-cuda, cuda-oxide]", "--cfg-path"),
     ],
 )
 def test_an_unusable_backend_fails_before_importing_one(
     tmp_path, monkeypatch, config, hint
 ):
-    """Including ``cuda-oxide``, which is registered but has no driver.
-
-    Importing first would make a missing driver indistinguishable from a
-    backend whose dependencies are not installed.
-    """
     config_path = tmp_path / "config.yml"
     config_path.write_text(config)
 
@@ -210,6 +204,44 @@ def test_invalid_config_does_not_import_backend(tmp_path, monkeypatch, config):
 
     assert result.exit_code == 2
     assert "Invalid value for --cfg-path" in result.output
+
+
+@pytest.mark.parametrize("backend", ["cuda-oxide", "[cuda-oxide]"])
+def test_cuda_oxide_dispatch_forwards_only_supported_options(
+    tmp_path, monkeypatch, backend
+):
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(f"Backend: {backend}\n")
+    calls = []
+
+    @click.command()
+    @click.option("--cfg-path")
+    @click.option("--output-dir")
+    def generator(cfg_path, output_dir):
+        assert cfg_path == str(config_path)
+        assert output_dir == str(tmp_path)
+
+    def import_backend(name):
+        calls.append(name)
+        return SimpleNamespace(cuda_oxide_binding_generator=generator)
+
+    monkeypatch.setattr(cli, "import_module", import_backend)
+    result = CliRunner().invoke(
+        cli.static_binding_generator,
+        [
+            "--cfg-path",
+            str(config_path),
+            "--output-dir",
+            str(tmp_path),
+            "-fmt",
+            "false",
+            "-noraise",
+            "true",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert calls == ["numbast.tools.cuda_oxide_binding_generator"]
 
 
 def test_module_help_does_not_import_backends():

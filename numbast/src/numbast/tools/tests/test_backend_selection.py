@@ -90,13 +90,7 @@ def test_an_unknown_backend_fails_before_any_work(tmp_path):
     assert not (tmp_path / "input.py").exists()
 
 
-def test_the_numba_driver_refuses_a_backend_it_cannot_serve(tmp_path):
-    """Reachable only by invoking this driver directly, bypassing dispatch.
-
-    Without the check, a registered backend nobody wired up here would fall
-    through and emit Numba bindings under the file name the real backend would
-    have written, which looks like success.
-    """
+def test_the_numba_driver_dispatches_cuda_oxide(tmp_path):
     cfg_path = _cfg(tmp_path, **{BACKEND_CONFIG_KEY: "cuda-oxide"})
 
     result = CliRunner().invoke(
@@ -104,8 +98,8 @@ def test_the_numba_driver_refuses_a_backend_it_cannot_serve(tmp_path):
         ["--cfg-path", str(cfg_path), "--output-dir", str(tmp_path)],
     )
 
-    assert result.exit_code == 2
-    assert "cuda-oxide" in result.output
+    assert result.exit_code == 1
+    assert 'option "CUDA Oxide" must be a mapping' in result.output
     assert not (tmp_path / "input.py").exists()
 
 
