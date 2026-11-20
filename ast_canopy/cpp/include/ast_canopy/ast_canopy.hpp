@@ -131,6 +131,8 @@ struct Enum {
 struct EvaluatedConstDecl {
   EvaluatedConstDecl() = default;
   EvaluatedConstDecl(const clang::VarDecl *VD);
+  EvaluatedConstDecl(const std::string &macro_name, Type type,
+                     std::string serialized_value);
 
   bool is_constexpr = false;
 
@@ -138,6 +140,12 @@ struct EvaluatedConstDecl {
   std::string name;
   std::string qual_name;
   std::string value;
+};
+
+struct MacroDefinition {
+  std::string name;
+  std::string replacement_text;
+  std::optional<EvaluatedConstDecl> evaluated_constant;
 };
 
 struct Field {
@@ -330,6 +338,7 @@ struct Declarations {
   std::vector<Typedef> typedefs;
   std::vector<Enum> enums;
   std::vector<EvaluatedConstDecl> global_constants;
+  std::unordered_map<std::string, MacroDefinition> macro_defines;
 };
 
 Declarations

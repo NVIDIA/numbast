@@ -8,6 +8,11 @@
 #include <llvm/ADT/SmallString.h>
 namespace ast_canopy {
 
+EvaluatedConstDecl::EvaluatedConstDecl(const std::string &macro_name, Type type,
+                                       std::string serialized_value)
+    : type_(std::move(type)), name(macro_name), qual_name(macro_name),
+      value(std::move(serialized_value)) {}
+
 EvaluatedConstDecl::EvaluatedConstDecl(const clang::VarDecl *VD)
     : is_constexpr(VD->isConstexpr()),
       type_(VD->getType(), VD->getASTContext()), name(VD->getNameAsString()),

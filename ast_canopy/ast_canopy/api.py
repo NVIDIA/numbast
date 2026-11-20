@@ -22,6 +22,7 @@ from ast_canopy.decl import (
     FunctionTemplate,
     ClassTemplate,
     EvaluatedConstDecl,
+    MacroDefinition,
     ClassTemplateSpecialization,
 )
 from ast_canopy.fdcap_min import capture_fd, STREAMFD
@@ -91,6 +92,19 @@ class Declarations:
         ``long double``; Clang extensions such as ``_Float16`` are excluded.
         Each constant's ``is_constexpr`` flag records whether it was declared
         ``constexpr``.
+    macro_defines : dict[str, MacroDefinition]
+        Active object-like macros defined in retained files. Each definition
+        contains its name, unexpanded replacement tokens joined with single
+        spaces in ``replacement_text``, and an optional ``evaluated_constant``.
+        Empty flags have empty text. Function-like and undefined macros are
+        omitted. Clang evaluates scalar C++ constant expressions using the
+        target and final preprocessor state of the translation unit. Supported
+        values are integers, booleans, enums, and ``float``, ``double``, or
+        ``long double``. The evaluated object carries its expression type,
+        serialized value, and converted Python ``value``; ``is_constexpr`` is
+        false because a macro is not a variable declaration. Unsupported or
+        unevaluable definitions have ``evaluated_constant=None`` and do not
+        fail strict declaration parsing.
     """
 
     structs: list[Struct]
@@ -101,6 +115,7 @@ class Declarations:
     typedefs: list[bindings.Typedef]
     enums: list[bindings.Enum]
     global_constants: list[EvaluatedConstDecl] = field(default_factory=list)
+    macro_defines: dict[str, MacroDefinition] = field(default_factory=dict)
 
 
 def paths_to_include_flags(paths: list[str]) -> list[str]:
@@ -593,6 +608,10 @@ def parse_declarations_from_source(
             EvaluatedConstDecl.from_c_obj(item)
             for item in decls.global_constants
         ],
+        {
+            name: MacroDefinition.from_c_obj(item)
+            for name, item in decls.macro_defines.items()
+        },
     )
 
 

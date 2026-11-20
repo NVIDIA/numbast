@@ -569,6 +569,36 @@ class EvaluatedConstDecl:
         return CXX_TYPE_TO_PYTHON_TYPE[cxx_type_name](self.value_serialized)
 
 
+class MacroDefinition:
+    """An object-like macro's replacement text and optional scalar value.
+
+    ``evaluated_constant`` is an :class:`EvaluatedConstDecl` when Clang can
+    evaluate the definition as a supported scalar constant expression, or
+    ``None`` otherwise. ``replacement_text`` is available in either case.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        replacement_text: str,
+        evaluated_constant: EvaluatedConstDecl | None = None,
+    ):
+        self.name = name
+        self.replacement_text = replacement_text
+        self.evaluated_constant = evaluated_constant
+
+    @classmethod
+    def from_c_obj(cls, c_obj: bindings.MacroDefinition):
+        evaluated = c_obj.evaluated_constant
+        return cls(
+            c_obj.name,
+            c_obj.replacement_text,
+            EvaluatedConstDecl.from_c_obj(evaluated)
+            if evaluated is not None
+            else None,
+        )
+
+
 class ClassTemplateSpecialization(Struct):
     """Represents a C++ class template specialization declaration.
 
