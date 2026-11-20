@@ -3,7 +3,7 @@
 # Numbast
 
 An automated pipeline to parse CUDA C++ headers and generate device bindings
-for Numba CUDA and for NVSHMEM4Rust with CUDA-Oxide.
+for Numba CUDA and Rust/CUDA-Oxide.
 
 ## Announcement
 

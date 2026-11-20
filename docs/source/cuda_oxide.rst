@@ -1,26 +1,35 @@
 CUDA-Oxide device bindings
 ===========================
 
-The ``cuda-oxide`` backend currently supports the NVSHMEM4Rust device binding
-profile. It generates a Rust ``sys`` module for the selected NVSHMEM C-linkage
-device API.
+The ``cuda-oxide`` backend generates a Rust ``sys`` module and a link manifest
+from CUDA declarations. It uses Numbast's shared declaration selection and
+naming configuration. The renderer runs without a Numba dependency.
 
-NVSHMEM4Rust device profile
----------------------------
+Supported declarations and types
+--------------------------------
 
-The profile generates raw ``unsafe`` externs for selected non-variadic
-``__device__`` and ``__host__ __device__`` functions. The bindings preserve the
-pointer qualifiers and ABI types used by these functions, including the
-half, bfloat16, and ``double2`` storage types. The profile excludes internal
-functions and C++-linkage helpers.
+The backend generates direct ``unsafe`` Rust externs for externally visible,
+non-variadic C-linkage ``__device__`` and ``__host__ __device__`` free functions.
+It supports C scalars, nested pointers with per-level ``const`` qualification,
+fixed-size arrays behind pointers, typedefs used by selected signatures, enums,
+opaque handles, and POD records behind pointers. Supported CUDA ABI types
+include half, bfloat16, and ``double2`` storage.
 
-The complete profile requires ``sm_100`` or newer because it passes narrow
-integers, CUDA half, and bfloat16 by value. Pre-Blackwell CUDA-Oxide can use
-pointer-based forms of those types. CUDA ``__half`` maps to Rust's nightly
-``f16`` on the modern NVVM path, so the consuming crate must enable
-``#![feature(f16)]``.
+C++ linkage, overloads, references, variadics, by-value records, and
+unrecognized ABI types are unsupported. The manifest records function and
+class templates as exclusions. The backend ignores the Numba
+``Function Argument Intents`` setting.
 
-The generated Rust module contains declarations like this one:
+Target requirements
+-------------------
+
+On targets below ``sm_100``, Numbast rejects extern signatures that pass
+sub-32-bit integers, Boolean values, CUDA half, or bfloat16 by value. The
+legacy NVVM path supports these types behind pointers. On the modern path,
+CUDA ``__half`` maps to Rust's nightly ``f16``, which requires
+``#![feature(f16)]`` in the consuming crate.
+
+The output contains direct CUDA-Oxide declarations:
 
 .. code-block:: rust
 
@@ -28,12 +37,10 @@ The generated Rust module contains declarations like this one:
 
   #[device]
   unsafe extern "C" {
-      pub fn nvshmemx_vendor_get_version_info(
-          major: *mut i32, minor: *mut i32, patch: *mut i32,
-      );
+      pub fn library_add(lhs: i32, rhs: i32) -> i32;
   }
 
-  pub use self::nvshmemx_vendor_get_version_info as vendor_get_version_info;
+  pub use self::library_add as add;
 
 There is no generated CUDA C or C++ shim. CUDA-Oxide compiles callers to device
 IR and links the external LTOIR named in the manifest.
@@ -41,14 +48,41 @@ IR and links the external LTOIR named in the manifest.
 Configuration
 -------------
 
-Fill in the placeholders in
-``examples/nvshmem_cuda_oxide/numbast.yaml.in`` using the NVSHMEM source and
-build that produced the device LTOIR. The template selects
-``Backend: cuda-oxide`` and uses the NVSHMEM4Rust entry header.
+Select the backend with ``Backend: cuda-oxide`` and add a ``CUDA Oxide``
+section to the existing Numbast YAML shape:
 
-The generator reads typedefs, enum values, and supported scalar macros from
-the retained headers. It records evaluated macros in the manifest with
-``source: macro``.
+.. code-block:: yaml
+
+  Entry Point: include/library_device.h
+  File List: [include/library_device.h]
+  GPU Arch: [sm_90]
+  Clang Include Paths: [include]
+  Predefined Macros: [LIBRARY_BUILD_DEVICE_LTOIR]
+  Exclude:
+    Function: [library_internal_helper]
+  Skip Prefix: library_detail_
+  API Prefix Removal:
+    Function: [library_]
+
+  Backend: cuda-oxide
+  CUDA Oxide:
+    Output Name: library_device.rs
+    LTOIR Inputs: [lib/library_device.ltoir]
+    Manifest Name: library_device.manifest.json
+    Symbol Inventory: build/library_device_api.symbols
+    Type Aliases:
+      library_handle_t: unsigned long long
+
+The same document can be used in separate Numba and CUDA-Oxide invocations.
+The top-level ``Output Name`` names the Python output; ``CUDA Oxide.Output Name``
+names the Rust output. Adding a ``CUDA Oxide`` section alone does not select
+the Rust backend.
+
+``Type Aliases`` are C-to-C declarations, not arbitrary Rust snippets.
+The generator emits evaluated object-like macros from the retained headers
+when their scalar types can be represented in Rust. The manifest records them
+with ``source: macro``. Optional ``Constants`` entries provide typed integer or
+Boolean literals and take precedence over a header macro with the same name.
 
 Numbast derives the matching ``__CUDA_ARCH__`` value from ``GPU Arch`` while
 parsing. An explicitly configured value must match. This exposes APIs guarded
@@ -89,6 +123,6 @@ Use the dedicated lightweight command (which does not import Numba):
 
   numbast-cuda-oxide --cfg-path config.yaml --output-dir generated
 
-``examples/nvshmem_cuda_oxide`` contains the NVSHMEM4Rust configuration and a
-GPU smoke test. ``examples/cuda_oxide_c_device`` demonstrates the same LTOIR
-build, binding generation, and linking flow with a small test library.
+``examples/cuda_oxide_c_device`` demonstrates the full workflow with a small
+C device library, from building LTOIR and verifying symbols to linking and
+running a Rust kernel on a GPU.

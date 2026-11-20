@@ -1,7 +1,6 @@
 # Proposal: Numbast-backed Rust device binding generation
 
-- Status: draft research recommendation. Current CUDA-Oxide support covers
-  the NVSHMEM4Rust device profile.
+- Status: draft research recommendation
 - Scope: device-binding portion of internal `cuda-python-private/492`
 - Target consumer: CUDA-Oxide device code linked with an existing CUDA LTOIR
   library
