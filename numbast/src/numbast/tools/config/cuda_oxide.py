@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from numbast.backends.registry import CUDA_OXIDE, resolve_backend_name
 from numbast.rust_types import cuda_arch_number
 from numbast.tools.config.shared import SharedConfig, _as_list
 
@@ -38,6 +39,14 @@ class CudaOxideConfig(SharedConfig):
 
     def __init__(self, config_dict: dict[str, Any]):
         super().__init__(config_dict)
+
+        if (
+            config_dict.get("Backend") is not None
+            and resolve_backend_name(config_dict) != CUDA_OXIDE
+        ):
+            raise ValueError(
+                'The CUDA-Oxide generator requires "Backend: cuda-oxide".'
+            )
 
         section = config_dict.get("CUDA Oxide")
         if not isinstance(section, dict):
