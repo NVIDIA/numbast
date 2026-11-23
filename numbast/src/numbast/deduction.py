@@ -159,9 +159,20 @@ def _deduce_from_type_pattern(
 
 
 def _replace_placeholders(type_str: str, replacements: dict[str, str]) -> str:
-    for key, value in replacements.items():
-        type_str = type_str.replace(key, value)
-    return type_str
+    """Substitute whole placeholder names, and do not scan the inserted text.
+
+    A later key must not match inside an earlier value, and a short name
+    must not match inside a longer identifier.
+    """
+    if not type_str or not replacements:
+        return type_str
+    names = sorted(replacements, key=len, reverse=True)
+    pattern = re.compile(
+        r"(?<![A-Za-z0-9_])(?:"
+        + "|".join(re.escape(name) for name in names)
+        + r")(?![A-Za-z0-9_])"
+    )
+    return pattern.sub(lambda match: replacements[match.group(0)], type_str)
 
 
 def _specialize_type(

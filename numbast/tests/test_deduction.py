@@ -12,6 +12,7 @@ from numba.cuda import types as nbtypes
 
 from numbast.deduction import (
     _deduce_from_type_pattern,
+    _replace_placeholders,
     deduce_templated_overloads,
 )
 
@@ -141,6 +142,19 @@ def test_repeated_placeholder_conflict_in_type_pattern():
         ["T"],
     )
     assert deduced is None
+
+
+def test_placeholder_replacement_keeps_inserted_names():
+    """Do not rewrite a substituted value, or a longer identifier."""
+    deduced = _deduce_from_type_pattern(
+        "Pair<T, U>",
+        "Pair<U, int>",
+        ["T", "U"],
+    )
+    assert deduced == {"T": "U", "U": "int"}
+    assert _replace_placeholders("Pair<T, U>", deduced) == "Pair<U, int>"
+    assert _replace_placeholders("Tuple<T>", {"T": "int"}) == "Tuple<int>"
+    assert _replace_placeholders("const T*", {"T": "int"}) == "const int*"
 
 
 def test_non_templated_param_requires_match(deduction_decls):
