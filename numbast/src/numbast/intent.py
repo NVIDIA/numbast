@@ -104,7 +104,11 @@ def compute_intent_plan(
                 )
             intent = _parse_arg_intent(ArgIntent, raw)
 
-            if isinstance(key, int):
+            if isinstance(key, bool):
+                raise TypeError(
+                    "arg_intent keys must be str (param name) or int (0-based index), not bool"
+                )
+            elif isinstance(key, int):
                 if key < 0 or key >= len(params):
                     raise ValueError(
                         f"arg_intent index {key} out of range for {len(params)} params"
